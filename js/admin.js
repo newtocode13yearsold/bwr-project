@@ -71,8 +71,8 @@ function initMap() {
   map = L.map('map').setView(MAP_CENTER, MAP_ZOOM);
 
   ignLayer = L.tileLayer(
-    'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
-    { attribution: '&copy; <a href="https://www.geoportail.gouv.fr/">IGN</a>', maxZoom: 18 }
+    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxZoom: 17, subdomains: ['a','b','c'] }
   );
   ignLayer.addTo(map);
 

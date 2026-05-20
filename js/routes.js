@@ -47,8 +47,8 @@ function initUserMenu() {
 // ── Map ───────────────────────────────────────────────────────────────────────
 const TILE_LAYERS = {
   ign: () => L.tileLayer(
-    'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
-    { attribution: '© IGN', maxZoom: 18 }
+    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxZoom: 17, subdomains: ['a','b','c'] }
   ),
   osm: () => L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     { attribution: '© OpenStreetMap', maxZoom: 19 }
