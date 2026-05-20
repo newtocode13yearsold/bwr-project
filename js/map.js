@@ -1,11 +1,7 @@
 const TILE_LAYERS = {
-  plan: L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>', maxZoom: 19 }
-  ),
-  topo: L.tileLayer(
+  ign: L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxZoom: 17, subdomains: ['a','b','c'] }
+    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxZoom: 17, subdomains: ['a','b','c'] }
   ),
   satellite: L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
@@ -13,29 +9,22 @@ const TILE_LAYERS = {
   ),
 };
 
-const map = L.map('map', { zoomControl: true, fadeAnimation: true, zoomAnimation: true })
-  .setView(MAP_CENTER, MAP_ZOOM);
+const map = L.map('map', { zoomControl: true }).setView(MAP_CENTER, MAP_ZOOM);
+TILE_LAYERS.ign.addTo(map);
 
-TILE_LAYERS.plan.addTo(map);
-let currentLayer = 'plan';
-
+let currentLayer = 'ign';
 let allPaths = [];
 let pathLayers = {};
 let activeFilters = new Set(['easy', 'medium', 'hard', 'not_passable']);
 
 function pathWeight() {
   const z = map.getZoom();
-  return Math.max(3, Math.min(9, Math.round((z - 8) * 0.8)));
+  return Math.max(2, Math.min(10, Math.round((z - 8) * 0.7)));
 }
 
-// Update both outline + color line on zoom
 map.on('zoomend', () => {
   const w = pathWeight();
-  Object.values(pathLayers).forEach(group => {
-    const layers = group.getLayers();
-    if (layers[0]) layers[0].setStyle({ weight: w + 4 });
-    if (layers[1]) layers[1].setStyle({ weight: w });
-  });
+  Object.values(pathLayers).forEach(l => l.setStyle({ weight: w }));
 });
 
 // ── User menu ─────────────────────────────────────────────────────────────────
@@ -48,6 +37,7 @@ async function initUserMenu() {
     return;
   }
 
+  // Show route planner button for logged-in users
   document.getElementById('btnPlanRoute').style.display = '';
 
   const initials = user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
@@ -67,90 +57,59 @@ async function initUserMenu() {
   document.getElementById('userBtn').addEventListener('click', () => {
     document.getElementById('userDropdown').classList.toggle('hidden');
   });
+
   document.getElementById('btnLogout').addEventListener('click', () => logout());
+
   document.addEventListener('click', (e) => {
-    if (!menuEl.contains(e.target))
+    if (!menuEl.contains(e.target)) {
       document.getElementById('userDropdown')?.classList.add('hidden');
+    }
   });
 }
 
 // ── Paths ─────────────────────────────────────────────────────────────────────
 async function loadPaths() {
-  const loader = document.getElementById('mapLoader');
-
-  // Show cached paths instantly while fresh data loads
-  const cached = sessionStorage.getItem('bwr_paths');
-  if (cached) {
-    try {
-      allPaths = JSON.parse(cached);
-      renderPaths();
-      updateCount();
-    } catch {}
-  } else {
-    loader.classList.remove('hidden');
-  }
-
   try {
     const res = await fetch(`${API_URL}/api/paths`);
-    const fresh = await res.json();
-    sessionStorage.setItem('bwr_paths', JSON.stringify(fresh));
-    allPaths = fresh;
+    allPaths = await res.json();
     renderPaths();
     updateCount();
   } catch {
-    if (!cached)
-      document.getElementById('pathCount').textContent = 'Impossible de charger les chemins.';
-  } finally {
-    loader.classList.add('hidden');
+    document.getElementById('pathCount').textContent = 'Impossible de charger les chemins.';
   }
 }
 
 function renderPaths() {
-  Object.values(pathLayers).forEach(group => map.removeLayer(group));
+  Object.values(pathLayers).forEach(l => map.removeLayer(l));
   pathLayers = {};
-
-  const w = pathWeight();
-  const COND_ICONS   = { dry:'✅', muddy:'⚠️', fallen:'❌', mtb:'🚴', running:'🏃', family:'👨‍👩‍👧' };
-  const COND_LABELS  = { dry:'Sec', muddy:'Boueux', fallen:'Arbres tombés', mtb:'Idéal MTB', running:'Running', family:'Famille' };
 
   allPaths.forEach(path => {
     if (!activeFilters.has(path.status)) return;
 
-    const color = STATUS_COLORS[path.status] || '#9ca3af';
-
-    // White outline underneath → colored line on top = routes "pop" against any basemap
-    const outline = L.polyline(path.coordinates, {
-      color: 'white', weight: w + 4, opacity: 0.55,
-      lineCap: 'round', lineJoin: 'round',
-    });
     const line = L.polyline(path.coordinates, {
-      color, weight: w, opacity: 0.92,
-      lineCap: 'round', lineJoin: 'round',
+      color: STATUS_COLORS[path.status] || '#9ca3af',
+      weight: pathWeight(),
+      opacity: 0.85,
     });
 
     const condHTML = path.conditions?.length
-      ? `<div class="popup-cond-row">${path.conditions.map(c =>
-          `<span class="popup-cond-tag">${COND_ICONS[c] || ''} ${COND_LABELS[c] || c}</span>`
-        ).join('')}</div>`
+      ? `<div class="popup-cond-row">${path.conditions.map(c => {
+          const icons = { dry:'✅', muddy:'⚠️', fallen:'❌', mtb:'🚴', running:'🏃', family:'👨‍👩‍👧' };
+          const labels = { dry:'Sec', muddy:'Boueux', fallen:'Arbres tombés', mtb:'Idéal MTB', running:'Running', family:'Famille' };
+          return `<span class="popup-cond-tag">${icons[c] || ''} ${labels[c] || c}</span>`;
+        }).join('')}</div>`
       : '';
-
-    const typeIcon = path.pathType === 'bike' ? '🚴' : '🌲';
-
-    const group = L.featureGroup([outline, line]);
-    group.bindPopup(`
+    line.bindPopup(`
       <div class="popup">
-        <div class="popup-header">
-          <span class="popup-type-icon">${typeIcon}</span>
-          <strong>${path.name || 'Chemin sans nom'}</strong>
-        </div>
-        <span class="popup-status" style="background:${color}">${STATUS_LABELS[path.status] || path.status}</span>
+        <strong>${path.name || 'Chemin sans nom'}</strong>
+        <span class="popup-status" style="background:${STATUS_COLORS[path.status]}">${STATUS_LABELS[path.status] || path.status}</span>
         ${condHTML}
         ${path.notes ? `<p class="popup-notes">${path.notes}</p>` : ''}
       </div>
-    `, { maxWidth: 260 });
+    `);
 
-    group.addTo(map);
-    pathLayers[path.id] = group;
+    line.addTo(map);
+    pathLayers[path.id] = line;
   });
 }
 
@@ -178,18 +137,8 @@ document.querySelectorAll('input[name="tileLayer"]').forEach(radio => {
   });
 });
 
-// Smooth filter panel open/close
 document.getElementById('toggleFilters').addEventListener('click', () => {
-  document.getElementById('filterPanel').classList.toggle('open');
-});
-
-// Close filter panel when clicking outside
-document.addEventListener('click', e => {
-  const panel = document.getElementById('filterPanel');
-  const btn   = document.getElementById('toggleFilters');
-  if (panel.classList.contains('open') && !panel.contains(e.target) && !btn.contains(e.target)) {
-    panel.classList.remove('open');
-  }
+  document.getElementById('filterPanel').classList.toggle('hidden');
 });
 
 initUserMenu();

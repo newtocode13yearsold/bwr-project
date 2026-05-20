@@ -71,8 +71,8 @@ function initMap() {
   map = L.map('map').setView(MAP_CENTER, MAP_ZOOM);
 
   ignLayer = L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19 }
+    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxZoom: 17, subdomains: ['a','b','c'] }
   );
   ignLayer.addTo(map);
 
@@ -372,8 +372,6 @@ function renderPaths() {
       color: STATUS_COLORS[path.status] || '#9ca3af',
       weight: pathWeight(),
       opacity: 0.9,
-      lineCap: 'round',
-      lineJoin: 'round',
     });
     line.on('click', (e) => {
       L.DomEvent.stopPropagation(e);
