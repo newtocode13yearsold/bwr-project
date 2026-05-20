@@ -634,20 +634,37 @@ body {
 .path-tooltip::before { display: none; }
 .leaflet-tooltip.path-tooltip { pointer-events: none; }
 
-/* ── Carrefour labels ── */
-.carrefour-label {
-  background: rgba(255, 252, 240, 0.9);
-  border: 1px solid #c9a84c;
-  border-radius: 3px;
-  padding: 2px 6px;
-  font-size: 0.67rem;
-  font-weight: 700;
-  color: #6b3f0e;
-  white-space: nowrap;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+/* ── Carrefour markers (dot + name) ── */
+.carrefour-marker {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   pointer-events: none;
-  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.carrefour-dot {
+  width: 9px;
+  height: 9px;
+  background: #b45309;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+  flex-shrink: 0;
+}
+
+.carrefour-name {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #431407;
+  letter-spacing: 0.3px;
   font-family: 'Segoe UI', system-ui, sans-serif;
+  /* white halo so the label is readable on any background */
+  text-shadow:
+    1px  0   0 white, -1px  0   0 white,
+    0    1px 0 white,  0   -1px 0 white,
+    1px  1px 0 white, -1px  1px 0 white,
+    1px -1px 0 white, -1px -1px 0 white;
 }
 
 /* ── Utility ── */
