@@ -126,23 +126,13 @@ document.getElementById('btnSelectPath').addEventListener('click', async () => {
 });
 
 let ignLayer = null;
-let osmLayer = null;
 
 function enterSelectMode() {
   selectModeActive = true;
   document.getElementById('btnSelectPath').textContent = '✕ Annuler';
   document.getElementById('btnSelectPath').style.background = 'rgba(239,68,68,0.4)';
   map.getContainer().style.cursor = 'crosshair';
-  // Switch to OSM tiles so dashed paths align perfectly
-  if (ignLayer && map.hasLayer(ignLayer)) {
-    map.removeLayer(ignLayer);
-    if (!osmLayer) {
-      osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap', maxZoom: 19
-      });
-    }
-    osmLayer.addTo(map);
-  }
+  // Keep IGN tiles — they are more accurate for forest paths
   showStatus('Clique sur un chemin en pointillés pour le sélectionner.');
 }
 
@@ -151,11 +141,7 @@ function exitSelectMode() {
   document.getElementById('btnSelectPath').textContent = '🗺 Sélectionner un chemin';
   document.getElementById('btnSelectPath').style.background = '';
   map.getContainer().style.cursor = '';
-  // Switch back to IGN
-  if (osmLayer && map.hasLayer(osmLayer)) {
-    map.removeLayer(osmLayer);
-    ignLayer.addTo(map);
-  }
+  // IGN stays on — nothing to switch back
   clearOSMLayer();
   showStatus('');
 }
