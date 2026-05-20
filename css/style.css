@@ -528,6 +528,22 @@ body {
 }
 .popup-delete-btn:hover { background: #fca5a5; }
 
+/* ── Carrefour labels ── */
+.carrefour-label {
+  background: rgba(255, 252, 240, 0.9);
+  border: 1px solid #c9a84c;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 0.67rem;
+  font-weight: 700;
+  color: #6b3f0e;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  pointer-events: none;
+  letter-spacing: 0.2px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
 /* ── Utility ── */
 .hidden { display: none !important; }
 

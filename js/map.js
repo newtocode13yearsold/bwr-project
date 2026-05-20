@@ -141,5 +141,55 @@ document.getElementById('toggleFilters').addEventListener('click', () => {
   document.getElementById('filterPanel').classList.toggle('hidden');
 });
 
+// ── Carrefour labels ──────────────────────────────────────────────────────────
+let carrefourMarkers = [];
+let carrefourTimer = null;
+
+async function loadCarrefours() {
+  // Clear existing labels
+  carrefourMarkers.forEach(m => map.removeLayer(m));
+  carrefourMarkers = [];
+
+  if (map.getZoom() < 13) return;   // too zoomed out — skip
+
+  const b = map.getBounds();
+  const bbox = `${b.getSouth().toFixed(4)},${b.getWest().toFixed(4)},${b.getNorth().toFixed(4)},${b.getEast().toFixed(4)}`;
+
+  // Query OSM for any node whose name contains "carrefour" (case-insensitive)
+  const query = `[out:json][timeout:8];node["name"~"carrefour",i](${bbox});out;`;
+
+  try {
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: query,
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    data.elements.forEach(el => {
+      if (!el.tags?.name) return;
+      const marker = L.marker([el.lat, el.lon], {
+        icon: L.divIcon({
+          className: 'carrefour-label',
+          html: el.tags.name,
+          iconAnchor: [0, 8],
+          iconSize: null,
+        }),
+        interactive: false,
+        zIndexOffset: -100,
+      });
+      marker.addTo(map);
+      carrefourMarkers.push(marker);
+    });
+  } catch { /* silent fail — labels are non-critical */ }
+}
+
+// Debounce so we don't spam the API while panning
+map.on('moveend', () => {
+  clearTimeout(carrefourTimer);
+  carrefourTimer = setTimeout(loadCarrefours, 600);
+});
+
 initUserMenu();
 loadPaths();
+loadCarrefours();
