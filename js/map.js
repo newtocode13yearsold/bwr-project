@@ -86,10 +86,28 @@ function renderPaths() {
   allPaths.forEach(path => {
     if (!activeFilters.has(path.status)) return;
 
+    const color = STATUS_COLORS[path.status] || '#9ca3af';
     const line = L.polyline(path.coordinates, {
-      color: STATUS_COLORS[path.status] || '#9ca3af',
+      color,
       weight: pathWeight(),
       opacity: 0.85,
+    });
+
+    // Hover glow — highlight on mouse-over, restore on mouse-out
+    line.on('mouseover', function () {
+      this.setStyle({ weight: pathWeight() + 3, opacity: 1 });
+      this.bringToFront();
+    });
+    line.on('mouseout', function () {
+      this.setStyle({ weight: pathWeight(), opacity: 0.85 });
+    });
+
+    // Tooltip shows name without needing to click
+    line.bindTooltip(path.name || 'Chemin sans nom', {
+      sticky: true,
+      direction: 'top',
+      offset: [0, -6],
+      className: 'path-tooltip',
     });
 
     const condHTML = path.conditions?.length
@@ -140,6 +158,104 @@ document.querySelectorAll('input[name="tileLayer"]').forEach(radio => {
 document.getElementById('toggleFilters').addEventListener('click', () => {
   document.getElementById('filterPanel').classList.toggle('hidden');
 });
+
+// ── Locate me ─────────────────────────────────────────────────────────────────
+let locationMarker = null;
+let locationCircle = null;
+
+document.getElementById('btnLocate').addEventListener('click', () => {
+  if (!navigator.geolocation) return;
+  const btn = document.getElementById('btnLocate');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    ({ coords: { latitude: lat, longitude: lng, accuracy } }) => {
+      btn.textContent = '📍';
+      btn.disabled = false;
+
+      if (locationMarker) map.removeLayer(locationMarker);
+      if (locationCircle) map.removeLayer(locationCircle);
+
+      locationCircle = L.circle([lat, lng], {
+        radius: accuracy,
+        color: '#3b82f6', fillColor: '#93c5fd',
+        fillOpacity: 0.18, weight: 1.5,
+      }).addTo(map);
+
+      locationMarker = L.circleMarker([lat, lng], {
+        radius: 9, color: 'white', weight: 3,
+        fillColor: '#3b82f6', fillOpacity: 1,
+      }).bindPopup('Vous êtes ici').addTo(map);
+
+      map.setView([lat, lng], Math.max(map.getZoom(), 15));
+    },
+    () => { btn.textContent = '📍'; btn.disabled = false; }
+  );
+});
+
+// ── Search bar ────────────────────────────────────────────────────────────────
+let searchPin = null;
+let searchTimer = null;
+
+document.getElementById('mapSearchInput').addEventListener('input', e => {
+  const q = e.target.value.trim();
+  document.getElementById('mapSearchClear').classList.toggle('hidden', !q);
+  clearTimeout(searchTimer);
+  if (q.length < 3) { closeSearchResults(); return; }
+  searchTimer = setTimeout(() => doMapSearch(q), 380);
+});
+
+document.getElementById('mapSearchClear').addEventListener('click', () => {
+  document.getElementById('mapSearchInput').value = '';
+  document.getElementById('mapSearchClear').classList.add('hidden');
+  closeSearchResults();
+  if (searchPin) { map.removeLayer(searchPin); searchPin = null; }
+});
+
+document.getElementById('mapSearchInput').addEventListener('blur', () => {
+  setTimeout(closeSearchResults, 200);
+});
+
+async function doMapSearch(q) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&countrycodes=fr`,
+      { headers: { 'Accept-Language': 'fr' } }
+    );
+    const data = await res.json();
+    showMapSearchResults(data);
+  } catch {}
+}
+
+function showMapSearchResults(results) {
+  const el = document.getElementById('mapSearchResults');
+  if (!results.length) { closeSearchResults(); return; }
+  el.innerHTML = results.map(r => `
+    <div class="map-search-item" data-lat="${r.lat}" data-lon="${r.lon}">
+      <span class="search-item-name">${r.display_name.split(',').slice(0, 2).join(', ')}</span>
+      <span class="search-item-sub">${r.display_name.split(',').slice(2, 4).join(', ')}</span>
+    </div>
+  `).join('');
+  el.classList.remove('hidden');
+  el.querySelectorAll('.map-search-item').forEach(item => {
+    item.addEventListener('mousedown', () => {
+      const lat = parseFloat(item.dataset.lat);
+      const lng = parseFloat(item.dataset.lon);
+      document.getElementById('mapSearchInput').value =
+        item.querySelector('.search-item-name').textContent;
+      document.getElementById('mapSearchClear').classList.remove('hidden');
+      closeSearchResults();
+      if (searchPin) map.removeLayer(searchPin);
+      searchPin = L.marker([lat, lng]).addTo(map);
+      map.setView([lat, lng], 15);
+    });
+  });
+}
+
+function closeSearchResults() {
+  document.getElementById('mapSearchResults').classList.add('hidden');
+}
 
 // ── Carrefour labels ──────────────────────────────────────────────────────────
 let carrefourMarkers = [];

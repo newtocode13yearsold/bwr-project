@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1e4d14"/>
+  <!-- Tree silhouette -->
+  <polygon points="256,80 320,200 290,200 340,300 296,300 340,390 172,390 216,300 172,300 222,200 192,200" fill="#a3e635"/>
+  <rect x="236" y="390" width="40" height="46" rx="6" fill="#8bc34a"/>
+  <!-- BWR text -->
+  <text x="256" y="468" font-family="Arial Black, Arial, sans-serif" font-size="64" font-weight="900"
+    letter-spacing="3" fill="#a3e635" text-anchor="middle">BWR</text>
+</svg>

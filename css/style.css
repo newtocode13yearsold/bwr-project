@@ -528,6 +528,112 @@ body {
 }
 .popup-delete-btn:hover { background: #fca5a5; }
 
+/* ── Map search bar ── */
+.map-search-wrap {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: min(340px, calc(100vw - 100px));
+}
+
+.map-search-box {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+  padding: 0 10px;
+  gap: 6px;
+  height: 42px;
+}
+
+.map-search-icon { font-size: 1rem; color: #9ca3af; flex-shrink: 0; }
+
+.map-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: #1a2e12;
+  background: transparent;
+  min-width: 0;
+}
+.map-search-input::placeholder { color: #9ca3af; }
+
+.map-search-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 0.8rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.map-search-clear:hover { background: #f3f4f6; color: #374151; }
+
+.map-search-results {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.map-search-item {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid #f3f4f6;
+}
+.map-search-item:last-child { border-bottom: none; }
+.map-search-item:hover { background: #f0f7ec; }
+
+.search-item-name { font-size: 0.87rem; font-weight: 600; color: #1a2e12; }
+.search-item-sub  { font-size: 0.75rem; color: #9ca3af; margin-top: 1px; }
+
+/* ── Locate me button ── */
+.map-locate-btn {
+  position: absolute;
+  bottom: 88px;
+  right: 12px;
+  z-index: 1000;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: none;
+  background: white;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.15s;
+}
+.map-locate-btn:hover { background: #f0f7ec; transform: scale(1.08); }
+.map-locate-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+/* ── Path hover tooltip ── */
+.path-tooltip {
+  background: rgba(30, 77, 20, 0.9);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  white-space: nowrap;
+}
+.path-tooltip::before { display: none; }
+.leaflet-tooltip.path-tooltip { pointer-events: none; }
+
 /* ── Carrefour labels ── */
 .carrefour-label {
   background: rgba(255, 252, 240, 0.9);

@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1e4d14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>BWR — La carte qui simplifie ta vie</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/login.css" />
@@ -56,7 +61,20 @@
     </div>
   </div>
 
-  <div id="map"></div>
+  <div id="map">
+    <!-- Floating search bar -->
+    <div class="map-search-wrap" id="mapSearchWrap">
+      <div class="map-search-box">
+        <span class="map-search-icon">🔍</span>
+        <input type="text" id="mapSearchInput" class="map-search-input"
+          placeholder="Chercher un lieu…" autocomplete="off" />
+        <button class="map-search-clear hidden" id="mapSearchClear">✕</button>
+      </div>
+      <div class="map-search-results hidden" id="mapSearchResults"></div>
+    </div>
+    <!-- Locate me button -->
+    <button class="map-locate-btn" id="btnLocate" title="Ma position">📍</button>
+  </div>
 
   <div class="legend">
     <div class="legend-title">Légende</div>
@@ -74,5 +92,10 @@
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/map.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/bwr-project/sw.js').catch(() => {});
+    }
+  </script>
 </body>
 </html>
