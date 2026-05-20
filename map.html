@@ -24,7 +24,7 @@
     </div>
   </header>
 
-  <div class="filter-panel hidden" id="filterPanel">
+  <div class="filter-panel" id="filterPanel">
     <h3>Filtrer les chemins</h3>
     <div class="filter-group">
       <label class="filter-label">
@@ -45,18 +45,26 @@
       </label>
     </div>
     <hr />
-    <h3>Couche de carte</h3>
+    <h3>Fond de carte</h3>
     <div class="filter-group">
       <label class="filter-label">
-        <input type="radio" name="tileLayer" value="ign" checked /> IGN topographique
+        <input type="radio" name="tileLayer" value="plan" checked /> Plan
       </label>
       <label class="filter-label">
-        <input type="radio" name="tileLayer" value="satellite" /> Satellite IGN
+        <input type="radio" name="tileLayer" value="topo" /> Topographique
+      </label>
+      <label class="filter-label">
+        <input type="radio" name="tileLayer" value="satellite" /> Satellite
       </label>
     </div>
   </div>
 
-  <div id="map"></div>
+  <div id="map">
+    <div id="mapLoader" class="map-loader hidden">
+      <div class="loader-ring"></div>
+      <span>Chargement des chemins…</span>
+    </div>
+  </div>
 
   <div class="legend">
     <div class="legend-title">Légende</div>
