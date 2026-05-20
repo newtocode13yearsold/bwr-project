@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BWR — Planifier un trajet</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/login.css" />
+  <link rel="stylesheet" href="css/routes.css" />
+</head>
+<body class="routes-body">
+
+  <header class="header">
+    <div class="header-left">
+      <a href="map.html" class="logo">BWR</a>
+      <span class="tagline">Planifier un trajet</span>
+    </div>
+    <div class="header-right">
+      <div class="user-menu" id="userMenu"></div>
+    </div>
+  </header>
+
+  <div class="planner-layout">
+
+    <!-- ── Sidebar ── -->
+    <aside class="planner-sidebar">
+
+      <!-- Step 1: Mode -->
+      <div class="step" id="step1">
+        <div class="step-header">
+          <span class="step-number">1</span>
+          <span class="step-title">Type de trajet</span>
+        </div>
+        <div class="mode-cards">
+          <button class="mode-card" data-mode="loop">
+            <span class="mode-icon">🔄</span>
+            <strong>Boucle</strong>
+            <small>Revenir au point de départ</small>
+          </button>
+          <button class="mode-card" data-mode="atob">
+            <span class="mode-icon">➡️</span>
+            <strong>Point A → B</strong>
+            <small>D'un endroit à un autre</small>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Options -->
+      <div class="step locked" id="step2">
+        <div class="step-header">
+          <span class="step-number">2</span>
+          <span class="step-title">Préférences</span>
+        </div>
+
+        <div class="option-group">
+          <label class="option-label">Type de chemin</label>
+          <div class="pathtype-grid">
+            <button class="pathtype-btn active" data-type="foot">🌲<span>Forestier</span></button>
+            <button class="pathtype-btn" data-type="bike">🚴<span>Cyclable</span></button>
+            <button class="pathtype-btn" data-type="champs">🌾<span>Champs</span></button>
+            <button class="pathtype-btn" data-type="mix">🗺️<span>Mix</span></button>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <label class="option-label">Difficulté</label>
+          <div class="difficulty-group">
+            <button class="diff-btn active" data-diff="easy"><span class="diff-dot easy"></span> Facile</button>
+            <button class="diff-btn" data-diff="medium"><span class="diff-dot medium"></span> Moyen</button>
+            <button class="diff-btn" data-diff="hard"><span class="diff-dot hard"></span> Difficile</button>
+          </div>
+        </div>
+
+        <div class="option-group" id="distanceGroup" style="display:none">
+          <label class="option-label">Distance souhaitée</label>
+          <div class="distance-input-row">
+            <input type="number" id="distanceInput" class="input-field distance-input"
+              min="1" max="100" step="0.5" value="10" />
+            <span class="distance-unit">km</span>
+          </div>
+          <p class="distance-hint">Entre 1 et 100 km</p>
+        </div>
+      </div>
+
+      <!-- Step 3: Points -->
+      <div class="step locked" id="step3">
+        <div class="step-header">
+          <span class="step-number">3</span>
+          <span class="step-title" id="step3Title">Choisir le départ</span>
+        </div>
+
+        <!-- Address search + my location -->
+        <div class="search-row">
+          <div class="search-wrap">
+            <input type="text" id="addressInput" class="input-field search-input"
+              placeholder="Chercher un lieu..." autocomplete="off" />
+            <div class="search-results hidden" id="searchResults"></div>
+          </div>
+          <button class="btn-locate" id="btnLocate" title="Utiliser ma position">📍</button>
+        </div>
+
+        <p class="step-hint" id="step3Hint">Ou clique directement sur la carte.</p>
+        <div id="pointStatus" class="point-status"></div>
+      </div>
+
+      <!-- Step 4: Generate -->
+      <div class="step locked" id="step4">
+        <div class="step-header">
+          <span class="step-number">4</span>
+          <span class="step-title">Générer</span>
+        </div>
+        <button class="btn-generate" id="btnGenerate" disabled>Calculer le trajet</button>
+      </div>
+
+      <!-- Contact -->
+      <div class="sidebar-contact">
+        <a href="mailto:ciril8596@gmail.com">✉ ciril8596@gmail.com</a>
+      </div>
+
+      <!-- Results -->
+      <div class="route-result hidden" id="routeResult">
+        <div class="result-stats">
+          <div class="stat">
+            <span class="stat-icon">📏</span>
+            <div><strong id="statDistance">—</strong><small id="statDistanceSub"></small></div>
+          </div>
+          <div class="stat">
+            <span class="stat-icon">⏱</span>
+            <div><strong id="statDuration">—</strong><small>Durée estimée</small></div>
+          </div>
+          <div class="stat">
+            <span class="stat-icon">⛰</span>
+            <div><strong id="statAscent">—</strong><small>Dénivelé +/-</small></div>
+          </div>
+        </div>
+
+        <div class="elevation-chart-wrap hidden" id="elevationWrap">
+          <div class="elevation-label">Profil altimétrique</div>
+          <div id="elevationChart"></div>
+        </div>
+
+        <div class="result-badges" id="resultBadges"></div>
+        <div class="route-resume" id="routeResume"></div>
+        <div id="distanceWarning" class="distance-warning hidden"></div>
+
+        <div class="result-actions">
+          <button class="btn-gpx" id="btnGPX">⬇ GPX</button>
+          <button class="btn-reset" id="btnReset">← Nouveau trajet</button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ── Map ── -->
+    <div id="map">
+      <!-- Layer switcher -->
+      <div class="map-layers" id="mapLayers">
+        <button class="layer-btn active" data-layer="ign">IGN</button>
+        <button class="layer-btn" data-layer="osm">OSM</button>
+        <button class="layer-btn" data-layer="satellite">Satellite</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/routes.js"></script>
+</body>
+</html>

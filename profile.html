@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BWR — Mon profil</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/login.css" />
+  <link rel="stylesheet" href="css/profile.css" />
+</head>
+<body class="profile-body">
+
+  <header class="header">
+    <div class="header-left">
+      <a href="map.html" class="logo">BWR</a>
+      <span class="tagline">Mon profil</span>
+    </div>
+    <div class="header-right">
+      <div class="user-menu" id="userMenu"></div>
+    </div>
+  </header>
+
+  <main class="profile-main">
+
+    <!-- Avatar & name hero -->
+    <section class="profile-hero">
+      <div class="avatar-ring" id="avatarRing">
+        <div class="avatar-big" id="avatarBig"></div>
+      </div>
+      <div class="hero-info">
+        <h1 class="hero-name" id="heroName">…</h1>
+        <span class="role-badge" id="roleBadge"></span>
+        <p class="hero-since" id="heroSince"></p>
+      </div>
+      <!-- Avatar colour picker -->
+      <div class="color-picker-row">
+        <span class="color-label">Couleur de l'avatar</span>
+        <div class="color-swatches" id="colorSwatches"></div>
+      </div>
+    </section>
+
+    <div class="profile-grid">
+
+      <!-- ── Card: Informations personnelles ── -->
+      <div class="profile-card">
+        <div class="card-header">
+          <span class="card-icon">👤</span>
+          <h2 class="card-title">Informations personnelles</h2>
+        </div>
+
+        <form class="profile-form" id="formInfo" novalidate>
+          <div class="field">
+            <label for="inputName">Nom complet</label>
+            <input type="text" id="inputName" class="input-field" placeholder="Ton nom" required />
+          </div>
+          <div class="field">
+            <label for="inputEmail">Adresse e-mail</label>
+            <input type="email" id="inputEmail" class="input-field" placeholder="ton@email.com" required />
+          </div>
+          <div id="infoMsg"></div>
+          <button type="submit" class="btn-save">Enregistrer les modifications</button>
+        </form>
+      </div>
+
+      <!-- ── Card: Changer le mot de passe ── -->
+      <div class="profile-card">
+        <div class="card-header">
+          <span class="card-icon">🔒</span>
+          <h2 class="card-title">Mot de passe</h2>
+        </div>
+
+        <form class="profile-form" id="formPassword" novalidate>
+          <div class="field">
+            <label for="inputOldPw">Mot de passe actuel</label>
+            <input type="password" id="inputOldPw" class="input-field" placeholder="••••••••" required />
+          </div>
+          <div class="field">
+            <label for="inputNewPw">Nouveau mot de passe</label>
+            <input type="password" id="inputNewPw" class="input-field" placeholder="••••••••" required />
+            <span class="field-hint">Au moins 6 caractères</span>
+          </div>
+          <div class="field">
+            <label for="inputConfirmPw">Confirmer le nouveau mot de passe</label>
+            <input type="password" id="inputConfirmPw" class="input-field" placeholder="••••••••" required />
+          </div>
+          <div id="pwMsg"></div>
+          <button type="submit" class="btn-save">Changer le mot de passe</button>
+        </form>
+      </div>
+
+      <!-- ── Card: Statistiques ── -->
+      <div class="profile-card card-stats">
+        <div class="card-header">
+          <span class="card-icon">📊</span>
+          <h2 class="card-title">Mon activité</h2>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-block">
+            <span class="stat-num" id="statRoutes">—</span>
+            <span class="stat-lbl">Trajets planifiés</span>
+          </div>
+          <div class="stat-block">
+            <span class="stat-num" id="statKm">—</span>
+            <span class="stat-lbl">Kilomètres générés</span>
+          </div>
+          <div class="stat-block">
+            <span class="stat-num" id="statPaths">—</span>
+            <span class="stat-lbl">Chemins disponibles</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Card: Compte ── -->
+      <div class="profile-card card-danger">
+        <div class="card-header">
+          <span class="card-icon">⚙️</span>
+          <h2 class="card-title">Compte</h2>
+        </div>
+        <div class="account-actions">
+          <a href="map.html" class="btn-action btn-map">🗺 Retour à la carte</a>
+          <a href="routes.html" class="btn-action btn-routes">🧭 Planifier un trajet</a>
+          <button class="btn-action btn-logout" id="btnLogoutProfile">Se déconnecter</button>
+          <button class="btn-action btn-delete" id="btnDelete">Supprimer mon compte</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Delete confirmation modal -->
+  <div class="modal-overlay hidden" id="deleteModal">
+    <div class="modal-box">
+      <h3 class="modal-title">Supprimer le compte ?</h3>
+      <p class="modal-body">Cette action est <strong>irréversible</strong>. Ton compte et toutes tes données seront définitivement supprimés.</p>
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" id="btnCancelDelete">Annuler</button>
+        <button class="btn-modal-confirm" id="btnConfirmDelete">Oui, supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/profile.js"></script>
+</body>
+</html>

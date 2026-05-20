@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BWR — Admin</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/login.css" />
+</head>
+<body>
+
+  <div id="adminPanel">
+
+    <header class="header">
+      <div class="header-left">
+        <span class="logo">BWR</span>
+        <span class="tagline admin-tag">Admin</span>
+      </div>
+      <div class="header-right">
+        <button class="btn-icon" id="btnSelectPath">🗺 Sélectionner un chemin</button>
+        <button class="btn-icon" id="btnDrawPath">✏ Dessiner</button>
+        <div class="user-menu" id="userMenu"></div>
+      </div>
+    </header>
+
+    <!-- New path form -->
+    <div id="pathForm" class="path-form hidden">
+      <h3>Nouveau chemin</h3>
+      <label>Nom du chemin
+        <input type="text" id="pathName" class="input-field" placeholder="Ex: Chemin du moulin" />
+      </label>
+      <label>Type de chemin
+        <select id="pathType" class="input-field">
+          <option value="foot">🌲 Chemin forestier</option>
+          <option value="bike">🚴 Piste cyclable</option>
+        </select>
+      </label>
+      <label>État
+        <select id="pathStatus" class="input-field">
+          <option value="easy">Facile (vert)</option>
+          <option value="medium">Moyen (orange)</option>
+          <option value="hard">Difficile (rouge)</option>
+          <option value="not_passable">Impraticable (gris)</option>
+        </select>
+      </label>
+      <label>Conditions du chemin</label>
+      <div class="condition-tags" id="newConditions">
+        <button type="button" class="cond-tag" data-cond="dry">✅ Sec</button>
+        <button type="button" class="cond-tag" data-cond="muddy">⚠️ Boueux</button>
+        <button type="button" class="cond-tag" data-cond="fallen">❌ Arbres tombés</button>
+        <button type="button" class="cond-tag" data-cond="mtb">🚴 Idéal MTB</button>
+        <button type="button" class="cond-tag" data-cond="running">🏃 Running</button>
+        <button type="button" class="cond-tag" data-cond="family">👨‍👩‍👧 Famille</button>
+      </div>
+      <label>Notes (optionnel)
+        <textarea id="pathNotes" class="input-field" placeholder="Surface, obstacles, saison..." rows="3"></textarea>
+      </label>
+      <div class="form-buttons">
+        <button class="btn-primary" id="btnSavePath">Enregistrer</button>
+        <button class="btn-secondary" id="btnCancelPath">Annuler</button>
+      </div>
+    </div>
+
+    <!-- Edit form -->
+    <div id="editForm" class="path-form hidden">
+      <h3>Modifier le chemin</h3>
+      <label>Nom du chemin
+        <input type="text" id="editName" class="input-field" />
+      </label>
+      <label>Type de chemin
+        <select id="editType" class="input-field">
+          <option value="foot">🌲 Chemin forestier</option>
+          <option value="bike">🚴 Piste cyclable</option>
+        </select>
+      </label>
+      <label>État
+        <select id="editStatus" class="input-field">
+          <option value="easy">Facile (vert)</option>
+          <option value="medium">Moyen (orange)</option>
+          <option value="hard">Difficile (rouge)</option>
+          <option value="not_passable">Impraticable (gris)</option>
+        </select>
+      </label>
+      <label>Conditions du chemin</label>
+      <div class="condition-tags" id="editConditions">
+        <button type="button" class="cond-tag" data-cond="dry">✅ Sec</button>
+        <button type="button" class="cond-tag" data-cond="muddy">⚠️ Boueux</button>
+        <button type="button" class="cond-tag" data-cond="fallen">❌ Arbres tombés</button>
+        <button type="button" class="cond-tag" data-cond="mtb">🚴 Idéal MTB</button>
+        <button type="button" class="cond-tag" data-cond="running">🏃 Running</button>
+        <button type="button" class="cond-tag" data-cond="family">👨‍👩‍👧 Famille</button>
+      </div>
+      <label>Notes
+        <textarea id="editNotes" class="input-field" rows="3"></textarea>
+      </label>
+      <div class="form-buttons">
+        <button class="btn-primary" id="btnUpdatePath">Mettre à jour</button>
+        <button class="btn-danger" id="btnDeletePath">Supprimer</button>
+        <button class="btn-secondary" id="btnCancelEdit">Annuler</button>
+      </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="legend">
+      <div class="legend-title">Légende</div>
+      <div class="legend-item"><span class="dot easy"></span> Facile</div>
+      <div class="legend-item"><span class="dot medium"></span> Moyen</div>
+      <div class="legend-item"><span class="dot hard"></span> Difficile</div>
+      <div class="legend-item"><span class="dot not_passable"></span> Impraticable</div>
+    </div>
+
+    <div id="adminStatus" class="admin-status"></div>
+
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

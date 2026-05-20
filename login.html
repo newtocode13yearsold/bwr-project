@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BWR — Connexion</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/login.css" />
+</head>
+<body class="login-page">
+
+  <div class="login-bg">
+    <div class="login-card">
+
+      <a href="index.html" class="back-link">← Retour à l'accueil</a>
+
+      <div class="login-logo">BWR</div>
+      <p class="login-sub">La carte qui simplifie ta vie</p>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" id="tabLogin">Se connecter</button>
+        <button class="tab" id="tabSignup">S'inscrire</button>
+      </div>
+
+      <!-- Login form -->
+      <form id="loginForm" class="auth-form">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="loginEmail" class="input-field" placeholder="ton@email.com" required />
+        </div>
+        <div class="field">
+          <label>Mot de passe</label>
+          <input type="password" id="loginPassword" class="input-field" placeholder="••••••••" required />
+        </div>
+        <div id="loginError" class="form-error hidden"></div>
+        <button type="submit" class="btn-primary">Se connecter</button>
+      </form>
+
+      <!-- Signup form -->
+      <form id="signupForm" class="auth-form hidden">
+        <div class="field">
+          <label>Prénom et nom</label>
+          <input type="text" id="signupName" class="input-field" placeholder="Thomas Legros" required />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="signupEmail" class="input-field" placeholder="ton@email.com" required />
+        </div>
+        <div class="field">
+          <label>Mot de passe</label>
+          <input type="password" id="signupPassword" class="input-field" placeholder="6 caractères minimum" required />
+        </div>
+        <div id="signupError" class="form-error hidden"></div>
+        <div id="signupSuccess" class="form-success hidden"></div>
+        <button type="submit" class="btn-primary">Créer mon compte</button>
+      </form>
+
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

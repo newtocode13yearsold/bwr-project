@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BWR — Balades en forêt de Compiègne</title>
+  <meta name="description" content="Explorez les chemins de la forêt de Compiègne. Carte interactive, planification de trajets et chemins vérifiés sur le terrain." />
+  <link rel="stylesheet" href="css/home.css" />
+</head>
+<body>
+
+  <!-- ── Navigation ── -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="map.html" class="nav-logo">BWR</a>
+      <div class="nav-links">
+        <a href="#features">Fonctionnalités</a>
+        <a href="#about">À propos</a>
+        <a href="#contact">Contact</a>
+      </div>
+      <div class="nav-cta">
+        <a href="login.html" class="btn-nav-login">Connexion</a>
+        <a href="map.html" class="btn-nav-map">Voir la carte</a>
+      </div>
+      <button class="nav-burger" id="navBurger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <!-- Mobile menu -->
+    <div class="nav-mobile hidden" id="navMobile">
+      <a href="#features">Fonctionnalités</a>
+      <a href="#about">À propos</a>
+      <a href="#contact">Contact</a>
+      <a href="login.html">Connexion</a>
+      <a href="map.html" class="mobile-map-btn">Voir la carte →</a>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <div class="hero-badge">🌲 Forêt de Compiègne</div>
+      <h1 class="hero-title">
+        Explorez la forêt<br />
+        <span class="hero-accent">comme jamais avant.</span>
+      </h1>
+      <p class="hero-sub">
+        BWR vous donne accès à une carte interactive des chemins forestiers, vérifiés et mis à jour sur le terrain. Planifiez vos balades, téléchargez vos trajets en GPX et partez l'esprit tranquille.
+      </p>
+      <div class="hero-actions">
+        <a href="map.html" class="btn-hero-primary">Accéder à la carte →</a>
+        <a href="login.html" class="btn-hero-secondary">Créer un compte</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <strong>Forêt de Compiègne</strong>
+          <span>14 500 ha de forêt</span>
+        </div>
+        <div class="hero-stat-sep"></div>
+        <div class="hero-stat">
+          <strong>Chemins vérifiés</strong>
+          <span>Mis à jour régulièrement</span>
+        </div>
+        <div class="hero-stat-sep"></div>
+        <div class="hero-stat">
+          <strong>GPX inclus</strong>
+          <span>Exportez vos trajets</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="map-mockup">
+        <div class="mockup-bar">
+          <div class="mockup-dot red"></div>
+          <div class="mockup-dot yellow"></div>
+          <div class="mockup-dot green"></div>
+          <span class="mockup-title">Carte BWR</span>
+        </div>
+        <div class="mockup-map">
+          <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg" class="mockup-svg">
+            <!-- Simulated forest path lines -->
+            <rect width="320" height="200" fill="#e8f5e3"/>
+            <!-- Forest zones -->
+            <rect x="0" y="0" width="140" height="90" rx="0" fill="#c8e6b0" opacity="0.5"/>
+            <rect x="160" y="20" width="160" height="120" rx="0" fill="#c8e6b0" opacity="0.5"/>
+            <rect x="40" y="110" width="200" height="90" rx="0" fill="#c8e6b0" opacity="0.5"/>
+            <!-- Paths -->
+            <path d="M20 60 Q80 40 140 70 Q180 90 240 60 Q280 45 310 50" stroke="#22c55e" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M60 100 Q100 80 150 100 Q200 120 260 100 Q290 88 310 90" stroke="#22c55e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M10 140 Q60 120 110 140 Q160 158 200 140 Q250 120 310 130" stroke="#f97316" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M50 170 Q110 155 180 170 Q230 180 300 160" stroke="#22c55e" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M140 10 Q130 60 140 110 Q148 155 140 190" stroke="#ef4444" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M200 30 Q195 80 200 130 Q204 165 200 190" stroke="#22c55e" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <!-- Start marker -->
+            <circle cx="60" cy="100" r="6" fill="#1e4d14" stroke="white" stroke-width="2"/>
+            <!-- End marker -->
+            <circle cx="260" cy="100" r="6" fill="#dc2626" stroke="white" stroke-width="2"/>
+            <!-- Active route highlight -->
+            <path d="M60 100 Q100 80 150 100 Q200 120 260 100" stroke="#1e4d14" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8"/>
+          </svg>
+          <div class="mockup-legend">
+            <div class="ml-item"><span class="ml-dot easy"></span>Facile</div>
+            <div class="ml-item"><span class="ml-dot medium"></span>Moyen</div>
+            <div class="ml-item"><span class="ml-dot hard"></span>Difficile</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Features ── -->
+  <section class="features" id="features">
+    <div class="section-inner">
+      <div class="section-label">Ce que vous pouvez faire</div>
+      <h2 class="section-title">Tout ce qu'il vous faut pour explorer</h2>
+      <div class="features-grid">
+
+        <div class="feature-card">
+          <div class="feature-icon-wrap green">
+            <span class="feature-icon">🗺️</span>
+          </div>
+          <h3>Carte interactive</h3>
+          <p>Visualisez tous les chemins de la forêt de Compiègne sur une carte IGN haute résolution. Filtrez par difficulté et changez de vue (IGN, satellite, OpenStreetMap).</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-wrap blue">
+            <span class="feature-icon">🧭</span>
+          </div>
+          <h3>Planifier un trajet</h3>
+          <p>Indiquez votre point de départ et la distance souhaitée. Le planificateur calcule automatiquement une boucle ou un trajet A → B, uniquement sur des chemins vérifiés.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-wrap orange">
+            <span class="feature-icon">⬇️</span>
+          </div>
+          <h3>Export GPX</h3>
+          <p>Téléchargez vos itinéraires au format GPX et importez-les dans n'importe quelle montre GPS, Garmin, Strava ou Komoot pour naviguer sans connexion.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-wrap purple">
+            <span class="feature-icon">⛰️</span>
+          </div>
+          <h3>Profil altimétrique</h3>
+          <p>Consultez le profil d'élévation de chaque trajet généré. Dénivelé positif et négatif, altitude min/max — tout pour préparer votre sortie.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-wrap teal">
+            <span class="feature-icon">✅</span>
+          </div>
+          <h3>Chemins vérifiés</h3>
+          <p>Chaque chemin est renseigné manuellement après vérification sur le terrain. Forestiers, cyclables, praticables ou impraticables — vous savez à quoi vous attendre.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-wrap red">
+            <span class="feature-icon">📍</span>
+          </div>
+          <h3>Géolocalisation</h3>
+          <p>Utilisez votre position GPS pour démarrer un trajet depuis là où vous êtes. Recherchez aussi n'importe quel lieu par son adresse.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How it works ── -->
+  <section class="howto">
+    <div class="section-inner">
+      <div class="section-label">Comment ça marche</div>
+      <h2 class="section-title">Prêt en 3 étapes</h2>
+      <div class="steps-row">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <h3>Créez un compte</h3>
+          <p>Inscription gratuite en quelques secondes. Aucun abonnement, aucune publicité.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <h3>Choisissez un trajet</h3>
+          <p>Parcourez la carte ou utilisez le planificateur pour générer un itinéraire sur mesure.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <h3>Partez explorer</h3>
+          <p>Téléchargez le GPX et profitez de la forêt. C'est aussi simple que ça.</p>
+        </div>
+      </div>
+      <div class="howto-cta">
+        <a href="login.html" class="btn-howto">Commencer gratuitement</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── About ── -->
+  <section class="about" id="about">
+    <div class="section-inner">
+      <div class="section-label">L'équipe</div>
+      <h2 class="section-title" style="margin-bottom:48px">Qui sommes-nous ?</h2>
+      <div class="team-grid">
+
+        <div class="team-card">
+          <div class="team-avatar" style="background:linear-gradient(135deg,#1e4d14,#2d6b1f);color:#a3e635">TL</div>
+          <div class="team-info">
+            <h3>Thomas Legros</h3>
+            <span class="team-role">Co-fondateur &amp; développeur</span>
+            <p>Thomas est à l'origine du projet. Il a conçu et développé la plateforme — la carte, le planificateur de trajets, et tout le reste — pour rendre la forêt de Compiègne plus accessible à tous.</p>
+          </div>
+        </div>
+
+        <div class="team-card">
+          <div class="team-avatar" style="background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#bfdbfe">EM</div>
+          <div class="team-info">
+            <h3>Emilien</h3>
+            <span class="team-role">Co-fondateur</span>
+            <p>Emilien co-fonde BWR et contribue au projet depuis le début. Camarade de classe de Thomas, il partage la même passion pour la forêt et la vision derrière BWR.</p>
+          </div>
+        </div>
+
+        <div class="team-card">
+          <div class="team-avatar" style="background:linear-gradient(135deg,#b45309,#d97706);color:#fde68a">CH</div>
+          <div class="team-info">
+            <h3>Charles</h3>
+            <span class="team-role">Vérificateur terrain</span>
+            <p>Charles parcourt la forêt pour vérifier chaque chemin sur le terrain : praticabilité, type de surface, état du sentier. Sans lui, la carte ne serait pas aussi fiable.</p>
+          </div>
+        </div>
+
+      </div>
+      <div class="about-bottom">
+        <a href="mailto:ciril8596@gmail.com" class="btn-about-contact">Nous contacter</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Contact ── -->
+  <section class="contact" id="contact">
+    <div class="section-inner contact-inner">
+      <div class="contact-badge">✉️</div>
+      <h2 class="contact-title">Une question ? Une suggestion ?</h2>
+      <p class="contact-sub">
+        Vous avez repéré un chemin manquant, une erreur sur la carte, ou vous souhaitez simplement me contacter — écrivez-moi directement.
+      </p>
+      <a href="mailto:ciril8596@gmail.com" class="btn-contact-email">
+        ciril8596@gmail.com
+      </a>
+      <p class="contact-hint">Je réponds généralement sous 24 à 48 h.</p>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span class="footer-logo">BWR</span>
+        <span class="footer-tagline">Balades en forêt de Compiègne</span>
+      </div>
+      <div class="footer-links">
+        <a href="map.html">Carte</a>
+        <a href="routes.html">Planifier</a>
+        <a href="login.html">Connexion</a>
+        <a href="mailto:ciril8596@gmail.com">Contact</a>
+      </div>
+      <div class="footer-right">
+        <span>© 2025 Thomas Legros</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Sticky nav shadow on scroll
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 20);
+    });
+
+    // Mobile burger menu
+    document.getElementById('navBurger').addEventListener('click', () => {
+      document.getElementById('navMobile').classList.toggle('hidden');
+    });
+
+    // Close mobile menu on link click
+    document.querySelectorAll('.nav-mobile a').forEach(a => {
+      a.addEventListener('click', () =>
+        document.getElementById('navMobile').classList.add('hidden'));
+    });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+      });
+    });
+
+    // Fade-in on scroll
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('visible');
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.feature-card, .step-item, .about-inner, .contact-inner').forEach(el => {
+      el.classList.add('fade-up');
+      observer.observe(el);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "bwr-project",
+  "version": "1.0.0",
+  "description": "BWR — La carte qui simplifie ta vie",
+  "scripts": {
+    "dev:worker": "wrangler dev",
+    "deploy:worker": "wrangler deploy",
+    "kv:create": "wrangler kv:namespace create BWR_KV"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
