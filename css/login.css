@@ -185,3 +185,24 @@
 }
 
 .user-dropdown .dropdown-logout { color: #dc2626; }
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 28px 20px;
+    border-radius: 16px;
+  }
+
+  /* Prevent iOS zoom on input focus — must be >= 16px */
+  .input-field { font-size: 1rem !important; }
+
+  .tab { font-size: 0.85rem; padding: 8px; }
+
+  /* Bigger submit button */
+  .btn-primary { min-height: 50px; font-size: 1rem; }
+
+  /* Dropdown full width on small screens */
+  .user-dropdown { min-width: 140px; }
+  .user-dropdown a,
+  .user-dropdown button { padding: 14px 16px; font-size: 1rem; }
+}

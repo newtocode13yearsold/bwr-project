@@ -530,3 +530,94 @@ body {
 
 /* ── Utility ── */
 .hidden { display: none !important; }
+
+/* ════════════════════════════════════════════════
+   MOBILE — all pages
+════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+
+  /* Header — hide tagline, keep logo + buttons */
+  .tagline { display: none; }
+
+  .header {
+    padding: 0 12px;
+    height: 52px;
+    gap: 6px;
+  }
+
+  .header-right { gap: 5px; }
+
+  .btn-icon {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+
+  /* Larger touch targets for inputs and buttons */
+  .input-field {
+    font-size: 1rem;       /* prevents iOS auto-zoom on focus */
+    padding: 12px 14px;
+    min-height: 44px;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    padding: 13px 16px;
+    min-height: 44px;
+    font-size: 0.95rem;
+  }
+
+  /* Filter panel — full-width sheet from top */
+  .filter-panel {
+    left: 8px;
+    right: 8px;
+    top: 58px;
+    min-width: 0;
+    border-radius: 14px;
+  }
+
+  .filter-label { font-size: 1rem; padding: 4px 0; }
+  .filter-check { width: 18px; height: 18px; }
+
+  /* Legend — smaller and tucked in corner */
+  .legend {
+    bottom: 80px;
+    right: 8px;
+    padding: 8px 12px;
+    font-size: 0.78rem;
+  }
+
+  /* Contact chip — hide on mobile to save space */
+  .contact-chip { display: none; }
+
+  /* Path count pill — move up above legend */
+  .path-count { bottom: 72px; }
+
+  /* Admin path form — full width at bottom */
+  .path-form {
+    left: 8px;
+    right: 8px;
+    top: auto;
+    bottom: 0;
+    border-radius: 16px 16px 0 0;
+    max-height: 80vh;
+    overflow-y: auto;
+    min-width: 0;
+  }
+
+  /* Condition tags — wrap nicely */
+  .cond-tag {
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    min-height: 40px;
+  }
+
+  /* Popup — bigger text & buttons for fat fingers */
+  .leaflet-popup-content { min-width: 220px; }
+  .color-btn { width: 34px; height: 34px; }
+  .popup-edit-btn, .popup-delete-btn { min-height: 40px; }
+
+  /* User dropdown — wider on mobile */
+  .user-dropdown { min-width: 160px; right: 0; }
+  .user-btn { padding: 5px 10px; font-size: 0.8rem; }
+}

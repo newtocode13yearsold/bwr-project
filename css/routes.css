@@ -511,43 +511,85 @@
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .routes-body { overflow: auto; }
+  .routes-body { overflow: hidden; }
 
   .planner-layout {
     flex-direction: column;
+    height: calc(100vh - 52px);
   }
 
-  .planner-sidebar {
-    width: 100%;
-    min-width: 0;
-    max-height: 50vh;
-    overflow-y: auto;
-    border-right: none;
-    border-bottom: 2px solid #e2e8da;
-    order: 2;
-  }
-
+  /* Map takes top 55% */
   .planner-layout #map {
     order: 1;
-    height: 50vh;
+    height: 55vh;
     flex: none;
   }
 
-  .result-stats {
-    flex-direction: column;
-  }
-
-  .stat {
+  /* Sidebar is a scrollable bottom sheet — 45% */
+  .planner-sidebar {
+    order: 2;
     width: 100%;
+    min-width: 0;
+    flex: 1;
+    max-height: 45vh;
+    overflow-y: auto;
+    border-right: none;
+    border-top: 2px solid #e2e8da;
+    /* Scroll snap feel */
+    -webkit-overflow-scrolling: touch;
   }
 
+  /* Steps side by side on mobile — horizontal scroll */
+  .step {
+    padding: 14px 16px;
+  }
+
+  /* Mode cards horizontal */
+  .mode-cards {
+    flex-direction: row;
+  }
+  .mode-card {
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+    padding: 10px 8px;
+  }
+  .mode-card strong { font-size: 0.85rem; }
+  .mode-card small  { font-size: 0.7rem; }
+
+  /* Path type grid stays 2-col but smaller */
+  .pathtype-btn { padding: 8px 4px; font-size: 1.1rem; }
+
+  /* Difficulty pills */
+  .diff-btn { padding: 8px 4px; font-size: 0.75rem; }
+
+  /* Result stats — vertical stack */
+  .result-stats { flex-direction: column; gap: 8px; }
+
+  /* Layer switcher */
   .map-layers {
     top: 8px;
     right: 8px;
   }
+  .layer-btn { padding: 5px 9px; font-size: 0.72rem; }
 
-  .layer-btn {
-    padding: 5px 9px;
-    font-size: 0.75rem;
+  /* Bigger touch targets */
+  .btn-generate {
+    padding: 16px;
+    font-size: 1rem;
+    min-height: 52px;
   }
+
+  .btn-locate {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Search input — prevent iOS zoom */
+  .search-input { font-size: 1rem; }
+
+  /* Elevation chart smaller */
+  .elevation-chart-wrap { padding: 8px; }
 }
