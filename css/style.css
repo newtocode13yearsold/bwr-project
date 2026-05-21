@@ -634,37 +634,46 @@ body {
 .path-tooltip::before { display: none; }
 .leaflet-tooltip.path-tooltip { pointer-events: none; }
 
-/* ── Carrefour markers (dot + name) ── */
+/* ── Carrefour markers (dot + name) — classic French cartographic style ── */
 .carrefour-marker {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   pointer-events: none;
   white-space: nowrap;
+  /* fade in smoothly when they appear */
+  animation: carrefour-fade-in 0.25s ease-out;
+}
+
+@keyframes carrefour-fade-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 .carrefour-dot {
-  width: 9px;
-  height: 9px;
-  background: #b45309;
-  border: 2px solid white;
+  width: 6px;
+  height: 6px;
+  background: #1e3a5f;
+  border: 1.5px solid white;
   border-radius: 50%;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.45);
   flex-shrink: 0;
 }
 
 .carrefour-name {
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: #431407;
-  letter-spacing: 0.3px;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  /* white halo so the label is readable on any background */
+  /* IGN-style label: italic serif, like real French topographic maps */
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e3a5f;
+  letter-spacing: 0.15px;
+  /* dense white halo so the label is readable on any background */
   text-shadow:
-    1px  0   0 white, -1px  0   0 white,
-    0    1px 0 white,  0   -1px 0 white,
-    1px  1px 0 white, -1px  1px 0 white,
-    1px -1px 0 white, -1px -1px 0 white;
+     1px  0   2px white,  -1px  0   2px white,
+     0    1px 2px white,   0   -1px 2px white,
+     1.5px 1.5px 2px white,-1.5px 1.5px 2px white,
+     1.5px -1.5px 2px white,-1.5px -1.5px 2px white;
 }
 
 /* ── Utility ── */

@@ -258,58 +258,35 @@ function closeSearchResults() {
 }
 
 // ── Carrefour labels ──────────────────────────────────────────────────────────
-// Fetch the entire Forêt de Compiègne once at startup — then markers are
-// always on the map and appear instantly as you pan.
+// Data is hardcoded in js/carrefours.js (CARREFOURS array) — zero network
+// request, markers appear at the same instant as the map.
 const carrefourLayer = L.layerGroup();
 
-map.on('zoomend', () => {
-  if (map.getZoom() >= 12) carrefourLayer.addTo(map);
-  else map.removeLayer(carrefourLayer);
+// Build all markers once
+CARREFOURS.forEach(c => {
+  carrefourLayer.addLayer(L.marker([c.lat, c.lon], {
+    icon: L.divIcon({
+      className: 'carrefour-marker',
+      html: `<span class="carrefour-dot"></span><span class="carrefour-name">${c.name}</span>`,
+      iconAnchor: [5, 5],
+      iconSize: null,
+    }),
+    interactive: false,
+    zIndexOffset: 500,
+  }));
 });
 
-async function loadCarrefours() {
-  // Use sessionStorage so the second visit is instant too
-  let elements;
-  const cached = sessionStorage.getItem('bwr_carrefours');
-  if (cached) {
-    elements = JSON.parse(cached);
+function updateCarrefourVisibility() {
+  // Hide when zoomed out — names are unreadable below this level
+  if (map.getZoom() >= 14) {
+    if (!map.hasLayer(carrefourLayer)) carrefourLayer.addTo(map);
   } else {
-    // Bounding box covering the whole Forêt de Compiègne
-    const bbox = '49.28,2.72,49.50,3.10';
-    const query = `[out:json][timeout:15];node["name"~"carrefour",i](${bbox});out;`;
-    try {
-      const res = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST', body: query,
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      elements = data.elements;
-      sessionStorage.setItem('bwr_carrefours', JSON.stringify(elements));
-    } catch { return; }
+    if (map.hasLayer(carrefourLayer)) map.removeLayer(carrefourLayer);
   }
-
-  // Deduplicate: keep only the first occurrence of each name
-  const seen = new Set();
-  elements.forEach(el => {
-    const name = el.tags?.name;
-    if (!name || seen.has(name)) return;
-    seen.add(name);
-
-    carrefourLayer.addLayer(L.marker([el.lat, el.lon], {
-      icon: L.divIcon({
-        className: 'carrefour-marker',
-        html: `<div class="carrefour-dot"></div><span class="carrefour-name">${name}</span>`,
-        iconAnchor: [4, 4],
-        iconSize: null,
-      }),
-      interactive: false,
-      zIndexOffset: 500,
-    }));
-  });
-
-  if (map.getZoom() >= 12) carrefourLayer.addTo(map);
 }
+
+map.on('zoomend', updateCarrefourVisibility);
+updateCarrefourVisibility();
 
 initUserMenu();
 loadPaths();
-loadCarrefours(); // fetches once, all markers stay on the map permanently
