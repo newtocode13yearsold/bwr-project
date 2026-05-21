@@ -278,7 +278,7 @@ CARREFOURS.forEach(c => {
 
 function updateCarrefourVisibility() {
   // Hide when zoomed out — names are unreadable below this level
-  if (map.getZoom() >= 14) {
+  if (map.getZoom() >= 15) {
     if (!map.hasLayer(carrefourLayer)) carrefourLayer.addTo(map);
   } else {
     if (map.hasLayer(carrefourLayer)) map.removeLayer(carrefourLayer);
