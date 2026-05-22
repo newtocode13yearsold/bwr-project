@@ -2,6 +2,9 @@
 .plans-body {
   background: #f8faf8;
   min-height: 100vh;
+  height: auto;        /* override body { height: 100vh } from style.css */
+  overflow-y: auto;    /* allow vertical scroll */
+  overflow-x: hidden;
 }
 
 .plans-main {
