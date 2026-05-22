@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1e4d14" />
+  <title>BWR — Choisir un plan</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/login.css" />
+  <link rel="stylesheet" href="css/plans.css" />
+</head>
+<body class="plans-body">
+
+  <header class="header">
+    <div class="header-left">
+      <a href="index.html" class="logo">BWR</a>
+      <span class="tagline">Choisir un plan</span>
+    </div>
+    <div class="header-right">
+      <a href="map.html" class="btn-icon">← Retour à la carte</a>
+    </div>
+  </header>
+
+  <main class="plans-main">
+
+    <div class="plans-hero">
+      <h1>Explorez sans limites</h1>
+      <p>Choisissez le plan qui correspond à votre aventure en forêt de Compiègne.</p>
+    </div>
+
+    <div class="plans-grid">
+
+      <!-- FREE -->
+      <div class="plan-card plan-free">
+        <div class="plan-badge-wrap"><span class="plan-icon">🌿</span></div>
+        <h2 class="plan-name">Gratuit</h2>
+        <div class="plan-price"><span class="price-amount">0€</span><span class="price-period">/mois</span></div>
+        <p class="plan-desc">L'essentiel pour explorer la forêt.</p>
+        <ul class="plan-features">
+          <li class="feat yes">🗺️ Carte interactive complète</li>
+          <li class="feat yes">🌲 Chemins vérifiés sur le terrain</li>
+          <li class="feat yes">🔍 Filtres par difficulté</li>
+          <li class="feat yes">⚠️ Signalement d'obstacles</li>
+          <li class="feat yes">📍 Localisation en temps réel</li>
+          <li class="feat yes">📧 Contact de l'équipe</li>
+          <li class="feat no">🛰️ Vue satellite</li>
+          <li class="feat no">🏅 Badges & récompenses</li>
+          <li class="feat no">📈 Niveaux & XP</li>
+          <li class="feat no">🎡 Roue quotidienne</li>
+        </ul>
+        <a href="map.html" class="plan-btn plan-btn-free">Commencer gratuitement</a>
+      </div>
+
+      <!-- SILVER -->
+      <div class="plan-card plan-silver popular">
+        <div class="popular-badge">⭐ Le plus populaire</div>
+        <div class="plan-badge-wrap"><span class="plan-icon">🥈</span></div>
+        <h2 class="plan-name">Argent</h2>
+        <div class="plan-price"><span class="price-amount">2,99€</span><span class="price-period">/mois</span></div>
+        <p class="plan-desc">Passez au niveau supérieur.</p>
+        <ul class="plan-features">
+          <li class="feat yes">✅ Tout le plan Gratuit</li>
+          <li class="feat yes">🛰️ Vue satellite IGN</li>
+          <li class="feat yes">🏅 20+ badges de randonnée</li>
+          <li class="feat yes">👤 Profil Épique (cadre, couleurs)</li>
+          <li class="feat yes">📈 Système de niveaux & XP</li>
+          <li class="feat yes">🎡 Roue quotidienne (surprises)</li>
+          <li class="feat yes">🗺️ Planification avancée de trajets</li>
+          <li class="feat yes">⬇️ Export GPX illimité</li>
+          <li class="feat yes">🚫 Sans publicité</li>
+          <li class="feat no">👑 Profil Légendaire animé</li>
+          <li class="feat no">🎯 Objectifs personnalisables</li>
+          <li class="feat no">🌦️ Météo forêt en temps réel</li>
+        </ul>
+        <button class="plan-btn plan-btn-silver" onclick="choosePlan('silver')">Choisir Argent</button>
+      </div>
+
+      <!-- GOLD -->
+      <div class="plan-card plan-gold">
+        <div class="plan-badge-wrap"><span class="plan-icon">🥇</span></div>
+        <h2 class="plan-name">Or</h2>
+        <div class="plan-price"><span class="price-amount">5,99€</span><span class="price-period">/mois</span></div>
+        <p class="plan-desc">L'expérience ultime de la forêt.</p>
+        <ul class="plan-features">
+          <li class="feat yes">✅ Tout le plan Argent</li>
+          <li class="feat yes">👑 Profil Légendaire (animations, thèmes)</li>
+          <li class="feat yes">🎯 Objectifs personnalisables</li>
+          <li class="feat yes">🏆 50+ badges exclusifs & animés</li>
+          <li class="feat yes">📊 Statistiques avancées & heatmap</li>
+          <li class="feat yes">🌦️ Météo forêt en temps réel</li>
+          <li class="feat yes">🔔 Alertes chemin (mises à jour)</li>
+          <li class="feat yes">🎨 Couleur de tracé personnalisée</li>
+          <li class="feat yes">📤 Export Strava & Komoot</li>
+          <li class="feat yes">💬 Communauté Discord exclusive</li>
+          <li class="feat yes">⚡ Support prioritaire</li>
+          <li class="feat yes">🆕 Nouvelles fonctions en avant-première</li>
+        </ul>
+        <button class="plan-btn plan-btn-gold" onclick="choosePlan('gold')">Choisir Or</button>
+      </div>
+
+    </div>
+
+    <p class="plans-note">Paiement sécurisé · Annulable à tout moment · Aucun engagement</p>
+
+  </main>
+
+  <!-- Coming soon modal -->
+  <div class="modal-overlay hidden" id="comingSoonModal">
+    <div class="modal-card">
+      <div class="modal-icon" id="modalIcon">🥈</div>
+      <h3 id="modalTitle">Plan Argent</h3>
+      <p>Le système de paiement arrive bientôt !<br>
+        En attendant, contacte-nous pour activer ton plan.</p>
+      <a href="mailto:ciril8596@gmail.com" class="plan-btn plan-btn-silver" style="text-decoration:none;text-align:center">
+        ✉ Contacter l'équipe
+      </a>
+      <button class="modal-close" onclick="document.getElementById('comingSoonModal').classList.add('hidden')">Fermer</button>
+    </div>
+  </div>
+
+  <script>
+    function choosePlan(plan) {
+      const modal = document.getElementById('comingSoonModal');
+      document.getElementById('modalIcon').textContent = plan === 'gold' ? '🥇' : '🥈';
+      document.getElementById('modalTitle').textContent = plan === 'gold' ? 'Plan Or' : 'Plan Argent';
+      modal.classList.remove('hidden');
+    }
+    document.getElementById('comingSoonModal').addEventListener('click', function(e) {
+      if (e.target === this) this.classList.add('hidden');
+    });
+  </script>
+
+</body>
+</html>

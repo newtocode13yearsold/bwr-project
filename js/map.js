@@ -288,5 +288,101 @@ function updateCarrefourVisibility() {
 map.on('zoomend', updateCarrefourVisibility);
 updateCarrefourVisibility();
 
+// ── Report system ─────────────────────────────────────────────────────────────
+const REPORT_ICONS  = { fallen_tree:'🌲', flooded:'💧', closed:'🚫', danger:'⚠️', other:'📝' };
+const REPORT_LABELS = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
+
+let reportType = 'fallen_tree';
+let reportPickMode = false;
+
+// Type selector
+document.querySelectorAll('.rtype-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.rtype-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    reportType = btn.dataset.type;
+  });
+});
+
+document.getElementById('btnReport').addEventListener('click', () => {
+  document.getElementById('reportModal').classList.remove('hidden');
+});
+document.getElementById('btnReportCancel').addEventListener('click', cancelReport);
+
+document.getElementById('btnReportSubmit').addEventListener('click', () => {
+  // Start pick mode — user clicks map to place report
+  reportPickMode = true;
+  document.getElementById('reportModal').classList.add('hidden');
+  map.getContainer().style.cursor = 'crosshair';
+  document.getElementById('pathCount').textContent = 'Clique sur la carte pour indiquer l\'emplacement…';
+});
+
+map.on('click', async (e) => {
+  if (!reportPickMode) return;
+  reportPickMode = false;
+  map.getContainer().style.cursor = '';
+
+  const note = document.getElementById('reportNote').value.trim();
+  document.getElementById('reportNote').value = '';
+
+  try {
+    const res = await fetch(`${API_URL}/api/reports`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: reportType,
+        note,
+        lat: e.latlng.lat,
+        lon: e.latlng.lng,
+      }),
+    });
+    if (res.ok) {
+      const report = await res.json();
+      addReportMarker(report);
+      updateCount();
+      document.getElementById('pathCount').textContent = '✅ Signalement envoyé — merci !';
+      setTimeout(() => updateCount(), 3000);
+    }
+  } catch {
+    document.getElementById('pathCount').textContent = 'Erreur lors du signalement.';
+    setTimeout(() => updateCount(), 3000);
+  }
+});
+
+function cancelReport() {
+  reportPickMode = false;
+  map.getContainer().style.cursor = '';
+  document.getElementById('reportModal').classList.add('hidden');
+}
+
+function addReportMarker(report) {
+  const icon = REPORT_ICONS[report.type] || '⚠️';
+  const label = REPORT_LABELS[report.type] || report.type;
+  L.marker([report.lat, report.lon], {
+    icon: L.divIcon({
+      className: 'report-marker',
+      html: `<div class="report-dot">${icon}</div>`,
+      iconAnchor: [16, 16],
+      iconSize: [32, 32],
+    }),
+  }).bindPopup(`
+    <div class="popup">
+      <strong>${icon} ${label}</strong>
+      ${report.note ? `<p class="popup-notes">${report.note}</p>` : ''}
+      <small style="color:#9ca3af">${new Date(report.date).toLocaleDateString('fr-FR')}</small>
+    </div>
+  `).addTo(map);
+}
+
+async function loadReports() {
+  try {
+    const res = await fetch(`${API_URL}/api/reports`);
+    if (!res.ok) return;
+    const reports = await res.json();
+    reports.forEach(addReportMarker);
+  } catch {}
+}
+
 initUserMenu();
 loadPaths();
+loadReports();

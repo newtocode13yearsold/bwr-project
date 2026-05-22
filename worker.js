@@ -313,6 +313,40 @@ export default {
       return json({ success: true });
     }
 
+    // ── GET /api/reports — public ─────────────────────────────────────────────
+    if (pathname === '/api/reports' && request.method === 'GET') {
+      const raw = await env.BWR_KV.get('reports');
+      return json(raw ? JSON.parse(raw) : []);
+    }
+
+    // ── POST /api/reports — any user (free plan) ──────────────────────────────
+    if (pathname === '/api/reports' && request.method === 'POST') {
+      const body = await request.json();
+      const reports = JSON.parse((await env.BWR_KV.get('reports')) || '[]');
+      const report = {
+        id: crypto.randomUUID(),
+        type: body.type || 'other',
+        note: (body.note || '').slice(0, 300),
+        lat: body.lat,
+        lon: body.lon,
+        date: new Date().toISOString(),
+        status: 'open',
+      };
+      reports.push(report);
+      await env.BWR_KV.put('reports', JSON.stringify(reports));
+      return json(report, { status: 201 });
+    }
+
+    // ── DELETE /api/reports/:id — admin only ──────────────────────────────────
+    if (pathname.startsWith('/api/reports/') && request.method === 'DELETE') {
+      const user = await getUserFromToken(env, request);
+      if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
+      const id = pathname.split('/')[3];
+      const reports = JSON.parse((await env.BWR_KV.get('reports')) || '[]');
+      await env.BWR_KV.put('reports', JSON.stringify(reports.filter(r => r.id !== id)));
+      return json({ success: true });
+    }
+
     return new Response('Not found', { status: 404, headers: cors });
   },
 };

@@ -23,6 +23,7 @@
     <div class="header-right">
       <button class="btn-icon" id="toggleFilters" title="Filtres">&#9776; Filtres</button>
       <a href="routes.html" class="btn-icon" id="btnPlanRoute" style="display:none; text-decoration:none">🗺 Planifier un trajet</a>
+      <a href="plans.html" class="btn-icon" style="text-decoration:none">⭐ Plans</a>
       <div class="user-menu" id="userMenu">
         <!-- filled by map.js -->
       </div>
@@ -87,6 +88,29 @@
   <div id="pathCount" class="path-count"></div>
 
   <a href="mailto:ciril8596@gmail.com" class="contact-chip">✉ Contact</a>
+
+  <!-- Report button -->
+  <button class="report-fab" id="btnReport" title="Signaler un problème">⚠️</button>
+
+  <!-- Report modal -->
+  <div class="report-modal hidden" id="reportModal">
+    <div class="report-modal-inner">
+      <h3>Signaler un problème</h3>
+      <p class="report-hint">Clique ensuite sur la carte pour indiquer l'endroit.</p>
+      <div class="report-types" id="reportTypes">
+        <button class="rtype-btn active" data-type="fallen_tree">🌲 Arbre tombé</button>
+        <button class="rtype-btn" data-type="flooded">💧 Chemin inondé</button>
+        <button class="rtype-btn" data-type="closed">🚫 Chemin fermé</button>
+        <button class="rtype-btn" data-type="danger">⚠️ Danger</button>
+        <button class="rtype-btn" data-type="other">📝 Autre</button>
+      </div>
+      <textarea id="reportNote" class="input-field" placeholder="Détails (optionnel)..." rows="2"></textarea>
+      <div class="report-modal-actions">
+        <button class="btn-primary" id="btnReportSubmit">📍 Cliquer sur la carte</button>
+        <button class="btn-secondary" id="btnReportCancel">Annuler</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="js/config.js"></script>
