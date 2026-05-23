@@ -1,21 +1,21 @@
 const TILE_LAYERS = {
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 19, detectRetina: true }
+    { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxNativeZoom: 19, maxZoom: 25, detectRetina: true }
   ),
   ign: L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxZoom: 17, subdomains: ['a','b','c'], detectRetina: true }
+    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxNativeZoom: 17, maxZoom: 25, subdomains: ['a','b','c'], detectRetina: true }
   ),
   satellite: L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
-    { attribution: '&copy; <a href="https://www.geoportail.gouv.fr/">IGN</a>', maxZoom: 20, detectRetina: true }
+    { attribution: '&copy; <a href="https://www.geoportail.gouv.fr/">IGN</a>', maxNativeZoom: 20, maxZoom: 25, detectRetina: true }
   ),
 };
 
 const _cachedUser = (typeof getCachedUser === 'function') ? getCachedUser() : null;
 const _userPlan   = (typeof normalisePlan === 'function') ? normalisePlan(_cachedUser?.plan) : (_cachedUser?.plan || 'free');
 
-const map = L.map('map', { zoomControl: true, minZoom: 10 }).setView(MAP_CENTER, MAP_ZOOM);
+const map = L.map('map', { zoomControl: true, minZoom: 10, maxZoom: 25 }).setView(MAP_CENTER, MAP_ZOOM);
 TILE_LAYERS.ign.addTo(map);
 
 let currentLayer = 'ign';
@@ -25,13 +25,18 @@ let activeFilters = new Set(['easy', 'medium', 'hard', 'not_passable', 'no_bike'
 
 function pathWeight() {
   const z = map.getZoom();
-  return Math.max(2, Math.min(10, Math.round((z - 8) * 0.7)));
+  return Math.max(2, Math.min(20, Math.round((z - 8) * 0.9)));
 }
 
-map.on('zoomend', () => {
+function updatePathWeights() {
   const w = pathWeight();
   Object.values(pathLayers).forEach(l => l.setStyle({ weight: w }));
-});
+}
+map.on('zoom zoomend', updatePathWeights);
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => map.invalidateSize());
+}
 
 // ── User menu ─────────────────────────────────────────────────────────────────
 async function initUserMenu() {

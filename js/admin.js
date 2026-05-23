@@ -78,11 +78,11 @@ function initUserMenu() {
 
 // ── Map init ──────────────────────────────────────────────────────────────────
 function initMap() {
-  map = L.map('map', { minZoom: 10 }).setView(MAP_CENTER, MAP_ZOOM);
+  map = L.map('map', { minZoom: 10, maxZoom: 25 }).setView(MAP_CENTER, MAP_ZOOM);
 
   ignLayer = L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxZoom: 17, subdomains: ['a','b','c'], detectRetina: true }
+    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 17, maxZoom: 25, subdomains: ['a','b','c'], detectRetina: true }
   );
   ignLayer.addTo(map);
 
@@ -112,13 +112,17 @@ function initMap() {
   });
 
   // Scale path weight on zoom
-  map.on('zoomend', updatePathWeights);
+  map.on('zoom zoomend', updatePathWeights);
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => map.invalidateSize());
+  }
 }
 
 function pathWeight() {
   if (!map) return 4;
   const z = map.getZoom();
-  return Math.max(2, Math.min(10, Math.round((z - 8) * 0.7)));
+  return Math.max(2, Math.min(20, Math.round((z - 8) * 0.9)));
 }
 
 function updatePathWeights() {

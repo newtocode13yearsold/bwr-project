@@ -163,20 +163,20 @@ function initUserMenu() {
 const TILE_LAYERS = {
   ign: () => L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxZoom: 17, subdomains: ['a','b','c'], detectRetina: true }
+    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 17, maxZoom: 25, subdomains: ['a','b','c'], detectRetina: true }
   ),
   osm: () => L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© OpenStreetMap', maxZoom: 19, detectRetina: true }
+    { attribution: '© OpenStreetMap', maxNativeZoom: 19, maxZoom: 25, detectRetina: true }
   ),
   satellite: () => L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
-    { attribution: '© IGN', maxZoom: 20, detectRetina: true }
+    { attribution: '© IGN', maxNativeZoom: 20, maxZoom: 25, detectRetina: true }
   ),
 };
 let currentTile = null;
 
 function initMap() {
-  map = L.map('map', { zoomControl: true }).setView(MAP_CENTER, MAP_ZOOM);
+  map = L.map('map', { zoomControl: true, maxZoom: 25 }).setView(MAP_CENTER, MAP_ZOOM);
   // Free users get OSM by default (IGN/satellite gated)
   const plan = currentUser?.plan || 'free';
   const defaultLayer = can('ign_topo_tiles', plan) ? 'ign' : 'osm';
@@ -188,6 +188,9 @@ function initMap() {
   }, 0);
   map.on('click', onMapClick);
   setTimeout(() => map.invalidateSize(), 100);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => map.invalidateSize());
+  }
 
   // Layer switcher
   document.querySelectorAll('.layer-btn').forEach(btn => {
