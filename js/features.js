@@ -26,7 +26,7 @@
 
     /* — Map & layers — */
     satellite_tiles:     { free: false, silver: false,    gold: true     },
-    ign_topo_tiles:      { free: false, silver: true,     gold: true     },
+    ign_topo_tiles:      { free: true,  silver: true,     gold: true     },
     carrefours:          { free: false, silver: true,     gold: true     },
     scenic_pois:         { free: false, silver: true,     gold: true     },
 

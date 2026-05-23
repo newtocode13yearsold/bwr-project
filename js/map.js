@@ -12,15 +12,13 @@ const TILE_LAYERS = {
   ),
 };
 
-// Plan-based default tile. Free users get OSM; Silver gets IGN topo; Gold can switch to satellite.
 const _cachedUser = (typeof getCachedUser === 'function') ? getCachedUser() : null;
 const _userPlan   = (typeof normalisePlan === 'function') ? normalisePlan(_cachedUser?.plan) : (_cachedUser?.plan || 'free');
-const _defaultLayer = (typeof can === 'function' && can('ign_topo_tiles', _userPlan)) ? 'ign' : 'osm';
 
 const map = L.map('map', { zoomControl: true, minZoom: 10 }).setView(MAP_CENTER, MAP_ZOOM);
-TILE_LAYERS[_defaultLayer].addTo(map);
+TILE_LAYERS.ign.addTo(map);
 
-let currentLayer = _defaultLayer;
+let currentLayer = 'ign';
 let allPaths = [];
 let pathLayers = {};
 let activeFilters = new Set(['easy', 'medium', 'hard', 'not_passable']);
@@ -322,17 +320,11 @@ document.querySelectorAll('input[name="tileLayer"]').forEach(radio => {
   radio.addEventListener('change', () => {
     const wanted = radio.value;
     const plan = _userPlan;
-    // Gate satellite (Gold) and IGN topo (Silver+) — show upsell instead of switching.
+    // Gate satellite (Gold only) — show upsell instead of switching.
     if (wanted === 'satellite' && typeof can === 'function' && !can('satellite_tiles', plan)) {
       radio.checked = false;
       document.querySelector(`input[name="tileLayer"][value="${currentLayer}"]`).checked = true;
       showUpgradeToast('satellite', 'gold');
-      return;
-    }
-    if (wanted === 'ign' && typeof can === 'function' && !can('ign_topo_tiles', plan)) {
-      radio.checked = false;
-      document.querySelector(`input[name="tileLayer"][value="${currentLayer}"]`).checked = true;
-      showUpgradeToast('IGN topo', 'silver');
       return;
     }
     map.removeLayer(TILE_LAYERS[currentLayer]);
@@ -351,10 +343,6 @@ document.querySelectorAll('input[name="tileLayer"]').forEach(radio => {
     if (v === 'satellite' && !can('satellite_tiles', _userPlan)) {
       label.classList.add('plan-locked');
       label.insertAdjacentHTML('beforeend', ' <span class="tier-tag gold">👑 Or</span>');
-    }
-    if (v === 'ign' && !can('ign_topo_tiles', _userPlan)) {
-      label.classList.add('plan-locked');
-      label.insertAdjacentHTML('beforeend', ' <span class="tier-tag silver">🔒 Argent</span>');
     }
   });
 })();
