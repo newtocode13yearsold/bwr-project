@@ -474,12 +474,7 @@ CARREFOURS.forEach(c => {
 });
 
 function updateCarrefourVisibility() {
-  // Carrefours overlay is a Silver+ feature
-  if (typeof can === 'function' && !can('carrefours', _userPlan)) {
-    if (map.hasLayer(carrefourLayer)) map.removeLayer(carrefourLayer);
-    return;
-  }
-  // Hide when zoomed out — names are unreadable below this level
+  // Show carrefour names at zoom 15+ for all users
   if (map.getZoom() >= 15) {
     if (!map.hasLayer(carrefourLayer)) carrefourLayer.addTo(map);
   } else {
