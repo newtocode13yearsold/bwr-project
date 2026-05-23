@@ -21,7 +21,7 @@ TILE_LAYERS.ign.addTo(map);
 let currentLayer = 'ign';
 let allPaths = [];
 let pathLayers = {};
-let activeFilters = new Set(['easy', 'medium', 'hard', 'not_passable']);
+let activeFilters = new Set(['easy', 'medium', 'hard', 'not_passable', 'no_bike']);
 
 function pathWeight() {
   const z = map.getZoom();

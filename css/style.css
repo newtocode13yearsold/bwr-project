@@ -1,6 +1,21 @@
 /* ── Reset & base ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── Leaflet protection — prevent any global CSS from animating map layers ── */
+.leaflet-pane,
+.leaflet-map-pane,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-shadow-pane,
+.leaflet-marker-pane,
+.leaflet-pane > svg,
+.leaflet-pane > svg path,
+.leaflet-pane > canvas {
+  transition: none !important;
+  animation: none !important;
+  will-change: transform;
+}
+
 body {
   font-family: 'Segoe UI', system-ui, sans-serif;
   background: #f0f4ec;
