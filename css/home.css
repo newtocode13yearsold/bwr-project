@@ -105,6 +105,32 @@ body {
 }
 .btn-nav-login:hover { background: rgba(255,255,255,0.1); color: white; }
 
+.btn-nav-plans {
+  color: #fde68a;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(251,191,36,0.18), rgba(251,191,36,0.06));
+  border: 1px solid rgba(251,191,36,0.4);
+  transition: all 0.18s ease;
+}
+.btn-nav-plans:hover {
+  background: linear-gradient(135deg, rgba(251,191,36,0.28), rgba(251,191,36,0.12));
+  border-color: rgba(251,191,36,0.6);
+  color: #fff;
+}
+
+/* Inline tier tag next to feature card headings */
+.feature-card h3 .feat-tier {
+  margin-left: 8px;
+  font-size: 0.62rem;
+  vertical-align: middle;
+  padding: 2px 8px;
+  font-weight: 700;
+}
+
 .btn-nav-map {
   background: var(--accent);
   color: var(--green);
@@ -762,7 +788,63 @@ body {
 
 .contact-hint {
   font-size: 0.82rem;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.5);
+  margin-top: 18px;
+}
+.contact-hint a { color: #a3e635; text-decoration: none; }
+.contact-hint a:hover { text-decoration: underline; }
+
+/* Contact form */
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+  margin: 8px auto 0;
+}
+.cf-input {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.07);
+  color: white;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.2s, background 0.2s;
+}
+.cf-input:focus {
+  outline: none;
+  border-color: #a3e635;
+  background: rgba(255,255,255,0.1);
+}
+.cf-input::placeholder { color: rgba(255,255,255,0.4); }
+textarea.cf-input { resize: vertical; min-height: 100px; }
+
+.btn-contact-submit {
+  background: linear-gradient(135deg, #a3e635, #84cc16);
+  color: #0d2b07;
+  font-weight: 800;
+  font-size: 1rem;
+  padding: 14px 28px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn-contact-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(163,230,53,0.3);
+}
+.btn-contact-submit:disabled { opacity: 0.6; cursor: wait; }
+
+.cf-status {
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-top: 4px;
+  min-height: 18px;
 }
 
 /* ════════════════════════════════════════════════

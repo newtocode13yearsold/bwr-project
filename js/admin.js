@@ -24,15 +24,22 @@ function initConditionTags(containerId) {
   });
 }
 
+const REPORT_ICONS  = { fallen_tree:'🌲', flooded:'💧', closed:'🚫', danger:'⚠️', other:'📝' };
+const REPORT_LABELS_ADMIN = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
+
 let currentUser = null;
 let drawnCoordinates = null;
 let allPaths = [];
+let allReports = [];
+let reportMarkerLayer = null;
 let pathLayers = {};
 let osmLayers = [];
 let map = null;
 let drawControl = null;
 let drawnItems = null;
 let selectModeActive = false;
+let splitModeActive = false;
+let splitTargetPath = null;
 
 // ── Auth check ────────────────────────────────────────────────────────────────
 (async () => {
@@ -40,7 +47,8 @@ let selectModeActive = false;
   if (!currentUser) return;
   initUserMenu();
   initMap();
-  loadPaths();
+  await loadPaths();
+  await loadReports();
 })();
 
 function initUserMenu() {
@@ -53,7 +61,9 @@ function initUserMenu() {
     </button>
     <div class="user-dropdown hidden" id="userDropdown">
       <span class="dropdown-name">${currentUser.name}</span>
-      <a href="map.html">Voir la carte</a>
+      <a href="index.html">🏠 Accueil</a>
+      <a href="map.html">🗺 Voir la carte</a>
+      <a href="profile.html">👤 Mon profil</a>
       <button class="dropdown-logout" id="btnLogout">Se déconnecter</button>
     </div>
   `;
@@ -68,11 +78,11 @@ function initUserMenu() {
 
 // ── Map init ──────────────────────────────────────────────────────────────────
 function initMap() {
-  map = L.map('map').setView(MAP_CENTER, MAP_ZOOM);
+  map = L.map('map', { minZoom: 10 }).setView(MAP_CENTER, MAP_ZOOM);
 
   ignLayer = L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxZoom: 17, subdomains: ['a','b','c'] }
+    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxZoom: 17, subdomains: ['a','b','c'], detectRetina: true }
   );
   ignLayer.addTo(map);
 
@@ -82,6 +92,7 @@ function initMap() {
 
   drawnItems = new L.FeatureGroup();
   map.addLayer(drawnItems);
+  reportMarkerLayer = L.layerGroup().addTo(map);
 
   drawControl = new L.Control.Draw({
     draw: {
@@ -144,6 +155,70 @@ function exitSelectMode() {
   // IGN stays on — nothing to switch back
   clearOSMLayer();
   showStatus('');
+}
+
+// ── Split mode ────────────────────────────────────────────────────────────────
+function nearestPointIndex(coords, latlng) {
+  let best = 0, bd = Infinity;
+  coords.forEach(([lat, lon], i) => {
+    const d = (lat - latlng.lat) ** 2 + (lon - latlng.lng) ** 2;
+    if (d < bd) { bd = d; best = i; }
+  });
+  return best;
+}
+
+function enterSplitMode(path) {
+  splitModeActive = true;
+  splitTargetPath = path;
+  map.closePopup();
+  map.getContainer().style.cursor = 'crosshair';
+  const layer = pathLayers[path.id];
+  if (layer) layer.setStyle({ color: '#f59e0b', weight: pathWeight() + 4, opacity: 1 });
+  document.getElementById('btnSplitCancel').style.display = '';
+  showStatus(`Clique sur "${path.name || 'le chemin'}" pour le couper en deux.`);
+}
+
+function exitSplitMode() {
+  if (splitTargetPath) {
+    const layer = pathLayers[splitTargetPath.id];
+    if (layer) layer.setStyle({ color: STATUS_COLORS[splitTargetPath.status] || '#9ca3af', weight: pathWeight(), opacity: 0.9 });
+  }
+  splitModeActive = false;
+  splitTargetPath = null;
+  map.getContainer().style.cursor = '';
+  document.getElementById('btnSplitCancel').style.display = 'none';
+  showStatus('');
+}
+
+async function handleSplitClick(path, latlng) {
+  const coords = path.coordinates;
+  const idx = nearestPointIndex(coords, latlng);
+  if (idx <= 0 || idx >= coords.length - 1) {
+    showStatus('Clique plus au milieu du chemin pour le couper.', true);
+    return;
+  }
+  const part1 = coords.slice(0, idx + 1);
+  const part2 = coords.slice(idx);
+  exitSplitMode();
+  await saveSplitPaths(path, part1, part2);
+}
+
+async function saveSplitPaths(path, part1, part2) {
+  showStatus('Découpage en cours…');
+  const base = { pathType: path.pathType, status: path.status, notes: path.notes || '', conditions: path.conditions || [] };
+  const [r1, r2] = await Promise.all([
+    fetch(`${API_URL}/api/paths`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify({ ...base, name: (path.name || 'Chemin') + ' (1)', coordinates: part1 }) }),
+    fetch(`${API_URL}/api/paths`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify({ ...base, name: (path.name || 'Chemin') + ' (2)', coordinates: part2 }) }),
+  ]);
+  if (r1.ok && r2.ok) {
+    // Delete original directly — do NOT use deletePath() which calls loadPaths() early
+    await fetch(`${API_URL}/api/paths/${path.id}`, { method: 'DELETE', headers: authHeader() });
+    await loadPaths(); // single reload after everything is done
+    showStatus(`"${path.name || 'Chemin'}" découpé en 2 sections — clique sur chaque partie pour changer la couleur.`);
+  } else {
+    showStatus('Erreur lors du découpage.', true);
+    await loadPaths();
+  }
 }
 
 async function loadOSMPaths() {
@@ -269,7 +344,7 @@ function openNewPathPopup(coords, name, latlng, autoType = 'foot') {
     </div>
   `;
 
-  L.popup({ maxWidth: 280, className: 'admin-popup' })
+  L.popup({ maxWidth: 280, className: 'admin-popup', autoClose: false, closeOnClick: false })
     .setLatLng(latlng)
     .setContent(popupContent)
     .openOn(map);
@@ -312,6 +387,8 @@ async function saveNewPath(name, status, coordinates, pathType = 'foot', conditi
 }
 
 // ── Draw mode (manual) ────────────────────────────────────────────────────────
+document.getElementById('btnSplitCancel').addEventListener('click', () => exitSplitMode());
+
 document.getElementById('btnDrawPath').addEventListener('click', () => {
   if (!map) return;
   exitSelectMode();
@@ -363,6 +440,60 @@ async function loadPaths() {
   renderPaths();
 }
 
+async function loadReports() {
+  try {
+    const res = await fetch(`${API_URL}/api/reports`);
+    if (!res.ok) return;
+    allReports = await res.json();
+    renderReportMarkers();
+  } catch {}
+}
+
+function renderReportMarkers() {
+  reportMarkerLayer.clearLayers();
+  allReports.filter(r => r.status === 'open').forEach(r => {
+    const path = allPaths.find(p => p.id === r.pathId);
+    if (!path) return;
+    const coords = path.coordinates;
+    const mid = (r.lat && r.lon) ? [r.lat, r.lon] : coords[Math.floor(coords.length / 2)];
+    const icon = REPORT_ICONS[r.type] || '⚠️';
+    const label = REPORT_LABELS_ADMIN[r.type] || r.type;
+    const marker = L.marker(mid, {
+      icon: L.divIcon({ className: 'report-marker', html: `<div class="report-dot">${icon}</div>`, iconAnchor: [16, 16], iconSize: [32, 32] }),
+    });
+    marker.bindPopup(`
+      <div class="color-popup">
+        <div class="color-popup-name">${icon} ${label}</div>
+        <div style="font-size:0.8rem;color:#6b7280;margin-bottom:8px">sur : ${path.name || 'Chemin sans nom'}</div>
+        ${r.note ? `<p class="popup-notes" style="margin-bottom:8px">${r.note}</p>` : ''}
+        ${r.photo ? `<img src="${r.photo}" class="report-popup-photo" alt="photo" style="margin-bottom:8px">` : ''}
+        <small style="color:#9ca3af">${new Date(r.date).toLocaleDateString('fr-FR')}</small>
+        <button class="btn-primary" id="resolve-${r.id}" style="width:100%;margin-top:10px;padding:8px">✓ Marquer comme résolu</button>
+      </div>
+    `, { autoClose: false, closeOnClick: false });
+    marker.on('popupopen', () => {
+      setTimeout(() => {
+        document.getElementById(`resolve-${r.id}`)?.addEventListener('click', async () => {
+          marker.closePopup();
+          await dismissReport(r.id);
+        });
+      }, 50);
+    });
+    marker.addTo(reportMarkerLayer);
+  });
+}
+
+async function dismissReport(reportId) {
+  const res = await fetch(`${API_URL}/api/reports/${reportId}`, { method: 'DELETE', headers: authHeader() });
+  if (res.ok) {
+    allReports = allReports.filter(r => r.id !== reportId);
+    renderReportMarkers();
+    showStatus('Signalement résolu !');
+  } else {
+    showStatus('Erreur lors de la résolution.', true);
+  }
+}
+
 function renderPaths() {
   Object.values(pathLayers).forEach(l => map.removeLayer(l));
   pathLayers = {};
@@ -375,7 +506,11 @@ function renderPaths() {
     });
     line.on('click', (e) => {
       L.DomEvent.stopPropagation(e);
-      if (!selectModeActive) openColorPopup(path, e.latlng);
+      if (splitModeActive && splitTargetPath?.id === path.id) {
+        handleSplitClick(path, e.latlng);
+      } else if (!selectModeActive && !splitModeActive) {
+        openColorPopup(path, e.latlng);
+      }
     });
     line.addTo(map);
     pathLayers[path.id] = line;
@@ -389,7 +524,7 @@ function openColorPopup(path, latlng) {
     return `<button class="color-btn ${isActive ? 'active' : ''}" style="background:${color}" data-status="${status}" title="${STATUS_LABELS[status]}">${isActive ? '✓' : ''}</button>`;
   }).join('');
 
-  L.popup({ maxWidth: 280, className: 'admin-popup' })
+  L.popup({ maxWidth: 280, className: 'admin-popup', autoClose: false, closeOnClick: false })
     .setLatLng(latlng)
     .setContent(`
       <div class="color-popup">
@@ -409,8 +544,21 @@ function openColorPopup(path, latlng) {
             return def ? `<span class="popup-cond-tag">${def.icon} ${def.label}</span>` : '';
           }).join('')}
         </div>` : ''}
+        ${(() => {
+          const pathReports = allReports.filter(r => r.status === 'open' && r.pathId === path.id);
+          if (!pathReports.length) return '';
+          return `<div class="popup-reports-section">
+            <div class="popup-reports-title">🚨 ${pathReports.length} signalement(s)</div>
+            ${pathReports.map(r => `
+              <div class="popup-report-row">
+                <span>${REPORT_ICONS[r.type] || '⚠️'} ${REPORT_LABELS_ADMIN[r.type] || r.type}${r.note ? ' — ' + r.note : ''}</span>
+                <button class="popup-resolve-btn" data-rid="${r.id}">✓ Résolu</button>
+              </div>`).join('')}
+          </div>`;
+        })()}
         <div class="color-popup-actions">
-          <button class="popup-edit-btn" id="editBtn-${path.id}">✎ Modifier les infos</button>
+          <button class="popup-edit-btn" id="editBtn-${path.id}">✎ Modifier</button>
+          <button class="popup-split-btn" id="splitBtn-${path.id}">✂️ Couper</button>
           <button class="popup-delete-btn" id="delBtn-${path.id}">🗑</button>
         </div>
       </div>
@@ -428,10 +576,19 @@ function openColorPopup(path, latlng) {
       map.closePopup();
       openEditForm(path);
     });
+    document.getElementById(`splitBtn-${path.id}`)?.addEventListener('click', () => {
+      enterSplitMode(path);
+    });
     document.getElementById(`delBtn-${path.id}`)?.addEventListener('click', async () => {
       if (!confirm(`Supprimer "${path.name || 'ce chemin'}" ?`)) return;
       await deletePath(path.id);
       map.closePopup();
+    });
+    document.querySelectorAll('.popup-resolve-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        map.closePopup();
+        await dismissReport(btn.dataset.rid);
+      });
     });
   }, 50);
 }

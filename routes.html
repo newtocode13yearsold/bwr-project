@@ -5,9 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BWR — Planifier un trajet</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/login.css" />
   <link rel="stylesheet" href="css/routes.css" />
+  <link rel="stylesheet" href="css/upsell.css" />
 </head>
 <body class="routes-body">
 
@@ -25,6 +30,9 @@
 
     <!-- ── Sidebar ── -->
     <aside class="planner-sidebar">
+
+      <!-- Free-tier weekly quota strip (hidden for Silver/Gold) -->
+      <div class="quota-strip hidden" id="quotaStrip"></div>
 
       <!-- Step 1: Mode -->
       <div class="step" id="step1">
@@ -146,6 +154,8 @@
 
         <div class="result-actions">
           <button class="btn-gpx" id="btnGPX">⬇ GPX</button>
+          <button class="btn-gpx btn-kml" id="btnKML">⬇ KML</button>
+          <button class="btn-gpx btn-strava" id="btnStrava">↗ Strava</button>
           <button class="btn-reset" id="btnReset">← Nouveau trajet</button>
         </div>
       </div>
@@ -156,6 +166,7 @@
     <div id="map">
       <!-- Layer switcher -->
       <div class="map-layers" id="mapLayers">
+        <button class="layer-btn" data-layer="osm">OSM</button>
         <button class="layer-btn active" data-layer="ign">IGN</button>
         <button class="layer-btn" data-layer="satellite">Satellite</button>
       </div>
@@ -165,6 +176,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/exporters.js"></script>
   <script src="js/routes.js"></script>
 </body>
 </html>

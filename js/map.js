@@ -1,18 +1,26 @@
 const TILE_LAYERS = {
+  osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 19, detectRetina: true }
+  ),
   ign: L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxZoom: 17, subdomains: ['a','b','c'] }
+    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxZoom: 17, subdomains: ['a','b','c'], detectRetina: true }
   ),
   satellite: L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
-    { attribution: '&copy; <a href="https://www.geoportail.gouv.fr/">IGN</a>', maxZoom: 20 }
+    { attribution: '&copy; <a href="https://www.geoportail.gouv.fr/">IGN</a>', maxZoom: 20, detectRetina: true }
   ),
 };
 
-const map = L.map('map', { zoomControl: true }).setView(MAP_CENTER, MAP_ZOOM);
-TILE_LAYERS.ign.addTo(map);
+// Plan-based default tile. Free users get OSM; Silver gets IGN topo; Gold can switch to satellite.
+const _cachedUser = (typeof getCachedUser === 'function') ? getCachedUser() : null;
+const _userPlan   = (typeof normalisePlan === 'function') ? normalisePlan(_cachedUser?.plan) : (_cachedUser?.plan || 'free');
+const _defaultLayer = (typeof can === 'function' && can('ign_topo_tiles', _userPlan)) ? 'ign' : 'osm';
 
-let currentLayer = 'ign';
+const map = L.map('map', { zoomControl: true, minZoom: 10 }).setView(MAP_CENTER, MAP_ZOOM);
+TILE_LAYERS[_defaultLayer].addTo(map);
+
+let currentLayer = _defaultLayer;
 let allPaths = [];
 let pathLayers = {};
 let activeFilters = new Set(['easy', 'medium', 'hard', 'not_passable']);
@@ -48,8 +56,9 @@ async function initUserMenu() {
     </button>
     <div class="user-dropdown hidden" id="userDropdown">
       <span class="dropdown-name">${user.name}</span>
-      <a href="profile.html">Mon profil</a>
-      ${user.role === 'admin' ? '<a href="admin.html">Panneau admin</a>' : ''}
+      <a href="index.html">🏠 Accueil</a>
+      <a href="profile.html">👤 Mon profil</a>
+      ${user.role === 'admin' ? '<a href="admin.html">⚙️ Panneau admin</a>' : ''}
       <button class="dropdown-logout" id="btnLogout">Se déconnecter</button>
     </div>
   `;
@@ -73,10 +82,7 @@ async function loadPaths() {
     const res = await fetch(`${API_URL}/api/paths`);
     allPaths = await res.json();
     renderPaths();
-    updateCount();
-  } catch {
-    document.getElementById('pathCount').textContent = 'Impossible de charger les chemins.';
-  }
+  } catch {}
 }
 
 function renderPaths() {
@@ -117,24 +123,189 @@ function renderPaths() {
           return `<span class="popup-cond-tag">${icons[c] || ''} ${labels[c] || c}</span>`;
         }).join('')}</div>`
       : '';
-    line.bindPopup(`
-      <div class="popup">
-        <strong>${path.name || 'Chemin sans nom'}</strong>
-        <span class="popup-status" style="background:${STATUS_COLORS[path.status]}">${STATUS_LABELS[path.status] || path.status}</span>
-        ${condHTML}
-        ${path.notes ? `<p class="popup-notes">${path.notes}</p>` : ''}
-      </div>
-    `);
+    line.on('click', (e) => {
+      L.DomEvent.stopPropagation(e);
+      openPathPopup(path, e.latlng);
+    });
 
     line.addTo(map);
     pathLayers[path.id] = line;
   });
 }
 
-function updateCount() {
-  const visible = Object.keys(pathLayers).length;
-  document.getElementById('pathCount').textContent =
-    `${visible} chemin${visible !== 1 ? 's' : ''} affiché${visible !== 1 ? 's' : ''}`;
+// ── Path popup & report flow ──────────────────────────────────────────────────
+const REPORT_ICONS  = { fallen_tree:'🌲', flooded:'💧', closed:'🚫', danger:'⚠️', other:'📝' };
+const REPORT_LABELS = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
+
+function openPathPopup(path, latlng) {
+  const condHTML = path.conditions?.length
+    ? `<div class="popup-cond-row">${path.conditions.map(c => {
+        const icons2 = { dry:'✅', muddy:'⚠️', fallen:'❌', mtb:'🚴', running:'🏃', family:'👨‍👩‍👧' };
+        const labels2 = { dry:'Sec', muddy:'Boueux', fallen:'Arbres tombés', mtb:'Idéal MTB', running:'Running', family:'Famille' };
+        return `<span class="popup-cond-tag">${icons2[c] || ''} ${labels2[c] || c}</span>`;
+      }).join('')}</div>` : '';
+
+  L.popup({ maxWidth: 280, autoClose: true, closeOnClick: true })
+    .setLatLng(latlng)
+    .setContent(`
+      <div class="popup">
+        <strong>${path.name || 'Chemin sans nom'}</strong>
+        <span class="popup-status" style="background:${STATUS_COLORS[path.status]}">${STATUS_LABELS[path.status] || path.status}</span>
+        ${condHTML}
+        ${path.notes ? `<p class="popup-notes">${path.notes}</p>` : ''}
+        <button class="popup-report-btn" id="openReport-${path.id}">⚠️ Signaler un problème</button>
+      </div>
+    `)
+    .openOn(map);
+
+  setTimeout(() => {
+    document.getElementById(`openReport-${path.id}`)?.addEventListener('click', () => {
+      if (typeof can === 'function' && !can('reports_create', _userPlan)) {
+        map.closePopup();
+        showToast('🔒 Le signalement est disponible avec Argent — voir plans.html');
+        return;
+      }
+      openReportPopup(path, latlng);
+    });
+  }, 50);
+}
+
+function resizeImage(file, maxWidth = 800) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = Math.min(1, maxWidth / img.width);
+        const w = Math.round(img.width * ratio);
+        const h = Math.round(img.height * ratio);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function openReportPopup(path, latlng) {
+  const types = Object.entries(REPORT_LABELS).map(([id, label]) =>
+    `<button class="rtype-inline-btn" data-type="${id}">${REPORT_ICONS[id]} ${label}</button>`
+  ).join('');
+
+  L.popup({ maxWidth: 290, autoClose: false, closeOnClick: false })
+    .setLatLng(latlng)
+    .setContent(`
+      <div class="popup">
+        <strong>⚠️ Signaler un problème</strong>
+        <p class="popup-report-path">sur : ${path.name || 'Chemin sans nom'}</p>
+        <div class="rtype-inline-grid" id="rtypes-${path.id}">${types}</div>
+        <textarea class="popup-report-note" id="rnote-${path.id}" placeholder="Détails (optionnel)..." rows="2"></textarea>
+        <label class="photo-upload-label" id="photoLabel-${path.id}">
+          📷 Ajouter une photo
+          <input type="file" id="rphoto-${path.id}" accept="image/*" capture="environment" style="display:none">
+        </label>
+        <img id="rphoto-preview-${path.id}" class="report-photo-preview hidden" alt="preview">
+        <div class="popup-report-actions">
+          <button class="popup-submit-btn" id="rsubmit-${path.id}">Envoyer</button>
+          <button class="popup-cancel-btn" id="rcancel-${path.id}">Annuler</button>
+        </div>
+      </div>
+    `)
+    .openOn(map);
+
+  setTimeout(() => {
+    let selectedType = 'fallen_tree';
+    let photoData = null;
+
+    const firstBtn = document.querySelector(`#rtypes-${path.id} .rtype-inline-btn`);
+    if (firstBtn) firstBtn.classList.add('active');
+
+    document.querySelectorAll(`#rtypes-${path.id} .rtype-inline-btn`).forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll(`#rtypes-${path.id} .rtype-inline-btn`).forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedType = btn.dataset.type;
+      });
+    });
+
+    document.getElementById(`photoLabel-${path.id}`)?.addEventListener('click', () => {
+      document.getElementById(`rphoto-${path.id}`)?.click();
+    });
+
+    document.getElementById(`rphoto-${path.id}`)?.addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      photoData = await resizeImage(file);
+      const preview = document.getElementById(`rphoto-preview-${path.id}`);
+      if (preview) { preview.src = photoData; preview.classList.remove('hidden'); }
+      const label = document.getElementById(`photoLabel-${path.id}`);
+      if (label) label.textContent = '✅ Photo ajoutée';
+    });
+
+    document.getElementById(`rsubmit-${path.id}`)?.addEventListener('click', async () => {
+      const note = document.getElementById(`rnote-${path.id}`)?.value.trim() || '';
+      map.closePopup();
+      await submitReport(path, selectedType, note, photoData, latlng);
+    });
+
+    document.getElementById(`rcancel-${path.id}`)?.addEventListener('click', () => map.closePopup());
+  }, 50);
+}
+
+async function submitReport(path, type, note, photo = null, latlng = null) {
+  try {
+    const res = await fetch(`${API_URL}/api/reports`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pathId: path.id, type, note, photo, lat: latlng?.lat, lon: latlng?.lng }),
+    });
+    if (res.ok) {
+      const report = await res.json();
+      placeReportMarker(report, path.coordinates);
+      showToast('✅ Signalement envoyé — merci !');
+    } else {
+      showToast('Erreur lors du signalement.');
+    }
+  } catch {
+    showToast('Erreur lors du signalement.');
+  }
+}
+
+function placeReportMarker(report, coords) {
+  const mid = (report.lat && report.lon)
+    ? [report.lat, report.lon]
+    : coords ? coords[Math.floor(coords.length / 2)] : null;
+  if (!mid) return;
+  const icon = REPORT_ICONS[report.type] || '⚠️';
+  const label = REPORT_LABELS[report.type] || report.type;
+  L.marker(mid, {
+    icon: L.divIcon({ className: 'report-marker', html: `<div class="report-dot">${icon}</div>`, iconAnchor: [16, 16], iconSize: [32, 32] }),
+  }).bindPopup(`
+    <div class="popup">
+      <strong>${icon} ${label}</strong>
+      ${report.note ? `<p class="popup-notes">${report.note}</p>` : ''}
+      ${report.photo ? `<img src="${report.photo}" class="report-popup-photo" alt="photo">` : ''}
+      <small style="color:#9ca3af">${new Date(report.date).toLocaleDateString('fr-FR')}</small>
+    </div>
+  `).addTo(map);
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  let el = document.getElementById('mapToast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'mapToast';
+    el.className = 'map-toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
 }
 
 // ── Filters ───────────────────────────────────────────────────────────────────
@@ -149,11 +320,49 @@ document.querySelectorAll('.filter-check').forEach(cb => {
 
 document.querySelectorAll('input[name="tileLayer"]').forEach(radio => {
   radio.addEventListener('change', () => {
+    const wanted = radio.value;
+    const plan = _userPlan;
+    // Gate satellite (Gold) and IGN topo (Silver+) — show upsell instead of switching.
+    if (wanted === 'satellite' && typeof can === 'function' && !can('satellite_tiles', plan)) {
+      radio.checked = false;
+      document.querySelector(`input[name="tileLayer"][value="${currentLayer}"]`).checked = true;
+      showUpgradeToast('satellite', 'gold');
+      return;
+    }
+    if (wanted === 'ign' && typeof can === 'function' && !can('ign_topo_tiles', plan)) {
+      radio.checked = false;
+      document.querySelector(`input[name="tileLayer"][value="${currentLayer}"]`).checked = true;
+      showUpgradeToast('IGN topo', 'silver');
+      return;
+    }
     map.removeLayer(TILE_LAYERS[currentLayer]);
-    currentLayer = radio.value;
+    currentLayer = wanted;
     TILE_LAYERS[currentLayer].addTo(map);
   });
 });
+
+// Visual lock badge next to gated tile-layer options
+(function decoratePlanLocks() {
+  document.querySelectorAll('label.filter-option').forEach(label => {
+    const radio = label.querySelector('input[name="tileLayer"]');
+    if (!radio) return;
+    const v = radio.value;
+    if (typeof can !== 'function') return;
+    if (v === 'satellite' && !can('satellite_tiles', _userPlan)) {
+      label.classList.add('plan-locked');
+      label.insertAdjacentHTML('beforeend', ' <span class="tier-tag gold">👑 Or</span>');
+    }
+    if (v === 'ign' && !can('ign_topo_tiles', _userPlan)) {
+      label.classList.add('plan-locked');
+      label.insertAdjacentHTML('beforeend', ' <span class="tier-tag silver">🔒 Argent</span>');
+    }
+  });
+})();
+
+function showUpgradeToast(featureLabel, tier) {
+  const planLabel = tier === 'gold' ? 'Or' : 'Argent';
+  showToast(`🔒 ${featureLabel} est disponible avec le plan ${planLabel} — voir plans.html`);
+}
 
 document.getElementById('toggleFilters').addEventListener('click', () => {
   document.getElementById('filterPanel').classList.toggle('hidden');
@@ -277,6 +486,11 @@ CARREFOURS.forEach(c => {
 });
 
 function updateCarrefourVisibility() {
+  // Carrefours overlay is a Silver+ feature
+  if (typeof can === 'function' && !can('carrefours', _userPlan)) {
+    if (map.hasLayer(carrefourLayer)) map.removeLayer(carrefourLayer);
+    return;
+  }
   // Hide when zoomed out — names are unreadable below this level
   if (map.getZoom() >= 15) {
     if (!map.hasLayer(carrefourLayer)) carrefourLayer.addTo(map);
@@ -288,100 +502,54 @@ function updateCarrefourVisibility() {
 map.on('zoomend', updateCarrefourVisibility);
 updateCarrefourVisibility();
 
-// ── Report system ─────────────────────────────────────────────────────────────
-const REPORT_ICONS  = { fallen_tree:'🌲', flooded:'💧', closed:'🚫', danger:'⚠️', other:'📝' };
-const REPORT_LABELS = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
-
-let reportType = 'fallen_tree';
-let reportPickMode = false;
-
-// Type selector
-document.querySelectorAll('.rtype-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.rtype-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    reportType = btn.dataset.type;
-  });
-});
-
-document.getElementById('btnReport').addEventListener('click', () => {
-  document.getElementById('reportModal').classList.remove('hidden');
-});
-document.getElementById('btnReportCancel').addEventListener('click', cancelReport);
-
-document.getElementById('btnReportSubmit').addEventListener('click', () => {
-  // Start pick mode — user clicks map to place report
-  reportPickMode = true;
-  document.getElementById('reportModal').classList.add('hidden');
-  map.getContainer().style.cursor = 'crosshair';
-  document.getElementById('pathCount').textContent = 'Clique sur la carte pour indiquer l\'emplacement…';
-});
-
-map.on('click', async (e) => {
-  if (!reportPickMode) return;
-  reportPickMode = false;
-  map.getContainer().style.cursor = '';
-
-  const note = document.getElementById('reportNote').value.trim();
-  document.getElementById('reportNote').value = '';
-
-  try {
-    const res = await fetch(`${API_URL}/api/reports`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: reportType,
-        note,
-        lat: e.latlng.lat,
-        lon: e.latlng.lng,
-      }),
-    });
-    if (res.ok) {
-      const report = await res.json();
-      addReportMarker(report);
-      updateCount();
-      document.getElementById('pathCount').textContent = '✅ Signalement envoyé — merci !';
-      setTimeout(() => updateCount(), 3000);
-    }
-  } catch {
-    document.getElementById('pathCount').textContent = 'Erreur lors du signalement.';
-    setTimeout(() => updateCount(), 3000);
-  }
-});
-
-function cancelReport() {
-  reportPickMode = false;
-  map.getContainer().style.cursor = '';
-  document.getElementById('reportModal').classList.add('hidden');
-}
-
-function addReportMarker(report) {
-  const icon = REPORT_ICONS[report.type] || '⚠️';
-  const label = REPORT_LABELS[report.type] || report.type;
-  L.marker([report.lat, report.lon], {
-    icon: L.divIcon({
-      className: 'report-marker',
-      html: `<div class="report-dot">${icon}</div>`,
-      iconAnchor: [16, 16],
-      iconSize: [32, 32],
-    }),
-  }).bindPopup(`
-    <div class="popup">
-      <strong>${icon} ${label}</strong>
-      ${report.note ? `<p class="popup-notes">${report.note}</p>` : ''}
-      <small style="color:#9ca3af">${new Date(report.date).toLocaleDateString('fr-FR')}</small>
-    </div>
-  `).addTo(map);
-}
-
 async function loadReports() {
   try {
     const res = await fetch(`${API_URL}/api/reports`);
     if (!res.ok) return;
     const reports = await res.json();
-    reports.forEach(addReportMarker);
+    reports.filter(r => r.status === 'open').forEach(r => {
+      const path = allPaths.find(p => p.id === r.pathId);
+      placeReportMarker(r, path?.coordinates);
+    });
   } catch {}
 }
+
+document.getElementById('btnReport').addEventListener('click', () => {
+  if (typeof can === 'function' && !can('reports_create', _userPlan)) {
+    showToast('🔒 Le signalement est disponible avec Argent — voir plans.html');
+    return;
+  }
+  showToast('Clique sur un chemin coloré pour signaler un problème');
+});
+
+// ── Contact modal ─────────────────────────────────────────────────────────────
+const contactModal = document.getElementById('contactModal');
+document.getElementById('btnOpenContact').addEventListener('click', () => {
+  contactModal.classList.remove('hidden');
+  const u = getCachedUser();
+  if (u) { document.getElementById('mcName').value = u.name; document.getElementById('mcEmail').value = u.email; }
+});
+document.getElementById('btnCloseContact').addEventListener('click', () => contactModal.classList.add('hidden'));
+contactModal.addEventListener('click', e => { if (e.target === contactModal) contactModal.classList.add('hidden'); });
+
+document.getElementById('mapContactForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name    = document.getElementById('mcName').value.trim();
+  const email   = document.getElementById('mcEmail').value.trim();
+  const message = document.getElementById('mcMessage').value.trim();
+  const btn     = document.getElementById('mcSubmit');
+  const status  = document.getElementById('mcStatus');
+  if (!name || !email || !message) { status.textContent = 'Tous les champs sont obligatoires.'; status.style.color = '#dc2626'; return; }
+  btn.textContent = 'Envoi…'; btn.disabled = true;
+  try {
+    const res = await fetch(`${API_URL}/api/contact`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, message }) });
+    if (!res.ok) throw new Error();
+    document.getElementById('mapContactForm').reset();
+    status.textContent = '✅ Message envoyé — merci !'; status.style.color = '#1e4d14';
+    setTimeout(() => { contactModal.classList.add('hidden'); status.textContent = ''; }, 1800);
+  } catch { status.textContent = 'Erreur, réessaye.'; status.style.color = '#dc2626'; }
+  finally { btn.textContent = 'Envoyer'; btn.disabled = false; }
+});
 
 initUserMenu();
 loadPaths();

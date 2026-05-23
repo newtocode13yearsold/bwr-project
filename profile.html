@@ -4,9 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BWR — Mon profil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/login.css" />
   <link rel="stylesheet" href="css/profile.css" />
+  <link rel="stylesheet" href="css/upsell.css" />
 </head>
 <body class="profile-body">
 
@@ -38,6 +43,9 @@
         <div class="color-swatches" id="colorSwatches"></div>
       </div>
     </section>
+
+    <!-- Free-tier weekly quota strip (hidden for Silver/Gold) -->
+    <div class="profile-quota-strip" id="quotaStrip" style="display:none"></div>
 
     <div class="profile-grid">
 
@@ -110,6 +118,143 @@
         </div>
       </div>
 
+      <!-- ── Card: Plan & Progression ── -->
+      <div class="profile-card card-progress">
+        <div class="card-header">
+          <span class="card-icon">⭐</span>
+          <h2 class="card-title">Mon abonnement & progression</h2>
+        </div>
+        <div class="plan-row">
+          <span class="plan-pill" id="planPill">Gratuit</span>
+          <a href="plans.html" class="plan-upgrade-link" id="planUpgradeLink">Améliorer →</a>
+        </div>
+
+        <div class="level-block">
+          <div class="level-head">
+            <span class="level-num" id="levelNum">Niveau 1</span>
+            <span class="level-xp" id="levelXp">0 / 5 km</span>
+          </div>
+          <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+        </div>
+
+        <div class="badges-section">
+          <h3 class="badges-title">🏅 Mes badges</h3>
+          <div class="badges-grid" id="badgesGrid"></div>
+          <p class="badges-locked-hint" id="badgesLockedHint" style="display:none"></p>
+        </div>
+      </div>
+
+      <!-- ── Silver / Gold features ── -->
+      <div class="profile-card card-silvergold" id="silverGoldSection">
+        <div class="card-header">
+          <span class="card-icon">🥈</span>
+          <h2 class="card-title">Fonctionnalités premium</h2>
+        </div>
+
+        <!-- Daily wheel -->
+        <div class="feature-block">
+          <h3 class="feature-title">🎡 Roue quotidienne</h3>
+          <div class="wheel-row">
+            <span class="wheel-emoji" id="wheelEmoji">🎯</span>
+            <p class="wheel-text" id="wheelText">Tourne la roue pour ton conseil du jour !</p>
+          </div>
+          <button class="btn-save" id="wheelSpinBtn">🎡 Tourner la roue</button>
+        </div>
+
+        <!-- Goals -->
+        <div class="feature-block" id="goalBlock">
+          <h3 class="feature-title">🎯 Objectif personnalisé <span class="tier-tag gold">👑 Or</span></h3>
+          <div class="level-block">
+            <div class="level-head">
+              <span class="level-num">Mon objectif km</span>
+              <span class="level-xp" id="goalKm">0 / 20 km</span>
+            </div>
+            <div class="xp-bar"><div class="xp-fill" id="goalFill"></div></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <input type="number" id="goalInput" class="input-field" min="1" placeholder="Objectif km" style="flex:1">
+            <button class="btn-save" id="goalSave" style="width:auto;padding:10px 18px">Sauver</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Free-user upsell card ── -->
+      <div class="profile-card card-upsell" id="upsellCard">
+        <div class="upsell-glow"></div>
+        <div class="upsell-head">
+          <span class="upsell-icon">🥈</span>
+          <div>
+            <h2 class="upsell-title">Débloquez tout le potentiel de BWR</h2>
+            <p class="upsell-sub">Trajets illimités, profil altimétrique, export GPX, suggestions intelligentes, cartes hors-ligne — et bien plus.</p>
+          </div>
+        </div>
+        <div class="upsell-features">
+          <div class="uf-item">
+            <span class="uf-check">✓</span>
+            <div><strong>Trajets illimités</strong><span>Plus de limite de 3/semaine</span></div>
+          </div>
+          <div class="uf-item">
+            <span class="uf-check">✓</span>
+            <div><strong>Mode boucle</strong><span>Revenir à votre point de départ</span></div>
+          </div>
+          <div class="uf-item">
+            <span class="uf-check">✓</span>
+            <div><strong>Profil altimétrique</strong><span>Voir le dénivelé de chaque trajet</span></div>
+          </div>
+          <div class="uf-item">
+            <span class="uf-check">✓</span>
+            <div><strong>Export GPX</strong><span>Garmin, Strava, Komoot…</span></div>
+          </div>
+          <div class="uf-item">
+            <span class="uf-check">✓</span>
+            <div><strong>Cartes hors-ligne</strong><span>Naviguer sans signal</span></div>
+          </div>
+          <div class="uf-item">
+            <span class="uf-check">✓</span>
+            <div><strong>13 badges Argent</strong><span>+ 8 badges Or animés</span></div>
+          </div>
+        </div>
+        <div class="upsell-cta-row">
+          <a href="plans.html" class="upsell-cta">Voir les plans →</a>
+          <span class="upsell-price">À partir de <strong>3,99€</strong>/mois</span>
+        </div>
+      </div>
+
+      <!-- ── Gold-only features ── -->
+      <div class="profile-card card-gold-only" id="goldOnlySection" style="display:none">
+        <div class="card-header">
+          <span class="card-icon">🥇</span>
+          <h2 class="card-title">Privilèges Or</h2>
+        </div>
+
+        <!-- Weather -->
+        <div class="feature-block">
+          <h3 class="feature-title">🌦️ Météo forêt en temps réel</h3>
+          <div class="weather-box">
+            <span class="weather-icon" id="weatherIcon">⏳</span>
+            <div class="weather-info">
+              <strong id="weatherTemp">—</strong>
+              <span id="weatherLabel">Chargement…</span>
+              <small id="weatherWind"></small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Discord -->
+        <div class="feature-block">
+          <h3 class="feature-title">💬 Communauté Discord</h3>
+          <p style="font-size:0.88rem;color:#6b7280;margin-bottom:10px">Rejoins les autres membres Or sur notre serveur Discord exclusif.</p>
+          <a href="https://discord.gg/" target="_blank" rel="noopener" class="btn-discord">💬 Rejoindre le Discord</a>
+        </div>
+
+        <!-- Priority support -->
+        <div class="feature-block">
+          <h3 class="feature-title">⚡ Support prioritaire</h3>
+          <p style="font-size:0.88rem;color:#6b7280">Tes messages sont traités en priorité — réponse sous 12h en moyenne.</p>
+          <p style="font-size:0.88rem;color:#6b7280;margin-top:6px">✉️ <a href="mailto:ciril8596@gmail.com?subject=[Or] Question prioritaire">ciril8596@gmail.com</a></p>
+        </div>
+      </div>
+
       <!-- ── Card: Compte ── -->
       <div class="profile-card card-danger">
         <div class="card-header">
@@ -141,6 +286,7 @@
 
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/features.js"></script>
   <script src="js/profile.js"></script>
 </body>
 </html>

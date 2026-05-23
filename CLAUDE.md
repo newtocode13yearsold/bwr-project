@@ -1,0 +1,157 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+BWR (Balades en Foret de Compiegne) is a progressive web app for interactive forest path mapping and route planning in the Compiegne forest, France. It combines a serverless backend (Cloudflare Workers) with a vanilla JavaScript frontend (Leaflet maps). The app supports three user tiers (free/silver/gold) with gamification (badges, daily challenges) and crowd-sourced problem reporting.
+
+## Development Commands
+
+Start local dev server (runs on http://localhost:8787):
+  npm run dev:worker
+
+Deploy to Cloudflare Workers (requires authentication):
+  npm run deploy:worker
+
+Create KV namespace (one-time setup):
+  npm run kv:create BWR_KV
+
+Note: Frontend is static HTML/JS/CSS served directly by the worker—no build step required.
+
+## Architecture
+
+### Backend (worker.js)
+
+Single Cloudflare Worker file with 18 API endpoints:
+
+- Auth: /api/setup (one-time admin creation), /api/auth/{register,login,logout,me,profile,password,account}, /api/auth/plan/:userId (admin plan changes)
+- Paths (admin-only): POST/PUT/DELETE /api/paths/* — forest/bike paths curated by admin
+- Reports (public): POST /api/reports, DELETE /api/reports/:id (admin), GET /api/reports — crowd-sourced issues (fallen trees, floods, etc.)
+- Routing: POST /api/route — proxy to OpenRouteService (needs ORS_KEY env var)
+- OSM Proxy: GET /api/osm?bbox=... — caches OpenStreetMap path data for 7 days
+- Contact: POST /api/contact — sends to ntfy.sh push notification service
+
+Storage: All data in Cloudflare KV store with these keys:
+- users — JSON array of user objects
+- paths — JSON array of admin-curated paths
+- reports — JSON array of user reports
+- session:{token} — session metadata (userId, expiresAt), 30-day TTL
+- osm:{bbox} — cached OpenStreetMap query results, 7-day TTL
+
+### Frontend Architecture
+
+Pages (all require authentication except login.html):
+- map.html + js/map.js: Browse all paths, filter by status (easy/medium/hard/blocked), report issues, view carrefours (named junctions)
+- routes.html + js/routes.js: Core UX—interactive route planner with mode selection (A→B or loop), difficulty picker, address search
+- profile.html + js/profile.js: User stats, achievements/badges, daily wheel (random hiking tips), custom goals, weather (gold tier only), avatar color picker
+- admin.html + js/admin.js: Path management (draw, import from OSM, split, edit, delete), report triage, color/status updates
+- login.html + js/login.js: Registration and login forms
+
+Shared modules:
+- js/config.js — API endpoint, map center/zoom, status colors
+- js/auth.js — Bearer token management, session persistence, role-based access
+- js/carrefours.js — Hardcoded junction names (zero network cost)
+- sw.js — Service worker (network-first for HTML/JS/CSS, cache-first for assets, always network for API/tiles)
+
+### Route Planning System (Three-Tier Fallback)
+
+The routes.html page uses three routing engines in order of preference:
+
+1. Graph Router (js/routes.js lines 326-480): Uses only admin-curated paths to guarantee forest-only, no-backtrack loops
+   - Builds undirected graph from path coordinates (nodes at 0.00001° precision)
+   - Connects path endpoints within 80m to form network
+   - Uses Dijkstra for A→B; removes outbound edges for loop return (guarantees different route back)
+   - Falls back if < 4 nodes or target distance unmatchable
+
+2. OpenRouteService (ORS, lines 482-502): Premium API requiring ORS_KEY Cloudflare environment variable
+   - Supports round_trip mode (length, points, seed parameters)
+   - Returns full route geometry with distance/duration
+   - Falls back if key missing or API errors
+
+3. OSRM (Open Source Routing Machine, lines 504-546): Free public API (no key), always available
+   - For loops: generates 8 compass-point waypoints around start (radius adjusts on retry for target distance)
+   - For A→B: simple point-to-point routing
+   - Includes all road types (not forest-only like graph router)
+
+Route colors reflect difficulty (stored locally in localStorage):
+- Green (#22c55e): Easy
+- Orange (#f97316): Medium
+- Red (#ef4444): Hard
+- Gray (#9ca3af): Impassable
+
+### User Plans and Features
+
+Three tiers gate different features:
+- Free: Basic route planning, view all paths, report issues, basic badges
+- Silver: plus daily wheel (random tips), custom route colors, additional badges
+- Gold: plus weather widget (Open-Meteo API), all badges
+
+Badges are earned based on stats:
+- Routes count (stored in localStorage as bwr_route_count)
+- Total kilometers (stored as bwr_km_total)
+- These are session-local only—no backend persistence of user stats
+
+## Key Non-Obvious Patterns
+
+1. Password Storage: SHA-256 hashed with per-user UUID salt (not bcrypt). Minimum 6 characters. Stored as passwordHash and salt in user object.
+
+2. Token Format: Random UUID, no JWT. Sessions stored in KV as session:{token} → {userId, expiresAt}. Bearer header required for auth.
+
+3. Elevation Profile: Async fetch to Open-Elevation API after route displays. Samples evenly-spaced 100-point max to avoid rate limits. Draws SVG sparkline with ascent/descent totals.
+
+4. Report Photos: Resized client-side to 800px max, converted to JPEG data-URI, stored in report object (not separate blob storage). Displayed inline in popups.
+
+5. Path Splitting: Admin feature—splits existing path at clicked point into two new paths (original deleted). Uses nearestPointIndex() to find closest coordinate. Both new paths inherit pathType, status, conditions, notes from original.
+
+6. OSM Path Import: Admin can click "Select Path" to load OpenStreetMap data via /api/osm proxy. Auto-detects bike vs foot based on highway tags. Popup lets admin confirm type and pick color before saving.
+
+7. Carrefours: Fixed list of named forest junctions hardcoded in js/carrefours.js as CARREFOURS array. Markers only show when zoomed in (zoom 15+) to avoid clutter. No API calls—instant load.
+
+8. Service Worker Caching: sw.js uses network-first for app files (HTML/JS/CSS), cache-first for static assets (images, fonts), and always-network for API/tile requests. This ensures latest app version while offline support for cached pages.
+
+9. Search Debounce: Address search (Nominatim OSM) debounced 380-400ms to avoid rate limiting. Results limit to France (countrycodes=fr).
+
+10. Zoom-Dependent Rendering: Path stroke weight scales with map zoom level (function pathWeight() in map.js and admin.js). Carrefour labels only visible at high zoom to prevent visual clutter.
+
+11. Admin Notifications: Reports and contact messages trigger push notifications via ntfy.sh (subscribe to channel bwr-ciril8596). This is a fallback notification channel, not critical—wrapped in try/catch.
+
+12. Plan Enforcement: /api/auth/me endpoint auto-upgrades admin users to gold plan on read. Free-tier badge visibility filtered by tier. Silver/Gold unlock UI sections via renderDailyWheel(), renderGoals(), renderWeather().
+
+## Configuration
+
+Environment Variables (set in Cloudflare Workers dashboard):
+- ORS_KEY — OpenRouteService API key (optional; OSRM fallback if missing)
+
+Constants (js/config.js):
+- API_URL — Points to deployed worker endpoint (e.g., https://bwr-worker.ciril8596.workers.dev)
+- MAP_CENTER — [49.35, 2.90] (Compiegne forest)
+- MAP_ZOOM — 13
+- STATUS_COLORS — Maps status string to hex color
+
+Cloudflare Config (wrangler.jsonc):
+- assets.directory — ./ (root directory served as static files)
+- kv_namespaces — Binding BWR_KV to the KV namespace
+
+## Testing Notes
+
+No automated test suite currently exists. Manual testing should cover:
+- Routing: A→B on small distances, loop generation near forest boundaries, fallback when graph too small
+- Graph Router Edge Cases: Paths with < 4 nodes, unreachable target distance, endpoint connection within 80m threshold
+- Admin Workflows: Path import from OSM, path splitting, report dismissal, plan changes
+- Offline: Service worker caching, stale-while-revalidate behavior, API failures
+- Mobile: Geolocation button, touch events on map, photo upload from camera
+
+## Important Gotchas
+
+1. Local Stats Only: Route counts and kilometers are stored in localStorage, not backed up to server. Clearing browser data loses stats. No user stats history across devices.
+
+2. KV Data Format: All KV values are JSON strings, not objects. Manual JSON.parse() required on read, JSON.stringify() on write.
+
+3. OSM Proxy Caching: Cached for 7 days per bbox. If you change admin path data, OSM overlay will not update until cache expires or you manually clear.
+
+4. CORS Permissive: All API endpoints allow Origin: *. No origin restriction—keep in mind if adding sensitive endpoints.
+
+5. Password Hashing: SHA-256 is not sufficient for production security (no key stretching). Consider upgrading to Argon2 or bcrypt for future hardening.
+
+6. One-Time Setup: /api/setup endpoint checks if users array exists; if non-empty, rejects with 403. Only first call succeeds. Manual KV cleanup required to run setup again.

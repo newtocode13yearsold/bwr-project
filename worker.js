@@ -88,6 +88,7 @@ export default {
         passwordHash,
         salt,
         role: 'free',
+        plan: 'free',
         createdAt: new Date().toISOString(),
       };
 
@@ -118,7 +119,7 @@ export default {
 
       return json({
         token,
-        user: { id: user.id, name: user.name, email: user.email, role: user.role },
+        user: { id: user.id, name: user.name, email: user.email, role: user.role, plan: user.plan || 'free' },
       });
     }
 
@@ -126,7 +127,32 @@ export default {
     if (pathname === '/api/auth/me' && request.method === 'GET') {
       const user = await getUserFromToken(env, request);
       if (!user) return fail('Non authentifié.', 401);
-      return json({ id: user.id, name: user.name, email: user.email, role: user.role });
+      // Admins always get gold automatically
+      if (user.role === 'admin' && user.plan !== 'gold') {
+        const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
+        const idx = users.findIndex(u => u.id === user.id);
+        if (idx !== -1) {
+          users[idx] = { ...users[idx], plan: 'gold' };
+          await env.BWR_KV.put('users', JSON.stringify(users));
+          user.plan = 'gold';
+        }
+      }
+      return json({ id: user.id, name: user.name, email: user.email, role: user.role, plan: user.plan || 'free' });
+    }
+
+    // ── PUT /api/auth/plan/:userId — admin only, change a user's plan ────────
+    if (pathname.startsWith('/api/auth/plan/') && request.method === 'PUT') {
+      const admin = await getUserFromToken(env, request);
+      if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+      const targetId = pathname.split('/')[4];
+      const { plan } = await request.json();
+      if (!['free','silver','gold'].includes(plan)) return fail('Plan invalide.');
+      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
+      const idx = users.findIndex(u => u.id === targetId);
+      if (idx === -1) return fail('Utilisateur introuvable.', 404);
+      users[idx] = { ...users[idx], plan };
+      await env.BWR_KV.put('users', JSON.stringify(users));
+      return json({ success: true, plan });
     }
 
     // ── POST /api/auth/logout ─────────────────────────────────────────────────
@@ -319,22 +345,44 @@ export default {
       return json(raw ? JSON.parse(raw) : []);
     }
 
-    // ── POST /api/reports — any user (free plan) ──────────────────────────────
+    // ── POST /api/reports — any user ─────────────────────────────────────────
     if (pathname === '/api/reports' && request.method === 'POST') {
       const body = await request.json();
       const reports = JSON.parse((await env.BWR_KV.get('reports')) || '[]');
+
+      // Look up path name for the notification
+      let pathName = 'Chemin inconnu';
+      if (body.pathId) {
+        const paths = JSON.parse((await env.BWR_KV.get('paths')) || '[]');
+        const found = paths.find(p => p.id === body.pathId);
+        if (found) pathName = found.name || 'Chemin sans nom';
+      }
+
       const report = {
         id: crypto.randomUUID(),
+        pathId: body.pathId || null,
         type: body.type || 'other',
         note: (body.note || '').slice(0, 300),
-        lat: body.lat,
-        lon: body.lon,
+        photo: body.photo || null,
+        lat: body.lat || null,
+        lon: body.lon || null,
         date: new Date().toISOString(),
         status: 'open',
       };
       reports.push(report);
       await env.BWR_KV.put('reports', JSON.stringify(reports));
-      return json(report, { status: 201 });
+
+      // Push notification via ntfy.sh (install ntfy app → subscribe to bwr-ciril8596)
+      const typeLabels = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
+      try {
+        await fetch('https://ntfy.sh/bwr-ciril8596', {
+          method: 'POST',
+          headers: { 'Title': 'BWR — Nouveau signalement', 'Tags': 'warning', 'Content-Type': 'text/plain; charset=utf-8' },
+          body: `${typeLabels[report.type] || report.type} sur "${pathName}"${report.note ? '\n' + report.note : ''}`,
+        });
+      } catch {}
+
+      return json(report, 201);
     }
 
     // ── DELETE /api/reports/:id — admin only ──────────────────────────────────
@@ -344,6 +392,28 @@ export default {
       const id = pathname.split('/')[3];
       const reports = JSON.parse((await env.BWR_KV.get('reports')) || '[]');
       await env.BWR_KV.put('reports', JSON.stringify(reports.filter(r => r.id !== id)));
+      return json({ success: true });
+    }
+
+    // ── POST /api/contact — send a contact message ──────────────────────────
+    if (pathname === '/api/contact' && request.method === 'POST') {
+      const { name, email, message } = await request.json();
+      if (!name || !email || !message) return fail('Tous les champs sont obligatoires.');
+
+      // Save in KV (so messages aren't lost)
+      const messages = JSON.parse((await env.BWR_KV.get('contact_messages')) || '[]');
+      messages.push({ id: crypto.randomUUID(), name, email, message: message.slice(0, 2000), date: new Date().toISOString() });
+      await env.BWR_KV.put('contact_messages', JSON.stringify(messages));
+
+      // Push notification to admin via ntfy.sh
+      try {
+        await fetch('https://ntfy.sh/bwr-ciril8596', {
+          method: 'POST',
+          headers: { 'Title': `BWR — Message de ${name}`, 'Tags': 'envelope', 'Content-Type': 'text/plain; charset=utf-8' },
+          body: `${email}\n\n${message}`,
+        });
+      } catch {}
+
       return json({ success: true });
     }
 

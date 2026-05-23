@@ -3,131 +3,561 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#1e4d14" />
-  <title>BWR — Choisir un plan</title>
+  <meta name="theme-color" content="#0b2410" />
+  <title>BWR — Choisir votre plan</title>
+  <meta name="description" content="Comparez les plans BWR : Gratuit, Argent et Or. Planification illimitée, cartes hors-ligne, export GPX, suggestions intelligentes — tout pour vivre la forêt de Compiègne autrement." />
   <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/login.css" />
   <link rel="stylesheet" href="css/plans.css" />
 </head>
 <body class="plans-body">
 
-  <header class="header">
-    <div class="header-left">
-      <a href="index.html" class="logo">BWR</a>
-      <span class="tagline">Choisir un plan</span>
+  <!-- ── Navigation ── -->
+  <nav class="plans-nav" id="plansNav">
+    <div class="plans-nav-inner">
+      <a href="index.html" class="plans-logo">
+        <span class="plans-logo-mark">B</span>
+        <span class="plans-logo-text">BWR</span>
+      </a>
+      <div class="plans-nav-links">
+        <a href="map.html">Carte</a>
+        <a href="routes.html">Planifier</a>
+        <a href="#compare">Comparer</a>
+        <a href="#faq">Questions</a>
+      </div>
+      <div class="plans-nav-cta">
+        <a href="map.html" class="btn-ghost">← Retour à la carte</a>
+      </div>
     </div>
-    <div class="header-right">
-      <a href="map.html" class="btn-icon">← Retour à la carte</a>
-    </div>
-  </header>
+  </nav>
 
   <main class="plans-main">
 
-    <div class="plans-hero">
-      <h1>Explorez sans limites</h1>
-      <p>Choisissez le plan qui correspond à votre aventure en forêt de Compiègne.</p>
-    </div>
+    <!-- ── Hero ─────────────────────────────────────────────────────────── -->
+    <section class="plans-hero">
+      <div class="hero-eyebrow">
+        <span class="eyebrow-dot"></span>
+        <span>Pour les amoureux de la forêt de Compiègne</span>
+      </div>
+      <h1 class="hero-headline display">
+        Choisissez jusqu'où<br />
+        <span class="hero-italic">vous voulez explorer.</span>
+      </h1>
+      <p class="hero-sub">
+        Trois plans pour transformer chaque sortie en aventure. Du planificateur de base aux cartes hors-ligne, badges exclusifs et suggestions intelligentes — votre forêt, votre rythme.
+      </p>
 
-    <div class="plans-grid">
+      <div class="billing-toggle" role="tablist" aria-label="Période de facturation">
+        <button class="bt-opt active" data-period="monthly" role="tab" aria-selected="true">Mensuel</button>
+        <button class="bt-opt" data-period="annual" role="tab" aria-selected="false">
+          Annuel <span class="bt-save">-20 %</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ── Plan cards ───────────────────────────────────────────────────── -->
+    <section class="plans-grid">
 
       <!-- FREE -->
-      <div class="plan-card plan-free">
-        <div class="plan-badge-wrap"><span class="plan-icon">🌿</span></div>
-        <h2 class="plan-name">Gratuit</h2>
-        <div class="plan-price"><span class="price-amount">0€</span><span class="price-period">/mois</span></div>
-        <p class="plan-desc">L'essentiel pour explorer la forêt.</p>
-        <ul class="plan-features">
-          <li class="feat yes">🗺️ Carte interactive complète</li>
-          <li class="feat yes">🌲 Chemins vérifiés sur le terrain</li>
-          <li class="feat yes">🔍 Filtres par difficulté</li>
-          <li class="feat yes">⚠️ Signalement d'obstacles</li>
-          <li class="feat yes">📍 Localisation en temps réel</li>
-          <li class="feat yes">📧 Contact de l'équipe</li>
-          <li class="feat no">🛰️ Vue satellite</li>
-          <li class="feat no">🏅 Badges & récompenses</li>
-          <li class="feat no">📈 Niveaux & XP</li>
-          <li class="feat no">🎡 Roue quotidienne</li>
+      <article class="plan-card plan-free">
+        <header class="pc-head">
+          <div class="pc-icon">🌿</div>
+          <h2 class="pc-name">Gratuit</h2>
+          <p class="pc-tag">Pour tester l'application</p>
+        </header>
+        <div class="pc-price">
+          <span class="pc-amount">0€</span>
+          <span class="pc-period">/ pour toujours</span>
+        </div>
+        <ul class="pc-features">
+          <li class="pf yes"><span class="pf-icon">✓</span> <strong>3 trajets par semaine</strong></li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Trajets A → B uniquement</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Difficultés Facile &amp; Moyen</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Carte OpenStreetMap</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Visualisation des chemins</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Géolocalisation</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> 8 badges débutant</li>
+          <li class="pf no"><span class="pf-icon">×</span> Mode boucle</li>
+          <li class="pf no"><span class="pf-icon">×</span> Export GPX / KML</li>
+          <li class="pf no"><span class="pf-icon">×</span> Profil altimétrique</li>
+          <li class="pf no"><span class="pf-icon">×</span> Cartes hors-ligne</li>
         </ul>
-        <a href="map.html" class="plan-btn plan-btn-free">Commencer gratuitement</a>
+        <a href="map.html" class="pc-cta cta-ghost">Continuer en gratuit</a>
+        <p class="pc-footnote">Aucune carte bancaire requise.</p>
+      </article>
+
+      <!-- SILVER (popular) -->
+      <article class="plan-card plan-silver popular">
+        <div class="popular-flag">⭐ Le plus populaire</div>
+        <header class="pc-head">
+          <div class="pc-icon icon-silver">🥈</div>
+          <h2 class="pc-name">Argent</h2>
+          <p class="pc-tag">L'expérience complète</p>
+        </header>
+        <div class="pc-price">
+          <span class="pc-amount" data-monthly="3,99€" data-annual="3,19€">3,99€</span>
+          <span class="pc-period" data-monthly="/ mois" data-annual="/ mois facturé annuellement">/ mois</span>
+        </div>
+        <ul class="pc-features">
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Trajets illimités</strong></li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Mode boucle + A → B</strong></li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Toutes les difficultés</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Carte IGN topographique</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Carrefours nommés</li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Export GPX illimité</strong></li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Profil altimétrique</strong></li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Cache 1 trajet hors-ligne</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Sauvegarde cloud des stats</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Journal photo (5 par sortie)</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Suggestion hebdomadaire</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> POI panoramiques sur la carte</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Roue quotidienne</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Signalement d'obstacles + photo</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> 21 badges (8 + 13 Argent)</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Classements hebdomadaires</li>
+        </ul>
+        <button class="pc-cta cta-silver" data-plan="silver">Passer à Argent</button>
+        <p class="pc-footnote">Sans engagement · Annulable en 1 clic</p>
+      </article>
+
+      <!-- GOLD (featured) -->
+      <article class="plan-card plan-gold featured">
+        <div class="featured-flag">👑 Premium</div>
+        <header class="pc-head">
+          <div class="pc-icon icon-gold">🥇</div>
+          <h2 class="pc-name">Or</h2>
+          <p class="pc-tag">L'expérience ultime</p>
+        </header>
+        <div class="pc-price">
+          <span class="pc-amount" data-monthly="7,99€" data-annual="6,39€">7,99€</span>
+          <span class="pc-period" data-monthly="/ mois" data-annual="/ mois facturé annuellement">/ mois</span>
+        </div>
+        <ul class="pc-features">
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Tout le plan Argent, plus :</strong></li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Mode multi-étapes</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Vue satellite IGN</li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Export KML + Strava / Komoot</strong></li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Jusqu'à 20 trajets hors-ligne</strong></li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Journal photo illimité</li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Suggestions IA quotidiennes</strong></li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Notes de curateur sur les POI</li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Météo forêt en temps réel</strong></li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Alertes push de chemin</strong></li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Objectifs personnalisés</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Couleur de tracé personnalisée</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Cadre de profil légendaire animé</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> 8 badges Or animés exclusifs</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Création + admin de groupes</li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Discord communauté privée</strong></li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Support prioritaire sous 24h</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Accès anticipé aux nouveautés</li>
+        </ul>
+        <button class="pc-cta cta-gold" data-plan="gold">Passer à Or</button>
+        <p class="pc-footnote">Tout débloquer · Sans engagement</p>
+      </article>
+
+    </section>
+
+    <!-- ── Trust strip ──────────────────────────────────────────────────── -->
+    <section class="trust-strip">
+      <div class="trust-item">
+        <span class="trust-icon">🔒</span>
+        <div>
+          <strong>Paiement sécurisé</strong>
+          <span>Données chiffrées</span>
+        </div>
+      </div>
+      <div class="trust-item">
+        <span class="trust-icon">↺</span>
+        <div>
+          <strong>Sans engagement</strong>
+          <span>Annulez à tout moment</span>
+        </div>
+      </div>
+      <div class="trust-item">
+        <span class="trust-icon">🇫🇷</span>
+        <div>
+          <strong>Projet français</strong>
+          <span>Forêt de Compiègne</span>
+        </div>
+      </div>
+      <div class="trust-item">
+        <span class="trust-icon">⚡</span>
+        <div>
+          <strong>Activation rapide</strong>
+          <span>Sous 24h ouvrées</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Detailed comparison ──────────────────────────────────────────── -->
+    <section class="compare" id="compare">
+      <div class="compare-head">
+        <span class="section-eyebrow">Tableau complet</span>
+        <h2 class="section-title display">Comparez chaque détail</h2>
+        <p class="section-sub">Tous les chiffres. Toutes les fonctions. Aucune surprise.</p>
       </div>
 
-      <!-- SILVER -->
-      <div class="plan-card plan-silver popular">
-        <div class="popular-badge">⭐ Le plus populaire</div>
-        <div class="plan-badge-wrap"><span class="plan-icon">🥈</span></div>
-        <h2 class="plan-name">Argent</h2>
-        <div class="plan-price"><span class="price-amount">2,99€</span><span class="price-period">/mois</span></div>
-        <p class="plan-desc">Passez au niveau supérieur.</p>
-        <ul class="plan-features">
-          <li class="feat yes">✅ Tout le plan Gratuit</li>
-          <li class="feat yes">🛰️ Vue satellite IGN</li>
-          <li class="feat yes">🏅 20+ badges de randonnée</li>
-          <li class="feat yes">👤 Profil Épique (cadre, couleurs)</li>
-          <li class="feat yes">📈 Système de niveaux & XP</li>
-          <li class="feat yes">🎡 Roue quotidienne (surprises)</li>
-          <li class="feat yes">🗺️ Planification avancée de trajets</li>
-          <li class="feat yes">⬇️ Export GPX illimité</li>
-          <li class="feat yes">🚫 Sans publicité</li>
-          <li class="feat no">👑 Profil Légendaire animé</li>
-          <li class="feat no">🎯 Objectifs personnalisables</li>
-          <li class="feat no">🌦️ Météo forêt en temps réel</li>
-        </ul>
-        <button class="plan-btn plan-btn-silver" onclick="choosePlan('silver')">Choisir Argent</button>
+      <div class="compare-table-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th scope="col" class="ct-feature">Fonctionnalité</th>
+              <th scope="col" class="ct-free">🌿 Gratuit</th>
+              <th scope="col" class="ct-silver">🥈 Argent</th>
+              <th scope="col" class="ct-gold">🥇 Or</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="ct-section"><td colspan="4">Planification de trajets</td></tr>
+            <tr><td>Trajets par semaine</td><td><span class="num">3</span></td><td class="ok">Illimités</td><td class="ok">Illimités</td></tr>
+            <tr><td>Mode A → B</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Mode boucle</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Mode multi-étapes</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+            <tr><td>Difficulté Facile, Moyen</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Difficulté Difficile</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+
+            <tr class="ct-section"><td colspan="4">Cartes &amp; visualisation</td></tr>
+            <tr><td>Carte OpenStreetMap</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Carte IGN topographique</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Vue satellite IGN</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+            <tr><td>Carrefours nommés</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>POI panoramiques</td><td class="no">—</td><td class="ok">✓</td><td class="ok">+ notes</td></tr>
+
+            <tr class="ct-section"><td colspan="4">Analyse &amp; export</td></tr>
+            <tr><td>Profil altimétrique</td><td class="no">—</td><td class="ok">✓</td><td class="ok">+ analyse</td></tr>
+            <tr><td>Export GPX</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Export KML</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+            <tr><td>Push Strava / Komoot</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+            <tr><td>Trajets hors-ligne</td><td class="no">—</td><td class="num">1</td><td class="num">20</td></tr>
+
+            <tr class="ct-section"><td colspan="4">Cloud &amp; historique</td></tr>
+            <tr><td>Sauvegarde des statistiques</td><td class="no">Local uniquement</td><td class="ok">Cloud</td><td class="ok">Cloud</td></tr>
+            <tr><td>Historique des trajets</td><td class="no">—</td><td class="ok">✓</td><td class="ok">+ rejouer</td></tr>
+            <tr><td>Journal photo</td><td class="no">—</td><td class="num">5 / sortie</td><td class="ok">Illimité</td></tr>
+
+            <tr class="ct-section"><td colspan="4">Signalements &amp; alertes</td></tr>
+            <tr><td>Voir les signalements</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Créer un signalement</td><td class="no">—</td><td class="ok">+ photo</td><td class="ok">+ priorité</td></tr>
+            <tr><td>Alertes push de chemin</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+
+            <tr class="ct-section"><td colspan="4">Personnalisation</td></tr>
+            <tr><td>Roue quotidienne</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Objectifs personnalisés</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+            <tr><td>Météo forêt en temps réel</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+            <tr><td>Couleur de tracé custom</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+            <tr><td>Cadre de profil</td><td class="num">Statique</td><td class="ok">Argent</td><td class="ok">Légendaire animé</td></tr>
+
+            <tr class="ct-section"><td colspan="4">Badges &amp; progression</td></tr>
+            <tr><td>Badges Gratuit</td><td class="num">8</td><td class="num">8</td><td class="num">8</td></tr>
+            <tr><td>Badges Argent</td><td class="no">—</td><td class="num">13</td><td class="num">13</td></tr>
+            <tr><td>Badges Or animés</td><td class="no">—</td><td class="no">—</td><td class="num">8</td></tr>
+
+            <tr class="ct-section"><td colspan="4">Social &amp; communauté</td></tr>
+            <tr><td>Classement hebdomadaire</td><td class="num">Top 3</td><td class="ok">Complet</td><td class="ok">Complet + filtres</td></tr>
+            <tr><td>Rejoindre des groupes</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Créer un groupe</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+            <tr><td>Discord communauté</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+
+            <tr class="ct-section"><td colspan="4">Support &amp; perks</td></tr>
+            <tr><td>Support email</td><td class="ok">Best-effort</td><td class="ok">48h</td><td class="ok">24h prioritaire</td></tr>
+            <tr><td>Accès anticipé</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+          </tbody>
+        </table>
       </div>
+    </section>
 
-      <!-- GOLD -->
-      <div class="plan-card plan-gold">
-        <div class="plan-badge-wrap"><span class="plan-icon">🥇</span></div>
-        <h2 class="plan-name">Or</h2>
-        <div class="plan-price"><span class="price-amount">5,99€</span><span class="price-period">/mois</span></div>
-        <p class="plan-desc">L'expérience ultime de la forêt.</p>
-        <ul class="plan-features">
-          <li class="feat yes">✅ Tout le plan Argent</li>
-          <li class="feat yes">👑 Profil Légendaire (animations, thèmes)</li>
-          <li class="feat yes">🎯 Objectifs personnalisables</li>
-          <li class="feat yes">🏆 50+ badges exclusifs & animés</li>
-          <li class="feat yes">📊 Statistiques avancées & heatmap</li>
-          <li class="feat yes">🌦️ Météo forêt en temps réel</li>
-          <li class="feat yes">🔔 Alertes chemin (mises à jour)</li>
-          <li class="feat yes">🎨 Couleur de tracé personnalisée</li>
-          <li class="feat yes">📤 Export Strava & Komoot</li>
-          <li class="feat yes">💬 Communauté Discord exclusive</li>
-          <li class="feat yes">⚡ Support prioritaire</li>
-          <li class="feat yes">🆕 Nouvelles fonctions en avant-première</li>
-        </ul>
-        <button class="plan-btn plan-btn-gold" onclick="choosePlan('gold')">Choisir Or</button>
+    <!-- ── Testimonials ─────────────────────────────────────────────────── -->
+    <section class="testimonials">
+      <div class="testimonials-head">
+        <span class="section-eyebrow">Témoignages</span>
+        <h2 class="section-title display">Ils explorent la forêt avec BWR</h2>
       </div>
+      <div class="testimonials-grid">
+        <figure class="testimonial">
+          <blockquote>"L'export GPX seul vaut l'abonnement. Je prépare mon trajet le soir, je le pousse sur ma montre, et le matin je n'ai plus qu'à partir."</blockquote>
+          <figcaption>
+            <span class="t-avatar" style="background:linear-gradient(135deg,#1e4d14,#2d6b1f);color:#a3e635">JM</span>
+            <div>
+              <strong>Jean-Marc</strong>
+              <span>Membre Argent · Compiègne</span>
+            </div>
+          </figcaption>
+        </figure>
+        <figure class="testimonial featured">
+          <blockquote>"Les suggestions quotidiennes me font découvrir des coins que je n'aurais jamais trouvés seul. Et la météo intégrée, c'est juste génial."</blockquote>
+          <figcaption>
+            <span class="t-avatar" style="background:linear-gradient(135deg,#b45309,#f59e0b);color:#fde68a">SR</span>
+            <div>
+              <strong>Sophie R.</strong>
+              <span>Membre Or · Pierrefonds</span>
+            </div>
+          </figcaption>
+        </figure>
+        <figure class="testimonial">
+          <blockquote>"Les chemins sont vérifiés sur le terrain — pas de mauvaise surprise. Et le mode boucle est exactement ce qu'il me fallait pour mes sorties dominicales."</blockquote>
+          <figcaption>
+            <span class="t-avatar" style="background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#bfdbfe">CP</span>
+            <div>
+              <strong>Charles P.</strong>
+              <span>Membre Argent · Choisy-au-Bac</span>
+            </div>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
 
-    </div>
+    <!-- ── FAQ ──────────────────────────────────────────────────────────── -->
+    <section class="faq" id="faq">
+      <div class="faq-head">
+        <span class="section-eyebrow">FAQ</span>
+        <h2 class="section-title display">Questions fréquentes</h2>
+      </div>
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary>Comment se déroule le paiement ?</summary>
+          <p>Pour l'instant, l'activation se fait manuellement. Vous remplissez le formulaire de demande, on vous envoie les coordonnées bancaires, et votre plan est activé sous 24h ouvrées. Un système de paiement par carte arrive très bientôt.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Puis-je annuler à tout moment ?</summary>
+          <p>Oui. Aucun engagement. Vous nous écrivez à <a href="mailto:ciril8596@gmail.com">ciril8596@gmail.com</a> et votre plan revient au Gratuit à la fin du mois en cours. Aucune question, aucune justification.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Et si je passe d'Argent à Or (ou inversement) ?</summary>
+          <p>C'est instantané : on ajuste votre plan, et le tarif est calculé au prorata. Si vous baissez, la différence est créditée sur votre prochain mois.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Mes statistiques et trajets sont-ils sauvegardés ?</summary>
+          <p>En Gratuit, vos statistiques restent dans votre navigateur uniquement. En Argent et Or, tout est synchronisé dans le cloud — vous retrouvez vos trajets et votre progression sur tous vos appareils.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Comment fonctionnent les cartes hors-ligne ?</summary>
+          <p>Quand vous générez un trajet, un bouton "Télécharger pour hors-ligne" apparaît. La carte de la zone est mise en cache et fonctionne sans signal. Argent : 1 trajet à la fois. Or : jusqu'à 20 trajets simultanés.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Les badges peuvent-ils être perdus ?</summary>
+          <p>Non. Une fois un badge gagné, il reste à vie sur votre profil. Seul leur affichage dépend de votre plan : les badges Argent et Or restent visibles uniquement avec le plan correspondant.</p>
+        </details>
+        <details class="faq-item">
+          <summary>L'export GPX fonctionne avec ma montre Garmin ?</summary>
+          <p>Oui. Notre GPX respecte le standard 1.1 et fonctionne avec Garmin Connect, Strava, Komoot, Suunto, Wahoo, ou n'importe quel logiciel cartographique. Le format KML (Or) est compatible Google Earth.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Pourquoi limiter le plan Gratuit ?</summary>
+          <p>Vérifier chaque chemin sur le terrain, héberger les cartes, développer les fonctionnalités — tout cela a un coût. Le plan Gratuit reste utilisable pour tester l'application ; les plans payants permettent à BWR d'exister et de s'améliorer.</p>
+        </details>
+      </div>
+    </section>
 
-    <p class="plans-note">Paiement sécurisé · Annulable à tout moment · Aucun engagement</p>
+    <!-- ── Final CTA ────────────────────────────────────────────────────── -->
+    <section class="final-cta">
+      <div class="fc-bg"></div>
+      <div class="fc-content">
+        <h2 class="display">Prêt à explorer sans limites ?</h2>
+        <p>Trois plans, une seule forêt. À vous de choisir l'aventure.</p>
+        <div class="fc-actions">
+          <button class="btn-cta-primary" data-plan="silver">Commencer avec Argent</button>
+          <button class="btn-cta-secondary" data-plan="gold">Voir Or →</button>
+        </div>
+        <p class="fc-microcopy">Activation manuelle sous 24h · Sans engagement · Annulable en 1 clic</p>
+      </div>
+    </section>
 
   </main>
 
-  <!-- Coming soon modal -->
-  <div class="modal-overlay hidden" id="comingSoonModal">
-    <div class="modal-card">
-      <div class="modal-icon" id="modalIcon">🥈</div>
-      <h3 id="modalTitle">Plan Argent</h3>
-      <p>Le système de paiement arrive bientôt !<br>
-        En attendant, contacte-nous pour activer ton plan.</p>
-      <a href="mailto:ciril8596@gmail.com" class="plan-btn plan-btn-silver" style="text-decoration:none;text-align:center">
-        ✉ Contacter l'équipe
-      </a>
-      <button class="modal-close" onclick="document.getElementById('comingSoonModal').classList.add('hidden')">Fermer</button>
+  <footer class="plans-footer">
+    <div class="pf-inner">
+      <span class="pf-logo">BWR</span>
+      <span class="pf-tag">Balades en forêt de Compiègne</span>
+      <div class="pf-links">
+        <a href="index.html">Accueil</a>
+        <a href="map.html">Carte</a>
+        <a href="routes.html">Planifier</a>
+        <a href="mailto:ciril8596@gmail.com">Contact</a>
+      </div>
+      <span class="pf-copy">© 2025 Thomas Legros</span>
+    </div>
+  </footer>
+
+  <!-- ── Activation request modal ─────────────────────────────────────── -->
+  <div class="modal-overlay hidden" id="activationModal" role="dialog" aria-modal="true" aria-labelledby="activationTitle">
+    <div class="modal-card modal-activation">
+      <button class="modal-x" id="activationClose" aria-label="Fermer">×</button>
+      <div class="modal-icon" id="activationIcon">🥈</div>
+      <h3 id="activationTitle" class="display">Activation du plan Argent</h3>
+      <p class="modal-lead">
+        Le paiement automatique arrive bientôt. En attendant, remplissez ce formulaire — nous vous envoyons les coordonnées bancaires et activons votre plan sous 24h.
+      </p>
+
+      <form id="activationForm" class="activation-form" novalidate>
+        <div class="af-row">
+          <label>
+            <span class="af-label">Nom complet</span>
+            <input type="text" id="afName" required placeholder="Jean Dupont" />
+          </label>
+          <label>
+            <span class="af-label">Email</span>
+            <input type="email" id="afEmail" required placeholder="jean@email.com" />
+          </label>
+        </div>
+        <label>
+          <span class="af-label">Plan choisi</span>
+          <select id="afPlan" required>
+            <option value="silver">🥈 Argent · 3,99€/mois</option>
+            <option value="gold">🥇 Or · 7,99€/mois</option>
+          </select>
+        </label>
+        <label>
+          <span class="af-label">Période (optionnel)</span>
+          <select id="afPeriod">
+            <option value="monthly">Mensuel</option>
+            <option value="annual">Annuel (-20 %)</option>
+          </select>
+        </label>
+        <label>
+          <span class="af-label">Message (optionnel)</span>
+          <textarea id="afMessage" rows="3" placeholder="Une question ? Un mode de paiement préféré ?"></textarea>
+        </label>
+        <p class="af-disclaimer">
+          🔒 Vos données ne sont jamais partagées. Email utilisé uniquement pour l'activation et le suivi du plan.
+        </p>
+        <button type="submit" class="af-submit" id="afSubmit">Envoyer la demande</button>
+        <p class="af-status" id="afStatus"></p>
+      </form>
     </div>
   </div>
 
+  <script src="js/config.js"></script>
+  <script src="js/features.js"></script>
   <script>
-    function choosePlan(plan) {
-      const modal = document.getElementById('comingSoonModal');
-      document.getElementById('modalIcon').textContent = plan === 'gold' ? '🥇' : '🥈';
-      document.getElementById('modalTitle').textContent = plan === 'gold' ? 'Plan Or' : 'Plan Argent';
-      modal.classList.remove('hidden');
+    /* ── Billing toggle ─────────────────────────────────────────────────── */
+    const billingToggles = document.querySelectorAll('.bt-opt');
+    let currentPeriod = 'monthly';
+
+    billingToggles.forEach(btn => {
+      btn.addEventListener('click', () => {
+        billingToggles.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        currentPeriod = btn.dataset.period;
+
+        document.querySelectorAll('.pc-amount, .pc-period').forEach(el => {
+          const val = el.dataset[currentPeriod];
+          if (val) el.textContent = val;
+        });
+      });
+    });
+
+    /* ── Activation modal ───────────────────────────────────────────────── */
+    const activationModal = document.getElementById('activationModal');
+    const activationIcon  = document.getElementById('activationIcon');
+    const activationTitle = document.getElementById('activationTitle');
+    const afPlan          = document.getElementById('afPlan');
+    const afPeriod        = document.getElementById('afPeriod');
+    const afStatus        = document.getElementById('afStatus');
+
+    function openActivation(plan) {
+      activationIcon.textContent  = plan === 'gold' ? '🥇' : '🥈';
+      activationTitle.textContent = plan === 'gold' ? 'Activation du plan Or' : 'Activation du plan Argent';
+      afPlan.value   = plan;
+      afPeriod.value = currentPeriod;
+      activationModal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => document.getElementById('afName').focus(), 80);
     }
-    document.getElementById('comingSoonModal').addEventListener('click', function(e) {
-      if (e.target === this) this.classList.add('hidden');
+    function closeActivation() {
+      activationModal.classList.add('hidden');
+      document.body.style.overflow = '';
+      afStatus.textContent = '';
+    }
+    document.querySelectorAll('[data-plan]').forEach(el => {
+      el.addEventListener('click', () => openActivation(el.dataset.plan));
+    });
+    document.getElementById('activationClose').addEventListener('click', closeActivation);
+    activationModal.addEventListener('click', e => { if (e.target === activationModal) closeActivation(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !activationModal.classList.contains('hidden')) closeActivation(); });
+
+    /* ── Activation form submit ─────────────────────────────────────────── */
+    document.getElementById('activationForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const name    = document.getElementById('afName').value.trim();
+      const email   = document.getElementById('afEmail').value.trim();
+      const plan    = afPlan.value;
+      const period  = afPeriod.value;
+      const message = document.getElementById('afMessage').value.trim();
+      const btn     = document.getElementById('afSubmit');
+
+      if (!name || !email) {
+        afStatus.textContent = 'Nom et email sont obligatoires.';
+        afStatus.style.color = 'var(--danger)';
+        return;
+      }
+
+      btn.textContent = 'Envoi…';
+      btn.disabled = true;
+
+      const planLabel   = plan === 'gold' ? 'Or (7,99€/mois)' : 'Argent (3,99€/mois)';
+      const periodLabel = period === 'annual' ? 'annuel (-20 %)' : 'mensuel';
+      const formatted = `=== Demande d'activation BWR ===
+Plan : ${planLabel}
+Période : ${periodLabel}
+
+Nom : ${name}
+Email : ${email}
+
+Message : ${message || '(aucun)'}
+`;
+
+      try {
+        const res = await fetch(`${API_URL}/api/contact`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, message: formatted, subject: `[ACTIVATION ${plan.toUpperCase()}]` }),
+        });
+        if (!res.ok) throw new Error();
+        document.getElementById('activationForm').reset();
+        afStatus.innerHTML = '<strong>✓ Demande envoyée !</strong> Vous recevrez les instructions par email sous 24h.';
+        afStatus.style.color = 'var(--forest-700)';
+        setTimeout(closeActivation, 3500);
+      } catch {
+        afStatus.textContent = 'Erreur d\'envoi. Écrivez-nous directement à ciril8596@gmail.com';
+        afStatus.style.color = 'var(--danger)';
+      } finally {
+        btn.textContent = 'Envoyer la demande';
+        btn.disabled = false;
+      }
+    });
+
+    /* ── Sticky nav shadow on scroll ─────────────────────────────────────── */
+    const plansNav = document.getElementById('plansNav');
+    window.addEventListener('scroll', () => {
+      plansNav.classList.toggle('scrolled', window.scrollY > 12);
+    });
+
+    /* ── Fade-up on scroll ───────────────────────────────────────────────── */
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.plan-card, .testimonial, .faq-item, .trust-item, .compare-table-wrap').forEach(el => {
+      el.classList.add('fade-up');
+      io.observe(el);
+    });
+
+    /* ── Smooth scroll for anchor links ──────────────────────────────────── */
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', ev => {
+        const tgt = document.querySelector(a.getAttribute('href'));
+        if (tgt) { ev.preventDefault(); tgt.scrollIntoView({ behavior: 'smooth' }); }
+      });
     });
   </script>
 

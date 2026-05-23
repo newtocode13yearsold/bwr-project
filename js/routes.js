@@ -18,7 +18,121 @@ let pickingPoint = null;
   initUserMenu();
   initMap();
   loadSavedPaths();
+  applyPlanGates();
+  updateQuotaStrip();
 })();
+
+// ── Plan-based UI gating ──────────────────────────────────────────────────────
+// Locks mode cards, difficulty buttons, premium tile layers and exports for
+// users whose plan does not include the feature. See js/features.js.
+function applyPlanGates() {
+  const plan = currentUser?.plan || 'free';
+
+  // Lock loop mode if disallowed (free users currently)
+  if (!can('loop_mode', plan)) {
+    const loopCard = document.querySelector('.mode-card[data-mode="loop"]');
+    if (loopCard) markCardLocked(loopCard, 'silver', 'Mode boucle');
+  }
+  // Lock multi-stop (visual hint only — there is no button yet)
+
+  // Lock Hard difficulty
+  if (!can('difficulty_hard', plan)) {
+    const hardBtn = document.querySelector('.diff-btn[data-diff="hard"]');
+    if (hardBtn) markBtnLocked(hardBtn, 'silver');
+  }
+
+  // Lock satellite tile button
+  if (!can('satellite_tiles', plan)) {
+    const satBtn = document.querySelector('.layer-btn[data-layer="satellite"]');
+    if (satBtn) markBtnLocked(satBtn, 'gold');
+  }
+  // Lock IGN topo for free users (default tile becomes OSM)
+  if (!can('ign_topo_tiles', plan)) {
+    const ignBtn = document.querySelector('.layer-btn[data-layer="ign"]');
+    if (ignBtn) markBtnLocked(ignBtn, 'silver');
+  }
+}
+
+function markCardLocked(el, tier, featureLabel) {
+  el.classList.add('locked-feature');
+  el.setAttribute('data-tier', tier);
+  // Don't disable the click — intercept it to show an upsell.
+  el.addEventListener('click', interceptLocked, true);
+  if (!el.querySelector('.lock-badge')) {
+    const badge = document.createElement('span');
+    badge.className = `lock-badge tier-${tier}`;
+    badge.textContent = tier === 'gold' ? '👑 Or' : '🔒 Argent';
+    el.appendChild(badge);
+  }
+  el.dataset.featureLabel = featureLabel;
+}
+function markBtnLocked(el, tier) {
+  el.classList.add('locked-feature');
+  el.setAttribute('data-tier', tier);
+  el.addEventListener('click', interceptLocked, true);
+  if (!el.querySelector('.lock-badge')) {
+    const badge = document.createElement('span');
+    badge.className = `lock-badge tier-${tier}`;
+    badge.textContent = tier === 'gold' ? '👑' : '🔒';
+    el.appendChild(badge);
+  }
+}
+function interceptLocked(e) {
+  if (!e.currentTarget.classList.contains('locked-feature')) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const tier  = e.currentTarget.getAttribute('data-tier') || 'silver';
+  const label = e.currentTarget.dataset.featureLabel || 'Cette fonctionnalité';
+  showUpgradeModal(tier, label);
+}
+
+function showUpgradeModal(tier, featureLabel) {
+  const planLabel = tier === 'gold' ? 'Or' : 'Argent';
+  const icon      = tier === 'gold' ? '🥇' : '🥈';
+  const existing = document.getElementById('upgradeModal');
+  if (existing) existing.remove();
+  const m = document.createElement('div');
+  m.id = 'upgradeModal';
+  m.className = 'upgrade-modal-overlay';
+  m.innerHTML = `
+    <div class="upgrade-modal-card">
+      <button class="um-close" aria-label="Fermer">×</button>
+      <div class="um-icon">${icon}</div>
+      <h3>${featureLabel} est réservé au plan ${planLabel}</h3>
+      <p>Débloquez les trajets illimités, l'export GPX, le profil altimétrique et bien plus.</p>
+      <a href="plans.html" class="um-cta">Voir le plan ${planLabel} →</a>
+      <button class="um-secondary">Plus tard</button>
+    </div>
+  `;
+  document.body.appendChild(m);
+  m.querySelector('.um-close').onclick   = () => m.remove();
+  m.querySelector('.um-secondary').onclick = () => m.remove();
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+}
+
+// ── Weekly route quota strip ──────────────────────────────────────────────────
+function updateQuotaStrip() {
+  const plan  = currentUser?.plan || 'free';
+  const limit = limitOf('routes_per_week', plan);
+  const stripEl = document.getElementById('quotaStrip');
+  if (!stripEl) return;
+  if (limit === Infinity) {
+    stripEl.classList.add('hidden');
+    return;
+  }
+  const { count } = readWeekly();
+  const remaining = Math.max(0, limit - count);
+  const pct = Math.min(100, (count / limit) * 100);
+  stripEl.classList.remove('hidden');
+  stripEl.innerHTML = `
+    <div class="qs-text">
+      <strong>${count} / ${limit}</strong> trajets utilisés cette semaine
+      <span class="qs-sub">${remaining > 0 ? `${remaining} restant${remaining > 1 ? 's' : ''}` : 'Limite atteinte'}</span>
+    </div>
+    <div class="qs-bar"><div class="qs-fill" style="width:${pct}%"></div></div>
+    <a href="plans.html" class="qs-cta">Passer à Argent — illimité →</a>
+  `;
+}
 
 function initUserMenu() {
   const menuEl = document.getElementById('userMenu');
@@ -30,9 +144,10 @@ function initUserMenu() {
     </button>
     <div class="user-dropdown hidden" id="userDropdown">
       <span class="dropdown-name">${currentUser.name}</span>
-      <a href="map.html">Voir la carte</a>
-      <a href="profile.html">Mon profil</a>
-      ${currentUser.role === 'admin' ? '<a href="admin.html">Admin</a>' : ''}
+      <a href="index.html">🏠 Accueil</a>
+      <a href="map.html">🗺 Voir la carte</a>
+      <a href="profile.html">👤 Mon profil</a>
+      ${currentUser.role === 'admin' ? '<a href="admin.html">⚙️ Admin</a>' : ''}
       <button class="dropdown-logout" id="btnLogout">Se déconnecter</button>
     </div>
   `;
@@ -48,22 +163,29 @@ function initUserMenu() {
 const TILE_LAYERS = {
   ign: () => L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxZoom: 17, subdomains: ['a','b','c'] }
+    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxZoom: 17, subdomains: ['a','b','c'], detectRetina: true }
   ),
   osm: () => L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© OpenStreetMap', maxZoom: 19 }
+    { attribution: '© OpenStreetMap', maxZoom: 19, detectRetina: true }
   ),
   satellite: () => L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
-    { attribution: '© IGN', maxZoom: 20 }
+    { attribution: '© IGN', maxZoom: 20, detectRetina: true }
   ),
 };
 let currentTile = null;
 
 function initMap() {
   map = L.map('map', { zoomControl: true }).setView(MAP_CENTER, MAP_ZOOM);
-  currentTile = TILE_LAYERS.ign();
+  // Free users get OSM by default (IGN/satellite gated)
+  const plan = currentUser?.plan || 'free';
+  const defaultLayer = can('ign_topo_tiles', plan) ? 'ign' : 'osm';
+  currentTile = TILE_LAYERS[defaultLayer]();
   currentTile.addTo(map);
+  // Reflect that on the layer-button row if it exists
+  setTimeout(() => {
+    document.querySelectorAll('.layer-btn').forEach(b => b.classList.toggle('active', b.dataset.layer === defaultLayer));
+  }, 0);
   map.on('click', onMapClick);
   setTimeout(() => map.invalidateSize(), 100);
 
@@ -267,6 +389,15 @@ document.getElementById('btnGenerate').addEventListener('click', generateRoute);
 
 async function generateRoute() {
   const btn = document.getElementById('btnGenerate');
+
+  // ── Weekly quota check (free tier hard limit) ──
+  const plan  = currentUser?.plan || 'free';
+  const quota = checkRouteQuota(plan);
+  if (!quota.ok) {
+    showQuotaExceededModal(quota);
+    return;
+  }
+
   btn.textContent = 'Calcul en cours…';
   btn.classList.add('loading');
   btn.disabled = true;
@@ -298,6 +429,10 @@ async function generateRoute() {
   const prevKm    = parseFloat(localStorage.getItem('bwr_km_total')   || '0');
   localStorage.setItem('bwr_route_count', prevCount + 1);
   localStorage.setItem('bwr_km_total', (prevKm + result.meters / 1000).toFixed(2));
+
+  // Bump the weekly quota and refresh the strip
+  bumpWeekly();
+  updateQuotaStrip();
 
   displayRoute(result, mode === 'loop' ? distanceKm : null);
 
@@ -546,15 +681,11 @@ async function osrmLoopWithRetry(sLat, sLng, targetKm) {
 
 // ── Public routing entry points ────────────────────────────────────────────────
 async function routeAtob(sLat, sLng, eLat, eLng) {
-  // 1. Graph router — only your tagged forest paths, guaranteed correct terrain
-  if (savedPaths.length) {
-    try { return graphAtob(sLat, sLng, eLat, eLng); } catch (e) { console.warn('graph:', e.message); }
-  }
-  // 2. ORS (needs ORS_KEY in Cloudflare)
+  // ORS (needs ORS_KEY in Cloudflare)
   try {
     return await callORS({ profile: orsProfile(), coordinates: [[sLng, sLat], [eLng, eLat]] });
   } catch (e) { console.warn('ORS:', e.message); }
-  // 3. OSRM — always works, any path
+  // OSRM — uses all roads and paths (city streets, forest paths, etc.)
   return osrmRoute([{ lat: sLat, lon: sLng }, { lat: eLat, lon: eLng }]);
 }
 
@@ -579,7 +710,10 @@ async function routeLoop(sLat, sLng, targetKm) {
 function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   if (routeLayer) map.removeLayer(routeLayer);
 
-  const color = difficulty === 'easy' ? '#22c55e' : difficulty === 'medium' ? '#f97316' : '#ef4444';
+  // Gold users can override route color (free/silver get default difficulty colors)
+  const plan = currentUser?.plan || 'free';
+  const customColor = can('custom_route_color', plan) ? localStorage.getItem('bwr_route_color') : null;
+  const color = customColor || (difficulty === 'easy' ? '#22c55e' : difficulty === 'medium' ? '#f97316' : '#ef4444');
   routeLayer = L.polyline(coords, { color, weight: 6, opacity: 0.9 }).addTo(map);
   map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
 
@@ -667,15 +801,110 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   document.getElementById('routeResult').classList.remove('hidden');
   document.getElementById('routeResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-  // GPX export
+  // Export buttons — gated by plan
   const typeLabelShort = { foot: 'forestier', bike: 'cyclable', champs: 'champs', mix: 'mix' }[pathType];
-  const routeName = `BWR_${mode === 'loop' ? 'boucle' : 'atob'}_${typeLabelShort}`;
-  document.getElementById('btnGPX').onclick = () => downloadGPX(coords, routeName);
+  const routeName = `BWR_${mode === 'loop' ? 'boucle' : 'atob'}_${typeLabelShort}_${new Date().toISOString().slice(0,10)}`;
 
-  // Elevation profile (async, fills in after route appears)
-  fetchElevation(coords)
-    .then(elevs => drawElevationChart(elevs, meters))
-    .catch(() => { document.getElementById('statAscent').textContent = '—'; });
+  const btnGPX = document.getElementById('btnGPX');
+  if (btnGPX) {
+    if (can('gpx_export', plan)) {
+      btnGPX.classList.remove('locked-feature');
+      btnGPX.querySelector('.lock-badge')?.remove();
+      btnGPX.onclick = () => downloadGPX(coords, routeName);
+    } else {
+      btnGPX.classList.add('locked-feature');
+      btnGPX.setAttribute('data-tier', 'silver');
+      btnGPX.dataset.featureLabel = 'L\'export GPX';
+      if (!btnGPX.querySelector('.lock-badge')) {
+        const b = document.createElement('span'); b.className = 'lock-badge tier-silver'; b.textContent = '🔒 Argent';
+        btnGPX.appendChild(b);
+      }
+      btnGPX.onclick = (e) => { e.preventDefault(); showUpgradeModal('silver', 'L\'export GPX'); };
+    }
+  }
+  const btnKML = document.getElementById('btnKML');
+  if (btnKML) {
+    if (can('kml_export', plan)) {
+      btnKML.classList.remove('locked-feature');
+      btnKML.querySelector('.lock-badge')?.remove();
+      btnKML.onclick = () => downloadKML(coords, routeName);
+    } else {
+      btnKML.classList.add('locked-feature');
+      btnKML.setAttribute('data-tier', 'gold');
+      btnKML.dataset.featureLabel = 'L\'export KML';
+      if (!btnKML.querySelector('.lock-badge')) {
+        const b = document.createElement('span'); b.className = 'lock-badge tier-gold'; b.textContent = '👑 Or';
+        btnKML.appendChild(b);
+      }
+      btnKML.onclick = (e) => { e.preventDefault(); showUpgradeModal('gold', 'L\'export KML'); };
+    }
+  }
+  const btnStrava = document.getElementById('btnStrava');
+  if (btnStrava) {
+    if (can('strava_komoot_push', plan)) {
+      btnStrava.classList.remove('locked-feature');
+      btnStrava.onclick = () => pushToStrava(coords, routeName);
+    } else {
+      btnStrava.classList.add('locked-feature');
+      btnStrava.onclick = (e) => { e.preventDefault(); showUpgradeModal('gold', 'Le push Strava'); };
+    }
+  }
+
+  // Elevation profile — only for Silver+
+  if (can('elevation_profile', plan)) {
+    fetchElevation(coords)
+      .then(elevs => drawElevationChart(elevs, meters))
+      .catch(() => { document.getElementById('statAscent').textContent = '—'; });
+  } else {
+    const wrap = document.getElementById('elevationWrap');
+    if (wrap) {
+      wrap.classList.remove('hidden');
+      wrap.innerHTML = `
+        <div class="elevation-locked">
+          <span class="el-icon">⛰️</span>
+          <strong>Profil altimétrique</strong>
+          <p>Voyez le dénivelé, l'altitude min/max et la pente — disponibles à partir du plan Argent.</p>
+          <a href="plans.html" class="el-cta">Débloquer avec Argent →</a>
+        </div>
+      `;
+    }
+    document.getElementById('statAscent').textContent = '🔒';
+  }
+}
+
+// Modal shown when free users hit their weekly route quota
+function showQuotaExceededModal(quota) {
+  const existing = document.getElementById('quotaModal');
+  if (existing) existing.remove();
+  const m = document.createElement('div');
+  m.id = 'quotaModal';
+  m.className = 'upgrade-modal-overlay';
+  m.innerHTML = `
+    <div class="upgrade-modal-card quota-card">
+      <button class="um-close" aria-label="Fermer">×</button>
+      <div class="um-icon">🌿</div>
+      <h3>Vous avez atteint la limite hebdomadaire</h3>
+      <p><strong>${quota.used} / ${quota.limit}</strong> trajets utilisés cette semaine.</p>
+      <div class="qm-comparison">
+        <div class="qm-tier qm-free">
+          <strong>🌿 Gratuit</strong>
+          <span>3 trajets / semaine</span>
+        </div>
+        <div class="qm-arrow">→</div>
+        <div class="qm-tier qm-silver">
+          <strong>🥈 Argent</strong>
+          <span>Illimité · 3,99€/mois</span>
+        </div>
+      </div>
+      <p class="qm-perks">+ Mode boucle, profil altimétrique, export GPX, suggestions, cartes hors-ligne…</p>
+      <a href="plans.html" class="um-cta">Passer à Argent</a>
+      <button class="um-secondary">Revenir lundi</button>
+    </div>
+  `;
+  document.body.appendChild(m);
+  m.querySelector('.um-close').onclick   = () => m.remove();
+  m.querySelector('.um-secondary').onclick = () => m.remove();
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
 }
 
 // ── Elevation profile (Open-Elevation API) ────────────────────────────────────
@@ -739,36 +968,7 @@ function drawElevationChart(elevations, meters) {
   wrap.classList.remove('hidden');
 }
 
-// ── GPX export ────────────────────────────────────────────────────────────────
-function downloadGPX(coords, routeName) {
-  const now = new Date().toISOString();
-  const trkpts = coords.map(([lat, lon]) =>
-    `    <trkpt lat="${lat.toFixed(6)}" lon="${lon.toFixed(6)}"></trkpt>`
-  ).join('\n');
-
-  const gpx = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="BWR — Balades en forêt de Compiègne"
-  xmlns="http://www.topografix.com/GPX/1/1">
-  <metadata>
-    <name>${routeName}</name>
-    <time>${now}</time>
-  </metadata>
-  <trk>
-    <name>${routeName}</name>
-    <trkseg>
-${trkpts}
-    </trkseg>
-  </trk>
-</gpx>`;
-
-  const blob = new Blob([gpx], { type: 'application/gpx+xml' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url;
-  a.download = `${routeName.replace(/\s+/g, '_')}.gpx`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-}
+// ── GPX/KML export now lives in js/exporters.js (downloadGPX, downloadKML, pushToStrava)
 
 // ── Reset ─────────────────────────────────────────────────────────────────────
 document.getElementById('btnReset').addEventListener('click', () => {

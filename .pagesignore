@@ -1,0 +1,8 @@
+node_modules/
+.claude/
+wrangler.jsonc
+package.json
+package-lock.json
+worker.js
+.assetsignore
+.pagesignore

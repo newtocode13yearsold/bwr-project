@@ -6,6 +6,10 @@
   <title>BWR — Admin</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/login.css" />
 </head>
@@ -19,8 +23,9 @@
         <span class="tagline admin-tag">Admin</span>
       </div>
       <div class="header-right">
-        <button class="btn-icon" id="btnSelectPath">🗺 Sélectionner un chemin</button>
-        <button class="btn-icon" id="btnDrawPath">✏ Dessiner</button>
+        <button class="btn-icon" id="btnSelectPath" title="Sélectionner un chemin"><span class="btn-emoji">🗺</span><span class="btn-label">Sélectionner</span></button>
+        <button class="btn-icon" id="btnDrawPath" title="Dessiner"><span class="btn-emoji">✏</span><span class="btn-label">Dessiner</span></button>
+        <button class="btn-icon" id="btnSplitCancel" title="Annuler le découpage" style="display:none;background:rgba(239,68,68,0.4)"><span class="btn-emoji">✕</span><span class="btn-label">Annuler</span></button>
         <div class="user-menu" id="userMenu"></div>
       </div>
     </header>

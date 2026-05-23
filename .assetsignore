@@ -1,0 +1,10 @@
+node_modules/
+.git/
+.claude/
+.wrangler/
+wrangler.jsonc
+package.json
+package-lock.json
+worker.js
+.assetsignore
+.pagesignore

@@ -1,0 +1,221 @@
+/* ── BWR Design Tokens ────────────────────────────────────────────────────────
+ *
+ * The single source of truth for color, type, motion, spacing and elevation
+ * across every BWR page. Loaded *before* every other stylesheet so page-level
+ * sheets can reference the variables defined here.
+ *
+ * Order in <head>:
+ *   1. css/tokens.css       (this file)
+ *   2. Google Fonts <link>  (Inter + Fraunces)
+ *   3. css/style.css        (legacy globals)
+ *   4. css/<page>.css       (page-specific)
+ * ────────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Forest palette (refined) ── */
+  --forest-950: #061a08;
+  --forest-900: #0b2410;
+  --forest-800: #133b18;
+  --forest-700: #1e4d14;
+  --forest-600: #2d6b1f;
+  --forest-500: #4a8a32;
+  --forest-300: #b9d8a4;
+  --forest-100: #f0f7ec;
+  --forest-50:  #f8fbf6;
+
+  /* ── Lime accent ── */
+  --lime-600: #65a30d;
+  --lime-500: #a3e635;
+  --lime-400: #bef264;
+  --lime-300: #d9f99d;
+
+  /* ── Premium tier palettes ── */
+  --silver-50:  #f8fafc;
+  --silver-200: #e2e8f0;
+  --silver-400: #94a3b8;
+  --silver-600: #475569;
+  --silver-grad-soft: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #cbd5e1 100%);
+  --silver-grad:      linear-gradient(135deg, #cbd5e1 0%, #94a3b8 50%, #e2e8f0 100%);
+  --silver-grad-deep: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
+  --silver-glow:      0 0 32px rgba(148, 163, 184, 0.35);
+
+  --gold-50:   #fffbeb;
+  --gold-200:  #fde68a;
+  --gold-400:  #fbbf24;
+  --gold-600:  #b45309;
+  --gold-text: #4a2c00;
+  --gold-grad-soft: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%);
+  --gold-grad:      linear-gradient(135deg, #fde68a 0%, #f59e0b 45%, #fbbf24 100%);
+  --gold-grad-deep: linear-gradient(135deg, #b45309 0%, #f59e0b 50%, #fcd34d 100%);
+  --gold-glow:      0 0 32px rgba(251, 191, 36, 0.45);
+
+  /* ── Surfaces ── */
+  --surface-0:  #ffffff;
+  --surface-1:  #fafbf7;
+  --surface-2:  #f3f4f0;
+  --surface-3:  #e9ebe3;
+  --surface-ink: #0b2410;
+
+  /* ── Text ── */
+  --text-strong:   #0b2410;
+  --text:          #1f2937;
+  --text-muted:    #6b7280;
+  --text-faint:    #9ca3af;
+  --text-inverse:  #ffffff;
+  --text-on-gold:  var(--gold-text);
+
+  /* ── Borders ── */
+  --border-soft:   #ebeee5;
+  --border:        #e2e8da;
+  --border-strong: #c8d0bf;
+
+  /* ── Status / semantic ── */
+  --status-easy:    #22c55e;
+  --status-medium:  #f97316;
+  --status-hard:    #ef4444;
+  --status-blocked: #9ca3af;
+  --danger:         #dc2626;
+  --warning:        #f59e0b;
+  --success:        #16a34a;
+  --info:           #2563eb;
+
+  /* ── Typography ── */
+  --font-sans:    "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-display: "Fraunces", "Playfair Display", Georgia, serif;
+  --font-mono:    ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --fs-xs:   0.78rem;
+  --fs-sm:   0.875rem;
+  --fs-base: 1rem;
+  --fs-md:   1.125rem;
+  --fs-lg:   1.25rem;
+  --fs-xl:   1.5rem;
+  --fs-2xl:  1.875rem;
+  --fs-3xl:  2.25rem;
+  --fs-4xl:  clamp(2.2rem, 5vw, 3.4rem);
+  --fs-5xl:  clamp(2.8rem, 6.5vw, 4.5rem);
+
+  /* ── Spacing scale (4 px base) ── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ── Radii ── */
+  --radius-xs:   6px;
+  --radius-sm:   10px;
+  --radius-md:   14px;
+  --radius-lg:   20px;
+  --radius-xl:   28px;
+  --radius-pill: 999px;
+
+  /* ── Elevation ── */
+  --shadow-xs: 0 1px 2px rgba(11, 36, 16, 0.06);
+  --shadow-sm: 0 2px 6px -2px rgba(11, 36, 16, 0.08), 0 1px 2px rgba(11, 36, 16, 0.04);
+  --shadow-md: 0 8px 24px -10px rgba(11, 36, 16, 0.18), 0 2px 6px -2px rgba(11, 36, 16, 0.06);
+  --shadow-lg: 0 24px 48px -20px rgba(11, 36, 16, 0.30), 0 6px 16px -6px rgba(11, 36, 16, 0.10);
+  --shadow-xl: 0 40px 80px -32px rgba(11, 36, 16, 0.40);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+
+  /* ── Motion ── */
+  --ease-out:    cubic-bezier(0.16, 1, 0.30, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast:    140ms;
+  --dur:         220ms;
+  --dur-slow:    420ms;
+
+  /* ── Layout ── */
+  --container:    1180px;
+  --container-sm: 720px;
+  --header-h:     56px;
+  --z-modal:      5000;
+  --z-toast:      6000;
+}
+
+/* Subtle but global polish — the typography reset is intentionally light so
+   page CSS that already targets utility classes keeps working. */
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--text);
+}
+
+/* Display serif for marquee headings — opt-in by adding .display */
+.display,
+.display * {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-variation-settings: "opsz" 144, "SOFT" 50;
+  letter-spacing: -0.02em;
+}
+
+/* ── Reusable utility classes ─────────────────────────────────────────────── */
+
+.tier-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.6;
+}
+.tier-tag.silver { background: var(--silver-grad-soft); color: var(--silver-600); border: 1px solid var(--silver-200); }
+.tier-tag.gold   { background: var(--gold-grad-soft);   color: var(--gold-text);   border: 1px solid var(--gold-200); box-shadow: 0 0 0 0 transparent; }
+.tier-tag.free   { background: var(--forest-100);       color: var(--forest-700); border: 1px solid var(--forest-100); }
+
+.lock-overlay {
+  position: relative;
+  isolation: isolate;
+}
+.lock-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.92) 80%);
+  border-radius: inherit;
+  z-index: 1;
+  pointer-events: none;
+}
+.lock-overlay > .lock-cta {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 16px;
+}
+
+.fade-up {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
