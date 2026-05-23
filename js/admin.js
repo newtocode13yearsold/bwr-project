@@ -123,7 +123,11 @@ function pathWeight() {
 
 function updatePathWeights() {
   const w = pathWeight();
-  Object.values(pathLayers).forEach(l => l.setStyle({ weight: w }));
+  Object.values(pathLayers).forEach(layers => {
+    // pathLayers stores [visibleLine, hitTarget] arrays
+    if (Array.isArray(layers)) layers[0].setStyle({ weight: w });
+    else layers.setStyle({ weight: w });
+  });
 }
 
 // ── Select mode — click an OSM path ──────────────────────────────────────────

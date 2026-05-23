@@ -1,7 +1,11 @@
 /* ── Reset & base ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Leaflet protection — prevent any global CSS from animating map layers ── */
+/* ── Leaflet protection — prevent global CSS from animating map layers ──────
+ * SVG <path> elements inside Leaflet panes must NEVER get will-change:transform
+ * (that promotes each path to its own GPU layer and breaks pan sync).
+ * Only block transition/animation — let Leaflet handle all transforms itself.
+ * ───────────────────────────────────────────────────────────────────────── */
 .leaflet-pane,
 .leaflet-map-pane,
 .leaflet-tile-pane,
@@ -13,7 +17,6 @@
 .leaflet-pane > canvas {
   transition: none !important;
   animation: none !important;
-  will-change: transform;
 }
 
 body {
