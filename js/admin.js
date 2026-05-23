@@ -173,7 +173,7 @@ function enterSplitMode(path) {
   map.closePopup();
   map.getContainer().style.cursor = 'crosshair';
   const layer = pathLayers[path.id];
-  if (layer) layer.setStyle({ color: '#f59e0b', weight: pathWeight() + 4, opacity: 1 });
+  if (layer) layer[0].setStyle({ color: '#f59e0b', weight: pathWeight() + 4, opacity: 1 });
   document.getElementById('btnSplitCancel').style.display = '';
   showStatus(`Clique sur "${path.name || 'le chemin'}" pour le couper en deux.`);
 }
@@ -181,7 +181,7 @@ function enterSplitMode(path) {
 function exitSplitMode() {
   if (splitTargetPath) {
     const layer = pathLayers[splitTargetPath.id];
-    if (layer) layer.setStyle({ color: STATUS_COLORS[splitTargetPath.status] || '#9ca3af', weight: pathWeight(), opacity: 0.9 });
+    if (layer) layer[0].setStyle({ color: STATUS_COLORS[splitTargetPath.status] || '#9ca3af', weight: pathWeight(), opacity: 0.9 });
   }
   splitModeActive = false;
   splitTargetPath = null;
@@ -495,25 +495,42 @@ async function dismissReport(reportId) {
 }
 
 function renderPaths() {
-  Object.values(pathLayers).forEach(l => map.removeLayer(l));
+  Object.values(pathLayers).forEach(l => {
+    if (Array.isArray(l)) l.forEach(x => map.removeLayer(x));
+    else map.removeLayer(l);
+  });
   pathLayers = {};
 
   allPaths.forEach(path => {
-    const line = L.polyline(path.coordinates, {
-      color: STATUS_COLORS[path.status] || '#9ca3af',
-      weight: pathWeight(),
-      opacity: 0.9,
-    });
-    line.on('click', (e) => {
+    const clickHandler = (e) => {
       L.DomEvent.stopPropagation(e);
       if (splitModeActive && splitTargetPath?.id === path.id) {
         handleSplitClick(path, e.latlng);
       } else if (!selectModeActive && !splitModeActive) {
         openColorPopup(path, e.latlng);
       }
+    };
+
+    // Visible line
+    const line = L.polyline(path.coordinates, {
+      color: STATUS_COLORS[path.status] || '#9ca3af',
+      weight: pathWeight(),
+      opacity: 0.9,
     });
+    line.on('click', clickHandler);
     line.addTo(map);
-    pathLayers[path.id] = line;
+
+    // Invisible wide hit-target so thin/gray lines are always easy to click
+    const hitTarget = L.polyline(path.coordinates, {
+      color: 'transparent',
+      weight: 20,
+      opacity: 0,
+      interactive: true,
+    });
+    hitTarget.on('click', clickHandler);
+    hitTarget.addTo(map);
+
+    pathLayers[path.id] = [line, hitTarget];
   });
 }
 
