@@ -175,6 +175,7 @@ body {
 .dot.medium       { background: #f97316; }
 .dot.hard         { background: #ef4444; }
 .dot.not_passable { background: #9ca3af; }
+.dot.no_bike      { background: #6366f1; }
 
 /* ── Filter panel ── */
 .filter-panel {

@@ -10,6 +10,7 @@ const STATUS_COLORS = {
   medium:      '#f97316',
   hard:        '#ef4444',
   not_passable:'#9ca3af',
+  no_bike:     '#6366f1',
 };
 
 const STATUS_LABELS = {
@@ -17,4 +18,5 @@ const STATUS_LABELS = {
   medium:      'Moyen',
   hard:        'Difficile',
   not_passable:'Impraticable',
+  no_bike:     'Vélo interdit',
 };
