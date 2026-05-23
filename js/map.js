@@ -97,23 +97,6 @@ function renderPaths() {
       opacity: 0.85,
     });
 
-    // Hover glow — highlight on mouse-over, restore on mouse-out
-    line.on('mouseover', function () {
-      this.setStyle({ weight: pathWeight() + 3, opacity: 1 });
-      this.bringToFront();
-    });
-    line.on('mouseout', function () {
-      this.setStyle({ weight: pathWeight(), opacity: 0.85 });
-    });
-
-    // Tooltip shows name without needing to click
-    line.bindTooltip(path.name || 'Chemin sans nom', {
-      sticky: true,
-      direction: 'top',
-      offset: [0, -6],
-      className: 'path-tooltip',
-    });
-
     const condHTML = path.conditions?.length
       ? `<div class="popup-cond-row">${path.conditions.map(c => {
           const icons = { dry:'✅', muddy:'⚠️', fallen:'❌', mtb:'🚴', running:'🏃', family:'👨‍👩‍👧' };
