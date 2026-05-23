@@ -522,6 +522,66 @@ document.getElementById('mapContactForm').addEventListener('submit', async e => 
   finally { btn.textContent = 'Envoyer'; btn.disabled = false; }
 });
 
+// ── Cartes hors-ligne (Silver+) ───────────────────────────────────────────────
+function lonToTileX(lon, z) { return Math.floor((lon + 180) / 360 * Math.pow(2, z)); }
+function latToTileY(lat, z) {
+  return Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z));
+}
+
+async function downloadOfflineTiles() {
+  if (!can('offline_cache', _userPlan)) {
+    showToast('🔒 Cartes hors-ligne disponibles avec Argent — voir plans.html');
+    return;
+  }
+  const maxAreas = limitOf('offline_cache', _userPlan);
+  const savedCount = parseInt(localStorage.getItem('bwr_offline_areas') || '0');
+  if (savedCount >= maxAreas) {
+    showToast(`Zone hors-ligne : limite de ${maxAreas} zone${maxAreas > 1 ? 's' : ''} atteinte`);
+    return;
+  }
+
+  const bounds = map.getBounds();
+  const tiles = [];
+  for (let z = 13; z <= 16; z++) {
+    const x0 = lonToTileX(bounds.getWest(), z),  x1 = lonToTileX(bounds.getEast(), z);
+    const y0 = latToTileY(bounds.getNorth(), z),  y1 = latToTileY(bounds.getSouth(), z);
+    const subs = ['a', 'b', 'c'];
+    for (let x = x0; x <= x1; x++)
+      for (let y = y0; y <= y1; y++)
+        tiles.push(`https://${subs[(x + y) % 3]}.tile.opentopomap.org/${z}/${x}/${y}.png`);
+  }
+
+  if (tiles.length > 3000) { showToast('Zone trop grande — dézoomez un peu'); return; }
+
+  const btn = document.getElementById('btnOffline');
+  if (btn) { btn.querySelector('.btn-emoji').textContent = '⏳'; btn.disabled = true; }
+  showToast(`📥 ${tiles.length} tuiles en cours de téléchargement…`);
+
+  try {
+    const cache = await caches.open('bwr-offline-tiles');
+    let done = 0;
+    for (const url of tiles) {
+      try { await cache.put(url, await fetch(url, { mode: 'no-cors' })); } catch {}
+      done++;
+    }
+    localStorage.setItem('bwr_offline_areas', String(savedCount + 1));
+    showToast(`✅ Zone sauvegardée hors-ligne ! (${done} tuiles · ${savedCount + 1}/${maxAreas})`);
+  } catch { showToast('Erreur lors du téléchargement hors-ligne'); }
+  finally {
+    if (btn) { btn.querySelector('.btn-emoji').textContent = '💾'; btn.disabled = false; }
+  }
+}
+
+// Show offline button for Silver+ users
+(function initOfflineBtn() {
+  const btn = document.getElementById('btnOffline');
+  if (!btn) return;
+  if (can('offline_cache', _userPlan)) {
+    btn.style.display = '';
+    btn.addEventListener('click', downloadOfflineTiles);
+  }
+})();
+
 initUserMenu();
 loadPaths();
 loadReports();

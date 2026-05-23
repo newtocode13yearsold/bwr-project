@@ -1,4 +1,5 @@
 const CACHE = 'bwr-v3';
+const TILE_CACHE = 'bwr-offline-tiles';
 
 // Install — skip waiting so update kicks in immediately
 self.addEventListener('install', e => {
@@ -9,7 +10,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
@@ -18,9 +19,19 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = e.request.url;
 
-  // Always network for API and tile requests
-  if (url.includes('/api/') || url.includes('tile') || url.includes('overpass')) {
-    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+  // Always network for API
+  if (url.includes('/api/') || url.includes('overpass')) {
+    e.respondWith(fetch(e.request).catch(() => new Response('{"error":"offline"}', { status: 503, headers: { 'Content-Type': 'application/json' } })));
+    return;
+  }
+
+  // Tiles — network first, fallback to offline tile cache
+  if (url.includes('tile') || url.includes('opentopomap') || url.includes('geopf.fr')) {
+    e.respondWith(
+      fetch(e.request).catch(() =>
+        caches.open(TILE_CACHE).then(c => c.match(e.request))
+      )
+    );
     return;
   }
 

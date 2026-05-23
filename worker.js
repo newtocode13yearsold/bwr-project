@@ -1,8 +1,26 @@
-async function hashPassword(password, salt) {
+async function hashPasswordLegacy(password, salt) {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + salt);
   const hash = await crypto.subtle.digest('SHA-256', data);
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// PBKDF2-SHA-256 avec 100 000 itérations — résistant au bruteforce (Web Crypto natif, sans dépendances)
+async function hashPassword(password, salt) {
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', hash: 'SHA-256', salt: encoder.encode(salt), iterations: 100_000 },
+    keyMaterial,
+    256
+  );
+  return Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 async function getUserFromToken(env, request) {
@@ -56,6 +74,7 @@ export default {
         email: 'ciril8596@gmail.com',
         passwordHash,
         salt,
+        hashVersion: 2,
         role: 'admin',
         createdAt: new Date().toISOString(),
       };
@@ -87,6 +106,7 @@ export default {
         email: email.toLowerCase(),
         passwordHash,
         salt,
+        hashVersion: 2,
         role: 'free',
         plan: 'free',
         createdAt: new Date().toISOString(),
@@ -110,8 +130,27 @@ export default {
 
       if (!user) return fail('Email ou mot de passe incorrect.', 401);
 
-      const hash = await hashPassword(password, user.salt);
-      if (hash !== user.passwordHash) return fail('Email ou mot de passe incorrect.', 401);
+      let passwordOk = false;
+      let needsMigration = false;
+
+      if (user.hashVersion === 2) {
+        passwordOk = (await hashPassword(password, user.salt)) === user.passwordHash;
+      } else {
+        // Ancien compte SHA-256 : vérifier avec l'ancienne méthode puis migrer vers PBKDF2
+        passwordOk = (await hashPasswordLegacy(password, user.salt)) === user.passwordHash;
+        if (passwordOk) needsMigration = true;
+      }
+
+      if (!passwordOk) return fail('Email ou mot de passe incorrect.', 401);
+
+      if (needsMigration) {
+        const newSalt = crypto.randomUUID();
+        const newHash = await hashPassword(password, newSalt);
+        const allUsers = JSON.parse((await env.BWR_KV.get('users')) || '[]');
+        const idx = allUsers.findIndex(u => u.id === user.id);
+        allUsers[idx] = { ...allUsers[idx], passwordHash: newHash, salt: newSalt, hashVersion: 2 };
+        await env.BWR_KV.put('users', JSON.stringify(allUsers));
+      }
 
       const token = crypto.randomUUID();
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days
@@ -125,19 +164,36 @@ export default {
 
     // ── GET /api/auth/me ──────────────────────────────────────────────────────
     if (pathname === '/api/auth/me' && request.method === 'GET') {
-      const user = await getUserFromToken(env, request);
+      let user = await getUserFromToken(env, request);
       if (!user) return fail('Non authentifié.', 401);
+
+      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
+      let idx = users.findIndex(u => u.id === user.id);
+      let dirty = false;
+
+      // Auto-expire temporary plan upgrades
+      if (user.planExpiresAt && new Date(user.planExpiresAt) < new Date()) {
+        const revertTo = user.planBase || 'free';
+        users[idx] = { ...users[idx], plan: revertTo, planExpiresAt: null, planBase: null };
+        user = users[idx];
+        dirty = true;
+      }
+
       // Admins always get gold automatically
       if (user.role === 'admin' && user.plan !== 'gold') {
-        const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-        const idx = users.findIndex(u => u.id === user.id);
-        if (idx !== -1) {
-          users[idx] = { ...users[idx], plan: 'gold' };
-          await env.BWR_KV.put('users', JSON.stringify(users));
-          user.plan = 'gold';
-        }
+        users[idx] = { ...users[idx], plan: 'gold' };
+        user = users[idx];
+        dirty = true;
       }
-      return json({ id: user.id, name: user.name, email: user.email, role: user.role, plan: user.plan || 'free' });
+
+      if (dirty) await env.BWR_KV.put('users', JSON.stringify(users));
+
+      return json({
+        id: user.id, name: user.name, email: user.email, role: user.role,
+        plan: user.plan || 'free',
+        planExpiresAt: user.planExpiresAt || null,
+        planBase: user.planBase || null,
+      });
     }
 
     // ── PUT /api/auth/plan/:userId — admin only, change a user's plan ────────
@@ -145,14 +201,54 @@ export default {
       const admin = await getUserFromToken(env, request);
       if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
       const targetId = pathname.split('/')[4];
-      const { plan } = await request.json();
+      const { plan, planExpiresAt, planBase } = await request.json();
       if (!['free','silver','gold'].includes(plan)) return fail('Plan invalide.');
       const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
       const idx = users.findIndex(u => u.id === targetId);
       if (idx === -1) return fail('Utilisateur introuvable.', 404);
-      users[idx] = { ...users[idx], plan };
+      const update = { ...users[idx], plan };
+      if (planExpiresAt !== undefined) update.planExpiresAt = planExpiresAt || null;
+      if (planBase !== undefined) update.planBase = planBase || null;
+      users[idx] = update;
       await env.BWR_KV.put('users', JSON.stringify(users));
-      return json({ success: true, plan });
+      return json({ success: true, plan, planExpiresAt: update.planExpiresAt || null });
+    }
+
+    // ── POST /api/auth/wheel-prize — claim a plan upgrade won on the wheel ───
+    if (pathname === '/api/auth/wheel-prize' && request.method === 'POST') {
+      const user = await getUserFromToken(env, request);
+      if (!user) return fail('Non authentifié.', 401);
+
+      const { prizeType, plan: prizePlan, days } = await request.json();
+      if (prizeType !== 'plan') return json({ success: true });
+
+      const validUpgrades = { free: ['silver'], silver: ['gold'] };
+      const currentPlan = user.plan || 'free';
+      if (!validUpgrades[currentPlan]?.includes(prizePlan)) {
+        return fail('Mise à niveau invalide pour ton abonnement actuel.', 400);
+      }
+
+      // Max one plan prize per 30 days
+      if (user.lastWheelPrizeClaim) {
+        const daysSince = (Date.now() - new Date(user.lastWheelPrizeClaim).getTime()) / 86400000;
+        if (daysSince < 30) return fail('Tu as déjà gagné un abonnement récemment — réessaie dans quelques semaines !', 429);
+      }
+
+      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
+      const idx = users.findIndex(u => u.id === user.id);
+      if (idx === -1) return fail('Utilisateur introuvable.', 404);
+
+      const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
+      users[idx] = {
+        ...users[idx],
+        plan: prizePlan,
+        planExpiresAt: expiresAt,
+        planBase: currentPlan,
+        lastWheelPrizeClaim: new Date().toISOString(),
+      };
+      await env.BWR_KV.put('users', JSON.stringify(users));
+
+      return json({ success: true, plan: prizePlan, expiresAt });
     }
 
     // ── POST /api/auth/logout ─────────────────────────────────────────────────
@@ -256,14 +352,16 @@ export default {
       if (!oldPassword || !newPassword) return fail('Champs obligatoires.');
       if (newPassword.length < 6) return fail('Le nouveau mot de passe doit faire au moins 6 caractères.');
 
-      const hash = await hashPassword(oldPassword, user.salt);
-      if (hash !== user.passwordHash) return fail('Mot de passe actuel incorrect.', 401);
+      const verifyHash = user.hashVersion === 2
+        ? await hashPassword(oldPassword, user.salt)
+        : await hashPasswordLegacy(oldPassword, user.salt);
+      if (verifyHash !== user.passwordHash) return fail('Mot de passe actuel incorrect.', 401);
 
       const newSalt = crypto.randomUUID();
       const newHash = await hashPassword(newPassword, newSalt);
       const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
       const idx = users.findIndex(u => u.id === user.id);
-      users[idx] = { ...users[idx], passwordHash: newHash, salt: newSalt };
+      users[idx] = { ...users[idx], passwordHash: newHash, salt: newSalt, hashVersion: 2 };
       await env.BWR_KV.put('users', JSON.stringify(users));
       return json({ message: 'Mot de passe modifié avec succès.' });
     }
@@ -323,8 +421,26 @@ export default {
       const idx = paths.findIndex(p => p.id === id);
       if (idx === -1) return fail('Chemin introuvable.', 404);
 
+      const oldStatus = paths[idx].status;
       paths[idx] = { ...paths[idx], ...body, id };
       await env.BWR_KV.put('paths', JSON.stringify(paths));
+
+      // Notify subscribed gold users when path status changes
+      if (body.status && body.status !== oldStatus) {
+        const statusLabels = { easy: 'Facile', medium: 'Moyen', hard: 'Difficile', not_passable: 'Impraticable', no_bike: 'Vélo interdit' };
+        const allUsers = JSON.parse((await env.BWR_KV.get('users')) || '[]');
+        const alertUsers = allUsers.filter(u => u.alertsEnabled && u.alertsChannel);
+        for (const u of alertUsers) {
+          try {
+            await fetch(`https://ntfy.sh/${u.alertsChannel}`, {
+              method: 'POST',
+              headers: { 'Title': 'BWR — Chemin mis à jour', 'Tags': 'forest,warning', 'Content-Type': 'text/plain; charset=utf-8' },
+              body: `"${paths[idx].name || 'Chemin'}" : ${statusLabels[oldStatus] || oldStatus} → ${statusLabels[body.status] || body.status}`,
+            });
+          } catch {}
+        }
+      }
+
       return json(paths[idx]);
     }
 
@@ -343,6 +459,22 @@ export default {
     if (pathname === '/api/reports' && request.method === 'GET') {
       const raw = await env.BWR_KV.get('reports');
       return json(raw ? JSON.parse(raw) : []);
+    }
+
+    // ── GET /api/users — admin only, list all users ──────────────────────────
+    if (pathname === '/api/users' && request.method === 'GET') {
+      const admin = await getUserFromToken(env, request);
+      if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
+      // Strip sensitive fields
+      const safe = users.map(u => ({
+        id: u.id, name: u.name, email: u.email, role: u.role,
+        plan: u.plan || 'free',
+        planExpiresAt: u.planExpiresAt || null,
+        planBase: u.planBase || null,
+        createdAt: u.createdAt || null,
+      }));
+      return json(safe);
     }
 
     // ── POST /api/reports — any user ─────────────────────────────────────────
@@ -414,6 +546,35 @@ export default {
         });
       } catch {}
 
+      return json({ success: true });
+    }
+
+    // ── POST /api/push/subscribe — enable path alerts (gold users) ───────────
+    if (pathname === '/api/push/subscribe' && request.method === 'POST') {
+      const user = await getUserFromToken(env, request);
+      if (!user) return fail('Non authentifié.', 401);
+      const plan = user.plan || 'free';
+      if (plan === 'free') return fail('Les alertes push sont disponibles avec le plan Or.', 403);
+
+      const channel = `bwr-u-${user.id.slice(0, 8)}`;
+      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
+      const idx = users.findIndex(u => u.id === user.id);
+      if (idx === -1) return fail('Utilisateur introuvable.', 404);
+      users[idx] = { ...users[idx], alertsEnabled: true, alertsChannel: channel };
+      await env.BWR_KV.put('users', JSON.stringify(users));
+      return json({ channel });
+    }
+
+    // ── POST /api/push/unsubscribe — disable path alerts ─────────────────────
+    if (pathname === '/api/push/unsubscribe' && request.method === 'POST') {
+      const user = await getUserFromToken(env, request);
+      if (!user) return fail('Non authentifié.', 401);
+
+      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
+      const idx = users.findIndex(u => u.id === user.id);
+      if (idx === -1) return fail('Utilisateur introuvable.', 404);
+      users[idx] = { ...users[idx], alertsEnabled: false };
+      await env.BWR_KV.put('users', JSON.stringify(users));
       return json({ success: true });
     }
 

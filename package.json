@@ -5,7 +5,8 @@
   "scripts": {
     "dev:worker": "wrangler dev",
     "deploy:worker": "wrangler deploy",
-    "kv:create": "wrangler kv:namespace create BWR_KV"
+    "kv:create": "wrangler kv:namespace create BWR_KV",
+    "test": "node --test tests/graph-router.test.js"
   },
   "devDependencies": {
     "wrangler": "^3.114.17"

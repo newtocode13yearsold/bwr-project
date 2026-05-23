@@ -438,6 +438,7 @@
   .card-progress { grid-column: 1; }
   .card-silvergold { grid-column: 1 !important; }
   .card-gold-only { grid-column: 1 !important; }
+  .card-premium { grid-column: 1 !important; }
 }
 
 /* ── Animated avatar rings by plan ── */
@@ -485,6 +486,11 @@
   background: linear-gradient(135deg, #fffbeb, #fef3c7);
   border: 1.5px solid #f59e0b;
 }
+.card-premium {
+  grid-column: span 2;
+  background: linear-gradient(135deg, #fffbeb, #f0fdf4);
+  border: 1.5px solid #d1fae5;
+}
 
 .feature-block {
   padding: 16px;
@@ -515,6 +521,27 @@
 .wheel-emoji.spin { animation: spin 0.6s ease-out; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(1080deg); } }
 .wheel-text { font-size: 0.9rem; color: #1a2e12; flex: 1; }
+
+/* Prize list */
+.wheel-prizes-list { margin-top: 14px; }
+.prizes-title { font-size: 0.78rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.prizes-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.prize-chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 20px;
+  background: #f3f4f6; border: 1px solid #e5e7eb;
+  font-size: 0.8rem; color: #374151;
+}
+.prize-chip.prize-rare {
+  background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8;
+}
+.prize-chip.prize-epic {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-color: #f59e0b; color: #92400e; font-weight: 700;
+}
+.prize-icon { font-size: 1rem; }
+.prize-label { font-size: 0.8rem; }
+.prize-rarity { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.7; margin-left: 2px; }
 
 .weather-box {
   display: flex;

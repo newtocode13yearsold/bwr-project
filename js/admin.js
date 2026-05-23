@@ -684,6 +684,92 @@ async function deletePath(id) {
   else showStatus('Erreur lors de la suppression.', true);
 }
 
+// ── Members panel ─────────────────────────────────────────────────────────────
+document.getElementById('btnMembers').addEventListener('click', async () => {
+  document.getElementById('pathForm').classList.add('hidden');
+  document.getElementById('editForm').classList.add('hidden');
+  const panel = document.getElementById('membersPanel');
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) await loadMembers();
+});
+
+document.getElementById('btnCloseMembersPanel').addEventListener('click', () => {
+  document.getElementById('membersPanel').classList.add('hidden');
+});
+
+async function loadMembers() {
+  const list = document.getElementById('membersList');
+  list.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Chargement…</p>';
+  try {
+    const res = await fetch(`${API_URL}/api/users`, { headers: authHeader() });
+    const users = await res.json();
+    if (!res.ok) { list.innerHTML = `<p style="color:red">${users.error}</p>`; return; }
+    const planIcon = { free: '🌿', silver: '🥈', gold: '🥇', admin: '👑' };
+    list.innerHTML = users.map(u => {
+      const expiry = u.planExpiresAt
+        ? `<span style="font-size:0.75rem;color:#f97316">⏳ expire le ${new Date(u.planExpiresAt).toLocaleDateString('fr-FR')}</span>`
+        : '';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px">
+        <div>
+          <div style="font-weight:600;font-size:0.9rem">${u.name}</div>
+          <div style="font-size:0.78rem;color:#6b7280">${u.email}</div>
+          <div style="margin-top:3px">${planIcon[u.plan] || '🌿'} <strong>${u.plan}</strong> ${expiry}</div>
+        </div>
+        ${u.role !== 'admin' ? `<button class="btn-secondary member-plan-btn" style="width:auto;padding:6px 12px;font-size:0.8rem"
+          data-id="${u.id}" data-name="${u.name.replace(/"/g,'&quot;')}" data-plan="${u.plan}" data-base="${u.planBase||'free'}">Modifier plan</button>` : ''}
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.member-plan-btn').forEach(btn => {
+      btn.addEventListener('click', () =>
+        openMemberPlan(btn.dataset.id, btn.dataset.name, btn.dataset.plan, btn.dataset.base));
+    });
+  } catch (e) {
+    list.innerHTML = `<p style="color:red">Erreur réseau</p>`;
+  }
+}
+
+function openMemberPlan(userId, name, plan, planBase) {
+  document.getElementById('memberPlanUserId').value = userId;
+  document.getElementById('memberPlanTitle').textContent = `Plan de ${name}`;
+  document.getElementById('memberPlanSelect').value = plan;
+  document.getElementById('memberPlanBase').value = planBase || 'free';
+  document.getElementById('memberPlanExpiry').value = '';
+  document.getElementById('memberPlanModal').classList.remove('hidden');
+}
+
+document.getElementById('btnCancelMemberPlan').addEventListener('click', () => {
+  document.getElementById('memberPlanModal').classList.add('hidden');
+});
+
+document.getElementById('btnSaveMemberPlan').addEventListener('click', async () => {
+  const userId  = document.getElementById('memberPlanUserId').value;
+  const plan    = document.getElementById('memberPlanSelect').value;
+  const expiry  = document.getElementById('memberPlanExpiry').value;
+  const base    = document.getElementById('memberPlanBase').value;
+  const btn     = document.getElementById('btnSaveMemberPlan');
+  btn.textContent = 'Enregistrement…';
+  btn.disabled = true;
+  try {
+    const body = { plan };
+    if (expiry) { body.planExpiresAt = new Date(expiry + 'T23:59:59').toISOString(); body.planBase = base; }
+    else        { body.planExpiresAt = null; body.planBase = null; }
+    const res = await fetch(`${API_URL}/api/auth/plan/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+    document.getElementById('memberPlanModal').classList.add('hidden');
+    showStatus('Plan mis à jour !');
+    await loadMembers();
+  } catch (e) {
+    showStatus(e.message || 'Erreur', true);
+  } finally {
+    btn.textContent = 'Enregistrer';
+    btn.disabled = false;
+  }
+});
+
 // ── Status bar ────────────────────────────────────────────────────────────────
 function showStatus(msg, isError = false) {
   const el = document.getElementById('adminStatus');

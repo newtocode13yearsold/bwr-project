@@ -142,20 +142,63 @@ const BADGES = [
   { id: 'eagle',        icon: '🦅', label: 'Aigle royal',      tier: 'gold',   test: s => s.km >= 400 },
 ];
 
-const DAILY_TIPS = [
-  '🌲 Aujourd\'hui : essaye le Carrefour du Puits du Roi !',
-  '🦌 Aujourd\'hui : observe la faune au lever du jour.',
-  '🍂 Aujourd\'hui : sortie automnale parfaite pour les couleurs.',
-  '🥾 Aujourd\'hui : 10 km en boucle, ça te tente ?',
-  '🌳 Aujourd\'hui : découvre les vieux chênes des Beaux Monts.',
-  '🌅 Aujourd\'hui : profite de la lumière dorée du matin.',
-  '🏞️ Aujourd\'hui : tente un nouveau sentier inconnu.',
-  '🍄 Aujourd\'hui : ouvre l\'œil pour les champignons.',
-  '🦊 Aujourd\'hui : reste silencieux, tu verras peut-être un renard.',
-  '⛰️ Aujourd\'hui : Mont Saint-Pierre, panorama garanti !',
-  '🌿 Aujourd\'hui : sortie courte mais intense — fais 5 km en 1h.',
-  '🦉 Aujourd\'hui : sortie crépusculaire pour écouter la chouette.',
+const TRAIL_TIPS = [
+  '🌲 Essaye le Carrefour du Puits du Roi aujourd\'hui !',
+  '🦌 Observe la faune au lever du jour.',
+  '🍂 Sortie automnale parfaite pour les couleurs.',
+  '🥾 10 km en boucle, ça te tente ?',
+  '🌳 Découvre les vieux chênes des Beaux Monts.',
+  '🌅 Profite de la lumière dorée du matin.',
+  '🏞️ Tente un nouveau sentier inconnu.',
+  '🍄 Ouvre l\'œil pour les champignons.',
+  '🦊 Reste silencieux, tu verras peut-être un renard.',
+  '⛰️ Mont Saint-Pierre — panorama garanti !',
+  '🌿 Sortie courte mais intense : 5 km en 1h.',
+  '🦉 Sortie crépusculaire pour écouter la chouette.',
+  '🐗 Prends le sentier des Grands Monts pour croiser des sangliers.',
+  '🌊 Après la pluie, les rus de la forêt reprennent vie.',
+  '🍁 Saison idéale pour les photos en sous-bois.',
 ];
+
+// Prizes by tier.
+// Total weight pool = 840 (LCM of 120 and 70) so that:
+//   1 month  → weight 7  → probability 7/840 = 1/120
+//   1 week   → weight 12 → probability 12/840 = 1/70
+const WHEEL_PRIZES = {
+  free: [
+    { id: 'silver_month', icon: '🥈', label: '1 mois Argent !',    desc: 'Abonnement Argent offert pendant 30 jours',  type: 'plan',        plan: 'silver', days: 30, weight: 7   },
+    { id: 'silver_week',  icon: '🥈', label: '7 jours Argent',      desc: 'Accès Argent pendant 7 jours',              type: 'plan',        plan: 'silver', days: 7,  weight: 12  },
+    { id: 'bonus_route',  icon: '🎫', label: '+1 trajet bonus',      desc: 'Un trajet supplémentaire cette semaine',    type: 'bonus_route',                           weight: 228 },
+    { id: 'lucky_badge',  icon: '🍀', label: 'Badge Chanceux',       desc: 'Badge exclusif de la roue de la chance',   type: 'badge',                                weight: 182 },
+    { id: 'double_xp',    icon: '⭐', label: 'Double XP 24h',        desc: 'Progression doublée pendant 24 heures',    type: 'double_xp',   hours: 24,                weight: 183 },
+    { id: 'trail_tip',    icon: '🌲', label: 'Conseil sentier',       desc: 'Une suggestion pour ta prochaine sortie',  type: 'tip',                                  weight: 228 },
+  ],
+  silver: [
+    { id: 'gold_month',   icon: '🥇', label: '1 mois Or !',          desc: 'Abonnement Or offert pendant 30 jours',    type: 'plan',        plan: 'gold',   days: 30, weight: 7   },
+    { id: 'gold_week',    icon: '🥇', label: '7 jours Or',            desc: 'Accès Or pendant 7 jours',                type: 'plan',        plan: 'gold',   days: 7,  weight: 12  },
+    { id: 'lucky_badge',  icon: '🍀', label: 'Badge Chanceux',        desc: 'Badge exclusif de la roue de la chance',  type: 'badge',                                weight: 137 },
+    { id: 'double_xp',    icon: '⭐', label: 'Double XP 24h',         desc: 'Progression doublée pendant 24 heures',   type: 'double_xp',   hours: 24,                weight: 182 },
+    { id: 'xp_bonus',     icon: '🎯', label: '+200 XP bonus',         desc: 'Bonus d\'expérience immédiat',             type: 'xp_bonus',    xp: 200,                  weight: 228 },
+    { id: 'trail_tip',    icon: '🌲', label: 'Conseil sentier',        desc: 'Une suggestion pour ta prochaine sortie', type: 'tip',                                  weight: 274 },
+  ],
+  gold: [
+    { id: 'exclusive_badge', icon: '👑', label: 'Badge Or exclusif', desc: 'Badge animé réservé aux membres Or',       type: 'badge',                                weight: 10 },
+    { id: 'double_xp_48',    icon: '⭐', label: 'Double XP 48h',     desc: 'Progression doublée pendant 48 heures',   type: 'double_xp',   hours: 48,                weight: 15 },
+    { id: 'xp_bonus_500',    icon: '🎯', label: '+500 XP bonus',     desc: 'Bonus d\'expérience immédiat',             type: 'xp_bonus',    xp: 500,                  weight: 25 },
+    { id: 'trail_tip',       icon: '🌲', label: 'Conseil sentier VIP', desc: 'Suggestion exclusive pour membres Or',   type: 'tip',                                  weight: 50 },
+  ],
+};
+
+function pickPrize(plan) {
+  const prizes = WHEEL_PRIZES[normalisePlan(plan)] || WHEEL_PRIZES.free;
+  const total = prizes.reduce((s, p) => s + p.weight, 0);
+  let r = Math.random() * total;
+  for (const prize of prizes) {
+    r -= prize.weight;
+    if (r <= 0) return prize;
+  }
+  return prizes[prizes.length - 1];
+}
 
 function populatePage(user) {
   document.getElementById('heroName').textContent  = user.name;
@@ -176,7 +219,6 @@ function populatePage(user) {
 }
 
 function renderPlanAndProgress(user) {
-  // Plan pill
   const plan = normalisePlan(user.plan);
   const planMap = {
     free:   { label: '🌿 Gratuit',  cls: 'plan-free' },
@@ -242,28 +284,52 @@ function renderPlanAndProgress(user) {
     lockedHint.style.display = 'none';
   }
 
-  // Silver/Gold features — daily wheel + custom goals
-  if (can('daily_wheel', plan)) {
-    document.getElementById('silverGoldSection').style.display = '';
-    renderDailyWheel();
-    if (can('custom_goals', plan)) {
-      document.getElementById('goalBlock').style.display = '';
-      renderGoals();
-    } else {
-      // Silver doesn't get custom goals
-      const goalBlock = document.getElementById('goalBlock');
-      if (goalBlock) goalBlock.style.display = 'none';
+  // Plan expiry banner
+  if (user.planExpiresAt) {
+    const expDate = new Date(user.planExpiresAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const pill = document.getElementById('planPill');
+    pill.title = `Expire le ${expDate}`;
+    const upgLink = document.getElementById('planUpgradeLink');
+    if (upgLink) {
+      upgLink.style.display = '';
+      upgLink.textContent = `⏳ Expire le ${expDate}`;
+      upgLink.style.color = '#f97316';
+      upgLink.removeAttribute('href');
     }
-  } else {
-    document.getElementById('silverGoldSection').style.display = 'none';
   }
 
-  // Gold-only features
-  if (can('weather', plan)) {
-    renderWeather();
-    document.getElementById('goldOnlySection').style.display = '';
+  // Premium section (Silver + Gold unified)
+  if (can('daily_wheel', plan)) {
+    const premiumSection = document.getElementById('premiumSection');
+    premiumSection.style.display = '';
+    const isGold = plan === 'gold' || plan === 'admin';
+    document.getElementById('premiumIcon').textContent = isGold ? '🥇' : '🥈';
+    document.getElementById('premiumTitle').textContent = isGold ? 'Privilèges Or' : 'Fonctionnalités premium';
+
+    renderDailyWheel(plan);
+    renderPrizeList(plan);
+
+    // Gold-exclusive blocks
+    const show = isGold ? '' : 'none';
+    document.getElementById('goalBlock').style.display  = can('custom_goals', plan) ? '' : 'none';
+    document.getElementById('weatherBlock').style.display = show;
+    document.getElementById('discordBlock').style.display = show;
+    document.getElementById('supportBlock').style.display = show;
+    document.getElementById('pushAlertsBlock').style.display = show;
+
+    // AI suggestions: Silver (weekly cadence) or Gold (daily)
+    const suggCadence = can('ai_suggestions', plan);
+    if (suggCadence) {
+      const suggBlock = document.getElementById('suggestionBlock');
+      if (suggBlock) suggBlock.style.display = '';
+      renderDailySuggestion(plan);
+    }
+
+    if (can('custom_goals', plan)) renderGoals();
+    if (can('weather', plan)) renderWeather();
+    if (isGold) renderPushAlerts();
   } else {
-    document.getElementById('goldOnlySection').style.display = 'none';
+    document.getElementById('premiumSection').style.display = 'none';
   }
 
   // Free-user upsell card (only for free users — Silver/Gold hide it)
@@ -297,29 +363,111 @@ function renderQuotaStrip(plan) {
 }
 
 // ── Daily wheel ───────────────────────────────────────────────────────────────
-function renderDailyWheel() {
-  const today = new Date().toISOString().slice(0, 10);
+function renderDailyWheel(plan) {
+  const today    = new Date().toISOString().slice(0, 10);
   const lastSpin = localStorage.getItem('bwr_wheel_last');
   const wheelBtn  = document.getElementById('wheelSpinBtn');
   const wheelText = document.getElementById('wheelText');
 
   if (lastSpin === today) {
-    const saved = localStorage.getItem('bwr_wheel_tip');
-    wheelText.textContent = saved || 'Tu as déjà tourné la roue aujourd\'hui — reviens demain !';
+    const saved = localStorage.getItem('bwr_wheel_result');
+    try {
+      const prize = JSON.parse(saved);
+      wheelText.innerHTML = `${prize.icon} <strong>${prize.label}</strong> — ${prize.desc}`;
+    } catch {
+      wheelText.textContent = saved || 'Tu as déjà tourné la roue aujourd\'hui — reviens demain !';
+    }
     wheelBtn.disabled = true;
     wheelBtn.textContent = '✓ Tournée';
   } else {
     wheelBtn.disabled = false;
-    wheelBtn.onclick = () => {
-      const tip = DAILY_TIPS[Math.floor(Math.random() * DAILY_TIPS.length)];
-      wheelText.textContent = tip;
-      localStorage.setItem('bwr_wheel_last', today);
-      localStorage.setItem('bwr_wheel_tip', tip);
-      wheelBtn.disabled = true;
-      wheelBtn.textContent = '✓ Tournée';
-      document.getElementById('wheelEmoji').classList.add('spin');
-    };
+    wheelBtn.onclick = () => spinWheel(plan);
   }
+}
+
+async function spinWheel(plan) {
+  const today   = new Date().toISOString().slice(0, 10);
+  const prize   = pickPrize(plan);
+  const wheelBtn  = document.getElementById('wheelSpinBtn');
+  const wheelText = document.getElementById('wheelText');
+  const emoji   = document.getElementById('wheelEmoji');
+
+  wheelBtn.disabled = true;
+  wheelBtn.textContent = '🎡 En cours…';
+  emoji.classList.add('spin');
+
+  // Apply prize effects
+  if (prize.type === 'plan') {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/wheel-prize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ prizeType: 'plan', plan: prize.plan, days: prize.days }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        // Server rejected (cooldown) — swap to a tip instead
+        const fallback = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
+        wheelText.textContent = `🌲 ${fallback}`;
+        localStorage.setItem('bwr_wheel_last', today);
+        localStorage.setItem('bwr_wheel_result', JSON.stringify({ icon: '🌲', label: 'Conseil sentier', desc: fallback }));
+        wheelBtn.textContent = '✓ Tournée';
+        return;
+      }
+      // Update cached user plan so page reflects upgrade immediately
+      const cached = getCachedUser();
+      if (cached) setSession(localStorage.getItem('bwr_token'), { ...cached, plan: prize.plan, planExpiresAt: data.expiresAt });
+    } catch {
+      wheelText.textContent = '❌ Erreur réseau — réessaie.';
+      wheelBtn.disabled = false;
+      wheelBtn.textContent = '🎡 Tourner la roue';
+      return;
+    }
+  } else if (prize.type === 'bonus_route') {
+    const w = readWeekly();
+    w.count = Math.max(0, w.count - 1);
+    localStorage.setItem('bwr_routes_week', JSON.stringify(w));
+  } else if (prize.type === 'xp_bonus') {
+    const km = parseFloat(localStorage.getItem('bwr_km_total') || '0');
+    localStorage.setItem('bwr_km_total', (km + (prize.xp || 0) / 20).toFixed(2)); // 1 XP ≈ 0.05 km
+  } else if (prize.type === 'double_xp') {
+    const expires = Date.now() + (prize.hours || 24) * 3600000;
+    localStorage.setItem('bwr_double_xp_until', expires);
+  } else if (prize.type === 'badge') {
+    localStorage.setItem('bwr_lucky_badge', '1');
+  } else if (prize.type === 'tip') {
+    prize.desc = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
+  }
+
+  wheelText.innerHTML = `${prize.icon} <strong>${prize.label}</strong> — ${prize.desc}`;
+  localStorage.setItem('bwr_wheel_last', today);
+  localStorage.setItem('bwr_wheel_result', JSON.stringify({ icon: prize.icon, label: prize.label, desc: prize.desc }));
+  wheelBtn.textContent = '✓ Tournée';
+
+  // If plan upgraded, reload page to show new privileges
+  if (prize.type === 'plan') {
+    setTimeout(() => window.location.reload(), 1800);
+  }
+}
+
+function renderPrizeList(plan) {
+  const el = document.getElementById('wheelPrizesList');
+  if (!el) return;
+  const prizes = WHEEL_PRIZES[normalisePlan(plan)] || WHEEL_PRIZES.free;
+  const rare = prizes.filter(p => p.weight <= 8);
+  const common = prizes.filter(p => p.weight > 8);
+  el.innerHTML = `
+    <p class="prizes-title">Ce que tu peux gagner :</p>
+    <div class="prizes-grid">
+      ${[...rare, ...common].map(p => `
+        <div class="prize-chip ${p.weight <= 2 ? 'prize-epic' : p.weight <= 8 ? 'prize-rare' : ''}">
+          <span class="prize-icon">${p.icon}</span>
+          <span class="prize-label">${p.label}</span>
+          ${p.weight <= 2 ? '<span class="prize-rarity">Épique</span>' : p.weight <= 8 ? '<span class="prize-rarity">Rare</span>' : ''}
+        </div>
+      `).join('')}
+    </div>
+  `;
 }
 
 // ── Goals ─────────────────────────────────────────────────────────────────────
@@ -364,6 +512,133 @@ async function renderWeather() {
     document.getElementById('weatherIcon').textContent = '❌';
     document.getElementById('weatherLabel').textContent = 'Météo indisponible';
   }
+}
+
+// ── Daily AI suggestion ───────────────────────────────────────────────────────
+async function renderDailySuggestion(plan) {
+  const textEl = document.getElementById('suggestionText');
+  const btnEl  = document.getElementById('suggestionBtn');
+  if (!textEl || !btnEl) return;
+
+  // Silver: one suggestion per week; Gold: every day
+  const isGold   = normalisePlan(plan) === 'gold';
+  const storageKey = isGold ? 'bwr_sugg_day' : 'bwr_sugg_week';
+  const todayKey   = isGold
+    ? new Date().toISOString().slice(0, 10)
+    : new Date().toISOString().slice(0, 7) + '-W' + Math.ceil(new Date().getDate() / 7);
+
+  const cached = localStorage.getItem('bwr_sugg_cache');
+  const cacheDate = localStorage.getItem(storageKey);
+  if (cacheDate === todayKey && cached) {
+    textEl.innerHTML = cached;
+    return;
+  }
+
+  let weatherCode = 0, temp = 15, wind = 10;
+  try {
+    const res  = await fetch('https://api.open-meteo.com/v1/forecast?latitude=49.35&longitude=2.90&current=temperature_2m,weather_code,wind_speed_10m&timezone=Europe/Paris');
+    const data = await res.json();
+    weatherCode = data.current.weather_code;
+    temp        = data.current.temperature_2m;
+    wind        = data.current.wind_speed_10m;
+  } catch {}
+
+  const month  = new Date().getMonth();
+  const season = month < 3 ? 'winter' : month < 6 ? 'spring' : month < 9 ? 'summer' : 'autumn';
+  const km     = parseFloat(localStorage.getItem('bwr_km_total') || '0');
+  const suggestKm = km < 5 ? 4 : km < 25 ? 7 : km < 50 ? 12 : 15;
+
+  const seasonTips = {
+    winter: '❄️ Paysage hivernal — habillez-vous chaud et profitez du calme absolu de la forêt.',
+    spring: '🌸 Les bourgeons s\'ouvrent — sortie parfaite pour observer la renaissance de la forêt.',
+    summer: '☀️ Partez tôt le matin avant la chaleur — la forêt est magnifique à l\'aube.',
+    autumn: '🍂 Couleurs d\'automne — emportez un appareil photo pour les sous-bois.',
+  };
+
+  let icon, advice;
+  if (weatherCode >= 61 && weatherCode <= 82) {
+    icon = '🌧️'; advice = `Pluie prévue — optez pour une courte exploration de 3-4 km avec un imperméable, ou remettez à demain.`;
+    btnEl.href = `routes.html?dist=4&mode=loop`;
+  } else if (wind > 30) {
+    icon = '💨'; advice = `Vent fort (${Math.round(wind)} km/h) — évitez les zones boisées denses. Boucle courte de 5 km recommandée.`;
+    btnEl.href = `routes.html?dist=5&mode=loop`;
+  } else if (weatherCode >= 95) {
+    icon = '⛈️'; advice = `Orages signalés — restez en sécurité, ne sortez pas en forêt aujourd'hui.`;
+    btnEl.textContent = 'Pas de sortie conseillée';
+    btnEl.removeAttribute('href');
+    btnEl.style.opacity = '0.5';
+  } else if (weatherCode <= 3) {
+    icon = '✅'; advice = `Conditions idéales ! ${seasonTips[season]} Objectif suggéré : ${suggestKm} km en boucle.`;
+    btnEl.href = `routes.html?dist=${suggestKm}&mode=loop`;
+  } else {
+    icon = '⛅'; advice = `Ciel variable mais praticable. ${seasonTips[season]} Sortie de ${Math.max(3, suggestKm - 3)} km conseillée.`;
+    btnEl.href = `routes.html?dist=${Math.max(3, suggestKm - 3)}&mode=loop`;
+  }
+
+  const html = `
+    <span style="font-size:1.6rem;flex-shrink:0">${icon}</span>
+    <div>
+      <p style="margin:0 0 4px;font-size:0.88rem;color:#1e293b">${advice}</p>
+      <p style="margin:0;font-size:0.78rem;color:#6b7280">Temp : ${Math.round(temp)}°C · Vent : ${Math.round(wind)} km/h</p>
+    </div>`;
+  textEl.innerHTML = html;
+  localStorage.setItem('bwr_sugg_cache', html);
+  localStorage.setItem(storageKey, todayKey);
+}
+
+// ── Push alerts via ntfy.sh ───────────────────────────────────────────────────
+async function renderPushAlerts() {
+  const block  = document.getElementById('pushAlertsBlock');
+  const status = document.getElementById('pushAlertsStatus');
+  const setup  = document.getElementById('pushAlertsSetup');
+  const btn    = document.getElementById('btnToggleAlerts');
+  const chanEl = document.getElementById('ntfyChannel');
+  if (!block || !btn) return;
+
+  // Read current state from cached user
+  const cached = getCachedUser();
+  let alertsEnabled = !!(cached?.alertsEnabled);
+  let alertsChannel = cached?.alertsChannel || null;
+
+  function render() {
+    if (alertsEnabled && alertsChannel) {
+      status.innerHTML = `<span style="color:#16a34a;font-weight:600">🔔 Alertes activées</span>`;
+      chanEl.textContent = alertsChannel;
+      setup.style.display = '';
+      btn.textContent = '🔕 Désactiver les alertes';
+    } else {
+      status.innerHTML = `<span style="color:#6b7280">Alertes désactivées</span>`;
+      setup.style.display = 'none';
+      btn.textContent = '🔔 Activer les alertes';
+    }
+  }
+
+  render();
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    try {
+      if (alertsEnabled) {
+        const res = await fetch(`${API_URL}/api/push/unsubscribe`, { method: 'POST', headers: authHeader() });
+        if (!res.ok) throw new Error();
+        alertsEnabled = false;
+        alertsChannel = null;
+        const c = getCachedUser();
+        setSession(localStorage.getItem('bwr_token'), { ...c, alertsEnabled: false, alertsChannel: null });
+      } else {
+        const res  = await fetch(`${API_URL}/api/push/subscribe`, { method: 'POST', headers: authHeader() });
+        if (!res.ok) throw new Error((await res.json()).error || 'Erreur');
+        const data = await res.json();
+        alertsEnabled = true;
+        alertsChannel = data.channel;
+        const c = getCachedUser();
+        setSession(localStorage.getItem('bwr_token'), { ...c, alertsEnabled: true, alertsChannel: data.channel });
+      }
+      render();
+    } catch (err) {
+      status.innerHTML = `<span style="color:#dc2626">Erreur : ${err.message || 'réessaye'}</span>`;
+    } finally { btn.disabled = false; }
+  });
 }
 
 async function loadPathCount() {

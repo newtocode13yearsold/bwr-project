@@ -149,11 +149,11 @@
         </div>
       </div>
 
-      <!-- ── Silver / Gold features ── -->
-      <div class="profile-card card-silvergold" id="silverGoldSection">
+      <!-- ── Premium features (Silver & Gold unified) ── -->
+      <div class="profile-card card-premium" id="premiumSection" style="display:none">
         <div class="card-header">
-          <span class="card-icon">🥈</span>
-          <h2 class="card-title">Fonctionnalités premium</h2>
+          <span class="card-icon" id="premiumIcon">🥈</span>
+          <h2 class="card-title" id="premiumTitle">Fonctionnalités premium</h2>
         </div>
 
         <!-- Daily wheel -->
@@ -161,14 +161,15 @@
           <h3 class="feature-title">🎡 Roue quotidienne</h3>
           <div class="wheel-row">
             <span class="wheel-emoji" id="wheelEmoji">🎯</span>
-            <p class="wheel-text" id="wheelText">Tourne la roue pour ton conseil du jour !</p>
+            <p class="wheel-text" id="wheelText">Tourne la roue pour tenter de gagner un prix !</p>
           </div>
           <button class="btn-save" id="wheelSpinBtn">🎡 Tourner la roue</button>
+          <div class="wheel-prizes-list" id="wheelPrizesList"></div>
         </div>
 
-        <!-- Goals -->
-        <div class="feature-block" id="goalBlock">
-          <h3 class="feature-title">🎯 Objectif personnalisé <span class="tier-tag gold">👑 Or</span></h3>
+        <!-- Goals (Gold only) -->
+        <div class="feature-block" id="goalBlock" style="display:none">
+          <h3 class="feature-title">🎯 Objectif personnalisé</h3>
           <div class="level-block">
             <div class="level-head">
               <span class="level-num">Mon objectif km</span>
@@ -180,6 +181,61 @@
             <input type="number" id="goalInput" class="input-field" min="1" placeholder="Objectif km" style="flex:1">
             <button class="btn-save" id="goalSave" style="width:auto;padding:10px 18px">Sauver</button>
           </div>
+        </div>
+
+        <!-- AI Suggestion (Silver weekly / Gold daily) -->
+        <div class="feature-block" id="suggestionBlock" style="display:none">
+          <h3 class="feature-title">🤖 Suggestion du jour</h3>
+          <div class="suggestion-box" id="suggestionText" style="display:flex;gap:12px;align-items:flex-start;background:#f0fdf4;border-radius:10px;padding:12px 14px;margin-bottom:12px">
+            <span style="font-size:1.6rem">⏳</span>
+            <div><p style="margin:0;font-size:0.88rem;color:#374151">Analyse de la météo en cours…</p></div>
+          </div>
+          <a href="routes.html" class="btn-save" id="suggestionBtn" style="display:inline-block;text-decoration:none;font-size:0.88rem;padding:9px 18px">Générer ce trajet →</a>
+        </div>
+
+        <!-- Weather (Gold only) -->
+        <div class="feature-block" id="weatherBlock" style="display:none">
+          <h3 class="feature-title">🌦️ Météo forêt en temps réel</h3>
+          <div class="weather-box">
+            <span class="weather-icon" id="weatherIcon">⏳</span>
+            <div class="weather-info">
+              <strong id="weatherTemp">—</strong>
+              <span id="weatherLabel">Chargement…</span>
+              <small id="weatherWind"></small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Discord (Gold only) -->
+        <div class="feature-block" id="discordBlock" style="display:none">
+          <h3 class="feature-title">💬 Communauté Discord</h3>
+          <p style="font-size:0.88rem;color:#6b7280;margin-bottom:10px">Rejoins les autres membres Or sur notre serveur Discord exclusif.</p>
+          <a href="https://discord.gg/" target="_blank" rel="noopener" class="btn-discord">💬 Rejoindre le Discord</a>
+        </div>
+
+        <!-- Push alerts (Gold only) -->
+        <div class="feature-block" id="pushAlertsBlock" style="display:none">
+          <h3 class="feature-title">🔔 Alertes chemins en temps réel</h3>
+          <p style="font-size:0.88rem;color:#6b7280;margin-bottom:10px">Reçois une notification sur ton téléphone dès qu'un chemin change de statut.</p>
+          <div id="pushAlertsStatus" style="font-size:0.88rem;margin-bottom:8px"></div>
+          <div id="pushAlertsSetup" style="display:none;background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:10px">
+            <p style="font-size:0.85rem;font-weight:600;color:#374151;margin:0 0 6px">Ton canal de notification :</p>
+            <code id="ntfyChannel" style="display:block;background:#e2e8f0;border-radius:6px;padding:8px 10px;font-size:0.85rem;color:#1e293b;word-break:break-all">—</code>
+            <p style="font-size:0.82rem;color:#6b7280;margin:10px 0 6px">
+              1. Installe l'app <strong>ntfy.sh</strong> (gratuit) sur ton téléphone<br>
+              2. Abonne-toi au canal ci-dessus<br>
+              3. Tu recevras les alertes automatiquement
+            </p>
+            <a href="https://ntfy.sh" target="_blank" rel="noopener" class="btn-save" style="display:inline-block;font-size:0.82rem;text-decoration:none;padding:7px 14px">📲 Télécharger ntfy</a>
+          </div>
+          <button class="btn-save" id="btnToggleAlerts">🔔 Activer les alertes</button>
+        </div>
+
+        <!-- Priority support (Gold only) -->
+        <div class="feature-block" id="supportBlock" style="display:none">
+          <h3 class="feature-title">⚡ Support prioritaire</h3>
+          <p style="font-size:0.88rem;color:#6b7280">Tes messages sont traités en priorité — réponse sous 12h en moyenne.</p>
+          <p style="font-size:0.88rem;color:#6b7280;margin-top:6px">✉️ <a href="mailto:ciril8596@gmail.com?subject=[Or] Question prioritaire">ciril8596@gmail.com</a></p>
         </div>
       </div>
 
@@ -222,41 +278,6 @@
         <div class="upsell-cta-row">
           <a href="plans.html" class="upsell-cta">Voir les plans →</a>
           <span class="upsell-price">À partir de <strong>3,99€</strong>/mois</span>
-        </div>
-      </div>
-
-      <!-- ── Gold-only features ── -->
-      <div class="profile-card card-gold-only" id="goldOnlySection" style="display:none">
-        <div class="card-header">
-          <span class="card-icon">🥇</span>
-          <h2 class="card-title">Privilèges Or</h2>
-        </div>
-
-        <!-- Weather -->
-        <div class="feature-block">
-          <h3 class="feature-title">🌦️ Météo forêt en temps réel</h3>
-          <div class="weather-box">
-            <span class="weather-icon" id="weatherIcon">⏳</span>
-            <div class="weather-info">
-              <strong id="weatherTemp">—</strong>
-              <span id="weatherLabel">Chargement…</span>
-              <small id="weatherWind"></small>
-            </div>
-          </div>
-        </div>
-
-        <!-- Discord -->
-        <div class="feature-block">
-          <h3 class="feature-title">💬 Communauté Discord</h3>
-          <p style="font-size:0.88rem;color:#6b7280;margin-bottom:10px">Rejoins les autres membres Or sur notre serveur Discord exclusif.</p>
-          <a href="https://discord.gg/" target="_blank" rel="noopener" class="btn-discord">💬 Rejoindre le Discord</a>
-        </div>
-
-        <!-- Priority support -->
-        <div class="feature-block">
-          <h3 class="feature-title">⚡ Support prioritaire</h3>
-          <p style="font-size:0.88rem;color:#6b7280">Tes messages sont traités en priorité — réponse sous 12h en moyenne.</p>
-          <p style="font-size:0.88rem;color:#6b7280;margin-top:6px">✉️ <a href="mailto:ciril8596@gmail.com?subject=[Or] Question prioritaire">ciril8596@gmail.com</a></p>
         </div>
       </div>
 
