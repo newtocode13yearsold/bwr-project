@@ -14,6 +14,12 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
+Run all automated tests (143 tests, ~1.4 s):
+  npm test
+
+Run tests in watch mode (re-runs on file save):
+  npm run test:watch
+
 Create KV namespace (one-time setup):
   npm run kv:create BWR_KV
 
@@ -32,12 +38,17 @@ Single Cloudflare Worker file with 18 API endpoints:
 - OSM Proxy: GET /api/osm?bbox=... — caches OpenStreetMap path data for 7 days
 - Contact: POST /api/contact — sends to ntfy.sh push notification service
 
-Storage: All data in Cloudflare KV store with these keys:
-- users — JSON array of user objects
-- paths — JSON array of admin-curated paths
-- reports — JSON array of user reports
+Storage: Cloudflare KV with granular per-item keys (no shared arrays):
+- user:{id} — JSON user object
+- uemail:{email} — userId string (email index for O(1) login lookup)
+- path:{id} — JSON path object
+- report:{id} — JSON report object
+- photo:{reportId} — data-URI string, 90-day TTL
+- contact:{id} — JSON contact message
 - session:{token} — session metadata (userId, expiresAt), 30-day TTL
 - osm:{bbox} — cached OpenStreetMap query results, 7-day TTL
+
+Migration: POST /api/migrate (admin only) migrates legacy array keys (users/paths/reports/contact_messages) to granular keys. Run once after deploy.
 
 ### Frontend Architecture
 
@@ -135,23 +146,34 @@ Cloudflare Config (wrangler.jsonc):
 
 ## Testing Notes
 
-No automated test suite currently exists. Manual testing should cover:
+Automated test suite: **143 tests, ~1.4 s** (`npm test`). Three test files:
+
+| File | What it covers | Style |
+|------|---------------|-------|
+| `tests/graph-router.test.js` | Pure graph-routing functions (haversine, buildGraph, dijkstra, graphAtob, graphLoop) | CJS, Node test runner |
+| `tests/features.test.js` | Plan-gating matrix — `can()`, `limitOf()`, `requiredTier()`, weekly quota helpers | CJS, browser shim for `window`/`localStorage` |
+| `tests/worker-auth.test.mjs` | Auth API endpoints with in-memory KV mock (register, login, session, plan change, stats, wheel prize) | ESM |
+
+**Rule: run `npm test` before every commit. Add a test whenever you change plan gating, KV key schema, or auth logic.**
+
+Manual testing still needed for:
 - Routing: A→B on small distances, loop generation near forest boundaries, fallback when graph too small
-- Graph Router Edge Cases: Paths with < 4 nodes, unreachable target distance, endpoint connection within 80m threshold
 - Admin Workflows: Path import from OSM, path splitting, report dismissal, plan changes
 - Offline: Service worker caching, stale-while-revalidate behavior, API failures
 - Mobile: Geolocation button, touch events on map, photo upload from camera
 
 ## Important Gotchas
 
-1. Local Stats Only: Route counts and kilometers are stored in localStorage, not backed up to server. Clearing browser data loses stats. No user stats history across devices.
+1. Stats Backend-Persisted: Route counts and km are stored server-side in user.stats via POST /api/auth/stats. Stats sync across devices.
 
-2. KV Data Format: All KV values are JSON strings, not objects. Manual JSON.parse() required on read, JSON.stringify() on write.
+2. KV Data Format: All KV values are JSON strings, not objects. Manual JSON.parse() required on read, JSON.stringify() on write. Helper functions getUser/putUser/getPath/putPath/putReport in worker.js handle this.
 
 3. OSM Proxy Caching: Cached for 7 days per bbox. If you change admin path data, OSM overlay will not update until cache expires or you manually clear.
 
 4. CORS Permissive: All API endpoints allow Origin: *. No origin restriction—keep in mind if adding sensitive endpoints.
 
-5. Password Hashing: SHA-256 is not sufficient for production security (no key stretching). Consider upgrading to Argon2 or bcrypt for future hardening.
+5. Password Hashing: PBKDF2-SHA-256 with 100 000 iterations. Legacy SHA-256 accounts migrate automatically on next login (hashVersion field tracks which scheme).
 
-6. One-Time Setup: /api/setup endpoint checks if users array exists; if non-empty, rejects with 403. Only first call succeeds. Manual KV cleanup required to run setup again.
+6. One-Time Setup: /api/setup checks for any user: prefix key. If any exist, rejects with 403. Manual KV cleanup (delete all user:* and uemail:* keys) required to re-run.
+
+7. Email Index: uemail:{email} → userId is a soft index—no atomic transactions. Two concurrent registrations with the same email could both succeed in theory (extremely unlikely in practice). The index must be kept in sync: update both user:{id} and uemail:{email} together on profile email changes.

@@ -6,7 +6,8 @@
     "dev:worker": "wrangler dev",
     "deploy:worker": "wrangler deploy",
     "kv:create": "wrangler kv:namespace create BWR_KV",
-    "test": "node --test tests/graph-router.test.js"
+    "test": "node --test tests/graph-router.test.js tests/features.test.js tests/worker-auth.test.mjs",
+    "test:watch": "node --test --watch tests/graph-router.test.js tests/features.test.js tests/worker-auth.test.mjs"
   },
   "devDependencies": {
     "wrangler": "^3.114.17"

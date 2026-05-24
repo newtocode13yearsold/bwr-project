@@ -1,0 +1,84 @@
+name: BWR Tests
+
+on:
+  push:
+    branches: ["**"]          # run on every push to any branch
+  pull_request:
+    branches: ["**"]
+  schedule:
+    - cron: "0 7 * * *"       # every day at 07:00 UTC (09:00 Paris time)
+  workflow_dispatch:           # lets you trigger a run manually from GitHub UI
+
+jobs:
+  # ── 1. Unit tests ────────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit tests (143)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  # ── 2. Live health check (only on schedule + manual trigger) ─────────────────
+  health-check:
+    name: Live site health check
+    runs-on: ubuntu-latest
+    # Only run on the scheduled daily job and manual triggers — not on every push
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Check worker is responding
+        run: |
+          echo "Pinging https://bwr-worker.ciril8596.workers.dev ..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 15 \
+            "https://bwr-worker.ciril8596.workers.dev/api/auth/me" \
+            -H "Authorization: Bearer invalid-token-health-check")
+          echo "Response status: $STATUS"
+          # /api/auth/me returns 401 for invalid tokens — that means the worker is alive
+          # Any 5xx or connection failure = real problem
+          if [ "$STATUS" -eq 401 ] || [ "$STATUS" -eq 200 ]; then
+            echo "Worker is up (status $STATUS)"
+          else
+            echo "ERROR: Worker returned unexpected status $STATUS"
+            exit 1
+          fi
+
+      - name: Check static frontend is served
+        run: |
+          echo "Checking frontend is served..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 15 \
+            "https://bwr-worker.ciril8596.workers.dev/login.html")
+          echo "Response status: $STATUS"
+          if [ "$STATUS" -eq 200 ]; then
+            echo "Frontend is up"
+          else
+            echo "ERROR: Frontend returned status $STATUS"
+            exit 1
+          fi
+
+      - name: Check /api/paths endpoint
+        run: |
+          echo "Checking /api/paths..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 15 \
+            "https://bwr-worker.ciril8596.workers.dev/api/paths")
+          echo "Response status: $STATUS"
+          if [ "$STATUS" -eq 200 ]; then
+            echo "/api/paths is up"
+          else
+            echo "ERROR: /api/paths returned status $STATUS"
+            exit 1
+          fi
