@@ -58,7 +58,8 @@ jobs:
       - name: Check static frontend is served
         run: |
           echo "Checking frontend is served..."
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          # Use -L to follow redirects (Cloudflare assets can 307 → 200)
+          STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" \
             --max-time 15 \
             "https://bwr-worker.ciril8596.workers.dev/login.html")
           echo "Response status: $STATUS"
