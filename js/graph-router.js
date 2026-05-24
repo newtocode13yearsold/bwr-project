@@ -14,6 +14,7 @@ function nodeKey(lat, lon) {
   return `${lat.toFixed(5)},${lon.toFixed(5)}`;
 }
 
+// paths may carry a _weight multiplier (e.g. 3 for OSM gap-fill edges)
 function buildGraph(paths) {
   const nodes = new Map();
   const adj   = new Map();
@@ -30,9 +31,10 @@ function buildGraph(paths) {
 
   paths.forEach(path => {
     const c = path.coordinates;
+    const w = path._weight || 1;
     const keys = c.map(([lat, lon]) => ensure(lat, lon));
     for (let i = 0; i < keys.length - 1; i++) {
-      const d = haversineM(c[i][0], c[i][1], c[i + 1][0], c[i + 1][1]);
+      const d = haversineM(c[i][0], c[i][1], c[i + 1][0], c[i + 1][1]) * w;
       if (!adj.get(keys[i]).some(e => e.to === keys[i + 1])) link(keys[i], keys[i + 1], d);
     }
   });
@@ -55,6 +57,21 @@ function buildGraph(paths) {
   }
 
   return { nodes, adj };
+}
+
+// Walk from startNode to the nearest node with degree ≥ 2 (a real junction).
+// Avoids anchoring loops at dead-end leaf nodes.
+function snapToJunction(nodes, adj, startNode) {
+  if ((adj.get(startNode.k) || []).length >= 2) return startNode;
+  let best = startNode, bd = Infinity;
+  for (const [k, edges] of adj) {
+    if (edges.length >= 2) {
+      const n = nodes.get(k);
+      const d = haversineM(startNode.lat, startNode.lon, n.lat, n.lon);
+      if (d < bd) { bd = d; best = n; }
+    }
+  }
+  return best;
 }
 
 function dijkstra(adj, start, end = null) {
@@ -122,7 +139,7 @@ function graphAtob(sLat, sLng, eLat, eLng, paths) {
 }
 
 // Loop routing on the graph — routes out one way, removes those edges, routes back differently.
-// This guarantees a true loop with zero backtracking.
+// Tries multiple mid-point candidates and picks the one producing the least backtracking.
 // paths: pre-filtered array of path objects.
 // pathTyp: 'foot' | 'bike' | 'champs' (used only for speed in the result).
 function graphLoop(sLat, sLng, targetKm, paths, pathTyp = 'foot') {
@@ -130,45 +147,93 @@ function graphLoop(sLat, sLng, targetKm, paths, pathTyp = 'foot') {
   const { nodes, adj } = buildGraph(paths);
   if (nodes.size < 4) throw new Error('Pas assez de chemins — ajoutes-en depuis le panneau admin');
 
-  const startNode = nearestNode(nodes, sLat, sLng);
+  // Snap start to a real junction to avoid leaf-stem back-and-forth
+  const rawStart  = nearestNode(nodes, sLat, sLng);
+  const startNode = snapToJunction(nodes, adj, rawStart);
   const targetM   = targetKm * 1000;
 
   // 1. Dijkstra from start → distances to all nodes
   const { dist, prev: prevOut } = dijkstra(adj, startNode.k);
 
-  // 2. Pick the node closest to half the target distance
-  let midKey = null, midDiff = Infinity;
+  // 2. Collect mid candidates: prefer junctions (degree ≥ 2) within ±35% of targetM/2
+  const half = targetM / 2;
+  const candidates = [];
   for (const [k, d] of dist) {
     if (d <= 0) continue;
-    const diff = Math.abs(d - targetM / 2);
-    if (diff < midDiff) { midDiff = diff; midKey = k; }
+    const isJunction = (adj.get(k) || []).length >= 2;
+    const ratio = Math.abs(d - half) / half;
+    if (ratio < 0.35 && isJunction) candidates.push({ k, d, ratio });
   }
-  if (!midKey) throw new Error('Le réseau est trop petit pour cette distance');
+  // Fall back to any reachable node if no junctions in range
+  if (!candidates.length) {
+    for (const [k, d] of dist) {
+      if (d > 0) candidates.push({ k, d, ratio: Math.abs(d - half) / half });
+    }
+  }
+  candidates.sort((a, b) => a.ratio - b.ratio);
 
-  // 3. Reconstruct outgoing path start → mid
-  const outKeys = rebuildPath(prevOut, startNode.k, midKey);
-  if (!outKeys) throw new Error('Impossible de calculer l\'aller');
+  // 3. Try top candidates; score each by distance error + overlap penalty; keep best
+  let bestLoop = null, bestScore = Infinity;
 
-  // 4. Copy adjacency list and remove all edges used on the way out
-  const adjBack = new Map([...adj].map(([k, edges]) => [k, [...edges]]));
-  for (let i = 0; i < outKeys.length - 1; i++) {
-    const a = outKeys[i], b = outKeys[i + 1];
-    adjBack.set(a, adjBack.get(a).filter(e => e.to !== b));
-    adjBack.set(b, adjBack.get(b).filter(e => e.to !== a));
+  for (const cand of candidates.slice(0, 15)) {
+    const outKeys = rebuildPath(prevOut, startNode.k, cand.k);
+    if (!outKeys) continue;
+
+    // Remove outbound edges from a copy of the adjacency list
+    const adjBack = new Map([...adj].map(([k, edges]) => [k, [...edges]]));
+    const outEdgeSet = new Set();
+    for (let i = 0; i < outKeys.length - 1; i++) {
+      const a = outKeys[i], b = outKeys[i + 1];
+      outEdgeSet.add(`${a}|${b}`);
+      outEdgeSet.add(`${b}|${a}`);
+      adjBack.set(a, adjBack.get(a).filter(e => e.to !== b));
+      adjBack.set(b, adjBack.get(b).filter(e => e.to !== a));
+    }
+
+    const { prev: prevBack } = dijkstra(adjBack, cand.k, startNode.k);
+    const backKeys = rebuildPath(prevBack, cand.k, startNode.k);
+    if (!backKeys) continue;
+
+    // Score: distance error + 2× overlap ratio (overlap is the main enemy)
+    const allKeys = [...outKeys, ...backKeys.slice(1)];
+    let totalM = 0, overlap = 0;
+    for (let i = 0; i < allKeys.length - 1; i++) {
+      const na = nodes.get(allKeys[i]), nb = nodes.get(allKeys[i + 1]);
+      const d = haversineM(na.lat, na.lon, nb.lat, nb.lon);
+      totalM += d;
+      if (outEdgeSet.has(`${allKeys[i]}|${allKeys[i + 1]}`)) overlap += d;
+    }
+    const distErr     = Math.abs(totalM - targetM) / targetM;
+    const overlapFrac = totalM > 0 ? overlap / totalM : 1;
+    const score       = distErr + overlapFrac * 2;
+
+    if (score < bestScore) { bestScore = score; bestLoop = allKeys; }
+    if (distErr < 0.15 && overlapFrac < 0.05) break; // good enough
   }
 
-  // 5. Route back mid → start on different edges
-  const { prev: prevBack } = dijkstra(adjBack, midKey, startNode.k);
-  const backKeys = rebuildPath(prevBack, midKey, startNode.k);
-  if (!backKeys) throw new Error('Impossible de former une boucle — ajoute plus de chemins dans la zone');
+  if (!bestLoop) throw new Error('Impossible de former une boucle — ajoute plus de chemins dans la zone');
+  return graphToResult(nodes, bestLoop, pathTyp);
+}
 
-  return graphToResult(nodes, [...outKeys, ...backKeys.slice(1)], pathTyp);
+// A→B routing with admin paths as primary network and OSM paths as weighted gap-fill.
+// osmPaths are tagged with _weight:3 so the router uses them only when necessary.
+function graphAtobHybrid(sLat, sLng, eLat, eLng, adminPaths, osmPaths) {
+  const tagged = osmPaths.map(p => ({ ...p, _weight: 3 }));
+  const all    = [...adminPaths, ...tagged];
+  if (!all.length) throw new Error('Aucun chemin disponible');
+  const { nodes, adj } = buildGraph(all);
+  const sNode = nearestNode(nodes, sLat, sLng);
+  const eNode = nearestNode(nodes, eLat, eLng);
+  const { prev } = dijkstra(adj, sNode.k, eNode.k);
+  const keys = rebuildPath(prev, sNode.k, eNode.k);
+  if (!keys) throw new Error('Aucun chemin entre ces deux points');
+  return graphToResult(nodes, keys, 'foot');
 }
 
 if (typeof module !== 'undefined') {
   module.exports = {
     haversineM, nodeKey, buildGraph, dijkstra,
     rebuildPath, nearestNode, graphToResult,
-    graphAtob, graphLoop,
+    snapToJunction, graphAtob, graphAtobHybrid, graphLoop,
   };
 }

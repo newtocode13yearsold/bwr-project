@@ -1,3 +1,55 @@
+// ── KV key schema ─────────────────────────────────────────────────────────────
+// user:{id}          → JSON user object
+// uemail:{email}     → userId string  (email index for fast lookup)
+// path:{id}          → JSON path object
+// report:{id}        → JSON report object
+// photo:{reportId}   → data-URI string  (unchanged — already granular)
+// contact:{id}       → JSON contact message
+// session:{token}    → JSON { userId, expiresAt }  (unchanged)
+// osm:{bbox}         → JSON OSM data  (unchanged)
+
+async function listItems(env, prefix) {
+  const keys = [];
+  let cursor = undefined;
+  do {
+    const page = await env.BWR_KV.list({ prefix, limit: 1000, cursor });
+    keys.push(...page.keys);
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor !== undefined);
+
+  if (keys.length === 0) return [];
+  const values = await Promise.all(keys.map(k => env.BWR_KV.get(k.name)));
+  return values.filter(Boolean).map(v => JSON.parse(v));
+}
+
+async function getUser(env, id) {
+  const raw = await env.BWR_KV.get(`user:${id}`);
+  return raw ? JSON.parse(raw) : null;
+}
+
+async function putUser(env, user) {
+  await env.BWR_KV.put(`user:${user.id}`, JSON.stringify(user));
+}
+
+async function getUserByEmail(env, email) {
+  const userId = await env.BWR_KV.get(`uemail:${email.toLowerCase()}`);
+  if (!userId) return null;
+  return getUser(env, userId);
+}
+
+async function getPath(env, id) {
+  const raw = await env.BWR_KV.get(`path:${id}`);
+  return raw ? JSON.parse(raw) : null;
+}
+
+async function putPath(env, path) {
+  await env.BWR_KV.put(`path:${path.id}`, JSON.stringify(path));
+}
+
+async function putReport(env, report) {
+  await env.BWR_KV.put(`report:${report.id}`, JSON.stringify(report));
+}
+
 async function hashPasswordLegacy(password, salt) {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + salt);
@@ -34,8 +86,7 @@ async function getUserFromToken(env, request) {
     await env.BWR_KV.delete(`session:${token}`);
     return null;
   }
-  const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-  return users.find(u => u.id === session.userId) || null;
+  return getUser(env, session.userId);
 }
 
 export default {
@@ -57,10 +108,51 @@ export default {
     const fail = (msg, status = 400) =>
       new Response(JSON.stringify({ error: msg }), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
+    // ── POST /api/migrate — one-time migration from array keys to granular keys ─
+    if (pathname === '/api/migrate' && request.method === 'POST') {
+      const admin = await getUserFromToken(env, request);
+      if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+
+      const results = { users: 0, paths: 0, reports: 0, contacts: 0 };
+
+      const usersRaw = await env.BWR_KV.get('users');
+      if (usersRaw) {
+        const users = JSON.parse(usersRaw);
+        await Promise.all(users.map(u => Promise.all([
+          env.BWR_KV.put(`user:${u.id}`, JSON.stringify(u)),
+          env.BWR_KV.put(`uemail:${u.email.toLowerCase()}`, u.id),
+        ])));
+        results.users = users.length;
+      }
+
+      const pathsRaw = await env.BWR_KV.get('paths');
+      if (pathsRaw) {
+        const paths = JSON.parse(pathsRaw);
+        await Promise.all(paths.map(p => env.BWR_KV.put(`path:${p.id}`, JSON.stringify(p))));
+        results.paths = paths.length;
+      }
+
+      const reportsRaw = await env.BWR_KV.get('reports');
+      if (reportsRaw) {
+        const reports = JSON.parse(reportsRaw);
+        await Promise.all(reports.map(r => env.BWR_KV.put(`report:${r.id}`, JSON.stringify(r))));
+        results.reports = reports.length;
+      }
+
+      const contactRaw = await env.BWR_KV.get('contact_messages');
+      if (contactRaw) {
+        const contacts = JSON.parse(contactRaw);
+        await Promise.all(contacts.map(c => env.BWR_KV.put(`contact:${c.id}`, JSON.stringify(c))));
+        results.contacts = contacts.length;
+      }
+
+      return json({ success: true, migrated: results });
+    }
+
     // ── /api/setup — seeds the admin account (one-time) ──────────────────────
     if (pathname === '/api/setup' && request.method === 'POST') {
-      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-      return fail('Setup already completed.', 403);
+      const existing = await env.BWR_KV.list({ prefix: 'user:', limit: 1 });
+      if (!existing.list_complete || existing.keys.length > 0) return fail('Setup already completed.', 403);
 
       const body = await request.json();
       if (!body.password) return fail('Password required.');
@@ -79,8 +171,10 @@ export default {
         createdAt: new Date().toISOString(),
       };
 
-      users.push(admin);
-      await env.BWR_KV.put('users', JSON.stringify(users));
+      await Promise.all([
+        putUser(env, admin),
+        env.BWR_KV.put(`uemail:${admin.email}`, admin.id),
+      ]);
       return json({ message: 'Admin created successfully' }, 201);
     }
 
@@ -92,10 +186,8 @@ export default {
       if (!name || !email || !password) return fail('Tous les champs sont obligatoires.');
       if (password.length < 6) return fail('Le mot de passe doit faire au moins 6 caractères.');
 
-      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-      if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-        return fail('Un compte existe déjà avec cet email.');
-      }
+      const existing = await env.BWR_KV.get(`uemail:${email.toLowerCase()}`);
+      if (existing) return fail('Un compte existe déjà avec cet email.');
 
       const salt = crypto.randomUUID();
       const passwordHash = await hashPassword(password, salt);
@@ -109,12 +201,14 @@ export default {
         hashVersion: 2,
         role: 'free',
         plan: 'free',
+        stats: { routes: 0, km: 0 },
         createdAt: new Date().toISOString(),
       };
 
-      users.push(newUser);
-      await env.BWR_KV.put('users', JSON.stringify(users));
-
+      await Promise.all([
+        putUser(env, newUser),
+        env.BWR_KV.put(`uemail:${newUser.email}`, newUser.id),
+      ]);
       return json({ message: 'Compte créé avec succès.' }, 201);
     }
 
@@ -125,9 +219,7 @@ export default {
 
       if (!email || !password) return fail('Email et mot de passe requis.');
 
-      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-      const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-
+      const user = await getUserByEmail(env, email);
       if (!user) return fail('Email ou mot de passe incorrect.', 401);
 
       let passwordOk = false;
@@ -146,19 +238,16 @@ export default {
       if (needsMigration) {
         const newSalt = crypto.randomUUID();
         const newHash = await hashPassword(password, newSalt);
-        const allUsers = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-        const idx = allUsers.findIndex(u => u.id === user.id);
-        allUsers[idx] = { ...allUsers[idx], passwordHash: newHash, salt: newSalt, hashVersion: 2 };
-        await env.BWR_KV.put('users', JSON.stringify(allUsers));
+        await putUser(env, { ...user, passwordHash: newHash, salt: newSalt, hashVersion: 2 });
       }
 
       const token = crypto.randomUUID();
-      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       await env.BWR_KV.put(`session:${token}`, JSON.stringify({ userId: user.id, expiresAt }), { expirationTtl: 2592000 });
 
       return json({
         token,
-        user: { id: user.id, name: user.name, email: user.email, role: user.role, plan: user.plan || 'free' },
+        user: { id: user.id, name: user.name, email: user.email, role: user.role, plan: user.plan || 'free', stats: user.stats || { routes: 0, km: 0 } },
       });
     }
 
@@ -167,32 +256,30 @@ export default {
       let user = await getUserFromToken(env, request);
       if (!user) return fail('Non authentifié.', 401);
 
-      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-      let idx = users.findIndex(u => u.id === user.id);
       let dirty = false;
+      let updated = { ...user };
 
       // Auto-expire temporary plan upgrades
-      if (user.planExpiresAt && new Date(user.planExpiresAt) < new Date()) {
-        const revertTo = user.planBase || 'free';
-        users[idx] = { ...users[idx], plan: revertTo, planExpiresAt: null, planBase: null };
-        user = users[idx];
+      if (updated.planExpiresAt && new Date(updated.planExpiresAt) < new Date()) {
+        const revertTo = updated.planBase || 'free';
+        updated = { ...updated, plan: revertTo, planExpiresAt: null, planBase: null };
         dirty = true;
       }
 
       // Admins always get gold automatically
-      if (user.role === 'admin' && user.plan !== 'gold') {
-        users[idx] = { ...users[idx], plan: 'gold' };
-        user = users[idx];
+      if (updated.role === 'admin' && updated.plan !== 'gold') {
+        updated = { ...updated, plan: 'gold' };
         dirty = true;
       }
 
-      if (dirty) await env.BWR_KV.put('users', JSON.stringify(users));
+      if (dirty) await putUser(env, updated);
 
       return json({
-        id: user.id, name: user.name, email: user.email, role: user.role,
-        plan: user.plan || 'free',
-        planExpiresAt: user.planExpiresAt || null,
-        planBase: user.planBase || null,
+        id: updated.id, name: updated.name, email: updated.email, role: updated.role,
+        plan: updated.plan || 'free',
+        planExpiresAt: updated.planExpiresAt || null,
+        planBase: updated.planBase || null,
+        stats: updated.stats || { routes: 0, km: 0 },
       });
     }
 
@@ -200,18 +287,20 @@ export default {
     if (pathname.startsWith('/api/auth/plan/') && request.method === 'PUT') {
       const admin = await getUserFromToken(env, request);
       if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+
       const targetId = pathname.split('/')[4];
       const { plan, planExpiresAt, planBase } = await request.json();
-      if (!['free','silver','gold'].includes(plan)) return fail('Plan invalide.');
-      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-      const idx = users.findIndex(u => u.id === targetId);
-      if (idx === -1) return fail('Utilisateur introuvable.', 404);
-      const update = { ...users[idx], plan };
-      if (planExpiresAt !== undefined) update.planExpiresAt = planExpiresAt || null;
-      if (planBase !== undefined) update.planBase = planBase || null;
-      users[idx] = update;
-      await env.BWR_KV.put('users', JSON.stringify(users));
-      return json({ success: true, plan, planExpiresAt: update.planExpiresAt || null });
+      if (!['free', 'silver', 'gold'].includes(plan)) return fail('Plan invalide.');
+
+      const target = await getUser(env, targetId);
+      if (!target) return fail('Utilisateur introuvable.', 404);
+
+      const updated = { ...target, plan };
+      if (planExpiresAt !== undefined) updated.planExpiresAt = planExpiresAt || null;
+      if (planBase !== undefined) updated.planBase = planBase || null;
+      await putUser(env, updated);
+
+      return json({ success: true, plan, planExpiresAt: updated.planExpiresAt || null });
     }
 
     // ── POST /api/auth/wheel-prize — claim a plan upgrade won on the wheel ───
@@ -234,19 +323,14 @@ export default {
         if (daysSince < 30) return fail('Tu as déjà gagné un abonnement récemment — réessaie dans quelques semaines !', 429);
       }
 
-      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-      const idx = users.findIndex(u => u.id === user.id);
-      if (idx === -1) return fail('Utilisateur introuvable.', 404);
-
       const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
-      users[idx] = {
-        ...users[idx],
+      await putUser(env, {
+        ...user,
         plan: prizePlan,
         planExpiresAt: expiresAt,
         planBase: currentPlan,
         lastWheelPrizeClaim: new Date().toISOString(),
-      };
-      await env.BWR_KV.put('users', JSON.stringify(users));
+      });
 
       return json({ success: true, plan: prizePlan, expiresAt });
     }
@@ -333,14 +417,37 @@ export default {
       const { name, email } = await request.json();
       if (!name || !email) return fail('Nom et email obligatoires.');
 
-      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-      const conflict = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.id !== user.id);
-      if (conflict) return fail('Cette adresse email est déjà utilisée.');
+      const newEmail = email.toLowerCase();
+      if (newEmail !== user.email) {
+        const conflict = await env.BWR_KV.get(`uemail:${newEmail}`);
+        if (conflict && conflict !== user.id) return fail('Cette adresse email est déjà utilisée.');
+        await Promise.all([
+          env.BWR_KV.delete(`uemail:${user.email}`),
+          env.BWR_KV.put(`uemail:${newEmail}`, user.id),
+        ]);
+      }
 
-      const idx = users.findIndex(u => u.id === user.id);
-      users[idx] = { ...users[idx], name, email: email.toLowerCase() };
-      await env.BWR_KV.put('users', JSON.stringify(users));
-      return json({ id: users[idx].id, name: users[idx].name, email: users[idx].email, role: users[idx].role });
+      const updated = { ...user, name, email: newEmail };
+      await putUser(env, updated);
+      return json({ id: updated.id, name: updated.name, email: updated.email, role: updated.role });
+    }
+
+    // ── POST /api/auth/stats — increment route/km stats ─────────────────────────
+    if (pathname === '/api/auth/stats' && request.method === 'POST') {
+      const user = await getUserFromToken(env, request);
+      if (!user) return fail('Non authentifié.', 401);
+
+      const body = await request.json();
+      const deltaRoutes = Math.max(0, parseInt(body.routes) || 0);
+      const deltaKm     = Math.max(0, parseFloat(body.km) || 0);
+
+      const prev = user.stats || { routes: 0, km: 0 };
+      const updatedStats = {
+        routes: (prev.routes || 0) + deltaRoutes,
+        km: parseFloat(((prev.km || 0) + deltaKm).toFixed(2)),
+      };
+      await putUser(env, { ...user, stats: updatedStats });
+      return json({ stats: updatedStats });
     }
 
     // ── PUT /api/auth/password — change password ──────────────────────────────
@@ -359,10 +466,7 @@ export default {
 
       const newSalt = crypto.randomUUID();
       const newHash = await hashPassword(newPassword, newSalt);
-      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-      const idx = users.findIndex(u => u.id === user.id);
-      users[idx] = { ...users[idx], passwordHash: newHash, salt: newSalt, hashVersion: 2 };
-      await env.BWR_KV.put('users', JSON.stringify(users));
+      await putUser(env, { ...user, passwordHash: newHash, salt: newSalt, hashVersion: 2 });
       return json({ message: 'Mot de passe modifié avec succès.' });
     }
 
@@ -372,8 +476,10 @@ export default {
       if (!user) return fail('Non authentifié.', 401);
       if (user.role === 'admin') return fail('Le compte administrateur ne peut pas être supprimé.', 403);
 
-      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-      await env.BWR_KV.put('users', JSON.stringify(users.filter(u => u.id !== user.id)));
+      await Promise.all([
+        env.BWR_KV.delete(`user:${user.id}`),
+        env.BWR_KV.delete(`uemail:${user.email}`),
+      ]);
 
       const auth = request.headers.get('Authorization');
       if (auth?.startsWith('Bearer ')) await env.BWR_KV.delete(`session:${auth.slice(7)}`);
@@ -382,8 +488,7 @@ export default {
 
     // ── GET /api/paths — public ───────────────────────────────────────────────
     if (pathname === '/api/paths' && request.method === 'GET') {
-      const raw = await env.BWR_KV.get('paths');
-      return json(raw ? JSON.parse(raw) : []);
+      return json(await listItems(env, 'path:'));
     }
 
     // ── POST /api/paths — admin only ──────────────────────────────────────────
@@ -392,8 +497,6 @@ export default {
       if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
 
       const body = await request.json();
-      const paths = JSON.parse((await env.BWR_KV.get('paths')) || '[]');
-
       const newPath = {
         id: crypto.randomUUID(),
         name: body.name || 'Chemin sans nom',
@@ -405,8 +508,7 @@ export default {
         createdAt: new Date().toISOString(),
       };
 
-      paths.push(newPath);
-      await env.BWR_KV.put('paths', JSON.stringify(paths));
+      await putPath(env, newPath);
       return json(newPath, 201);
     }
 
@@ -417,31 +519,30 @@ export default {
 
       const id = pathname.split('/')[3];
       const body = await request.json();
-      const paths = JSON.parse((await env.BWR_KV.get('paths')) || '[]');
-      const idx = paths.findIndex(p => p.id === id);
-      if (idx === -1) return fail('Chemin introuvable.', 404);
+      const existing = await getPath(env, id);
+      if (!existing) return fail('Chemin introuvable.', 404);
 
-      const oldStatus = paths[idx].status;
-      paths[idx] = { ...paths[idx], ...body, id };
-      await env.BWR_KV.put('paths', JSON.stringify(paths));
+      const oldStatus = existing.status;
+      const updated = { ...existing, ...body, id };
+      await putPath(env, updated);
 
-      // Notify subscribed gold users when path status changes
+      // Notify subscribed users when path status changes
       if (body.status && body.status !== oldStatus) {
         const statusLabels = { easy: 'Facile', medium: 'Moyen', hard: 'Difficile', not_passable: 'Impraticable', no_bike: 'Vélo interdit' };
-        const allUsers = JSON.parse((await env.BWR_KV.get('users')) || '[]');
+        const allUsers = await listItems(env, 'user:');
         const alertUsers = allUsers.filter(u => u.alertsEnabled && u.alertsChannel);
         for (const u of alertUsers) {
           try {
             await fetch(`https://ntfy.sh/${u.alertsChannel}`, {
               method: 'POST',
               headers: { 'Title': 'BWR — Chemin mis à jour', 'Tags': 'forest,warning', 'Content-Type': 'text/plain; charset=utf-8' },
-              body: `"${paths[idx].name || 'Chemin'}" : ${statusLabels[oldStatus] || oldStatus} → ${statusLabels[body.status] || body.status}`,
+              body: `"${updated.name || 'Chemin'}" : ${statusLabels[oldStatus] || oldStatus} → ${statusLabels[body.status] || body.status}`,
             });
           } catch {}
         }
       }
 
-      return json(paths[idx]);
+      return json(updated);
     }
 
     // ── DELETE /api/paths/:id — admin only ────────────────────────────────────
@@ -450,24 +551,22 @@ export default {
       if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
 
       const id = pathname.split('/')[3];
-      const paths = JSON.parse((await env.BWR_KV.get('paths')) || '[]');
-      await env.BWR_KV.put('paths', JSON.stringify(paths.filter(p => p.id !== id)));
+      await env.BWR_KV.delete(`path:${id}`);
       return json({ success: true });
     }
 
     // ── GET /api/reports — public ─────────────────────────────────────────────
     if (pathname === '/api/reports' && request.method === 'GET') {
-      const raw = await env.BWR_KV.get('reports');
-      return json(raw ? JSON.parse(raw) : []);
+      return json(await listItems(env, 'report:'));
     }
 
     // ── GET /api/users — admin only, list all users ──────────────────────────
     if (pathname === '/api/users' && request.method === 'GET') {
       const admin = await getUserFromToken(env, request);
       if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
-      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-      // Strip sensitive fields
-      const safe = users.map(u => ({
+
+      const allUsers = await listItems(env, 'user:');
+      const safe = allUsers.map(u => ({
         id: u.id, name: u.name, email: u.email, role: u.role,
         plan: u.plan || 'free',
         planExpiresAt: u.planExpiresAt || null,
@@ -477,16 +576,28 @@ export default {
       return json(safe);
     }
 
+    // ── GET /api/photos/:reportId — public, serves photo binary ─────────────
+    if (pathname.startsWith('/api/photos/') && request.method === 'GET') {
+      const reportId = pathname.split('/')[3];
+      const dataUri = await env.BWR_KV.get(`photo:${reportId}`);
+      if (!dataUri) return new Response('Not found', { status: 404, headers: cors });
+      const [header, b64] = dataUri.split(',');
+      const mime = header.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return new Response(bytes, {
+        headers: { ...cors, 'Content-Type': mime, 'Cache-Control': 'public, max-age=2592000' },
+      });
+    }
+
     // ── POST /api/reports — any user ─────────────────────────────────────────
     if (pathname === '/api/reports' && request.method === 'POST') {
       const body = await request.json();
-      const reports = JSON.parse((await env.BWR_KV.get('reports')) || '[]');
 
-      // Look up path name for the notification
       let pathName = 'Chemin inconnu';
       if (body.pathId) {
-        const paths = JSON.parse((await env.BWR_KV.get('paths')) || '[]');
-        const found = paths.find(p => p.id === body.pathId);
+        const found = await getPath(env, body.pathId);
         if (found) pathName = found.name || 'Chemin sans nom';
       }
 
@@ -495,17 +606,21 @@ export default {
         pathId: body.pathId || null,
         type: body.type || 'other',
         note: (body.note || '').slice(0, 300),
-        photo: body.photo || null,
+        hasPhoto: !!body.photo,
         lat: body.lat || null,
         lon: body.lon || null,
         date: new Date().toISOString(),
         status: 'open',
       };
-      reports.push(report);
-      await env.BWR_KV.put('reports', JSON.stringify(reports));
 
-      // Push notification via ntfy.sh (install ntfy app → subscribe to bwr-ciril8596)
-      const typeLabels = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
+      // Store photo separately to keep report objects lean
+      if (body.photo) {
+        await env.BWR_KV.put(`photo:${report.id}`, body.photo, { expirationTtl: 7776000 }); // 90 days
+      }
+
+      await putReport(env, report);
+
+      const typeLabels = { fallen_tree: 'Arbre tombé', flooded: 'Chemin inondé', closed: 'Chemin fermé', danger: 'Danger', other: 'Autre' };
       try {
         await fetch('https://ntfy.sh/bwr-ciril8596', {
           method: 'POST',
@@ -521,9 +636,12 @@ export default {
     if (pathname.startsWith('/api/reports/') && request.method === 'DELETE') {
       const user = await getUserFromToken(env, request);
       if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
+
       const id = pathname.split('/')[3];
-      const reports = JSON.parse((await env.BWR_KV.get('reports')) || '[]');
-      await env.BWR_KV.put('reports', JSON.stringify(reports.filter(r => r.id !== id)));
+      await Promise.all([
+        env.BWR_KV.delete(`report:${id}`),
+        env.BWR_KV.delete(`photo:${id}`),
+      ]);
       return json({ success: true });
     }
 
@@ -532,12 +650,11 @@ export default {
       const { name, email, message } = await request.json();
       if (!name || !email || !message) return fail('Tous les champs sont obligatoires.');
 
-      // Save in KV (so messages aren't lost)
-      const messages = JSON.parse((await env.BWR_KV.get('contact_messages')) || '[]');
-      messages.push({ id: crypto.randomUUID(), name, email, message: message.slice(0, 2000), date: new Date().toISOString() });
-      await env.BWR_KV.put('contact_messages', JSON.stringify(messages));
+      const id = crypto.randomUUID();
+      await env.BWR_KV.put(`contact:${id}`, JSON.stringify({
+        id, name, email, message: message.slice(0, 2000), date: new Date().toISOString(),
+      }));
 
-      // Push notification to admin via ntfy.sh
       try {
         await fetch('https://ntfy.sh/bwr-ciril8596', {
           method: 'POST',
@@ -549,7 +666,7 @@ export default {
       return json({ success: true });
     }
 
-    // ── POST /api/push/subscribe — enable path alerts (gold users) ───────────
+    // ── POST /api/push/subscribe — enable path alerts (silver/gold users) ─────
     if (pathname === '/api/push/subscribe' && request.method === 'POST') {
       const user = await getUserFromToken(env, request);
       if (!user) return fail('Non authentifié.', 401);
@@ -557,11 +674,7 @@ export default {
       if (plan === 'free') return fail('Les alertes push sont disponibles avec le plan Or.', 403);
 
       const channel = `bwr-u-${user.id.slice(0, 8)}`;
-      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-      const idx = users.findIndex(u => u.id === user.id);
-      if (idx === -1) return fail('Utilisateur introuvable.', 404);
-      users[idx] = { ...users[idx], alertsEnabled: true, alertsChannel: channel };
-      await env.BWR_KV.put('users', JSON.stringify(users));
+      await putUser(env, { ...user, alertsEnabled: true, alertsChannel: channel });
       return json({ channel });
     }
 
@@ -570,11 +683,7 @@ export default {
       const user = await getUserFromToken(env, request);
       if (!user) return fail('Non authentifié.', 401);
 
-      const users = JSON.parse((await env.BWR_KV.get('users')) || '[]');
-      const idx = users.findIndex(u => u.id === user.id);
-      if (idx === -1) return fail('Utilisateur introuvable.', 404);
-      users[idx] = { ...users[idx], alertsEnabled: false };
-      await env.BWR_KV.put('users', JSON.stringify(users));
+      await putUser(env, { ...user, alertsEnabled: false });
       return json({ success: true });
     }
 

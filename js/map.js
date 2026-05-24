@@ -1,21 +1,22 @@
+const LAYER_MAX_ZOOM = { osm: 19, ign: 17, satellite: 20 };
 const TILE_LAYERS = {
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxNativeZoom: 19, maxZoom: 25, detectRetina: true }
+    { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxNativeZoom: 19, maxZoom: 19, detectRetina: true }
   ),
   ign: L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxNativeZoom: 17, maxZoom: 25, subdomains: ['a','b','c'], detectRetina: true }
+    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxNativeZoom: 17, maxZoom: 17, subdomains: ['a','b','c'] }
   ),
   satellite: L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
-    { attribution: '&copy; <a href="https://www.geoportail.gouv.fr/">IGN</a>', maxNativeZoom: 20, maxZoom: 25, detectRetina: true }
+    { attribution: '&copy; <a href="https://www.geoportail.gouv.fr/">IGN</a>', maxNativeZoom: 20, maxZoom: 20, detectRetina: true }
   ),
 };
 
 const _cachedUser = (typeof getCachedUser === 'function') ? getCachedUser() : null;
 const _userPlan   = (typeof normalisePlan === 'function') ? normalisePlan(_cachedUser?.plan) : (_cachedUser?.plan || 'free');
 
-const map = L.map('map', { zoomControl: true, minZoom: 10, maxZoom: 25 }).setView(MAP_CENTER, MAP_ZOOM);
+const map = L.map('map', { zoomControl: true, minZoom: 10, maxZoom: LAYER_MAX_ZOOM.ign }).setView(MAP_CENTER, MAP_ZOOM);
 TILE_LAYERS.ign.addTo(map);
 
 let currentLayer = 'ign';
@@ -273,7 +274,7 @@ function placeReportMarker(report, coords) {
     <div class="popup">
       <strong>${icon} ${label}</strong>
       ${report.note ? `<p class="popup-notes">${report.note}</p>` : ''}
-      ${report.photo ? `<img src="${report.photo}" class="report-popup-photo" alt="photo">` : ''}
+      ${(report.hasPhoto || report.photo) ? `<img src="${report.hasPhoto ? `${API_URL}/api/photos/${report.id}` : report.photo}" class="report-popup-photo" alt="photo">` : ''}
       <small style="color:#9ca3af">${new Date(report.date).toLocaleDateString('fr-FR')}</small>
     </div>
   `).addTo(map);
@@ -317,6 +318,7 @@ document.querySelectorAll('input[name="tileLayer"]').forEach(radio => {
     }
     map.removeLayer(TILE_LAYERS[currentLayer]);
     currentLayer = wanted;
+    map.setMaxZoom(LAYER_MAX_ZOOM[currentLayer]);
     TILE_LAYERS[currentLayer].addTo(map);
   });
 });

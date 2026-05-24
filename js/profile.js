@@ -237,9 +237,25 @@ function renderPlanAndProgress(user) {
   // ── Weekly route quota strip (free users only) ──
   renderQuotaStrip(plan);
 
-  // Level & XP — every 5 km is a level
-  const routes = parseInt(localStorage.getItem('bwr_route_count') || '0');
-  const km     = parseFloat(localStorage.getItem('bwr_km_total') || '0');
+  // Stats: server is authoritative; localStorage is cache. Take max during migration.
+  const serverRoutes = (user.stats && user.stats.routes) || 0;
+  const serverKm     = (user.stats && user.stats.km) || 0;
+  const localRoutes  = parseInt(localStorage.getItem('bwr_route_count') || '0');
+  const localKm      = parseFloat(localStorage.getItem('bwr_km_total') || '0');
+  const routes = Math.max(serverRoutes, localRoutes);
+  const km     = Math.max(serverKm, localKm);
+  // Keep localStorage in sync for offline use
+  if (routes > localRoutes) localStorage.setItem('bwr_route_count', String(routes));
+  if (km > localKm) localStorage.setItem('bwr_km_total', km.toFixed(2));
+  // One-time migration: push localStorage surplus to server if server has no data yet
+  if (serverRoutes === 0 && routes > 0 && !localStorage.getItem('bwr_stats_synced')) {
+    localStorage.setItem('bwr_stats_synced', '1');
+    fetch(`${API_URL}/api/auth/stats`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ routes, km }),
+    }).catch(() => {});
+  }
   const level  = Math.floor(km / 5) + 1;
   const xpIn   = km - (level - 1) * 5;
   const xpPct  = Math.min(100, (xpIn / 5) * 100);
@@ -429,7 +445,13 @@ async function spinWheel(plan) {
     localStorage.setItem('bwr_routes_week', JSON.stringify(w));
   } else if (prize.type === 'xp_bonus') {
     const km = parseFloat(localStorage.getItem('bwr_km_total') || '0');
-    localStorage.setItem('bwr_km_total', (km + (prize.xp || 0) / 20).toFixed(2)); // 1 XP ≈ 0.05 km
+    const bonusKm = (prize.xp || 0) / 20;
+    localStorage.setItem('bwr_km_total', (km + bonusKm).toFixed(2)); // 1 XP ≈ 0.05 km
+    fetch(`${API_URL}/api/auth/stats`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ routes: 0, km: bonusKm }),
+    }).catch(() => {});
   } else if (prize.type === 'double_xp') {
     const expires = Date.now() + (prize.hours || 24) * 3600000;
     localStorage.setItem('bwr_double_xp_until', expires);
@@ -647,9 +669,10 @@ async function loadPathCount() {
     const paths = await res.json();
     document.getElementById('statPaths').textContent = paths.length;
   } catch {}
-  // Routes and km are stored locally per session (no persistent history in the backend)
-  const routes = parseInt(localStorage.getItem('bwr_route_count') || '0');
-  const km     = parseFloat(localStorage.getItem('bwr_km_total') || '0');
+  const serverRoutes = (currentUser?.stats?.routes) || 0;
+  const serverKm     = (currentUser?.stats?.km) || 0;
+  const routes = Math.max(serverRoutes, parseInt(localStorage.getItem('bwr_route_count') || '0'));
+  const km     = Math.max(serverKm, parseFloat(localStorage.getItem('bwr_km_total') || '0'));
   document.getElementById('statRoutes').textContent = routes;
   document.getElementById('statKm').textContent     = km > 0 ? `${km.toFixed(0)} km` : '—';
 }

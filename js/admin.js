@@ -78,11 +78,11 @@ function initUserMenu() {
 
 // ── Map init ──────────────────────────────────────────────────────────────────
 function initMap() {
-  map = L.map('map', { minZoom: 10, maxZoom: 25 }).setView(MAP_CENTER, MAP_ZOOM);
+  map = L.map('map', { minZoom: 10, maxZoom: 17 }).setView(MAP_CENTER, MAP_ZOOM);
 
   ignLayer = L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 17, maxZoom: 25, subdomains: ['a','b','c'], detectRetina: true }
+    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 17, maxZoom: 17, subdomains: ['a','b','c'] }
   );
   ignLayer.addTo(map);
 
@@ -474,7 +474,7 @@ function renderReportMarkers() {
         <div class="color-popup-name">${icon} ${label}</div>
         <div style="font-size:0.8rem;color:#6b7280;margin-bottom:8px">sur : ${path.name || 'Chemin sans nom'}</div>
         ${r.note ? `<p class="popup-notes" style="margin-bottom:8px">${r.note}</p>` : ''}
-        ${r.photo ? `<img src="${r.photo}" class="report-popup-photo" alt="photo" style="margin-bottom:8px">` : ''}
+        ${(r.hasPhoto || r.photo) ? `<img src="${r.hasPhoto ? `${API_URL}/api/photos/${r.id}` : r.photo}" class="report-popup-photo" alt="photo" style="margin-bottom:8px">` : ''}
         <small style="color:#9ca3af">${new Date(r.date).toLocaleDateString('fr-FR')}</small>
         <button class="btn-primary" id="resolve-${r.id}" style="width:100%;margin-top:10px;padding:8px">✓ Marquer comme résolu</button>
       </div>

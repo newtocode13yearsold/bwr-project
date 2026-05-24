@@ -160,26 +160,26 @@ function initUserMenu() {
 }
 
 // ── Map ───────────────────────────────────────────────────────────────────────
+const LAYER_MAX_ZOOM = { ign: 17, osm: 19, satellite: 20 };
 const TILE_LAYERS = {
   ign: () => L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 17, maxZoom: 25, subdomains: ['a','b','c'], detectRetina: true }
+    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 17, maxZoom: 17, subdomains: ['a','b','c'] }
   ),
   osm: () => L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© OpenStreetMap', maxNativeZoom: 19, maxZoom: 25, detectRetina: true }
+    { attribution: '© OpenStreetMap', maxNativeZoom: 19, maxZoom: 19, detectRetina: true }
   ),
   satellite: () => L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
-    { attribution: '© IGN', maxNativeZoom: 20, maxZoom: 25, detectRetina: true }
+    { attribution: '© IGN', maxNativeZoom: 20, maxZoom: 20, detectRetina: true }
   ),
 };
 let currentTile = null;
 
 function initMap() {
-  map = L.map('map', { zoomControl: true, maxZoom: 25 }).setView(MAP_CENTER, MAP_ZOOM);
-  // Free users get OSM by default (IGN/satellite gated)
   const plan = currentUser?.plan || 'free';
   const defaultLayer = can('ign_topo_tiles', plan) ? 'ign' : 'osm';
+  map = L.map('map', { zoomControl: true, maxZoom: LAYER_MAX_ZOOM[defaultLayer] }).setView(MAP_CENTER, MAP_ZOOM);
   currentTile = TILE_LAYERS[defaultLayer]();
   currentTile.addTo(map);
   // Reflect that on the layer-button row if it exists
@@ -196,7 +196,9 @@ function initMap() {
   document.querySelectorAll('.layer-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       map.removeLayer(currentTile);
-      currentTile = TILE_LAYERS[btn.dataset.layer]();
+      const layerKey = btn.dataset.layer;
+      map.setMaxZoom(LAYER_MAX_ZOOM[layerKey]);
+      currentTile = TILE_LAYERS[layerKey]();
       currentTile.addTo(map);
       document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -427,11 +429,19 @@ async function generateRoute() {
     return;
   }
 
-  // Track usage stats shown on profile page
+  // Track usage stats locally (cache) and persist to server
   const prevCount = parseInt(localStorage.getItem('bwr_route_count') || '0');
   const prevKm    = parseFloat(localStorage.getItem('bwr_km_total')   || '0');
+  const deltaKm   = result.meters / 1000;
   localStorage.setItem('bwr_route_count', prevCount + 1);
-  localStorage.setItem('bwr_km_total', (prevKm + result.meters / 1000).toFixed(2));
+  localStorage.setItem('bwr_km_total', (prevKm + deltaKm).toFixed(2));
+  if (getToken()) {
+    fetch(`${API_URL}/api/auth/stats`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ routes: 1, km: deltaKm }),
+    }).catch(() => {});
+  }
 
   // Bump the weekly quota and refresh the strip
   bumpWeekly();
@@ -520,13 +530,46 @@ async function osrmLoopWithRetry(sLat, sLng, targetKm) {
   return result;
 }
 
+// ── OSM path helpers for hybrid A→B routing ───────────────────────────────────
+function osmDataToCoordPaths(data) {
+  const nodeMap = {};
+  data.elements.forEach(el => { if (el.type === 'node') nodeMap[el.id] = [el.lat, el.lon]; });
+  const result = [];
+  data.elements.forEach(el => {
+    if (el.type !== 'way') return;
+    const coordinates = el.nodes.map(id => nodeMap[id]).filter(Boolean);
+    if (coordinates.length >= 2) result.push({ coordinates });
+  });
+  return result;
+}
+
+async function fetchOsmPathsForBbox(minLat, minLng, maxLat, maxLng) {
+  try {
+    const bbox = `${minLat.toFixed(4)},${minLng.toFixed(4)},${maxLat.toFixed(4)},${maxLng.toFixed(4)}`;
+    const res = await fetch(`${API_URL}/api/osm?bbox=${bbox}`);
+    if (!res.ok) return [];
+    return osmDataToCoordPaths(await res.json());
+  } catch { return []; }
+}
+
 // ── Public routing entry points ────────────────────────────────────────────────
 async function routeAtob(sLat, sLng, eLat, eLng) {
-  // ORS (needs ORS_KEY in Cloudflare)
+  // 1. Hybrid graph: admin paths preferred, OSM fills gaps
+  if (savedPaths.length) {
+    try {
+      const pad = 0.02; // ~2 km padding around the A-B bounding box
+      const osmPaths = await fetchOsmPathsForBbox(
+        Math.min(sLat, eLat) - pad, Math.min(sLng, eLng) - pad,
+        Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
+      );
+      return graphAtobHybrid(sLat, sLng, eLat, eLng, filterPaths(savedPaths), osmPaths);
+    } catch (e) { console.warn('graph hybrid:', e.message); }
+  }
+  // 2. ORS (needs ORS_KEY in Cloudflare)
   try {
     return await callORS({ profile: orsProfile(), coordinates: [[sLng, sLat], [eLng, eLat]] });
   } catch (e) { console.warn('ORS:', e.message); }
-  // OSRM — uses all roads and paths (city streets, forest paths, etc.)
+  // 3. OSRM — uses all roads and paths (city streets, forest paths, etc.)
   return osrmRoute([{ lat: sLat, lon: sLng }, { lat: eLat, lon: eLng }]);
 }
 
