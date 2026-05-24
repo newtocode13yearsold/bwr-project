@@ -14,26 +14,68 @@ const TILE_LAYERS = {
 };
 
 const _cachedUser = (typeof getCachedUser === 'function') ? getCachedUser() : null;
-const _userPlan   = (typeof normalisePlan === 'function') ? normalisePlan(_cachedUser?.plan) : (_cachedUser?.plan || 'free');
+const _userPlan   = (typeof BWR !== 'undefined') ? BWR.normalisePlan(_cachedUser?.plan) : (_cachedUser?.plan || 'free');
 
 const map = L.map('map', { zoomControl: true, minZoom: 10, maxZoom: LAYER_MAX_ZOOM.ign }).setView(MAP_CENTER, MAP_ZOOM);
 TILE_LAYERS.ign.addTo(map);
 
 let currentLayer = 'ign';
 let allPaths = [];
-let pathLayers = {};
 let activeFilters = new Set(['easy', 'medium', 'hard', 'not_passable', 'no_bike']);
 
-function pathWeight() {
-  const z = map.getZoom();
-  return Math.max(2, Math.min(20, Math.round((z - 8) * 0.9)));
-}
+// ── Path tile layer ────────────────────────────────────────────────────────────
+// Paths are drawn directly onto map tiles so they scale at exactly the same rate
+// as the basemap — no polyline overlays, no weight-update lag.
+const PathTileLayer = L.GridLayer.extend({
+  initialize(options) {
+    L.GridLayer.prototype.initialize.call(this, options);
+    this._paths = [];
+    this._filters = new Set();
+  },
+  setPaths(paths, filters) {
+    this._paths = paths;
+    if (filters) this._filters = new Set(filters);
+    this.redraw();
+  },
+  createTile(coords) {
+    const size   = this.getTileSize();
+    const canvas = document.createElement('canvas');
+    canvas.width = size.x;
+    canvas.height = size.y;
+    const ctx = canvas.getContext('2d');
+    const map = this._map;
+    if (!map || !this._paths.length) return canvas;
 
-function updatePathWeights() {
-  const w = pathWeight();
-  Object.values(pathLayers).forEach(l => l.setStyle({ weight: w }));
-}
-map.on('zoom zoomend', updatePathWeights);
+    const z   = coords.z;
+    const ox  = coords.x * size.x;
+    const oy  = coords.y * size.y;
+    // Real-world trail width (20 m) converted to pixels at this zoom level
+    const mpp = 40075016 * Math.cos(49.35 * Math.PI / 180) / (256 * Math.pow(2, z));
+    const sw  = Math.max(1.5, Math.min(12, 20 / mpp));
+
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    ctx.globalAlpha = 0.85;
+    ctx.lineWidth   = sw;
+
+    this._paths.forEach(path => {
+      if (!this._filters.has(path.status)) return;
+      if (!path.coordinates || path.coordinates.length < 2) return;
+      ctx.strokeStyle = STATUS_COLORS[path.status] || '#9ca3af';
+      ctx.beginPath();
+      path.coordinates.forEach(([lat, lng], i) => {
+        const pt = map.project(L.latLng(lat, lng), z);
+        i === 0 ? ctx.moveTo(pt.x - ox, pt.y - oy)
+                : ctx.lineTo(pt.x - ox, pt.y - oy);
+      });
+      ctx.stroke();
+    });
+    return canvas;
+  },
+});
+
+const pathTileLayer = new PathTileLayer({ tileSize: 256, zIndex: 200 });
+pathTileLayer.addTo(map);
 
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', () => map.invalidateSize());
@@ -90,35 +132,39 @@ async function loadPaths() {
 }
 
 function renderPaths() {
-  Object.values(pathLayers).forEach(l => map.removeLayer(l));
-  pathLayers = {};
+  pathTileLayer.setPaths(allPaths, activeFilters);
+}
 
+// ── Click detection on tile-rendered paths ────────────────────────────────────
+function _ptSegDistPx(p, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len2 = dx * dx + dy * dy;
+  if (!len2) return p.distanceTo(a);
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
+  return p.distanceTo(L.point(a.x + t * dx, a.y + t * dy));
+}
+
+function _pathAtClick(latlng) {
+  const cp = map.latLngToLayerPoint(latlng);
+  const THRESH = 12; // px
+  let best = null, bestD = THRESH;
   allPaths.forEach(path => {
     if (!activeFilters.has(path.status)) return;
-
-    const color = STATUS_COLORS[path.status] || '#9ca3af';
-    const line = L.polyline(path.coordinates, {
-      color,
-      weight: pathWeight(),
-      opacity: 0.85,
-    });
-
-    const condHTML = path.conditions?.length
-      ? `<div class="popup-cond-row">${path.conditions.map(c => {
-          const icons = { dry:'✅', muddy:'⚠️', fallen:'❌', mtb:'🚴', running:'🏃', family:'👨‍👩‍👧' };
-          const labels = { dry:'Sec', muddy:'Boueux', fallen:'Arbres tombés', mtb:'Idéal MTB', running:'Running', family:'Famille' };
-          return `<span class="popup-cond-tag">${icons[c] || ''} ${labels[c] || c}</span>`;
-        }).join('')}</div>`
-      : '';
-    line.on('click', (e) => {
-      L.DomEvent.stopPropagation(e);
-      openPathPopup(path, e.latlng);
-    });
-
-    line.addTo(map);
-    pathLayers[path.id] = line;
+    const coords = path.coordinates;
+    for (let i = 0; i < coords.length - 1; i++) {
+      const a = map.latLngToLayerPoint(coords[i]);
+      const b = map.latLngToLayerPoint(coords[i + 1]);
+      const d = _ptSegDistPx(cp, a, b);
+      if (d < bestD) { bestD = d; best = path; }
+    }
   });
+  return best;
 }
+
+map.on('click', e => {
+  const path = _pathAtClick(e.latlng);
+  if (path) openPathPopup(path, e.latlng);
+});
 
 // ── Path popup & report flow ──────────────────────────────────────────────────
 const REPORT_ICONS  = { fallen_tree:'🌲', flooded:'💧', closed:'🚫', danger:'⚠️', other:'📝' };
@@ -147,7 +193,7 @@ function openPathPopup(path, latlng) {
 
   setTimeout(() => {
     document.getElementById(`openReport-${path.id}`)?.addEventListener('click', () => {
-      if (typeof can === 'function' && !can('reports_create', _userPlan)) {
+      if (!BWR.can('reports_create', _userPlan)) {
         map.closePopup();
         showToast('🔒 Le signalement est disponible avec Argent — voir plans.html');
         return;
@@ -310,7 +356,7 @@ document.querySelectorAll('input[name="tileLayer"]').forEach(radio => {
     const wanted = radio.value;
     const plan = _userPlan;
     // Gate satellite (Gold only) — show upsell instead of switching.
-    if (wanted === 'satellite' && typeof can === 'function' && !can('satellite_tiles', plan)) {
+    if (wanted === 'satellite' && !BWR.can('satellite_tiles', plan)) {
       radio.checked = false;
       document.querySelector(`input[name="tileLayer"][value="${currentLayer}"]`).checked = true;
       showUpgradeToast('satellite', 'gold');
@@ -329,8 +375,7 @@ document.querySelectorAll('input[name="tileLayer"]').forEach(radio => {
     const radio = label.querySelector('input[name="tileLayer"]');
     if (!radio) return;
     const v = radio.value;
-    if (typeof can !== 'function') return;
-    if (v === 'satellite' && !can('satellite_tiles', _userPlan)) {
+    if (v === 'satellite' && !BWR.can('satellite_tiles', _userPlan)) {
       label.classList.add('plan-locked');
       label.insertAdjacentHTML('beforeend', ' <span class="tier-tag gold">👑 Or</span>');
     }
@@ -488,7 +533,7 @@ async function loadReports() {
 }
 
 document.getElementById('btnReport').addEventListener('click', () => {
-  if (typeof can === 'function' && !can('reports_create', _userPlan)) {
+  if (!BWR.can('reports_create', _userPlan)) {
     showToast('🔒 Le signalement est disponible avec Argent — voir plans.html');
     return;
   }
@@ -531,11 +576,11 @@ function latToTileY(lat, z) {
 }
 
 async function downloadOfflineTiles() {
-  if (!can('offline_cache', _userPlan)) {
+  if (!BWR.can('offline_cache', _userPlan)) {
     showToast('🔒 Cartes hors-ligne disponibles avec Argent — voir plans.html');
     return;
   }
-  const maxAreas = limitOf('offline_cache', _userPlan);
+  const maxAreas = BWR.limitOf('offline_cache', _userPlan);
   const savedCount = parseInt(localStorage.getItem('bwr_offline_areas') || '0');
   if (savedCount >= maxAreas) {
     showToast(`Zone hors-ligne : limite de ${maxAreas} zone${maxAreas > 1 ? 's' : ''} atteinte`);
@@ -578,7 +623,7 @@ async function downloadOfflineTiles() {
 (function initOfflineBtn() {
   const btn = document.getElementById('btnOffline');
   if (!btn) return;
-  if (can('offline_cache', _userPlan)) {
+  if (BWR.can('offline_cache', _userPlan)) {
     btn.style.display = '';
     btn.addEventListener('click', downloadOfflineTiles);
   }

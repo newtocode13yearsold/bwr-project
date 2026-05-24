@@ -46,6 +46,33 @@ loginForm.addEventListener('submit', async (e) => {
     if (!res.ok) {
       errorEl.textContent = data.error || 'Erreur de connexion.';
       errorEl.classList.remove('hidden');
+
+      if (data.unverified) {
+        const resendBtn = document.createElement('button');
+        resendBtn.type = 'button';
+        resendBtn.textContent = 'Renvoyer l\'email de vérification';
+        resendBtn.className = 'btn-secondary';
+        resendBtn.style.marginTop = '.5rem';
+        resendBtn.onclick = async () => {
+          resendBtn.disabled = true;
+          resendBtn.textContent = 'Envoi…';
+          try {
+            const r = await fetch(`${API_URL}/api/auth/resend-verification`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email }),
+            });
+            const d = await r.json();
+            resendBtn.textContent = d.error || d.message || 'Email envoyé.';
+          } catch {
+            resendBtn.textContent = 'Erreur — réessayez.';
+            resendBtn.disabled = false;
+          }
+        };
+        errorEl.appendChild(document.createElement('br'));
+        errorEl.appendChild(resendBtn);
+      }
+
       return;
     }
 
@@ -84,15 +111,9 @@ signupForm.addEventListener('submit', async (e) => {
       return;
     }
 
-    successEl.textContent = 'Compte créé ! Tu peux maintenant te connecter.';
+    successEl.textContent = data.message || 'Un email de vérification a été envoyé. Vérifiez votre boîte mail pour activer votre compte.';
     successEl.classList.remove('hidden');
     signupForm.reset();
-
-    // Switch to login tab after 1.5s
-    setTimeout(() => {
-      tabLogin.click();
-      document.getElementById('loginEmail').value = email;
-    }, 1500);
   } catch {
     errorEl.textContent = 'Impossible de contacter le serveur.';
     errorEl.classList.remove('hidden');

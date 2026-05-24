@@ -190,7 +190,7 @@ const WHEEL_PRIZES = {
 };
 
 function pickPrize(plan) {
-  const prizes = WHEEL_PRIZES[normalisePlan(plan)] || WHEEL_PRIZES.free;
+  const prizes = WHEEL_PRIZES[BWR.normalisePlan(plan)] || WHEEL_PRIZES.free;
   const total = prizes.reduce((s, p) => s + p.weight, 0);
   let r = Math.random() * total;
   for (const prize of prizes) {
@@ -219,7 +219,7 @@ function populatePage(user) {
 }
 
 function renderPlanAndProgress(user) {
-  const plan = normalisePlan(user.plan);
+  const plan = BWR.normalisePlan(user.plan);
   const planMap = {
     free:   { label: '🌿 Gratuit',  cls: 'plan-free' },
     silver: { label: '🥈 Argent',   cls: 'plan-silver' },
@@ -315,7 +315,7 @@ function renderPlanAndProgress(user) {
   }
 
   // Premium section (Silver + Gold unified)
-  if (can('daily_wheel', plan)) {
+  if (BWR.can('daily_wheel', plan)) {
     const premiumSection = document.getElementById('premiumSection');
     premiumSection.style.display = '';
     const isGold = plan === 'gold' || plan === 'admin';
@@ -327,22 +327,22 @@ function renderPlanAndProgress(user) {
 
     // Gold-exclusive blocks
     const show = isGold ? '' : 'none';
-    document.getElementById('goalBlock').style.display  = can('custom_goals', plan) ? '' : 'none';
+    document.getElementById('goalBlock').style.display  = BWR.can('custom_goals', plan) ? '' : 'none';
     document.getElementById('weatherBlock').style.display = show;
     document.getElementById('discordBlock').style.display = show;
     document.getElementById('supportBlock').style.display = show;
     document.getElementById('pushAlertsBlock').style.display = show;
 
     // AI suggestions: Silver (weekly cadence) or Gold (daily)
-    const suggCadence = can('ai_suggestions', plan);
+    const suggCadence = BWR.can('ai_suggestions', plan);
     if (suggCadence) {
       const suggBlock = document.getElementById('suggestionBlock');
       if (suggBlock) suggBlock.style.display = '';
       renderDailySuggestion(plan);
     }
 
-    if (can('custom_goals', plan)) renderGoals();
-    if (can('weather', plan)) renderWeather();
+    if (BWR.can('custom_goals', plan)) renderGoals();
+    if (BWR.can('weather', plan)) renderWeather();
     if (isGold) renderPushAlerts();
   } else {
     document.getElementById('premiumSection').style.display = 'none';
@@ -357,9 +357,9 @@ function renderPlanAndProgress(user) {
 function renderQuotaStrip(plan) {
   const strip = document.getElementById('quotaStrip');
   if (!strip) return;
-  const limit = limitOf('routes_per_week', plan);
+  const limit = BWR.limitOf('routes_per_week', plan);
   if (limit === Infinity) { strip.style.display = 'none'; return; }
-  const { count } = readWeekly();
+  const { count } = BWR.readWeekly();
   const remaining = Math.max(0, limit - count);
   const pct = Math.min(100, (count / limit) * 100);
   const overLimit = count >= limit;
@@ -440,7 +440,7 @@ async function spinWheel(plan) {
       return;
     }
   } else if (prize.type === 'bonus_route') {
-    const w = readWeekly();
+    const w = BWR.readWeekly();
     w.count = Math.max(0, w.count - 1);
     localStorage.setItem('bwr_routes_week', JSON.stringify(w));
   } else if (prize.type === 'xp_bonus') {
@@ -475,7 +475,7 @@ async function spinWheel(plan) {
 function renderPrizeList(plan) {
   const el = document.getElementById('wheelPrizesList');
   if (!el) return;
-  const prizes = WHEEL_PRIZES[normalisePlan(plan)] || WHEEL_PRIZES.free;
+  const prizes = WHEEL_PRIZES[BWR.normalisePlan(plan)] || WHEEL_PRIZES.free;
   const rare = prizes.filter(p => p.weight <= 8);
   const common = prizes.filter(p => p.weight > 8);
   el.innerHTML = `
@@ -543,7 +543,7 @@ async function renderDailySuggestion(plan) {
   if (!textEl || !btnEl) return;
 
   // Silver: one suggestion per week; Gold: every day
-  const isGold   = normalisePlan(plan) === 'gold';
+  const isGold   = BWR.normalisePlan(plan) === 'gold';
   const storageKey = isGold ? 'bwr_sugg_day' : 'bwr_sugg_week';
   const todayKey   = isGold
     ? new Date().toISOString().slice(0, 10)

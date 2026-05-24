@@ -1,9 +1,11 @@
 // ── KV key schema ─────────────────────────────────────────────────────────────
 // user:{id}          → JSON user object
 // uemail:{email}     → userId string  (email index for fast lookup)
+// pending:{token}    → JSON pending registration  (24-hour TTL, deleted on verify)
+// pemail:{email}     → token string  (index so login can detect unverified accounts)
 // path:{id}          → JSON path object
 // report:{id}        → JSON report object
-// photo:{reportId}   → data-URI string  (unchanged — already granular)
+// photo:{reportId}   → data-URI string, 90-day TTL
 // contact:{id}       → JSON contact message
 // session:{token}    → JSON { userId, expiresAt }  (unchanged)
 // osm:{bbox}         → JSON OSM data  (unchanged)
@@ -121,6 +123,30 @@ async function recordFailedLogin(env, email) {
   return attempts;
 }
 
+const PENDING_TTL = 86400; // 24 hours
+const RESEND_COOLDOWN = 300; // 5 minutes between resend requests
+
+async function sendVerificationEmail(env, origin, email, name, token) {
+  if (!env.RESEND_API_KEY) return; // skip in dev if key not set
+  const verifyUrl = `${origin}/verify.html?token=${token}`;
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: env.RESEND_FROM || 'BWR <noreply@bwr.ciril8596.workers.dev>',
+      to: email,
+      subject: 'Vérifiez votre adresse email — BWR',
+      html: `<p>Bonjour ${name},</p>
+<p>Cliquez sur le lien ci-dessous pour activer votre compte BWR. Ce lien expire dans 24 heures.</p>
+<p><a href="${verifyUrl}">${verifyUrl}</a></p>
+<p>Si vous n'avez pas créé de compte, ignorez cet email.</p>`,
+    }),
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -230,30 +256,114 @@ export default {
       if (!name || !email || !password) return fail('Tous les champs sont obligatoires.');
       if (password.length < 6) return fail('Le mot de passe doit faire au moins 6 caractères.');
 
-      const existing = await env.BWR_KV.get(`uemail:${email.toLowerCase()}`);
-      if (existing) return fail('Un compte existe déjà avec cet email.');
+      const emailKey = email.toLowerCase();
+      const [existingUser, existingPending] = await Promise.all([
+        env.BWR_KV.get(`uemail:${emailKey}`),
+        env.BWR_KV.get(`pemail:${emailKey}`),
+      ]);
+      if (existingUser) return fail('Un compte existe déjà avec cet email.');
+      if (existingPending) return fail("Un email de vérification a déjà été envoyé à cette adresse. Vérifiez votre boîte mail ou attendez 24 heures.");
 
       const salt = crypto.randomUUID();
       const passwordHash = await hashPassword(password, salt);
+      const token = crypto.randomUUID();
 
-      const newUser = {
+      const pending = {
         id: crypto.randomUUID(),
         name,
-        email: email.toLowerCase(),
+        email: emailKey,
         passwordHash,
         salt,
         hashVersion: 2,
+        createdAt: new Date().toISOString(),
+        resendAfter: new Date(Date.now() + RESEND_COOLDOWN * 1000).toISOString(),
+      };
+
+      await Promise.all([
+        env.BWR_KV.put(`pending:${token}`, JSON.stringify(pending), { expirationTtl: PENDING_TTL }),
+        env.BWR_KV.put(`pemail:${emailKey}`, token, { expirationTtl: PENDING_TTL }),
+      ]);
+
+      const origin = new URL(request.url).origin;
+      await sendVerificationEmail(env, origin, emailKey, name, token);
+
+      return json({ message: "Un email de vérification a été envoyé. Cliquez sur le lien dans l'email pour activer votre compte." }, 201);
+    }
+
+    // ── GET /api/auth/verify ──────────────────────────────────────────────────
+    if (pathname === '/api/auth/verify' && request.method === 'GET') {
+      const token = url.searchParams.get('token');
+      if (!token) return fail('Token manquant.', 400);
+
+      const raw = await env.BWR_KV.get(`pending:${token}`);
+      if (!raw) return fail('Lien invalide ou expiré.', 400);
+
+      const pending = JSON.parse(raw);
+
+      const alreadyRegistered = await env.BWR_KV.get(`uemail:${pending.email}`);
+      if (alreadyRegistered) {
+        await Promise.all([
+          env.BWR_KV.delete(`pending:${token}`),
+          env.BWR_KV.delete(`pemail:${pending.email}`),
+        ]);
+        return json({ message: 'Adresse email déjà vérifiée. Vous pouvez vous connecter.' });
+      }
+
+      const newUser = {
+        id: pending.id,
+        name: pending.name,
+        email: pending.email,
+        passwordHash: pending.passwordHash,
+        salt: pending.salt,
+        hashVersion: pending.hashVersion,
         role: 'free',
         plan: 'free',
         stats: { routes: 0, km: 0 },
-        createdAt: new Date().toISOString(),
+        createdAt: pending.createdAt,
       };
 
       await Promise.all([
         putUser(env, newUser),
         env.BWR_KV.put(`uemail:${newUser.email}`, newUser.id),
+        env.BWR_KV.delete(`pending:${token}`),
+        env.BWR_KV.delete(`pemail:${newUser.email}`),
       ]);
-      return json({ message: 'Compte créé avec succès.' }, 201);
+
+      return json({ message: 'Email vérifié ! Vous pouvez maintenant vous connecter.' });
+    }
+
+    // ── POST /api/auth/resend-verification ────────────────────────────────────
+    if (pathname === '/api/auth/resend-verification' && request.method === 'POST') {
+      const body = await request.json();
+      const emailKey = (body.email || '').toLowerCase();
+      if (!emailKey) return fail('Email requis.');
+
+      const currentToken = await env.BWR_KV.get(`pemail:${emailKey}`);
+      if (!currentToken) {
+        return json({ message: "Si un compte en attente existe, un nouvel email a été envoyé." });
+      }
+
+      const raw = await env.BWR_KV.get(`pending:${currentToken}`);
+      if (!raw) return json({ message: "Si un compte en attente existe, un nouvel email a été envoyé." });
+
+      const pending = JSON.parse(raw);
+      if (new Date(pending.resendAfter) > new Date()) {
+        return fail("Veuillez attendre quelques minutes avant de renvoyer l'email.", 429);
+      }
+
+      const newToken = crypto.randomUUID();
+      pending.resendAfter = new Date(Date.now() + RESEND_COOLDOWN * 1000).toISOString();
+
+      await Promise.all([
+        env.BWR_KV.delete(`pending:${currentToken}`),
+        env.BWR_KV.put(`pending:${newToken}`, JSON.stringify(pending), { expirationTtl: PENDING_TTL }),
+        env.BWR_KV.put(`pemail:${emailKey}`, newToken, { expirationTtl: PENDING_TTL }),
+      ]);
+
+      const origin = new URL(request.url).origin;
+      await sendVerificationEmail(env, origin, emailKey, pending.name, newToken);
+
+      return json({ message: 'Un nouvel email de vérification a été envoyé.' });
     }
 
     // ── POST /api/auth/login ──────────────────────────────────────────────────
@@ -273,6 +383,11 @@ export default {
 
       const user = await getUserByEmail(env, email);
       if (!user) {
+        // Check if the account exists but hasn't been verified yet
+        const pendingToken = await env.BWR_KV.get(`pemail:${emailKey}`);
+        if (pendingToken) {
+          return json({ error: 'Votre email n\'est pas encore vérifié. Vérifiez votre boîte mail.', unverified: true }, 403);
+        }
         await recordFailedLogin(env, emailKey);
         return fail('Email ou mot de passe incorrect.', 401);
       }
@@ -525,7 +640,7 @@ export default {
 
       const LIMIT = 3;
       if (weeklyRoutes >= LIMIT) {
-        return fail(JSON.stringify({ ok: false, used: weeklyRoutes, limit: LIMIT }), 429);
+        return json({ ok: false, used: weeklyRoutes, limit: LIMIT }, 429);
       }
 
       const newCount = weeklyRoutes + 1;
@@ -662,13 +777,12 @@ export default {
     // ── GET /api/photos/:reportId — public, serves photo binary ─────────────
     if (pathname.startsWith('/api/photos/') && request.method === 'GET') {
       const reportId = pathname.split('/')[3];
+
       const dataUri = await env.BWR_KV.get(`photo:${reportId}`);
       if (!dataUri) return new Response('Not found', { status: 404, headers: cors });
       const [header, b64] = dataUri.split(',');
       const mime = header.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
-      const binary = atob(b64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
       return new Response(bytes, {
         headers: { ...cors, 'Content-Type': mime, 'Cache-Control': 'public, max-age=2592000' },
       });
@@ -696,9 +810,8 @@ export default {
         status: 'open',
       };
 
-      // Store photo separately to keep report objects lean
       if (body.photo) {
-        await env.BWR_KV.put(`photo:${report.id}`, body.photo, { expirationTtl: 7776000 }); // 90 days
+        await env.BWR_KV.put(`photo:${report.id}`, body.photo, { expirationTtl: 7776000 });
       }
 
       await putReport(env, report);

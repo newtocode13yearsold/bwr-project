@@ -4,12 +4,12 @@
  *
  * Usage from any page (after <script src="js/features.js"></script>):
  *
- *   if (can('loop_mode', user.plan)) { ... }
- *   const limit = limitOf('routes_per_week', user.plan);   // numeric quotas
- *   const tag   = requiredTier('elevation_profile');       // 'silver' | 'gold'
+ *   if (BWR.can('loop_mode', user.plan)) { ... }
+ *   const limit = BWR.limitOf('routes_per_week', user.plan);   // numeric quotas
+ *   const tag   = BWR.requiredTier('elevation_profile');       // 'silver' | 'gold'
  *
  * Add a row here when you introduce a new gated capability. Never inline
- * a `plan === 'silver'` check in page code — always go through can().
+ * a `plan === 'silver'` check in page code — always go through BWR.can().
  * ────────────────────────────────────────────────────────────────────────────── */
 
 (function (global) {
@@ -21,14 +21,12 @@
     /* — Core routing — */
     routes_per_week:     { free: 3,     silver: Infinity, gold: Infinity },
     loop_mode:           { free: false, silver: true,     gold: true     },
-    multistop_mode:      { free: false, silver: false,    gold: true     },
     difficulty_hard:     { free: false, silver: true,     gold: true     },
 
     /* — Map & layers — */
     satellite_tiles:     { free: false, silver: false,    gold: true     },
     ign_topo_tiles:      { free: true,  silver: true,     gold: true     },
     carrefours:          { free: true,  silver: true,     gold: true     },
-    scenic_pois:         { free: false, silver: true,     gold: true     },
 
     /* — Trip analysis & export — */
     elevation_profile:   { free: false, silver: true,     gold: true     },
@@ -41,28 +39,17 @@
     reports_create:      { free: false, silver: true,     gold: true     },
     path_alerts:         { free: false, silver: false,    gold: true     },
 
-    /* — Cloud & history — */
-    cloud_sync:          { free: false, silver: true,     gold: true     },
-    photo_journal:       { free: 0,     silver: 5,        gold: Infinity },
-    route_history:       { free: false, silver: true,     gold: true     },
-
     /* — Personalisation & gamification — */
     daily_wheel:         { free: false, silver: true,     gold: true     },
     custom_goals:        { free: false, silver: false,    gold: true     },
     weather:             { free: false, silver: false,    gold: true     },
     custom_route_color:  { free: false, silver: false,    gold: true     },
-    animated_frame:      { free: false, silver: false,    gold: true     },
     ai_suggestions:      { free: false, silver: 'weekly', gold: 'daily'  },
 
     /* — Badges & progression — */
     badges_free:         { free: true,  silver: true,     gold: true     },
     badges_silver:       { free: false, silver: true,     gold: true     },
     badges_gold:         { free: false, silver: false,    gold: true     },
-
-    /* — Social — */
-    groups_join:         { free: false, silver: true,     gold: true     },
-    groups_create:       { free: false, silver: false,    gold: true     },
-    leaderboard_full:    { free: false, silver: true,     gold: true     },
 
     /* — Support / perks — */
     priority_support:    { free: false, silver: false,    gold: true     },
@@ -157,14 +144,16 @@
     return { ok: true, used: count, limit };
   }
 
-  global.BWR_FEATURES = FEATURES;
-  global.can = can;
-  global.limitOf = limitOf;
-  global.requiredTier = requiredTier;
-  global.TIER_LABEL = TIER_LABEL;
-  global.TIER_ICON = TIER_ICON;
-  global.normalisePlan = normalisePlan;
-  global.readWeekly = readWeekly;
-  global.bumpWeekly = bumpWeekly;
-  global.checkRouteQuota = checkRouteQuota;
+  global.BWR = {
+    FEATURES,
+    can,
+    limitOf,
+    requiredTier,
+    TIER_LABEL,
+    TIER_ICON,
+    normalisePlan,
+    readWeekly,
+    bumpWeekly,
+    checkRouteQuota,
+  };
 })(window);

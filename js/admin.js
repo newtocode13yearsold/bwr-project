@@ -111,8 +111,7 @@ function initMap() {
     showStatus('Chemin tracé — remplis le formulaire et enregistre.');
   });
 
-  // Scale path weight on zoom
-  map.on('zoom zoomend', updatePathWeights);
+  map.on('zoomend', updatePathWeights);
 
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', () => map.invalidateSize());
@@ -120,9 +119,10 @@ function initMap() {
 }
 
 function pathWeight() {
-  if (!map) return 4;
+  if (!map) return 3;
   const z = map.getZoom();
-  return Math.max(2, Math.min(20, Math.round((z - 8) * 0.9)));
+  const metersPerPixel = 40075016 * Math.cos(49.35 * Math.PI / 180) / (256 * Math.pow(2, z));
+  return Math.max(2, Math.min(12, Math.round(20 / metersPerPixel)));
 }
 
 function updatePathWeights() {

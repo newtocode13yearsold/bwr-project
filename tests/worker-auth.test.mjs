@@ -3,6 +3,8 @@
 // KV SCHEMA (granular, post-migration):
 //   user:{id}        → JSON user object
 //   uemail:{email}   → userId string  (email lookup index)
+//   pending:{token}  → JSON pending registration (24h TTL)
+//   pemail:{email}   → token string  (pending email index)
 //   session:{token}  → JSON { userId, expiresAt }
 //
 // ISOLATION: In Node v22+, top-level describe() blocks run concurrently. Every test
@@ -14,14 +16,15 @@ import worker from '../worker.js';
 
 // ── Mock KV store ─────────────────────────────────────────────────────────────
 // Mirrors the Cloudflare KV API used by worker.js: get / put / delete / list.
+// expirationTtl option is accepted but ignored (tests don't need TTL expiry).
 
 function makeMockKV() {
   const store = new Map();
   return {
     store,                                             // direct Map access for seeding
-    async get(key)        { return store.get(key) ?? null; },
-    async put(key, value) { store.set(key, value); },
-    async delete(key)     { store.delete(key); },
+    async get(key)                   { return store.get(key) ?? null; },
+    async put(key, value /*, opts*/) { store.set(key, value); },
+    async delete(key)                { store.delete(key); },
     async list({ prefix = '', limit = 1000 } = {}) {
       const keys = [];
       for (const k of store.keys()) {
@@ -69,9 +72,23 @@ function freshEnv() {
       return users;
     },
 
-    // Register + login in one shot; returns the login JSON { token, user }.
+    // Register + verify (no login). Email sending is skipped (no RESEND_API_KEY);
+    // we read the pending token directly from the mock KV.
+    async registerAndVerify(email = 'test@bwr.fr', password = 'secret123', name = 'Test') {
+      await worker.fetch(r('POST', '/api/auth/register', { name, email, password }), env);
+      const verifyToken = kv.store.get(`pemail:${email.toLowerCase()}`);
+      if (verifyToken) {
+        await worker.fetch(r('GET', `/api/auth/verify?token=${verifyToken}`), env);
+      }
+    },
+
+    // Register + verify + login in one shot; returns the login JSON { token, user }.
     async registerAndLogin(email = 'test@bwr.fr', password = 'secret123', name = 'Test') {
       await worker.fetch(r('POST', '/api/auth/register', { name, email, password }), env);
+      const verifyToken = kv.store.get(`pemail:${email.toLowerCase()}`);
+      if (verifyToken) {
+        await worker.fetch(r('GET', `/api/auth/verify?token=${verifyToken}`), env);
+      }
       const res = await worker.fetch(r('POST', '/api/auth/login', { email, password }), env);
       return res.json();
     },
@@ -126,8 +143,11 @@ describe('register', () => {
   });
 
   test('user stored with free plan, hashVersion 2 and initial stats', async () => {
-    const { env, getAllUsers } = freshEnv();
+    // Registration now creates a pending entry; verification promotes it to user:
+    const { kv, env, getAllUsers } = freshEnv();
     await worker.fetch(r('POST', '/api/auth/register', { name: 'Bob', email: 'bob@bwr.fr', password: 'password123' }), env);
+    const verifyToken = kv.store.get('pemail:bob@bwr.fr');
+    await worker.fetch(r('GET', `/api/auth/verify?token=${verifyToken}`), env);
     const users = getAllUsers();
     assert.equal(users.length, 1);
     const u = users[0];
@@ -140,8 +160,10 @@ describe('register', () => {
   });
 
   test('email is stored lowercase in both user: and uemail: keys', async () => {
-    const { env, kv, getAllUsers } = freshEnv();
+    const { kv, env, getAllUsers } = freshEnv();
     await worker.fetch(r('POST', '/api/auth/register', { name: 'Bob', email: 'BOB@BWR.FR', password: 'password123' }), env);
+    const verifyToken = kv.store.get('pemail:bob@bwr.fr');
+    await worker.fetch(r('GET', `/api/auth/verify?token=${verifyToken}`), env);
     const users = getAllUsers();
     assert.equal(users[0].email, 'bob@bwr.fr');
     // uemail index must also exist under the lowercase key
@@ -161,6 +183,103 @@ describe('register', () => {
     const res = await worker.fetch(r('POST', '/api/auth/register', { name: 'B', email: 'CASE@BWR.FR', password: 'abcdef' }), env);
     assert.equal(res.status, 400);
   });
+
+  test('registration creates pending entry in KV, not a real user yet', async () => {
+    const { env, kv, getAllUsers } = freshEnv();
+    await worker.fetch(r('POST', '/api/auth/register', { name: 'P', email: 'pending@bwr.fr', password: 'abcdef' }), env);
+    // No real user yet
+    assert.equal(getAllUsers().length, 0, 'user: key must not exist before verification');
+    // But pending entries must exist
+    const token = kv.store.get('pemail:pending@bwr.fr');
+    assert.ok(token, 'pemail: index must be set');
+    assert.ok(kv.store.has(`pending:${token}`), 'pending: entry must exist');
+  });
+});
+
+// ── GET /api/auth/verify ──────────────────────────────────────────────────────
+
+describe('/api/auth/verify', () => {
+  test('valid token promotes pending → real user and cleans up KV', async () => {
+    const { env, kv, getAllUsers } = freshEnv();
+    await worker.fetch(r('POST', '/api/auth/register', { name: 'V', email: 'v@bwr.fr', password: 'abcdef' }), env);
+    const token = kv.store.get('pemail:v@bwr.fr');
+    const res = await worker.fetch(r('GET', `/api/auth/verify?token=${token}`), env);
+    assert.equal(res.status, 200);
+    assert.equal(getAllUsers().length, 1, 'user must exist after verification');
+    assert.ok(!kv.store.has(`pending:${token}`), 'pending: entry must be deleted');
+    assert.ok(!kv.store.has('pemail:v@bwr.fr'), 'pemail: index must be deleted');
+    assert.ok(kv.store.has('uemail:v@bwr.fr'), 'uemail: index must now exist');
+  });
+
+  test('invalid/unknown token → 400', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('GET', '/api/auth/verify?token=not-a-real-token'), env);
+    assert.equal(res.status, 400);
+  });
+
+  test('missing token → 400', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('GET', '/api/auth/verify'), env);
+    assert.equal(res.status, 400);
+  });
+
+  test('login succeeds after verification', async () => {
+    const { env, kv } = freshEnv();
+    await worker.fetch(r('POST', '/api/auth/register', { name: 'LV', email: 'lv@bwr.fr', password: 'pass456' }), env);
+    const token = kv.store.get('pemail:lv@bwr.fr');
+    await worker.fetch(r('GET', `/api/auth/verify?token=${token}`), env);
+    const res = await worker.fetch(r('POST', '/api/auth/login', { email: 'lv@bwr.fr', password: 'pass456' }), env);
+    assert.equal(res.status, 200);
+  });
+});
+
+// ── POST /api/auth/resend-verification ───────────────────────────────────────
+
+describe('/api/auth/resend-verification', () => {
+  test('unknown email returns 200 (no enumeration)', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('POST', '/api/auth/resend-verification', { email: 'ghost@bwr.fr' }), env);
+    assert.equal(res.status, 200);
+  });
+
+  test('within cooldown → 429', async () => {
+    const { env, kv } = freshEnv();
+    await worker.fetch(r('POST', '/api/auth/register', { name: 'RS', email: 'rs@bwr.fr', password: 'abcdef' }), env);
+    // resendAfter is 5 min in the future — immediate resend must be throttled
+    const res = await worker.fetch(r('POST', '/api/auth/resend-verification', { email: 'rs@bwr.fr' }), env);
+    assert.equal(res.status, 429);
+  });
+
+  test('after cooldown → 200 and new token replaces old', async () => {
+    const { env, kv } = freshEnv();
+    await worker.fetch(r('POST', '/api/auth/register', { name: 'RS2', email: 'rs2@bwr.fr', password: 'abcdef' }), env);
+    const oldToken = kv.store.get('pemail:rs2@bwr.fr');
+    // Wind back resendAfter so cooldown has passed
+    const pendingRaw = kv.store.get(`pending:${oldToken}`);
+    const pending = JSON.parse(pendingRaw);
+    pending.resendAfter = new Date(Date.now() - 1000).toISOString();
+    kv.store.set(`pending:${oldToken}`, JSON.stringify(pending));
+
+    const res = await worker.fetch(r('POST', '/api/auth/resend-verification', { email: 'rs2@bwr.fr' }), env);
+    assert.equal(res.status, 200);
+    const newToken = kv.store.get('pemail:rs2@bwr.fr');
+    assert.notEqual(newToken, oldToken, 'resend must issue a new token');
+    assert.ok(!kv.store.has(`pending:${oldToken}`), 'old pending entry must be deleted');
+    assert.ok(kv.store.has(`pending:${newToken}`), 'new pending entry must exist');
+  });
+});
+
+// ── Unverified email login behaviour ─────────────────────────────────────────
+
+describe('login with unverified email', () => {
+  test('returns 403 with unverified:true flag', async () => {
+    const { env } = freshEnv();
+    await worker.fetch(r('POST', '/api/auth/register', { name: 'UV', email: 'uv@bwr.fr', password: 'abc123' }), env);
+    const res = await worker.fetch(r('POST', '/api/auth/login', { email: 'uv@bwr.fr', password: 'abc123' }), env);
+    assert.equal(res.status, 403);
+    const data = await res.json();
+    assert.equal(data.unverified, true);
+  });
 });
 
 // ── POST /api/auth/login ──────────────────────────────────────────────────────
@@ -179,8 +298,8 @@ describe('login', () => {
   });
 
   test('wrong password → 401', async () => {
-    const { env } = freshEnv();
-    await worker.fetch(r('POST', '/api/auth/register', { name: 'C', email: 'c@bwr.fr', password: 'correct' }), env);
+    const { env, registerAndVerify } = freshEnv();
+    await registerAndVerify('c@bwr.fr', 'correct', 'C');
     const res = await worker.fetch(r('POST', '/api/auth/login', { email: 'c@bwr.fr', password: 'wrong' }), env);
     assert.equal(res.status, 401);
   });
@@ -204,8 +323,8 @@ describe('login', () => {
   });
 
   test('10 wrong passwords → 11th attempt returns 429', async () => {
-    const { env } = freshEnv();
-    await worker.fetch(r('POST', '/api/auth/register', { name: 'BF', email: 'bf@bwr.fr', password: 'correct' }), env);
+    const { env, registerAndVerify } = freshEnv();
+    await registerAndVerify('bf@bwr.fr', 'correct', 'BF');
     // 10 failed attempts
     for (let i = 0; i < 10; i++) {
       await worker.fetch(r('POST', '/api/auth/login', { email: 'bf@bwr.fr', password: 'wrong' }), env);
@@ -224,8 +343,8 @@ describe('login', () => {
   });
 
   test('successful login clears the attempt counter', async () => {
-    const { env } = freshEnv();
-    await worker.fetch(r('POST', '/api/auth/register', { name: 'RC', email: 'rc@bwr.fr', password: 'correct' }), env);
+    const { env, registerAndVerify } = freshEnv();
+    await registerAndVerify('rc@bwr.fr', 'correct', 'RC');
     // 9 failed attempts (one below lock threshold)
     for (let i = 0; i < 9; i++) {
       await worker.fetch(r('POST', '/api/auth/login', { email: 'rc@bwr.fr', password: 'wrong' }), env);
@@ -426,6 +545,94 @@ describe('stats endpoint', () => {
     const { env } = freshEnv();
     const res = await worker.fetch(r('POST', '/api/auth/stats', { routes: 1, km: 1 }), env);
     assert.equal(res.status, 401);
+  });
+});
+
+// ── POST /api/auth/consume-route ─────────────────────────────────────────────
+
+describe('consume-route (weekly quota)', () => {
+  test('unauthenticated → 401', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('POST', '/api/auth/consume-route'), env);
+    assert.equal(res.status, 401);
+  });
+
+  test('free user first route → ok, used=1, limit=3', async () => {
+    const { env, registerAndLogin } = freshEnv();
+    const { token } = await registerAndLogin();
+    const res  = await worker.fetch(authed('POST', '/api/auth/consume-route', token), env);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.ok,    true);
+    assert.equal(data.used,  1);
+    assert.equal(data.limit, 3);
+  });
+
+  test('free user three consecutive calls → all ok', async () => {
+    const { env, registerAndLogin } = freshEnv();
+    const { token } = await registerAndLogin();
+    for (let i = 1; i <= 3; i++) {
+      const res = await worker.fetch(authed('POST', '/api/auth/consume-route', token), env);
+      assert.equal(res.status, 200);
+      assert.equal((await res.json()).used, i);
+    }
+  });
+
+  test('free user fourth call → 429 with ok=false', async () => {
+    const { env, registerAndLogin } = freshEnv();
+    const { token } = await registerAndLogin();
+    for (let i = 0; i < 3; i++) {
+      await worker.fetch(authed('POST', '/api/auth/consume-route', token), env);
+    }
+    const res  = await worker.fetch(authed('POST', '/api/auth/consume-route', token), env);
+    assert.equal(res.status, 429);
+    const data = await res.json();
+    assert.equal(data.ok,    false);
+    assert.equal(data.used,  3);
+    assert.equal(data.limit, 3);
+  });
+
+  test('silver user → always ok regardless of count (unlimited)', async () => {
+    const { env, seedUser, seedSession } = freshEnv();
+    seedUser({ id: 'sv1', name: 'Silver', email: 'sv@bwr.fr', role: 'free', plan: 'silver', passwordHash: 'x', salt: 'y', hashVersion: 2 });
+    seedSession('sv-tok', 'sv1', new Date(Date.now() + 86400000).toISOString());
+    for (let i = 0; i < 10; i++) {
+      const res = await worker.fetch(authed('POST', '/api/auth/consume-route', 'sv-tok'), env);
+      assert.equal(res.status, 200);
+    }
+  });
+
+  test('gold user → always ok (unlimited)', async () => {
+    const { env, seedUser, seedSession } = freshEnv();
+    seedUser({ id: 'gd1', name: 'Gold', email: 'gd@bwr.fr', role: 'free', plan: 'gold', passwordHash: 'x', salt: 'y', hashVersion: 2 });
+    seedSession('gd-tok', 'gd1', new Date(Date.now() + 86400000).toISOString());
+    const res = await worker.fetch(authed('POST', '/api/auth/consume-route', 'gd-tok'), env);
+    assert.equal(res.status, 200);
+    assert.equal((await res.json()).unlimited, true);
+  });
+
+  test('quota counter persists in KV, not just in-memory', async () => {
+    const { env, registerAndLogin, getAllUsers } = freshEnv();
+    const { token } = await registerAndLogin('persist@bwr.fr', 'pass123');
+    await worker.fetch(authed('POST', '/api/auth/consume-route', token), env);
+    await worker.fetch(authed('POST', '/api/auth/consume-route', token), env);
+    const [user] = getAllUsers();
+    assert.equal(user.stats.weeklyRoutes, 2, 'count must be persisted in KV user object');
+  });
+
+  test('weekly counter resets when weekStart changes', async () => {
+    const { env, kv, registerAndLogin, getAllUsers } = freshEnv();
+    const { token } = await registerAndLogin('reset@bwr.fr', 'pass123');
+    for (let i = 0; i < 3; i++) await worker.fetch(authed('POST', '/api/auth/consume-route', token), env);
+    // Backdate weekStart to simulate a new week
+    const [user] = getAllUsers();
+    kv.store.set(`user:${user.id}`, JSON.stringify({
+      ...user,
+      stats: { ...user.stats, weekStart: '2000-01-03' },
+    }));
+    const res = await worker.fetch(authed('POST', '/api/auth/consume-route', token), env);
+    assert.equal(res.status, 200, 'should succeed after week resets');
+    assert.equal((await res.json()).used, 1);
   });
 });
 

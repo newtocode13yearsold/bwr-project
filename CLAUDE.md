@@ -14,7 +14,7 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
-Run all automated tests (143 tests, ~1.4 s):
+Run all automated tests (160 tests, ~3 s):
   npm test
 
 Run tests in watch mode (re-runs on file save):
@@ -29,9 +29,10 @@ Note: Frontend is static HTML/JS/CSS served directly by the worker—no build st
 
 ### Backend (worker.js)
 
-Single Cloudflare Worker file with 18 API endpoints:
+Single Cloudflare Worker file with 20 API endpoints:
 
 - Auth: /api/setup (one-time admin creation), /api/auth/{register,login,logout,me,profile,password,account}, /api/auth/plan/:userId (admin plan changes)
+- Email verification: GET /api/auth/verify?token=… (activate account), POST /api/auth/resend-verification (re-send link, rate-limited 5 min)
 - Paths (admin-only): POST/PUT/DELETE /api/paths/* — forest/bike paths curated by admin
 - Reports (public): POST /api/reports, DELETE /api/reports/:id (admin), GET /api/reports — crowd-sourced issues (fallen trees, floods, etc.)
 - Routing: POST /api/route — proxy to OpenRouteService (needs ORS_KEY env var)
@@ -41,6 +42,8 @@ Single Cloudflare Worker file with 18 API endpoints:
 Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - user:{id} — JSON user object
 - uemail:{email} — userId string (email index for O(1) login lookup)
+- pending:{token} — JSON pending registration (24-hour TTL); deleted on verify
+- pemail:{email} — token string (pending-registration email index, 24-hour TTL)
 - path:{id} — JSON path object
 - report:{id} — JSON report object
 - photo:{reportId} — data-URI string, 90-day TTL
@@ -133,6 +136,8 @@ Badges are earned based on stats:
 
 Environment Variables (set in Cloudflare Workers dashboard):
 - ORS_KEY — OpenRouteService API key (optional; OSRM fallback if missing)
+- RESEND_API_KEY — Resend.com API key (required for email verification in production; verification emails are silently skipped in dev if unset)
+- RESEND_FROM — Sender address, e.g. `BWR <noreply@yourdomain.com>` (defaults to a placeholder; must match a verified domain in your Resend account)
 
 Constants (js/config.js):
 - API_URL — Points to deployed worker endpoint (e.g., https://bwr-worker.ciril8596.workers.dev)

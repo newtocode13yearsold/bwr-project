@@ -29,25 +29,25 @@ function applyPlanGates() {
   const plan = currentUser?.plan || 'free';
 
   // Lock loop mode if disallowed (free users currently)
-  if (!can('loop_mode', plan)) {
+  if (!BWR.can('loop_mode', plan)) {
     const loopCard = document.querySelector('.mode-card[data-mode="loop"]');
     if (loopCard) markCardLocked(loopCard, 'silver', 'Mode boucle');
   }
   // Lock multi-stop (visual hint only — there is no button yet)
 
   // Lock Hard difficulty
-  if (!can('difficulty_hard', plan)) {
+  if (!BWR.can('difficulty_hard', plan)) {
     const hardBtn = document.querySelector('.diff-btn[data-diff="hard"]');
     if (hardBtn) markBtnLocked(hardBtn, 'silver');
   }
 
   // Lock satellite tile button
-  if (!can('satellite_tiles', plan)) {
+  if (!BWR.can('satellite_tiles', plan)) {
     const satBtn = document.querySelector('.layer-btn[data-layer="satellite"]');
     if (satBtn) markBtnLocked(satBtn, 'gold');
   }
   // Lock IGN topo for free users (default tile becomes OSM)
-  if (!can('ign_topo_tiles', plan)) {
+  if (!BWR.can('ign_topo_tiles', plan)) {
     const ignBtn = document.querySelector('.layer-btn[data-layer="ign"]');
     if (ignBtn) markBtnLocked(ignBtn, 'silver');
   }
@@ -113,14 +113,15 @@ function showUpgradeModal(tier, featureLabel) {
 // ── Weekly route quota strip ──────────────────────────────────────────────────
 function updateQuotaStrip() {
   const plan  = currentUser?.plan || 'free';
-  const limit = limitOf('routes_per_week', plan);
+  const limit = BWR.limitOf('routes_per_week', plan);
   const stripEl = document.getElementById('quotaStrip');
   if (!stripEl) return;
   if (limit === Infinity) {
     stripEl.classList.add('hidden');
     return;
   }
-  const { count } = readWeekly();
+  const stats = currentUser?.stats || {};
+  const count = stats.weekStart === isoMonday() ? (stats.weeklyRoutes || 0) : 0;
   const remaining = Math.max(0, limit - count);
   const pct = Math.min(100, (count / limit) * 100);
   stripEl.classList.remove('hidden');
@@ -178,7 +179,7 @@ let currentTile = null;
 
 function initMap() {
   const plan = currentUser?.plan || 'free';
-  const defaultLayer = can('ign_topo_tiles', plan) ? 'ign' : 'osm';
+  const defaultLayer = BWR.can('ign_topo_tiles', plan) ? 'ign' : 'osm';
   map = L.map('map', { zoomControl: true, maxZoom: LAYER_MAX_ZOOM[defaultLayer] }).setView(MAP_CENTER, MAP_ZOOM);
   currentTile = TILE_LAYERS[defaultLayer]();
   currentTile.addTo(map);
@@ -395,12 +396,34 @@ document.getElementById('btnGenerate').addEventListener('click', generateRoute);
 async function generateRoute() {
   const btn = document.getElementById('btnGenerate');
 
-  // ── Weekly quota check (free tier hard limit) ──
-  const plan  = currentUser?.plan || 'free';
-  const quota = checkRouteQuota(plan);
-  if (!quota.ok) {
-    showQuotaExceededModal(quota);
-    return;
+  // ── Weekly quota check — enforced server-side ──
+  const plan = currentUser?.plan || 'free';
+  if (BWR.limitOf('routes_per_week', plan) !== Infinity) {
+    btn.textContent = 'Vérification…';
+    btn.classList.add('loading');
+    btn.disabled = true;
+    try {
+      const qRes = await fetch(`${API_URL}/api/auth/consume-route`, {
+        method: 'POST',
+        headers: { ...authHeader() },
+      });
+      const qData = await qRes.json();
+      if (!qRes.ok || !qData.ok) {
+        showQuotaExceededModal({ used: qData.used ?? 3, limit: qData.limit ?? 3 });
+        btn.textContent = 'Calculer le trajet';
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        return;
+      }
+      // Reflect the server's authoritative count locally so the strip is accurate
+      if (currentUser.stats) {
+        currentUser.stats.weeklyRoutes = qData.used;
+        currentUser.stats.weekStart = isoMonday();
+      }
+      updateQuotaStrip();
+    } catch {
+      // Network error — fail open to avoid blocking users on transient issues
+    }
   }
 
   btn.textContent = 'Calcul en cours…';
@@ -443,8 +466,6 @@ async function generateRoute() {
     }).catch(() => {});
   }
 
-  // Bump the weekly quota and refresh the strip
-  bumpWeekly();
   updateQuotaStrip();
 
   displayRoute(result, mode === 'loop' ? distanceKm : null);
@@ -596,7 +617,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
 
   // Gold users can override route color (free/silver get default difficulty colors)
   const plan = currentUser?.plan || 'free';
-  const customColor = can('custom_route_color', plan) ? localStorage.getItem('bwr_route_color') : null;
+  const customColor = BWR.can('custom_route_color', plan) ? localStorage.getItem('bwr_route_color') : null;
   const color = customColor || (difficulty === 'easy' ? '#22c55e' : difficulty === 'medium' ? '#f97316' : '#ef4444');
   routeLayer = L.polyline(coords, { color, weight: 6, opacity: 0.9 }).addTo(map);
   map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
@@ -691,7 +712,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
 
   const btnGPX = document.getElementById('btnGPX');
   if (btnGPX) {
-    if (can('gpx_export', plan)) {
+    if (BWR.can('gpx_export', plan)) {
       btnGPX.classList.remove('locked-feature');
       btnGPX.querySelector('.lock-badge')?.remove();
       btnGPX.onclick = () => downloadGPX(coords, routeName);
@@ -708,7 +729,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   }
   const btnKML = document.getElementById('btnKML');
   if (btnKML) {
-    if (can('kml_export', plan)) {
+    if (BWR.can('kml_export', plan)) {
       btnKML.classList.remove('locked-feature');
       btnKML.querySelector('.lock-badge')?.remove();
       btnKML.onclick = () => downloadKML(coords, routeName);
@@ -725,7 +746,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   }
   const btnStrava = document.getElementById('btnStrava');
   if (btnStrava) {
-    if (can('strava_komoot_push', plan)) {
+    if (BWR.can('strava_komoot_push', plan)) {
       btnStrava.classList.remove('locked-feature');
       btnStrava.onclick = () => pushToStrava(coords, routeName);
     } else {
@@ -735,7 +756,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   }
 
   // Elevation profile — only for Silver+
-  if (can('elevation_profile', plan)) {
+  if (BWR.can('elevation_profile', plan)) {
     fetchElevation(coords)
       .then(elevs => drawElevationChart(elevs, meters))
       .catch(() => { document.getElementById('statAscent').textContent = '—'; });

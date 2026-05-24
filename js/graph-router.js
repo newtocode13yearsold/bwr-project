@@ -39,19 +39,36 @@ function buildGraph(paths) {
     }
   });
 
-  // Connect path endpoints within 80 m so separate paths join up
+  // Connect path endpoints within 80 m so separate paths join up.
+  // Grid index: ~111 m cells → checking ±1 neighbor in each axis covers all 80 m pairs.
+  const CELL = 0.001;
   const endpoints = [];
+  const grid = new Map();
   paths.forEach(p => {
     const c = p.coordinates;
     endpoints.push([c[0][0], c[0][1]]);
     endpoints.push([c[c.length - 1][0], c[c.length - 1][1]]);
   });
+  endpoints.forEach((ep, idx) => {
+    const ck = `${Math.floor(ep[0] / CELL)},${Math.floor(ep[1] / CELL)}`;
+    if (!grid.has(ck)) grid.set(ck, []);
+    grid.get(ck).push(idx);
+  });
   for (let i = 0; i < endpoints.length; i++) {
-    for (let j = i + 1; j < endpoints.length; j++) {
-      const d = haversineM(...endpoints[i], ...endpoints[j]);
-      if (d > 0 && d < 80) {
-        const ka = nodeKey(...endpoints[i]), kb = nodeKey(...endpoints[j]);
-        if (adj.has(ka) && adj.has(kb) && !adj.get(ka).some(e => e.to === kb)) link(ka, kb, d);
+    const cr = Math.floor(endpoints[i][0] / CELL);
+    const cc = Math.floor(endpoints[i][1] / CELL);
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        const neighbors = grid.get(`${cr + dr},${cc + dc}`);
+        if (!neighbors) continue;
+        for (const j of neighbors) {
+          if (j <= i) continue;
+          const d = haversineM(...endpoints[i], ...endpoints[j]);
+          if (d > 0 && d < 80) {
+            const ka = nodeKey(...endpoints[i]), kb = nodeKey(...endpoints[j]);
+            if (adj.has(ka) && adj.has(kb) && !adj.get(ka).some(e => e.to === kb)) link(ka, kb, d);
+          }
+        }
       }
     }
   }

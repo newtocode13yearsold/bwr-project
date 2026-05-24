@@ -17,8 +17,8 @@ global.localStorage = {
 };
 
 require('../js/features.js');
-// can, limitOf, requiredTier, normalisePlan, readWeekly, bumpWeekly, checkRouteQuota
-// are now attached to global (via the window alias above).
+// Destructure from the BWR namespace so test bodies can call functions directly.
+const { can, limitOf, requiredTier, normalisePlan, readWeekly, bumpWeekly, checkRouteQuota } = global.BWR;
 
 // ── normalisePlan ─────────────────────────────────────────────────────────────
 
@@ -89,10 +89,6 @@ describe('limitOf', () => {
   test('offline_cache: free = 0',   () => assert.equal(limitOf('offline_cache', 'free'),   0));
   test('offline_cache: silver = 1', () => assert.equal(limitOf('offline_cache', 'silver'), 1));
   test('offline_cache: gold = 20',  () => assert.equal(limitOf('offline_cache', 'gold'),   20));
-
-  test('photo_journal: free = 0',        () => assert.equal(limitOf('photo_journal', 'free'),   0));
-  test('photo_journal: silver = 5',      () => assert.equal(limitOf('photo_journal', 'silver'), 5));
-  test('photo_journal: gold = Infinity', () => assert.equal(limitOf('photo_journal', 'gold'),   Infinity));
 
   // Boolean features → 0 when false, Infinity when true
   test('loop_mode: free → 0',        () => assert.equal(limitOf('loop_mode', 'free'),   0));
