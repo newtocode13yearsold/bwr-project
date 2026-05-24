@@ -203,6 +203,41 @@ describe('login', () => {
     assert.ok(new Date(session.expiresAt) > new Date(), 'session must not be expired');
   });
 
+  test('10 wrong passwords → 11th attempt returns 429', async () => {
+    const { env } = freshEnv();
+    await worker.fetch(r('POST', '/api/auth/register', { name: 'BF', email: 'bf@bwr.fr', password: 'correct' }), env);
+    // 10 failed attempts
+    for (let i = 0; i < 10; i++) {
+      await worker.fetch(r('POST', '/api/auth/login', { email: 'bf@bwr.fr', password: 'wrong' }), env);
+    }
+    const res = await worker.fetch(r('POST', '/api/auth/login', { email: 'bf@bwr.fr', password: 'correct' }), env);
+    assert.equal(res.status, 429, '11th attempt (even with correct password) must be locked');
+  });
+
+  test('wrong password against unknown email also tracks attempts → 429 after 10', async () => {
+    const { env } = freshEnv();
+    for (let i = 0; i < 10; i++) {
+      await worker.fetch(r('POST', '/api/auth/login', { email: 'ghost@bwr.fr', password: 'x' }), env);
+    }
+    const res = await worker.fetch(r('POST', '/api/auth/login', { email: 'ghost@bwr.fr', password: 'x' }), env);
+    assert.equal(res.status, 429);
+  });
+
+  test('successful login clears the attempt counter', async () => {
+    const { env } = freshEnv();
+    await worker.fetch(r('POST', '/api/auth/register', { name: 'RC', email: 'rc@bwr.fr', password: 'correct' }), env);
+    // 9 failed attempts (one below lock threshold)
+    for (let i = 0; i < 9; i++) {
+      await worker.fetch(r('POST', '/api/auth/login', { email: 'rc@bwr.fr', password: 'wrong' }), env);
+    }
+    // Correct login clears counter
+    const ok = await worker.fetch(r('POST', '/api/auth/login', { email: 'rc@bwr.fr', password: 'correct' }), env);
+    assert.equal(ok.status, 200, 'correct password after 9 failures must succeed');
+    // Now a wrong attempt should NOT be locked (counter was reset)
+    const after = await worker.fetch(r('POST', '/api/auth/login', { email: 'rc@bwr.fr', password: 'wrong' }), env);
+    assert.equal(after.status, 401, 'single wrong attempt after counter reset must be 401, not 429');
+  });
+
   test('legacy SHA-256 account is accepted and migrated to PBKDF2 on login', async () => {
     const { env, kv, getStoredUser } = freshEnv();
     const salt = 'legacy-salt-uuid';

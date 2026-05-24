@@ -89,15 +89,55 @@ async function getUserFromToken(env, request) {
   return getUser(env, session.userId);
 }
 
+// ── Date helpers ──────────────────────────────────────────────────────────────
+
+function isoMonday(d = new Date()) {
+  const day = (d.getDay() + 6) % 7; // 0 = Monday
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - day);
+  monday.setHours(0, 0, 0, 0);
+  return monday.toISOString().slice(0, 10);
+}
+
+// ── Brute-force / login rate-limit helpers ────────────────────────────────────
+// KV key: loginattempts:{email} → { count, lockedUntil }
+// TTL: 600 s (10 min) — auto-expires so successful accounts eventually reset.
+
+const LOGIN_MAX_ATTEMPTS = 10;
+const LOGIN_LOCKOUT_SECONDS = 600; // 10 minutes
+
+async function getLoginAttempts(env, email) {
+  const raw = await env.BWR_KV.get(`loginattempts:${email}`);
+  return raw ? JSON.parse(raw) : { count: 0, lockedUntil: null };
+}
+
+async function recordFailedLogin(env, email) {
+  const attempts = await getLoginAttempts(env, email);
+  attempts.count += 1;
+  if (attempts.count >= LOGIN_MAX_ATTEMPTS) {
+    attempts.lockedUntil = new Date(Date.now() + LOGIN_LOCKOUT_SECONDS * 1000).toISOString();
+  }
+  await env.BWR_KV.put(`loginattempts:${email}`, JSON.stringify(attempts), { expirationTtl: LOGIN_LOCKOUT_SECONDS });
+  return attempts;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const pathname = url.pathname;
 
+    const ALLOWED_ORIGINS = new Set([
+      'https://bwr-worker.ciril8596.workers.dev',
+      'http://localhost:8787',
+    ]);
+    const origin = request.headers.get('Origin') ?? '';
+    const allowedOrigin = ALLOWED_ORIGINS.has(origin) ? origin : 'https://bwr-worker.ciril8596.workers.dev';
+
     const cors = {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': allowedOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Password',
+      'Vary': 'Origin',
     };
 
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
@@ -160,10 +200,14 @@ export default {
       const salt = crypto.randomUUID();
       const passwordHash = await hashPassword(body.password, salt);
 
+      const adminName = env.ADMIN_NAME;
+      const adminEmail = env.ADMIN_EMAIL;
+      if (!adminName || !adminEmail) return fail('ADMIN_NAME and ADMIN_EMAIL env vars must be set.');
+
       const admin = {
         id: crypto.randomUUID(),
-        name: 'Thomas Legros',
-        email: 'ciril8596@gmail.com',
+        name: adminName,
+        email: adminEmail,
         passwordHash,
         salt,
         hashVersion: 2,
@@ -219,8 +263,19 @@ export default {
 
       if (!email || !password) return fail('Email et mot de passe requis.');
 
+      const emailKey = email.toLowerCase();
+
+      // Brute-force protection: reject immediately if account is locked.
+      const attempts = await getLoginAttempts(env, emailKey);
+      if (attempts.lockedUntil && new Date(attempts.lockedUntil) > new Date()) {
+        return json({ error: 'Compte temporairement verrouillé après trop de tentatives. Réessayez dans 10 minutes.' }, 429);
+      }
+
       const user = await getUserByEmail(env, email);
-      if (!user) return fail('Email ou mot de passe incorrect.', 401);
+      if (!user) {
+        await recordFailedLogin(env, emailKey);
+        return fail('Email ou mot de passe incorrect.', 401);
+      }
 
       let passwordOk = false;
       let needsMigration = false;
@@ -233,13 +288,19 @@ export default {
         if (passwordOk) needsMigration = true;
       }
 
-      if (!passwordOk) return fail('Email ou mot de passe incorrect.', 401);
+      if (!passwordOk) {
+        await recordFailedLogin(env, emailKey);
+        return fail('Email ou mot de passe incorrect.', 401);
+      }
 
       if (needsMigration) {
         const newSalt = crypto.randomUUID();
         const newHash = await hashPassword(password, newSalt);
         await putUser(env, { ...user, passwordHash: newHash, salt: newSalt, hashVersion: 2 });
       }
+
+      // Clear failed-attempt counter on successful login.
+      await env.BWR_KV.delete(`loginattempts:${emailKey}`);
 
       const token = crypto.randomUUID();
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -279,7 +340,7 @@ export default {
         plan: updated.plan || 'free',
         planExpiresAt: updated.planExpiresAt || null,
         planBase: updated.planBase || null,
-        stats: updated.stats || { routes: 0, km: 0 },
+        stats: updated.stats || { routes: 0, km: 0, weeklyRoutes: 0, weekStart: isoMonday() },
       });
     }
 
@@ -448,6 +509,28 @@ export default {
       };
       await putUser(env, { ...user, stats: updatedStats });
       return json({ stats: updatedStats });
+    }
+
+    // ── POST /api/auth/consume-route — server-side weekly quota enforcement ───
+    if (pathname === '/api/auth/consume-route' && request.method === 'POST') {
+      const user = await getUserFromToken(env, request);
+      if (!user) return fail('Non authentifié.', 401);
+
+      const plan = user.plan || 'free';
+      if (plan !== 'free') return json({ ok: true, unlimited: true });
+
+      const weekStart = isoMonday();
+      const stats = user.stats || { routes: 0, km: 0 };
+      const weeklyRoutes = stats.weekStart === weekStart ? (stats.weeklyRoutes || 0) : 0;
+
+      const LIMIT = 3;
+      if (weeklyRoutes >= LIMIT) {
+        return fail(JSON.stringify({ ok: false, used: weeklyRoutes, limit: LIMIT }), 429);
+      }
+
+      const newCount = weeklyRoutes + 1;
+      await putUser(env, { ...user, stats: { ...stats, weeklyRoutes: newCount, weekStart } });
+      return json({ ok: true, used: newCount, limit: LIMIT });
     }
 
     // ── PUT /api/auth/password — change password ──────────────────────────────
