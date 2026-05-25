@@ -456,7 +456,8 @@ async function generateRoute() {
     }
   } catch (err) {
     console.error('Routing error:', err);
-    btn.textContent = 'Erreur: ' + err.message;
+    const msg = err.name === 'AbortError' ? 'Serveur trop lent, réessaie' : err.message;
+    btn.textContent = 'Erreur: ' + msg;
     btn.classList.remove('loading');
     setTimeout(() => { btn.textContent = 'Calculer le trajet'; btn.disabled = false; }, 5000);
     return;
@@ -495,17 +496,24 @@ function filterPaths(paths) {
   return paths; // champs / mix: all paths
 }
 
+// ── Fetch with timeout ────────────────────────────────────────────────────────
+function fetchWithTimeout(url, opts = {}, ms = 10000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(id));
+}
+
 // ── ORS fallback (via worker, needs ORS_KEY set in Cloudflare) ─────────────────
 function orsProfile() {
   const map = { bike: 'cycling-mountain', champs: 'foot-walking', mix: 'foot-walking' };
   return map[pathType] || 'foot-hiking';
 }
 async function callORS(body) {
-  const res = await fetch(`${API_URL}/api/route`, {
+  const res = await fetchWithTimeout(`${API_URL}/api/route`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeader() },
     body: JSON.stringify(body),
-  });
+  }, 12000);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || `ORS ${res.status}`);
   const feat = data.features?.[0];
@@ -523,7 +531,7 @@ function osrmProfile() { return pathType === 'bike' ? 'cycling' : 'foot'; }
 async function osrmRoute(wpList) {
   const p = osrmProfile();
   const c = wpList.map(w => `${w.lon},${w.lat}`).join(';');
-  const res = await fetch(`https://router.project-osrm.org/route/v1/${p}/${c}?overview=full&geometries=geojson`);
+  const res = await fetchWithTimeout(`https://router.project-osrm.org/route/v1/${p}/${c}?overview=full&geometries=geojson`);
   const data = await res.json();
   if (data.code !== 'Ok' || !data.routes?.[0]) throw new Error('OSRM: no route');
   const r = data.routes[0];
@@ -533,7 +541,7 @@ async function osrmRoute(wpList) {
 async function osrmTrip(wpList) {
   const p = osrmProfile();
   const c = wpList.map(w => `${w.lon},${w.lat}`).join(';');
-  const res = await fetch(`https://router.project-osrm.org/trip/v1/${p}/${c}?roundtrip=true&source=first&destination=any&overview=full&geometries=geojson`);
+  const res = await fetchWithTimeout(`https://router.project-osrm.org/trip/v1/${p}/${c}?roundtrip=true&source=first&destination=any&overview=full&geometries=geojson`);
   const data = await res.json();
   if (data.code !== 'Ok' || !data.trips?.[0]) throw new Error('OSRM trip: no route');
   const t = data.trips[0];

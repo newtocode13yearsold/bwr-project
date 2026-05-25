@@ -40,8 +40,8 @@
     path_alerts:         { free: false, silver: false,    gold: true     },
 
     /* — Path editing — */
-    path_difficulty_edit: { free: false, silver: true,    gold: true     },
-    path_select:          { free: false, silver: true,    gold: true     },
+    path_difficulty_edit: { free: true,  silver: true,    gold: true     },
+    path_select:          { free: true,  silver: true,    gold: true     },
 
     /* — Personalisation & gamification — */
     daily_wheel:         { free: false, silver: true,     gold: true     },

@@ -309,6 +309,7 @@ function openNewPathPopupUser(coords, name, latlng) {
           <span style="color:${STATUS_COLORS.medium}">● Moyen</span>
           <span style="color:${STATUS_COLORS.hard}">● Difficile</span>
           <span style="color:${STATUS_COLORS.not_passable}">● Impraticable</span>
+          <span style="color:${STATUS_COLORS.no_bike}">● Vélo interdit</span>
         </div>
       </div>
     `)
@@ -417,6 +418,7 @@ function openPathPopup(path, latlng) {
           <span style="color:${STATUS_COLORS.medium}">● Moyen</span>
           <span style="color:${STATUS_COLORS.hard}">● Difficile</span>
           <span style="color:${STATUS_COLORS.not_passable}">● Impraticable</span>
+          <span style="color:${STATUS_COLORS.no_bike}">● Vélo interdit</span>
         </div>
       </div>`
     : `<div class="popup-difficulty-locked">
@@ -546,6 +548,7 @@ function openDifficultyPopup(path, latlng) {
           <span style="color:${STATUS_COLORS.medium}">● Moyen</span>
           <span style="color:${STATUS_COLORS.hard}">● Difficile</span>
           <span style="color:${STATUS_COLORS.not_passable}">● Impraticable</span>
+          <span style="color:${STATUS_COLORS.no_bike}">● Vélo interdit</span>
         </div>
       </div>
     `)
