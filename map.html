@@ -29,6 +29,7 @@
       <button class="btn-icon" id="toggleFilters" title="Filtres"><span class="btn-emoji">&#9776;</span><span class="btn-label">Filtres</span></button>
       <a href="routes.html" class="btn-icon" id="btnPlanRoute" title="Planifier un trajet" style="display:none; text-decoration:none"><span class="btn-emoji">🗺</span><span class="btn-label">Planifier</span></a>
       <button class="btn-icon" id="btnOffline" title="Sauvegarder hors-ligne" style="display:none"><span class="btn-emoji">💾</span><span class="btn-label">Hors-ligne</span></button>
+      <button class="btn-icon" id="btnEditPaths" title="Modifier la difficulté d'un chemin" style="display:none"><span class="btn-emoji">✎</span><span class="btn-label">Modifier</span></button>
       <a href="plans.html" class="btn-icon" title="Plans" style="text-decoration:none"><span class="btn-emoji">⭐</span><span class="btn-label">Plans</span></a>
       <div class="user-menu" id="userMenu">
         <!-- filled by map.js -->
@@ -123,10 +124,26 @@
   <script src="js/features.js"></script>
   <script src="js/carrefours.js"></script>
   <script src="js/map.js"></script>
+  <nav class="bottom-nav" aria-label="Navigation principale">
+    <a href="map.html" class="bnav-item active">
+      <span class="bnav-icon">🗺</span>
+      <span class="bnav-label">Carte</span>
+    </a>
+    <a href="routes.html" class="bnav-item">
+      <span class="bnav-icon">🧭</span>
+      <span class="bnav-label">Trajets</span>
+    </a>
+    <a href="profile.html" class="bnav-item">
+      <span class="bnav-icon">👤</span>
+      <span class="bnav-label">Profil</span>
+    </a>
+  </nav>
+
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/bwr-project/sw.js').catch(() => {});
     }
   </script>
+  <script src="js/install.js"></script>
 </body>
 </html>

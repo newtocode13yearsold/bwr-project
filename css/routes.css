@@ -515,27 +515,27 @@
 
   .planner-layout {
     flex-direction: column;
-    height: calc(100vh - 52px);
+    height: calc(100dvh - 52px - 56px - env(safe-area-inset-bottom, 0px));
   }
 
-  /* Map takes top 55% */
+  /* Map takes top portion, with a minimum so it stays usable */
   .planner-layout #map {
     order: 1;
-    height: 55vh;
     flex: none;
+    min-height: 48vh;
+    height: 52vh;
   }
 
-  /* Sidebar is a scrollable bottom sheet — 45% */
+  /* Sidebar is a scrollable bottom sheet */
   .planner-sidebar {
     order: 2;
     width: 100%;
     min-width: 0;
     flex: 1;
-    max-height: 45vh;
+    max-height: 48vh;
     overflow-y: auto;
     border-right: none;
     border-top: 2px solid #e2e8da;
-    /* Scroll snap feel */
     -webkit-overflow-scrolling: touch;
   }
 

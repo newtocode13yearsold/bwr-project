@@ -234,9 +234,6 @@ function renderPlanAndProgress(user) {
   // Apply plan styling to avatar ring
   document.getElementById('avatarRing').classList.add(`ring-${plan}`);
 
-  // ── Weekly route quota strip (free users only) ──
-  renderQuotaStrip(plan);
-
   // Stats: server is authoritative; localStorage is cache. Take max during migration.
   const serverRoutes = (user.stats && user.stats.routes) || 0;
   const serverKm     = (user.stats && user.stats.km) || 0;
@@ -256,6 +253,23 @@ function renderPlanAndProgress(user) {
       body: JSON.stringify({ routes, km }),
     }).catch(() => {});
   }
+
+  // Sync server's weekly quota to localStorage so renderQuotaStrip() is accurate on any device
+  if (user.stats && user.stats.weekStart) {
+    const localWeekly = BWR.readWeekly();
+    if (user.stats.weekStart === localWeekly.weekStart) {
+      const serverWeekly = user.stats.weeklyRoutes || 0;
+      if (serverWeekly > localWeekly.count) {
+        localStorage.setItem('bwr_routes_week', JSON.stringify({
+          weekStart: localWeekly.weekStart,
+          count: serverWeekly,
+        }));
+      }
+    }
+  }
+
+  // ── Weekly route quota strip (free users only) ──
+  renderQuotaStrip(plan);
   const level  = Math.floor(km / 5) + 1;
   const xpIn   = km - (level - 1) * 5;
   const xpPct  = Math.min(100, (xpIn / 5) * 100);
@@ -318,7 +332,7 @@ function renderPlanAndProgress(user) {
   if (BWR.can('daily_wheel', plan)) {
     const premiumSection = document.getElementById('premiumSection');
     premiumSection.style.display = '';
-    const isGold = plan === 'gold' || plan === 'admin';
+    const isGold = plan === 'gold';
     document.getElementById('premiumIcon').textContent = isGold ? '🥇' : '🥈';
     document.getElementById('premiumTitle').textContent = isGold ? 'Privilèges Or' : 'Fonctionnalités premium';
 
@@ -329,8 +343,7 @@ function renderPlanAndProgress(user) {
     const show = isGold ? '' : 'none';
     document.getElementById('goalBlock').style.display  = BWR.can('custom_goals', plan) ? '' : 'none';
     document.getElementById('weatherBlock').style.display = show;
-    document.getElementById('discordBlock').style.display = show;
-    document.getElementById('supportBlock').style.display = show;
+document.getElementById('supportBlock').style.display = show;
     document.getElementById('pushAlertsBlock').style.display = show;
 
     // AI suggestions: Silver (weekly cadence) or Gold (daily)
@@ -511,25 +524,69 @@ function renderGoals() {
 }
 
 // ── Weather (Open-Meteo, free, no key) ────────────────────────────────────────
+const WEATHER_CODE_MAP = {
+  0:['☀️','Ensoleillé'], 1:['🌤','Peu nuageux'], 2:['⛅','Nuageux'], 3:['☁️','Couvert'],
+  45:['🌫','Brouillard'], 48:['🌫','Brouillard givrant'],
+  51:['🌦','Bruine légère'], 53:['🌦','Bruine'], 55:['🌧','Bruine forte'],
+  61:['🌧','Pluie légère'], 63:['🌧','Pluie'], 65:['🌧','Forte pluie'],
+  71:['🌨','Neige'], 73:['🌨','Neige modérée'], 75:['❄️','Forte neige'],
+  80:['🌦','Averses'], 81:['🌧','Averses'], 82:['⛈','Violentes averses'],
+  95:['⛈','Orage'], 96:['⛈','Orage + grêle'], 99:['⛈','Orage violent'],
+};
+
+function weatherHikingSuitability(code, wind, precipProb) {
+  if (code >= 95) return ['weather-suit--bad', '⛈ Pas de sortie'];
+  if (code >= 61 && code <= 82) return ['weather-suit--bad', '🌧 Sortie déconseillée'];
+  if (wind > 40) return ['weather-suit--bad', '💨 Vent dangereux'];
+  if ((precipProb ?? 0) > 60 || wind > 25) return ['weather-suit--ok', '🌂 Sortie possible'];
+  if (code >= 45 && code <= 48) return ['weather-suit--ok', '🌫 Brouillard'];
+  return ['weather-suit--great', '✅ Idéal pour randonner'];
+}
+
 async function renderWeather() {
   try {
-    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=49.35&longitude=2.90&current=temperature_2m,weather_code,wind_speed_10m&timezone=Europe/Paris');
-    const data = await res.json();
+    const url = 'https://api.open-meteo.com/v1/forecast'
+      + '?latitude=49.35&longitude=2.90'
+      + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m,precipitation_probability'
+      + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+      + '&timezone=Europe%2FParis&forecast_days=4';
+    const data = await (await fetch(url)).json();
     const c = data.current;
-    const codeMap = {
-      0:['☀️','Ensoleillé'], 1:['🌤','Peu nuageux'], 2:['⛅','Nuageux'], 3:['☁️','Couvert'],
-      45:['🌫','Brouillard'], 48:['🌫','Brouillard givrant'],
-      51:['🌦','Bruine légère'], 53:['🌦','Bruine'], 55:['🌧','Bruine forte'],
-      61:['🌧','Pluie légère'], 63:['🌧','Pluie'], 65:['🌧','Forte pluie'],
-      71:['🌨','Neige'], 73:['🌨','Neige modérée'], 75:['❄️','Forte neige'],
-      80:['🌦','Averses'], 81:['🌧','Averses'], 82:['⛈','Violentes averses'],
-      95:['⛈','Orage'], 96:['⛈','Orage + grêle'], 99:['⛈','Orage violent'],
-    };
-    const [icon, label] = codeMap[c.weather_code] || ['🌤', 'Variable'];
+    const d = data.daily;
+
+    const [icon, label] = WEATHER_CODE_MAP[c.weather_code] || ['🌤', 'Variable'];
     document.getElementById('weatherIcon').textContent = icon;
     document.getElementById('weatherTemp').textContent = `${Math.round(c.temperature_2m)}°C`;
     document.getElementById('weatherLabel').textContent = label;
-    document.getElementById('weatherWind').textContent = `Vent : ${Math.round(c.wind_speed_10m)} km/h`;
+    document.getElementById('weatherFeels').textContent = `Ressenti ${Math.round(c.apparent_temperature)}°C`;
+
+    // Suitability badge
+    const precipProb = c.precipitation_probability ?? (d.precipitation_probability_max?.[0] ?? 0);
+    const [suitClass, suitText] = weatherHikingSuitability(c.weather_code, c.wind_speed_10m, precipProb);
+    const suitEl = document.getElementById('weatherSuitability');
+    suitEl.textContent = suitText;
+    suitEl.className = `weather-suit ${suitClass}`;
+
+    // Detail chips
+    document.getElementById('wdWind').textContent = `💨 ${Math.round(c.wind_speed_10m)} km/h`;
+    document.getElementById('wdHumidity').textContent = `💧 ${Math.round(c.relative_humidity_2m)} %`;
+    document.getElementById('wdPrecip').textContent = `🌧 ${precipProb} %`;
+    document.getElementById('weatherDetails').style.display = 'flex';
+
+    // 4-day forecast strip
+    const days = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+    const forecastEl = document.getElementById('weatherForecast');
+    forecastEl.innerHTML = d.time.map((iso, i) => {
+      const name = i === 0 ? "Auj." : days[new Date(iso).getDay()];
+      const [fi, fl] = WEATHER_CODE_MAP[d.weather_code[i]] || ['🌤', ''];
+      const rain = d.precipitation_probability_max[i] ?? 0;
+      return `<div class="weather-day">
+        <span class="weather-day-name">${name}</span>
+        <span class="weather-day-icon">${fi}</span>
+        <span class="weather-day-temps"><b>${Math.round(d.temperature_2m_max[i])}°</b> / ${Math.round(d.temperature_2m_min[i])}°</span>
+        ${rain > 10 ? `<span class="weather-day-rain">🌧 ${rain}%</span>` : ''}
+      </div>`;
+    }).join('');
   } catch {
     document.getElementById('weatherIcon').textContent = '❌';
     document.getElementById('weatherLabel').textContent = 'Météo indisponible';

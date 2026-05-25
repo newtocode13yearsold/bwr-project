@@ -1,4 +1,4 @@
-const CACHE = 'bwr-v3';
+const CACHE = 'bwr-v6';
 const TILE_CACHE = 'bwr-offline-tiles';
 
 // Install — skip waiting so update kicks in immediately
@@ -25,12 +25,16 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Tiles — network first, fallback to offline tile cache
+  // Tiles — network first, write to tile cache as browsed, fallback to tile cache offline
   if (url.includes('tile') || url.includes('opentopomap') || url.includes('geopf.fr')) {
     e.respondWith(
-      fetch(e.request).catch(() =>
-        caches.open(TILE_CACHE).then(c => c.match(e.request))
-      )
+      fetch(e.request).then(res => {
+        if (res) {
+          const clone = res.clone();
+          caches.open(TILE_CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => caches.open(TILE_CACHE).then(c => c.match(e.request)))
     );
     return;
   }

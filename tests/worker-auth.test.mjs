@@ -639,46 +639,55 @@ describe('consume-route (weekly quota)', () => {
 // ── POST /api/auth/wheel-prize ────────────────────────────────────────────────
 
 describe('wheel prize', () => {
-  test('non-plan prize type returns 200 immediately', async () => {
+  test('free user is rejected → 403', async () => {
     const { env, registerAndLogin } = freshEnv();
     const { token } = await registerAndLogin('wheel@bwr.fr', 'pass123');
     const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'badge', plan: null, days: 0 }), env);
-    assert.equal(res.status, 200);
+    assert.equal(res.status, 403);
   });
 
-  test('free user can win a silver upgrade', async () => {
-    const { env, registerAndLogin } = freshEnv();
-    const { token } = await registerAndLogin('wfree@bwr.fr', 'pass123');
-    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', plan: 'silver', days: 7 }), env);
+  test('silver user wins a gold upgrade → 200', async () => {
+    const { env, kv, registerAndLogin } = freshEnv();
+    const { token, user } = await registerAndLogin('wsilver@bwr.fr', 'pass123');
+    // Elevate to silver
+    const stored = JSON.parse(kv.store.get(`user:${user.id}`));
+    kv.store.set(`user:${user.id}`, JSON.stringify({ ...stored, plan: 'silver' }));
+
+    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', plan: 'gold', days: 7 }), env);
     assert.equal(res.status, 200);
     const data = await res.json();
-    assert.equal(data.plan, 'silver');
+    assert.equal(data.plan, 'gold');
     assert.ok(data.expiresAt, 'expiresAt must be set');
   });
 
-  test('free user cannot jump directly to gold → 400', async () => {
-    const { env, registerAndLogin } = freshEnv();
-    const { token } = await registerAndLogin('wfree2@bwr.fr', 'pass123');
-    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', plan: 'gold', days: 7 }), env);
+  test('silver user cannot claim same-tier prize → 400', async () => {
+    const { env, kv, registerAndLogin } = freshEnv();
+    const { token, user } = await registerAndLogin('wsilver2@bwr.fr', 'pass123');
+    const stored = JSON.parse(kv.store.get(`user:${user.id}`));
+    kv.store.set(`user:${user.id}`, JSON.stringify({ ...stored, plan: 'silver' }));
+
+    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', plan: 'silver', days: 7 }), env);
     assert.equal(res.status, 400);
   });
 
   test('30-day cooldown blocks a second prize claim → 429', async () => {
     const { env, kv, registerAndLogin } = freshEnv();
     const { token, user } = await registerAndLogin('wcool@bwr.fr', 'pass123');
-
-    // First claim succeeds
-    await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', plan: 'silver', days: 7 }), env);
-
-    // Manually reset plan back to free but keep lastWheelPrizeClaim
+    // Elevate to silver
     const stored = JSON.parse(kv.store.get(`user:${user.id}`));
+    kv.store.set(`user:${user.id}`, JSON.stringify({ ...stored, plan: 'silver' }));
+
+    // First claim succeeds (silver → gold)
+    await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', plan: 'gold', days: 7 }), env);
+
+    // Reset plan back to silver but keep lastWheelPrizeClaim → cooldown still active
+    const afterClaim = JSON.parse(kv.store.get(`user:${user.id}`));
     kv.store.set(`user:${user.id}`, JSON.stringify({
-      ...stored,
-      plan: 'free', planBase: null, planExpiresAt: null,
-      // lastWheelPrizeClaim stays as-is → cooldown still active
+      ...afterClaim,
+      plan: 'silver', planBase: null, planExpiresAt: null,
     }));
 
-    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', plan: 'silver', days: 7 }), env);
+    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', plan: 'gold', days: 7 }), env);
     assert.equal(res.status, 429);
   });
 });

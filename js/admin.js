@@ -1,6 +1,7 @@
 const CONDITIONS = [
   { id: 'dry',     icon: '✅', label: 'Sec' },
-  { id: 'muddy',   icon: '⚠️', label: 'Boueux' },
+  { id: 'muddy',   icon: '🟤', label: 'Boueux' },
+  { id: 'rutted',  icon: '🛞', label: 'Ornières' },
   { id: 'fallen',  icon: '❌', label: 'Arbres tombés' },
   { id: 'mtb',     icon: '🚴', label: 'Idéal MTB' },
   { id: 'running', icon: '🏃', label: 'Running' },
@@ -24,8 +25,8 @@ function initConditionTags(containerId) {
   });
 }
 
-const REPORT_ICONS  = { fallen_tree:'🌲', flooded:'💧', closed:'🚫', danger:'⚠️', other:'📝' };
-const REPORT_LABELS_ADMIN = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
+const REPORT_ICONS  = { fallen_tree:'🌲', flooded:'💧', muddy:'🟤', rutted:'🛞', broken_sign:'🪧', closed:'🚫', danger:'⚠️', other:'📝' };
+const REPORT_LABELS_ADMIN = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', muddy:'Boueux', rutted:'Ornières', broken_sign:'Carrefour cassé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
 
 let currentUser = null;
 let drawnCoordinates = null;
@@ -112,6 +113,29 @@ function initMap() {
   });
 
   map.on('zoomend', updatePathWeights);
+
+  const carrefourLayer = L.layerGroup();
+  CARREFOURS.forEach(c => {
+    carrefourLayer.addLayer(L.marker([c.lat, c.lon], {
+      icon: L.divIcon({
+        className: 'carrefour-marker',
+        html: `<span class="carrefour-dot"></span><span class="carrefour-name">${c.name}</span>`,
+        iconAnchor: [5, 5],
+        iconSize: null,
+      }),
+      interactive: false,
+      zIndexOffset: 500,
+    }));
+  });
+  function updateCarrefourVisibility() {
+    if (map.getZoom() >= 15) {
+      if (!map.hasLayer(carrefourLayer)) carrefourLayer.addTo(map);
+    } else {
+      if (map.hasLayer(carrefourLayer)) map.removeLayer(carrefourLayer);
+    }
+  }
+  map.on('zoomend', updateCarrefourVisibility);
+  updateCarrefourVisibility();
 
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', () => map.invalidateSize());
@@ -581,6 +605,18 @@ function openColorPopup(path, latlng) {
               </div>`).join('')}
           </div>`;
         })()}
+        <div class="admin-quick-actions">
+          <button class="popup-fallen-btn" id="adminFallenTree-${path.id}">🌲 Arbre tombé ici</button>
+          <button class="popup-fallen-btn" id="adminMuddy-${path.id}">🟤 Boueux ici</button>
+          <button class="popup-fallen-btn" id="adminRutted-${path.id}">🛞 Ornières ici</button>
+          <button class="popup-fallen-btn" id="adminBrokenSign-${path.id}">🪧 Carrefour cassé</button>
+          ${(() => {
+            const openReports = allReports.filter(r => r.status === 'open' && r.pathId === path.id);
+            return openReports.length
+              ? `<button class="admin-resolved-btn" id="adminResolved-${path.id}" data-rid="${openReports[0].id}">✅ Problème résolu</button>`
+              : '';
+          })()}
+        </div>
         <div class="color-popup-actions">
           <button class="popup-edit-btn" id="editBtn-${path.id}">✎ Modifier</button>
           <button class="popup-split-btn" id="splitBtn-${path.id}">✂️ Couper</button>
@@ -597,6 +633,53 @@ function openColorPopup(path, latlng) {
         map.closePopup();
       });
     });
+
+    document.getElementById(`adminFallenTree-${path.id}`)?.addEventListener('click', async () => {
+      map.closePopup();
+      const res = await fetch(`${API_URL}/api/reports`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ pathId: path.id, type: 'fallen_tree', note: '', lat: latlng.lat, lon: latlng.lng }),
+      });
+      if (res.ok) {
+        const report = await res.json();
+        allReports.push(report);
+        renderReportMarkers();
+        showStatus('🌲 Arbre tombé signalé !');
+      } else {
+        showStatus('Erreur lors du signalement.', true);
+      }
+    });
+
+    for (const [btnId, type, msg] of [
+      [`adminMuddy-${path.id}`,      'muddy',       '🟤 Boueux signalé !'],
+      [`adminRutted-${path.id}`,     'rutted',      '🛞 Ornières signalées !'],
+      [`adminBrokenSign-${path.id}`, 'broken_sign', '🪧 Carrefour cassé signalé !'],
+    ]) {
+      document.getElementById(btnId)?.addEventListener('click', async () => {
+        map.closePopup();
+        const res = await fetch(`${API_URL}/api/reports`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeader() },
+          body: JSON.stringify({ pathId: path.id, type, note: '', lat: latlng.lat, lon: latlng.lng }),
+        });
+        if (res.ok) {
+          const report = await res.json();
+          allReports.push(report);
+          renderReportMarkers();
+          showStatus(msg);
+        } else {
+          showStatus('Erreur lors du signalement.', true);
+        }
+      });
+    }
+
+    document.getElementById(`adminResolved-${path.id}`)?.addEventListener('click', async () => {
+      const rid = document.getElementById(`adminResolved-${path.id}`).dataset.rid;
+      map.closePopup();
+      await dismissReport(rid);
+    });
+
     document.getElementById(`editBtn-${path.id}`)?.addEventListener('click', () => {
       map.closePopup();
       openEditForm(path);
@@ -704,7 +787,7 @@ async function loadMembers() {
     const res = await fetch(`${API_URL}/api/users`, { headers: authHeader() });
     const users = await res.json();
     if (!res.ok) { list.innerHTML = `<p style="color:red">${users.error}</p>`; return; }
-    const planIcon = { free: '🌿', silver: '🥈', gold: '🥇', admin: '👑' };
+    const planIcon = { free: '🌿', silver: '🥈', gold: '🥇' };
     list.innerHTML = users.map(u => {
       const expiry = u.planExpiresAt
         ? `<span style="font-size:0.75rem;color:#f97316">⏳ expire le ${new Date(u.planExpiresAt).toLocaleDateString('fr-FR')}</span>`

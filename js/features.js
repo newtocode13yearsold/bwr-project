@@ -39,6 +39,10 @@
     reports_create:      { free: false, silver: true,     gold: true     },
     path_alerts:         { free: false, silver: false,    gold: true     },
 
+    /* — Path editing — */
+    path_difficulty_edit: { free: false, silver: true,    gold: true     },
+    path_select:          { free: false, silver: true,    gold: true     },
+
     /* — Personalisation & gamification — */
     daily_wheel:         { free: false, silver: true,     gold: true     },
     custom_goals:        { free: false, silver: false,    gold: true     },
@@ -54,13 +58,11 @@
     /* — Support / perks — */
     priority_support:    { free: false, silver: false,    gold: true     },
     early_access:        { free: false, silver: false,    gold: true     },
-    discord_community:   { free: false, silver: false,    gold: true     },
+
   };
 
-  // Admins get every premium capability automatically (server also forces gold).
   function normalisePlan(plan) {
     if (!plan) return 'free';
-    if (plan === 'admin') return 'gold';
     return plan;
   }
 

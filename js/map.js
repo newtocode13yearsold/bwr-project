@@ -94,6 +94,11 @@ async function initUserMenu() {
   // Show route planner button for logged-in users
   document.getElementById('btnPlanRoute').style.display = '';
 
+  // Show path-edit button for silver+ users
+  if (BWR.can('path_difficulty_edit', _userPlan)) {
+    document.getElementById('btnEditPaths').style.display = '';
+  }
+
   const initials = user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   menuEl.innerHTML = `
     <button class="user-btn" id="userBtn">
@@ -128,11 +133,31 @@ async function loadPaths() {
     const res = await fetch(`${API_URL}/api/paths`);
     allPaths = await res.json();
     renderPaths();
+    showPathHintIfNeeded();
   } catch {}
 }
 
 function renderPaths() {
   pathTileLayer.setPaths(allPaths, activeFilters);
+}
+
+// ── Silver path-edit hint chip ────────────────────────────────────────────────
+let _pathHintDismissed = false;
+function showPathHintIfNeeded() {
+  if (_pathHintDismissed) return;
+  if (!BWR.can('path_difficulty_edit', _userPlan)) return;
+  if (document.getElementById('pathEditHint')) return;
+  const chip = document.createElement('div');
+  chip.id = 'pathEditHint';
+  chip.className = 'path-edit-hint';
+  chip.innerHTML = '✎ Clique sur un chemin pour modifier sa difficulté <button id="pathEditHintClose" title="Fermer">✕</button>';
+  document.getElementById('map').appendChild(chip);
+  document.getElementById('pathEditHintClose').addEventListener('click', dismissPathHint);
+  setTimeout(dismissPathHint, 8000);
+}
+function dismissPathHint() {
+  _pathHintDismissed = true;
+  document.getElementById('pathEditHint')?.remove();
 }
 
 // ── Click detection on tile-rendered paths ────────────────────────────────────
@@ -163,22 +188,227 @@ function _pathAtClick(latlng) {
 
 map.on('click', e => {
   const path = _pathAtClick(e.latlng);
-  if (path) openPathPopup(path, e.latlng);
+  if (path) {
+    dismissPathHint();
+    if (pathEditModeActive) openDifficultyPopup(path, e.latlng);
+    else openPathPopup(path, e.latlng);
+  }
+});
+
+// Cursor pointer when hovering near a path
+let _hoverThrottle = null;
+map.on('mousemove', e => {
+  if (_hoverThrottle) return;
+  _hoverThrottle = setTimeout(() => { _hoverThrottle = null; }, 40);
+  const hit = _pathAtClick(e.latlng);
+  map.getContainer().style.cursor = hit ? 'pointer' : (pathEditModeActive ? 'crosshair' : '');
+});
+
+// ── Path edit mode (silver+) ──────────────────────────────────────────────────
+let pathEditModeActive = false;
+let _editPolylines = [];
+
+function renderEditPolylines() {
+  _editPolylines.forEach(l => map.removeLayer(l));
+  _editPolylines = [];
+}
+
+function clearEditPolylines() {
+  _editPolylines.forEach(l => map.removeLayer(l));
+  _editPolylines = [];
+}
+
+let _osmEditLayers = [];
+
+function clearOsmEditLayers() {
+  _osmEditLayers.forEach(l => map.removeLayer(l));
+  _osmEditLayers = [];
+}
+
+async function loadOsmEditPaths() {
+  if (map.getZoom() < 12) {
+    showToast('Zoome plus près de la forêt (zoom minimum : 12).');
+    exitPathEditMode();
+    return;
+  }
+  showEditModeBar('Chargement des chemins…');
+  const b = map.getBounds();
+  const bbox = `${b.getSouth().toFixed(4)},${b.getWest().toFixed(4)},${b.getNorth().toFixed(4)},${b.getEast().toFixed(4)}`;
+  try {
+    const res = await fetch(`${API_URL}/api/osm?bbox=${bbox}`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    renderOsmEditPaths(data);
+    const count = _osmEditLayers.length;
+    if (count === 0) {
+      showEditModeBar('Aucun chemin OSM trouvé ici — zoome sur la forêt.');
+    } else {
+      showEditModeBar(`${count} chemins disponibles — clique sur un chemin en pointillés`);
+    }
+  } catch {
+    showToast('Impossible de charger les chemins OSM.');
+    exitPathEditMode();
+  }
+}
+
+function renderOsmEditPaths(data) {
+  clearOsmEditLayers();
+  const nodes = {};
+  data.elements.forEach(el => {
+    if (el.type === 'node') nodes[el.id] = [el.lat, el.lon];
+  });
+  data.elements.forEach(el => {
+    if (el.type !== 'way') return;
+    const coords = el.nodes.map(id => nodes[id]).filter(Boolean);
+    if (coords.length < 2) return;
+    const alreadySaved = allPaths.some(p =>
+      p.coordinates && Math.abs(p.coordinates[0][0] - coords[0][0]) < 0.0001 &&
+      Math.abs(p.coordinates[0][1] - coords[0][1]) < 0.0001
+    );
+    if (alreadySaved) return;
+    const name = el.tags?.name || el.tags?.ref || 'Chemin sans nom';
+    const line = L.polyline(coords, { color: '#475569', weight: 3, opacity: 0.65, dashArray: '6, 6' });
+    line.on('mouseover', () => { line.setStyle({ color: '#2563eb', opacity: 1, weight: 5, dashArray: null }); map.getContainer().style.cursor = 'pointer'; });
+    line.on('mouseout',  () => { line.setStyle({ color: '#475569', opacity: 0.65, weight: 3, dashArray: '6, 6' }); map.getContainer().style.cursor = 'crosshair'; });
+    line.on('click', e => { L.DomEvent.stopPropagation(e); openNewPathPopupUser(coords, name, e.latlng); });
+    line.addTo(map);
+    _osmEditLayers.push(line);
+  });
+}
+
+function openNewPathPopupUser(coords, name, latlng) {
+  L.popup({ maxWidth: 260, className: 'admin-popup', autoClose: false, closeOnClick: false })
+    .setLatLng(latlng)
+    .setContent(`
+      <div class="color-popup">
+        <div class="color-popup-name">${name}</div>
+        <div class="color-popup-label">Choisir la difficulté :</div>
+        <div class="color-popup-btns" id="newUserColorBtns">
+          ${Object.entries(STATUS_COLORS).map(([status, color]) => `
+            <button class="color-btn" style="background:${color}" data-status="${status}" title="${STATUS_LABELS[status]}"></button>
+          `).join('')}
+        </div>
+        <div class="color-popup-legend">
+          <span style="color:${STATUS_COLORS.easy}">● Facile</span>
+          <span style="color:${STATUS_COLORS.medium}">● Moyen</span>
+          <span style="color:${STATUS_COLORS.hard}">● Difficile</span>
+          <span style="color:${STATUS_COLORS.not_passable}">● Impraticable</span>
+        </div>
+      </div>
+    `)
+    .openOn(map);
+  setTimeout(() => {
+    document.querySelectorAll('#newUserColorBtns .color-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        map.closePopup();
+        const res = await fetch(`${API_URL}/api/paths`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeader() },
+          body: JSON.stringify({ name, pathType: 'foot', status: btn.dataset.status, notes: '', conditions: [], coordinates: coords }),
+        });
+        if (res.ok) {
+          const saved = await res.json();
+          allPaths.push(saved);
+          renderPaths();
+          clearOsmEditLayers();
+          await loadOsmEditPaths();
+          showToast(`✅ "${name}" enregistré !`);
+        } else {
+          showToast('Erreur lors de l\'enregistrement.');
+        }
+      });
+    });
+  }, 50);
+}
+
+function enterPathEditMode() {
+  pathEditModeActive = true;
+  dismissPathHint();
+  const btn = document.getElementById('btnEditPaths');
+  btn.querySelector('.btn-emoji').textContent = '✕';
+  btn.querySelector('.btn-label').textContent = 'Terminer';
+  btn.style.background = 'rgba(239,68,68,0.15)';
+  btn.style.color = '#dc2626';
+  map.getContainer().style.cursor = 'crosshair';
+  showEditModeBar('Chargement…');
+  loadOsmEditPaths();
+}
+
+function exitPathEditMode() {
+  pathEditModeActive = false;
+  const btn = document.getElementById('btnEditPaths');
+  btn.querySelector('.btn-emoji').textContent = '✎';
+  btn.querySelector('.btn-label').textContent = 'Modifier';
+  btn.style.background = '';
+  btn.style.color = '';
+  map.getContainer().style.cursor = '';
+  clearEditPolylines();
+  clearOsmEditLayers();
+  hideEditModeBar();
+  map.closePopup();
+}
+
+function showEditModeBar(text) {
+  let bar = document.getElementById('editModeBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'editModeBar';
+    bar.className = 'edit-mode-bar';
+    document.getElementById('map').appendChild(bar);
+  }
+  bar.textContent = '✎ ' + (text || 'Mode modification');
+}
+
+function hideEditModeBar() {
+  document.getElementById('editModeBar')?.remove();
+}
+
+document.getElementById('btnEditPaths').addEventListener('click', () => {
+  if (pathEditModeActive) exitPathEditMode();
+  else enterPathEditMode();
 });
 
 // ── Path popup & report flow ──────────────────────────────────────────────────
-const REPORT_ICONS  = { fallen_tree:'🌲', flooded:'💧', closed:'🚫', danger:'⚠️', other:'📝' };
-const REPORT_LABELS = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
+const REPORT_ICONS  = { fallen_tree:'🌲', flooded:'💧', muddy:'🟤', rutted:'🛞', broken_sign:'🪧', closed:'🚫', danger:'⚠️', other:'📝' };
+const REPORT_LABELS = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', muddy:'Boueux', rutted:'Ornières', broken_sign:'Carrefour cassé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
 
 function openPathPopup(path, latlng) {
   const condHTML = path.conditions?.length
     ? `<div class="popup-cond-row">${path.conditions.map(c => {
-        const icons2 = { dry:'✅', muddy:'⚠️', fallen:'❌', mtb:'🚴', running:'🏃', family:'👨‍👩‍👧' };
-        const labels2 = { dry:'Sec', muddy:'Boueux', fallen:'Arbres tombés', mtb:'Idéal MTB', running:'Running', family:'Famille' };
+        const icons2 = { dry:'✅', muddy:'🟤', rutted:'🛞', fallen:'❌', mtb:'🚴', running:'🏃', family:'👨‍👩‍👧' };
+        const labels2 = { dry:'Sec', muddy:'Boueux', rutted:'Ornières', fallen:'Arbres tombés', mtb:'Idéal MTB', running:'Running', family:'Famille' };
         return `<span class="popup-cond-tag">${icons2[c] || ''} ${labels2[c] || c}</span>`;
       }).join('')}</div>` : '';
 
-  L.popup({ maxWidth: 280, autoClose: true, closeOnClick: true })
+  const canEdit = BWR.can('path_difficulty_edit', _userPlan);
+  const deleteHTML = canEdit
+    ? `<button class="popup-delete-path-btn" id="deletePath-${path.id}">🗑 Supprimer ce chemin</button>`
+    : '';
+  const difficultyHTML = canEdit
+    ? `<div class="popup-difficulty-section">
+        <div class="popup-difficulty-label">🎨 Changer la difficulté :</div>
+        <div class="popup-difficulty-btns" id="diffBtns-${path.id}">
+          ${Object.entries(STATUS_COLORS).map(([status, color]) => `
+            <button class="diff-btn ${path.status === status ? 'active' : ''}"
+              style="background:${color}"
+              data-status="${status}"
+              title="${STATUS_LABELS[status]}">
+              ${path.status === status ? '✓' : ''}
+            </button>`).join('')}
+        </div>
+        <div class="popup-difficulty-legend">
+          <span style="color:${STATUS_COLORS.easy}">● Facile</span>
+          <span style="color:${STATUS_COLORS.medium}">● Moyen</span>
+          <span style="color:${STATUS_COLORS.hard}">● Difficile</span>
+          <span style="color:${STATUS_COLORS.not_passable}">● Impraticable</span>
+        </div>
+      </div>`
+    : `<div class="popup-difficulty-locked">
+        <span class="lock-tag">🔒 Argent</span>
+        <span class="lock-hint">Modifier la difficulté</span>
+      </div>`;
+
+  L.popup({ maxWidth: 290, autoClose: false, closeOnClick: false })
     .setLatLng(latlng)
     .setContent(`
       <div class="popup">
@@ -186,19 +416,77 @@ function openPathPopup(path, latlng) {
         <span class="popup-status" style="background:${STATUS_COLORS[path.status]}">${STATUS_LABELS[path.status] || path.status}</span>
         ${condHTML}
         ${path.notes ? `<p class="popup-notes">${path.notes}</p>` : ''}
-        <button class="popup-report-btn" id="openReport-${path.id}">⚠️ Signaler un problème</button>
+        ${difficultyHTML}
+        <div class="popup-report-section">
+          <button class="popup-fallen-btn" id="openFallenTree-${path.id}">🌲 Arbre tombé ici</button>
+          <button class="popup-fallen-btn" id="openMuddy-${path.id}">🟤 Boueux ici</button>
+          <button class="popup-fallen-btn" id="openRutted-${path.id}">🛞 Ornières ici</button>
+          <button class="popup-fallen-btn" id="openBrokenSign-${path.id}">🪧 Carrefour cassé</button>
+          <button class="popup-report-btn" id="openReport-${path.id}">⚠️ Autre problème</button>
+        </div>
+        ${deleteHTML}
       </div>
     `)
     .openOn(map);
 
   setTimeout(() => {
-    document.getElementById(`openReport-${path.id}`)?.addEventListener('click', () => {
+    if (canEdit) {
+      document.querySelectorAll(`#diffBtns-${path.id} .diff-btn`).forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const newStatus = btn.dataset.status;
+          if (newStatus === path.status) { map.closePopup(); return; }
+          try {
+            const res = await fetch(`${API_URL}/api/paths/${path.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', ...authHeader() },
+              body: JSON.stringify({ status: newStatus }),
+            });
+            if (res.ok) {
+              path.status = newStatus;
+              const idx = allPaths.findIndex(p => p.id === path.id);
+              if (idx !== -1) allPaths[idx].status = newStatus;
+              renderPaths();
+              map.closePopup();
+              showToast(`✅ Difficulté mise à jour : ${STATUS_LABELS[newStatus]}`);
+            } else {
+              showToast('Erreur lors de la mise à jour.');
+            }
+          } catch {
+            showToast('Erreur lors de la mise à jour.');
+          }
+        });
+      });
+    }
+
+    const guardReport = (cb) => {
       if (!BWR.can('reports_create', _userPlan)) {
         map.closePopup();
         showToast('🔒 Le signalement est disponible avec Argent — voir plans.html');
         return;
       }
-      openReportPopup(path, latlng);
+      cb();
+    };
+
+    document.getElementById(`openFallenTree-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'fallen_tree')));
+    document.getElementById(`openMuddy-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'muddy')));
+    document.getElementById(`openRutted-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'rutted')));
+    document.getElementById(`openBrokenSign-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'broken_sign')));
+    document.getElementById(`openReport-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng)));
+
+    document.getElementById(`deletePath-${path.id}`)?.addEventListener('click', async () => {
+      if (!confirm(`Supprimer "${path.name || 'ce chemin'}" ?`)) return;
+      const res = await fetch(`${API_URL}/api/paths/${path.id}`, {
+        method: 'DELETE',
+        headers: authHeader(),
+      });
+      if (res.ok) {
+        allPaths = allPaths.filter(p => p.id !== path.id);
+        renderPaths();
+        map.closePopup();
+        showToast('🗑 Chemin supprimé.');
+      } else {
+        showToast('Erreur lors de la suppression.');
+      }
     });
   }, 50);
 }
@@ -223,7 +511,60 @@ function resizeImage(file, maxWidth = 800) {
   });
 }
 
-function openReportPopup(path, latlng) {
+// ── Difficulty-only popup (used in path edit mode) ───────────────────────────
+function openDifficultyPopup(path, latlng) {
+  const colorButtons = Object.entries(STATUS_COLORS).map(([status, color]) => {
+    const isActive = path.status === status;
+    return `<button class="color-btn ${isActive ? 'active' : ''}" style="background:${color}" data-status="${status}" title="${STATUS_LABELS[status]}">${isActive ? '✓' : ''}</button>`;
+  }).join('');
+
+  L.popup({ maxWidth: 260, className: 'admin-popup', autoClose: false, closeOnClick: false })
+    .setLatLng(latlng)
+    .setContent(`
+      <div class="color-popup">
+        <div class="color-popup-name">${path.name || 'Chemin sans nom'}</div>
+        <div class="color-popup-label">Changer la difficulté :</div>
+        <div class="color-popup-btns" id="editColorBtns-${path.id}">${colorButtons}</div>
+        <div class="color-popup-legend">
+          <span style="color:${STATUS_COLORS.easy}">● Facile</span>
+          <span style="color:${STATUS_COLORS.medium}">● Moyen</span>
+          <span style="color:${STATUS_COLORS.hard}">● Difficile</span>
+          <span style="color:${STATUS_COLORS.not_passable}">● Impraticable</span>
+        </div>
+      </div>
+    `)
+    .openOn(map);
+
+  setTimeout(() => {
+    document.querySelectorAll(`#editColorBtns-${path.id} .color-btn`).forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const newStatus = btn.dataset.status;
+        if (newStatus === path.status) { map.closePopup(); return; }
+        try {
+          const res = await fetch(`${API_URL}/api/paths/${path.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', ...authHeader() },
+            body: JSON.stringify({ status: newStatus }),
+          });
+          if (res.ok) {
+            path.status = newStatus;
+            const idx = allPaths.findIndex(p => p.id === path.id);
+            if (idx !== -1) allPaths[idx].status = newStatus;
+            renderPaths();
+            map.closePopup();
+            showToast(`✅ Difficulté mise à jour : ${STATUS_LABELS[newStatus]}`);
+          } else {
+            showToast('Erreur lors de la mise à jour.');
+          }
+        } catch {
+          showToast('Erreur lors de la mise à jour.');
+        }
+      });
+    });
+  }, 50);
+}
+
+function openReportPopup(path, latlng, defaultType = 'fallen_tree') {
   const types = Object.entries(REPORT_LABELS).map(([id, label]) =>
     `<button class="rtype-inline-btn" data-type="${id}">${REPORT_ICONS[id]} ${label}</button>`
   ).join('');
@@ -250,11 +591,11 @@ function openReportPopup(path, latlng) {
     .openOn(map);
 
   setTimeout(() => {
-    let selectedType = 'fallen_tree';
+    let selectedType = defaultType;
     let photoData = null;
 
-    const firstBtn = document.querySelector(`#rtypes-${path.id} .rtype-inline-btn`);
-    if (firstBtn) firstBtn.classList.add('active');
+    const defaultBtn = document.querySelector(`#rtypes-${path.id} .rtype-inline-btn[data-type="${defaultType}"]`);
+    if (defaultBtn) defaultBtn.classList.add('active');
 
     document.querySelectorAll(`#rtypes-${path.id} .rtype-inline-btn`).forEach(btn => {
       btn.addEventListener('click', () => {
@@ -297,6 +638,7 @@ async function submitReport(path, type, note, photo = null, latlng = null) {
     });
     if (res.ok) {
       const report = await res.json();
+      if (latlng) { report.lat = latlng.lat; report.lon = latlng.lng; }
       placeReportMarker(report, path.coordinates);
       showToast('✅ Signalement envoyé — merci !');
     } else {
@@ -601,21 +943,35 @@ async function downloadOfflineTiles() {
   if (tiles.length > 3000) { showToast('Zone trop grande — dézoomez un peu'); return; }
 
   const btn = document.getElementById('btnOffline');
-  if (btn) { btn.querySelector('.btn-emoji').textContent = '⏳'; btn.disabled = true; }
-  showToast(`📥 ${tiles.length} tuiles en cours de téléchargement…`);
+  if (btn) {
+    if (btn.dataset.downloading === '1') return;
+    btn.dataset.downloading = '1';
+    btn.querySelector('.btn-emoji').textContent = '⏳';
+    btn.querySelector('.btn-label').textContent = '0%';
+    btn.disabled = true;
+  }
 
   try {
     const cache = await caches.open('bwr-offline-tiles');
     let done = 0;
-    for (const url of tiles) {
-      try { await cache.put(url, await fetch(url, { mode: 'no-cors' })); } catch {}
-      done++;
+    const BATCH = 8;
+    for (let i = 0; i < tiles.length; i += BATCH) {
+      await Promise.all(tiles.slice(i, i + BATCH).map(async tileUrl => {
+        try { await cache.put(tileUrl, await fetch(tileUrl, { mode: 'no-cors' })); } catch {}
+        done++;
+      }));
+      if (btn) btn.querySelector('.btn-label').textContent = `${Math.round(done / tiles.length * 100)}%`;
     }
     localStorage.setItem('bwr_offline_areas', String(savedCount + 1));
-    showToast(`✅ Zone sauvegardée hors-ligne ! (${done} tuiles · ${savedCount + 1}/${maxAreas})`);
+    showToast(`✅ Zone sauvegardée hors-ligne ! (${tiles.length} tuiles · ${savedCount + 1}/${maxAreas})`);
   } catch { showToast('Erreur lors du téléchargement hors-ligne'); }
   finally {
-    if (btn) { btn.querySelector('.btn-emoji').textContent = '💾'; btn.disabled = false; }
+    if (btn) {
+      delete btn.dataset.downloading;
+      btn.querySelector('.btn-emoji').textContent = '💾';
+      btn.querySelector('.btn-label').textContent = 'Hors-ligne';
+      btn.disabled = false;
+    }
   }
 }
 

@@ -16,7 +16,7 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
   color: var(--text);
   background: var(--white);
   line-height: 1.6;
@@ -922,6 +922,11 @@ textarea.cf-input { resize: vertical; min-height: 100px; }
   .nav-cta { display: none; }
 }
 
+@media (max-width: 480px) {
+  .hero-visual { display: none; }
+  .hero-content { padding-bottom: 48px; }
+}
+
 @media (max-width: 600px) {
   .features-grid { grid-template-columns: 1fr; }
   .hero-stats { flex-direction: column; align-items: flex-start; gap: 12px; }
@@ -930,5 +935,26 @@ textarea.cf-input { resize: vertical; min-height: 100px; }
   .step-arrow { transform: rotate(90deg); }
   .footer-inner { flex-direction: column; align-items: flex-start; gap: 16px; }
   .footer-links { flex-wrap: wrap; gap: 16px; }
-  .section-title { margin-bottom: 28px; }
+  .section-title { margin-bottom: 20px; }
+
+  /* Reduce massive section padding on mobile */
+  .features  { padding: 56px 0; }
+  .howto     { padding: 56px 0; }
+  .about     { padding: 56px 0; }
+  .contact   { padding: 56px 0; }
+
+  /* Hero — tighter on small phones */
+  .hero-content { padding: 80px 20px 24px; }
+  .hero-visual  { padding: 0 20px 40px; }
+
+  /* Shrink map mockup so it doesn't dominate the screen */
+  .map-mockup { max-width: 280px; }
+
+  /* Tighten about section */
+  .about-inner { gap: 24px; }
+
+  /* Hero actions — stack on very narrow screens */
+  .hero-actions { flex-direction: column; }
+  .btn-hero-primary,
+  .btn-hero-secondary { text-align: center; }
 }

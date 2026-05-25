@@ -25,7 +25,7 @@ const { can, limitOf, requiredTier, normalisePlan, readWeekly, bumpWeekly, check
 describe('normalisePlan', () => {
   test('null → free',      () => assert.equal(normalisePlan(null),      'free'));
   test('undefined → free', () => assert.equal(normalisePlan(undefined), 'free'));
-  test('admin → gold',     () => assert.equal(normalisePlan('admin'),   'gold'));
+  test('unknown value passthrough', () => assert.equal(normalisePlan('unknown'), 'unknown'));
   test('free passthrough', () => assert.equal(normalisePlan('free'),    'free'));
   test('silver passthrough', () => assert.equal(normalisePlan('silver'), 'silver'));
   test('gold passthrough',   () => assert.equal(normalisePlan('gold'),   'gold'));
@@ -49,9 +49,9 @@ describe('can', () => {
   test('carrefours: silver → truthy', () => assert.ok(can('carrefours', 'silver')));
   test('carrefours: gold → truthy',   () => assert.ok(can('carrefours', 'gold')));
 
-  // Admin plan === gold
-  test('satellite_tiles: admin → true', () => assert.equal(can('satellite_tiles', 'admin'), true));
-  test('kml_export: admin → true',      () => assert.equal(can('kml_export', 'admin'), true));
+  // Admins always receive plan:'gold' from the server — test gold directly
+  test('satellite_tiles: gold → true (admin receives gold)', () => assert.equal(can('satellite_tiles', 'gold'), true));
+  test('kml_export: gold → true (admin receives gold)',      () => assert.equal(can('kml_export', 'gold'), true));
 
   // Unknown feature → false
   test('unknown feature → false', () => assert.equal(can('nonexistent_feature', 'gold'), false));
@@ -196,9 +196,9 @@ describe('checkRouteQuota', () => {
     assert.ok(checkRouteQuota('gold').ok);
   });
 
-  test('admin plan → always ok (normalised to gold)', () => {
+  test('gold plan → always ok (admins receive gold)', () => {
     for (let i = 0; i < 10; i++) bumpWeekly();
-    assert.ok(checkRouteQuota('admin').ok);
+    assert.ok(checkRouteQuota('gold').ok);
   });
 
   test('null plan treated as free → blocks at 3', () => {

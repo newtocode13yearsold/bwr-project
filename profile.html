@@ -177,56 +177,61 @@
             </div>
             <div class="xp-bar"><div class="xp-fill" id="goalFill"></div></div>
           </div>
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <input type="number" id="goalInput" class="input-field" min="1" placeholder="Objectif km" style="flex:1">
-            <button class="btn-save" id="goalSave" style="width:auto;padding:10px 18px">Sauver</button>
+          <div class="goal-input-row">
+            <input type="number" id="goalInput" class="input-field" min="1" placeholder="Objectif km">
+            <button class="btn-save btn-save--compact" id="goalSave">Sauver</button>
           </div>
         </div>
 
         <!-- AI Suggestion (Silver weekly / Gold daily) -->
         <div class="feature-block" id="suggestionBlock" style="display:none">
           <h3 class="feature-title">🤖 Suggestion du jour</h3>
-          <div class="suggestion-box" id="suggestionText" style="display:flex;gap:12px;align-items:flex-start;background:#f0fdf4;border-radius:10px;padding:12px 14px;margin-bottom:12px">
-            <span style="font-size:1.6rem">⏳</span>
-            <div><p style="margin:0;font-size:0.88rem;color:#374151">Analyse de la météo en cours…</p></div>
+          <div class="suggestion-box" id="suggestionText">
+            <span class="suggestion-icon">⏳</span>
+            <div><p class="suggestion-text">Analyse de la météo en cours…</p></div>
           </div>
-          <a href="routes.html" class="btn-save" id="suggestionBtn" style="display:inline-block;text-decoration:none;font-size:0.88rem;padding:9px 18px">Générer ce trajet →</a>
+          <a href="routes.html" class="btn-save btn-save--inline" id="suggestionBtn">Générer ce trajet →</a>
         </div>
 
         <!-- Weather (Gold only) -->
         <div class="feature-block" id="weatherBlock" style="display:none">
           <h3 class="feature-title">🌦️ Météo forêt en temps réel</h3>
-          <div class="weather-box">
-            <span class="weather-icon" id="weatherIcon">⏳</span>
-            <div class="weather-info">
-              <strong id="weatherTemp">—</strong>
-              <span id="weatherLabel">Chargement…</span>
-              <small id="weatherWind"></small>
+          <div class="weather-card">
+            <!-- Current conditions row -->
+            <div class="weather-current">
+              <span class="weather-icon" id="weatherIcon">⏳</span>
+              <div class="weather-main">
+                <strong id="weatherTemp">—</strong>
+                <span id="weatherLabel">Chargement…</span>
+                <span id="weatherFeels"></span>
+              </div>
+              <div id="weatherSuitability" class="weather-suit"></div>
             </div>
+            <!-- Details row -->
+            <div class="weather-details" id="weatherDetails" style="display:none">
+              <span id="wdWind"></span>
+              <span id="wdHumidity"></span>
+              <span id="wdPrecip"></span>
+            </div>
+            <!-- 4-day forecast strip -->
+            <div class="weather-forecast" id="weatherForecast"></div>
           </div>
-        </div>
-
-        <!-- Discord (Gold only) -->
-        <div class="feature-block" id="discordBlock" style="display:none">
-          <h3 class="feature-title">💬 Communauté Discord</h3>
-          <p style="font-size:0.88rem;color:#6b7280;margin-bottom:10px">Rejoins les autres membres Or sur notre serveur Discord exclusif.</p>
-          <a href="https://discord.gg/" target="_blank" rel="noopener" class="btn-discord">💬 Rejoindre le Discord</a>
         </div>
 
         <!-- Push alerts (Gold only) -->
         <div class="feature-block" id="pushAlertsBlock" style="display:none">
           <h3 class="feature-title">🔔 Alertes chemins en temps réel</h3>
-          <p style="font-size:0.88rem;color:#6b7280;margin-bottom:10px">Reçois une notification sur ton téléphone dès qu'un chemin change de statut.</p>
-          <div id="pushAlertsStatus" style="font-size:0.88rem;margin-bottom:8px"></div>
-          <div id="pushAlertsSetup" style="display:none;background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:10px">
-            <p style="font-size:0.85rem;font-weight:600;color:#374151;margin:0 0 6px">Ton canal de notification :</p>
-            <code id="ntfyChannel" style="display:block;background:#e2e8f0;border-radius:6px;padding:8px 10px;font-size:0.85rem;color:#1e293b;word-break:break-all">—</code>
-            <p style="font-size:0.82rem;color:#6b7280;margin:10px 0 6px">
+          <p class="feature-desc">Reçois une notification sur ton téléphone dès qu'un chemin change de statut.</p>
+          <div id="pushAlertsStatus" class="push-status"></div>
+          <div id="pushAlertsSetup" class="push-setup-box" style="display:none">
+            <p class="push-setup-label">Ton canal de notification :</p>
+            <code id="ntfyChannel" class="ntfy-channel">—</code>
+            <p class="push-setup-instructions">
               1. Installe l'app <strong>ntfy.sh</strong> (gratuit) sur ton téléphone<br>
               2. Abonne-toi au canal ci-dessus<br>
               3. Tu recevras les alertes automatiquement
             </p>
-            <a href="https://ntfy.sh" target="_blank" rel="noopener" class="btn-save" style="display:inline-block;font-size:0.82rem;text-decoration:none;padding:7px 14px">📲 Télécharger ntfy</a>
+            <a href="https://ntfy.sh" target="_blank" rel="noopener" class="btn-save btn-save--small">📲 Télécharger ntfy</a>
           </div>
           <button class="btn-save" id="btnToggleAlerts">🔔 Activer les alertes</button>
         </div>
@@ -234,8 +239,8 @@
         <!-- Priority support (Gold only) -->
         <div class="feature-block" id="supportBlock" style="display:none">
           <h3 class="feature-title">⚡ Support prioritaire</h3>
-          <p style="font-size:0.88rem;color:#6b7280">Tes messages sont traités en priorité — réponse sous 12h en moyenne.</p>
-          <p style="font-size:0.88rem;color:#6b7280;margin-top:6px">✉️ <a href="mailto:ciril8596@gmail.com?subject=[Or] Question prioritaire">ciril8596@gmail.com</a></p>
+          <p class="feature-desc">Tes messages sont traités en priorité — réponse sous 12h en moyenne.</p>
+          <p class="feature-desc feature-desc--mt">✉️ <a href="mailto:ciril8596@gmail.com?subject=[Or] Question prioritaire">ciril8596@gmail.com</a></p>
         </div>
       </div>
 
@@ -310,9 +315,25 @@
     </div>
   </div>
 
+  <nav class="bottom-nav" aria-label="Navigation principale">
+    <a href="map.html" class="bnav-item">
+      <span class="bnav-icon">🗺</span>
+      <span class="bnav-label">Carte</span>
+    </a>
+    <a href="routes.html" class="bnav-item">
+      <span class="bnav-icon">🧭</span>
+      <span class="bnav-label">Trajets</span>
+    </a>
+    <a href="profile.html" class="bnav-item active">
+      <span class="bnav-icon">👤</span>
+      <span class="bnav-label">Profil</span>
+    </a>
+  </nav>
+
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/features.js"></script>
   <script src="js/profile.js"></script>
+  <script src="js/install.js"></script>
 </body>
 </html>

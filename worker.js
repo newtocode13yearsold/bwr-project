@@ -52,6 +52,12 @@ async function putReport(env, report) {
   await env.BWR_KV.put(`report:${report.id}`, JSON.stringify(report));
 }
 
+// Returns the effective plan for a user, treating admin role as gold.
+function effectivePlan(user) {
+  if (user.role === 'admin') return 'gold';
+  return user.plan || 'free';
+}
+
 async function hashPasswordLegacy(password, salt) {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + salt);
@@ -99,6 +105,21 @@ function isoMonday(d = new Date()) {
   monday.setDate(d.getDate() - day);
   monday.setHours(0, 0, 0, 0);
   return monday.toISOString().slice(0, 10);
+}
+
+// ── Generic fixed-window rate limiter ────────────────────────────────────────
+// KV key: ratelimit:{scope}:{key} → { count }  TTL = windowSeconds
+// Returns true when the request is allowed, false when the limit is exceeded.
+async function checkRateLimit(env, scope, key, maxCount, windowSeconds) {
+  const kvKey = `ratelimit:${scope}:${key}`;
+  const raw = await env.BWR_KV.get(kvKey);
+  const count = raw ? parseInt(raw, 10) : 0;
+  if (count >= maxCount) return false;
+  // Increment; reset TTL only on first write so the window is fixed from first hit.
+  await env.BWR_KV.put(kvKey, String(count + 1), {
+    expirationTtl: raw ? undefined : windowSeconds,
+  });
+  return true;
 }
 
 // ── Brute-force / login rate-limit helpers ────────────────────────────────────
@@ -484,6 +505,9 @@ export default {
       const user = await getUserFromToken(env, request);
       if (!user) return fail('Non authentifié.', 401);
 
+      // daily_wheel is silver+ only
+      if (effectivePlan(user) === 'free') return fail('La roue est disponible avec le plan Argent.', 403);
+
       const { prizeType, plan: prizePlan, days } = await request.json();
       if (prizeType !== 'plan') return json({ success: true });
 
@@ -564,6 +588,11 @@ export default {
 
       try {
         const { profile, coordinates, round_trip } = await request.json();
+
+        // loop_mode is silver+
+        if (round_trip && effectivePlan(user) === 'free') {
+          return fail('Le mode boucle est disponible avec le plan Argent.', 403);
+        }
 
         const orsBody = { coordinates };
         if (round_trip) orsBody.options = { round_trip };
@@ -689,10 +718,13 @@ export default {
       return json(await listItems(env, 'path:'));
     }
 
-    // ── POST /api/paths — admin only ──────────────────────────────────────────
+    // ── POST /api/paths — admin or silver+ ───────────────────────────────────
     if (pathname === '/api/paths' && request.method === 'POST') {
       const user = await getUserFromToken(env, request);
-      if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
+      if (!user) return fail('Connexion requise.', 401);
+      const plan = effectivePlan(user);
+      const allowed = plan === 'gold' || plan === 'silver';
+      if (!allowed) return fail('Abonnement Argent requis.', 403);
 
       const body = await request.json();
       const newPath = {
@@ -743,10 +775,53 @@ export default {
       return json(updated);
     }
 
-    // ── DELETE /api/paths/:id — admin only ────────────────────────────────────
+    // ── PATCH /api/paths/:id — silver+ users, status-only update ────────────
+    if (pathname.startsWith('/api/paths/') && request.method === 'PATCH') {
+      const user = await getUserFromToken(env, request);
+      if (!user) return fail('Connexion requise.', 401);
+      const plan = effectivePlan(user);
+      const allowed = plan === 'gold' || plan === 'silver';
+      if (!allowed) return fail('Abonnement Argent requis.', 403);
+
+      const id = pathname.split('/')[3];
+      const body = await request.json();
+      const existing = await getPath(env, id);
+      if (!existing) return fail('Chemin introuvable.', 404);
+
+      const validStatuses = ['easy', 'medium', 'hard', 'not_passable', 'no_bike'];
+      if (!body.status || !validStatuses.includes(body.status)) {
+        return fail('Statut invalide.', 400);
+      }
+
+      const oldStatus = existing.status;
+      const updated = { ...existing, status: body.status };
+      await putPath(env, updated);
+
+      if (body.status !== oldStatus) {
+        const statusLabels = { easy: 'Facile', medium: 'Moyen', hard: 'Difficile', not_passable: 'Impraticable', no_bike: 'Vélo interdit' };
+        const allUsers = await listItems(env, 'user:');
+        const alertUsers = allUsers.filter(u => u.alertsEnabled && u.alertsChannel);
+        for (const u of alertUsers) {
+          try {
+            await fetch(`https://ntfy.sh/${u.alertsChannel}`, {
+              method: 'POST',
+              headers: { 'Title': 'BWR — Chemin mis à jour', 'Tags': 'forest,warning', 'Content-Type': 'text/plain; charset=utf-8' },
+              body: `"${updated.name || 'Chemin'}" : ${statusLabels[oldStatus] || oldStatus} → ${statusLabels[body.status] || body.status}`,
+            });
+          } catch {}
+        }
+      }
+
+      return json(updated);
+    }
+
+    // ── DELETE /api/paths/:id — admin or silver+ ─────────────────────────────
     if (pathname.startsWith('/api/paths/') && request.method === 'DELETE') {
       const user = await getUserFromToken(env, request);
-      if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
+      if (!user) return fail('Connexion requise.', 401);
+      const plan = effectivePlan(user);
+      const allowed = plan === 'gold' || plan === 'silver';
+      if (!allowed) return fail('Abonnement Argent requis.', 403);
 
       const id = pathname.split('/')[3];
       await env.BWR_KV.delete(`path:${id}`);
@@ -788,8 +863,12 @@ export default {
       });
     }
 
-    // ── POST /api/reports — any user ─────────────────────────────────────────
+    // ── POST /api/reports — silver+ ──────────────────────────────────────────
     if (pathname === '/api/reports' && request.method === 'POST') {
+      const reporter = await getUserFromToken(env, request);
+      if (!reporter) return fail('Connexion requise.', 401);
+      if (effectivePlan(reporter) === 'free') return fail('Abonnement Argent requis pour signaler un problème.', 403);
+
       const body = await request.json();
 
       let pathName = 'Chemin inconnu';
@@ -816,7 +895,7 @@ export default {
 
       await putReport(env, report);
 
-      const typeLabels = { fallen_tree: 'Arbre tombé', flooded: 'Chemin inondé', closed: 'Chemin fermé', danger: 'Danger', other: 'Autre' };
+      const typeLabels = { fallen_tree: 'Arbre tombé', flooded: 'Chemin inondé', muddy: 'Boueux', rutted: 'Ornières', broken_sign: 'Carrefour cassé', closed: 'Chemin fermé', danger: 'Danger', other: 'Autre' };
       try {
         await fetch('https://ntfy.sh/bwr-ciril8596', {
           method: 'POST',
@@ -843,6 +922,9 @@ export default {
 
     // ── POST /api/contact — send a contact message ──────────────────────────
     if (pathname === '/api/contact' && request.method === 'POST') {
+      const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+      if (!await checkRateLimit(env, 'contact', ip, 2, 3600))
+        return fail('Trop de messages. Réessayez dans une heure.', 429);
       const { name, email, message } = await request.json();
       if (!name || !email || !message) return fail('Tous les champs sont obligatoires.');
 
@@ -862,12 +944,11 @@ export default {
       return json({ success: true });
     }
 
-    // ── POST /api/push/subscribe — enable path alerts (silver/gold users) ─────
+    // ── POST /api/push/subscribe — enable path alerts (gold only) ─────────────
     if (pathname === '/api/push/subscribe' && request.method === 'POST') {
       const user = await getUserFromToken(env, request);
       if (!user) return fail('Non authentifié.', 401);
-      const plan = user.plan || 'free';
-      if (plan === 'free') return fail('Les alertes push sont disponibles avec le plan Or.', 403);
+      if (effectivePlan(user) !== 'gold') return fail('Les alertes push sont disponibles avec le plan Or.', 403);
 
       const channel = `bwr-u-${user.id.slice(0, 8)}`;
       await putUser(env, { ...user, alertsEnabled: true, alertsChannel: channel });
