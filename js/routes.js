@@ -413,10 +413,10 @@ async function generateRoute() {
     btn.classList.add('loading');
     btn.disabled = true;
     try {
-      const qRes = await fetch(`${API_URL}/api/auth/consume-route`, {
+      const qRes = await fetchWithTimeout(`${API_URL}/api/auth/consume-route`, {
         method: 'POST',
         headers: { ...authHeader() },
-      });
+      }, 8000);
       const qData = await qRes.json();
       if (!qRes.ok || !qData.ok) {
         showQuotaExceededModal({ used: qData.used ?? 3, limit: qData.limit ?? 3 });
@@ -479,7 +479,11 @@ async function generateRoute() {
 
   updateQuotaStrip();
 
-  displayRoute(result, mode === 'loop' ? distanceKm : null);
+  try {
+    displayRoute(result, mode === 'loop' ? distanceKm : null);
+  } catch (err) {
+    console.error('displayRoute error:', err);
+  }
 
   btn.textContent = 'Calculer le trajet';
   btn.classList.remove('loading');
