@@ -20,7 +20,7 @@
   const FEATURES = {
     /* — Core routing — */
     routes_per_week:     { free: 3,     silver: Infinity, gold: Infinity },
-    loop_mode:           { free: false, silver: true,     gold: true     },
+    loop_mode:           { free: true,  silver: true,     gold: true     },
     difficulty_hard:     { free: false, silver: true,     gold: true     },
 
     /* — Map & layers — */
@@ -54,6 +54,10 @@
     badges_free:         { free: true,  silver: true,     gold: true     },
     badges_silver:       { free: false, silver: true,     gold: true     },
     badges_gold:         { free: false, silver: false,    gold: true     },
+
+    /* — Route history & sharing — */
+    route_history:       { free: false, silver: true,     gold: true     },
+    route_sharing:       { free: false, silver: true,     gold: true     },
 
     /* — Support / perks — */
     priority_support:    { free: false, silver: false,    gold: true     },

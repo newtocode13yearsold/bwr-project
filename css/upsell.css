@@ -193,20 +193,43 @@
   border: 1px solid var(--forest-300);
   border-radius: var(--radius-md);
   padding: 14px 16px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   font-size: 0.86rem;
 }
 .quota-strip.hidden { display: none; }
-.quota-strip .qs-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+/* Urgency states */
+.quota-strip.qs-warn {
+  background: linear-gradient(135deg, #fff7ed 0%, var(--surface-0) 100%);
+  border-color: var(--warning, #f97316);
 }
-.quota-strip .qs-text strong { color: var(--forest-900); font-size: 0.95rem; }
-.quota-strip .qs-sub { color: var(--text-muted); font-size: 0.78rem; }
+.quota-strip.qs-danger {
+  background: linear-gradient(135deg, #fef2f2 0%, var(--surface-0) 100%);
+  border-color: var(--danger, #ef4444);
+}
+.quota-strip .qs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.quota-strip .qs-label { color: var(--text-muted); font-size: 0.78rem; }
+.quota-strip .qs-count { color: var(--forest-900); font-size: 0.95rem; font-weight: 700; }
+.quota-strip.qs-warn  .qs-count { color: #c2410c; }
+.quota-strip.qs-danger .qs-count { color: #b91c1c; }
+.quota-strip .qs-remaining {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.quota-strip.qs-warn  .qs-remaining { background: #ffedd5; color: #c2410c; }
+.quota-strip.qs-danger .qs-remaining { background: #fee2e2; color: #b91c1c; }
 .quota-strip .qs-bar {
   height: 6px;
   background: var(--surface-3);
@@ -217,16 +240,20 @@
   height: 100%;
   background: linear-gradient(90deg, var(--forest-500), var(--lime-500));
   border-radius: inherit;
-  transition: width var(--dur) var(--ease-out);
+  transition: width 0.4s ease-out;
 }
+.quota-strip.qs-warn  .qs-fill { background: linear-gradient(90deg, #fb923c, #f97316); }
+.quota-strip.qs-danger .qs-fill { background: linear-gradient(90deg, #f87171, #ef4444); }
 .quota-strip .qs-cta {
   display: inline-block;
-  margin-top: 4px;
+  margin-top: 2px;
   color: var(--forest-700);
   font-weight: 600;
   font-size: 0.82rem;
   text-decoration: none;
 }
+.quota-strip.qs-warn  .qs-cta { color: #c2410c; }
+.quota-strip.qs-danger .qs-cta { color: #b91c1c; }
 .quota-strip .qs-cta:hover { text-decoration: underline; }
 
 /* ── Profile-page quota strip ────────────────────────────────────────────── */

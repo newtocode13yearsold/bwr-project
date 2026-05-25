@@ -304,9 +304,9 @@
   </main>
 
   <!-- Delete confirmation modal -->
-  <div class="modal-overlay hidden" id="deleteModal">
+  <div class="modal-overlay hidden" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
     <div class="modal-box">
-      <h3 class="modal-title">Supprimer le compte ?</h3>
+      <h3 class="modal-title" id="deleteModalTitle">Supprimer le compte ?</h3>
       <p class="modal-body">Cette action est <strong>irréversible</strong>. Ton compte et toutes tes données seront définitivement supprimés.</p>
       <div class="modal-actions">
         <button class="btn-modal-cancel" id="btnCancelDelete">Annuler</button>

@@ -9,6 +9,7 @@ let routeLayer = null;
 let savedPathsLayer = null;
 let savedPaths = [];       // raw paths array — used by the graph router
 let pickingPoint = null;
+let lastRoute = null;      // most recent computed route — used by save/share
 
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -20,6 +21,9 @@ let pickingPoint = null;
   loadSavedPaths();
   applyPlanGates();
   updateQuotaStrip();
+  initSaveShareButtons();
+  initRouteHistory();
+  await handleSharedRouteParam();
 })();
 
 // ── Plan-based UI gating ──────────────────────────────────────────────────────
@@ -28,11 +32,6 @@ let pickingPoint = null;
 function applyPlanGates() {
   const plan = currentUser?.plan || 'free';
 
-  // Lock loop mode if disallowed (free users currently)
-  if (!BWR.can('loop_mode', plan)) {
-    const loopCard = document.querySelector('.mode-card[data-mode="loop"]');
-    if (loopCard) markCardLocked(loopCard, 'silver', 'Mode boucle');
-  }
   // Lock multi-stop (visual hint only — there is no button yet)
 
   // Lock Hard difficulty
@@ -124,14 +123,25 @@ function updateQuotaStrip() {
   const count = stats.weekStart === isoMonday() ? (stats.weeklyRoutes || 0) : 0;
   const remaining = Math.max(0, limit - count);
   const pct = Math.min(100, (count / limit) * 100);
-  stripEl.classList.remove('hidden');
+
+  // Urgency: warn at 1 remaining, danger at 0
+  const urgency = remaining === 0 ? 'qs-danger' : remaining === 1 ? 'qs-warn' : '';
+  stripEl.className = `quota-strip${urgency ? ' ' + urgency : ''}`;
+
+  const remainingLabel = remaining === 0
+    ? 'Limite atteinte'
+    : `${remaining} restant${remaining > 1 ? 's' : ''}`;
+
   stripEl.innerHTML = `
-    <div class="qs-text">
-      <strong>${count} / ${limit}</strong> trajets utilisés cette semaine
-      <span class="qs-sub">${remaining > 0 ? `${remaining} restant${remaining > 1 ? 's' : ''}` : 'Limite atteinte'}</span>
+    <div class="qs-header">
+      <span class="qs-label">Trajets cette semaine</span>
+      <span class="qs-remaining">${remainingLabel}</span>
     </div>
     <div class="qs-bar"><div class="qs-fill" style="width:${pct}%"></div></div>
-    <a href="plans.html" class="qs-cta">Passer à Argent — illimité →</a>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <span class="qs-count">${count} / ${limit}</span>
+      <a href="plans.html" class="qs-cta">Illimité avec Argent →</a>
+    </div>
   `;
 }
 
@@ -615,6 +625,9 @@ async function routeLoop(sLat, sLng, targetKm) {
 function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   if (routeLayer) map.removeLayer(routeLayer);
 
+  lastRoute = { coords, meters, seconds };
+  setSaveShareEnabled(true);
+
   // Gold users can override route color (free/silver get default difficulty colors)
   const plan = currentUser?.plan || 'free';
   const customColor = BWR.can('custom_route_color', plan) ? localStorage.getItem('bwr_route_color') : null;
@@ -886,3 +899,298 @@ document.getElementById('btnReset').addEventListener('click', () => {
 
 function unlock(id) { document.getElementById(id)?.classList.remove('locked'); }
 function lock(id)   { document.getElementById(id)?.classList.add('locked'); }
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, duration = 2400) {
+  let t = document.getElementById('bwrToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'bwrToast';
+    t.className = 'bwr-toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── Save / share buttons ──────────────────────────────────────────────────────
+function setSaveShareEnabled(enabled) {
+  const plan = currentUser?.plan || 'free';
+  const canSave = BWR.can('route_history', plan);
+  const btnSave  = document.getElementById('btnSaveRoute');
+  const btnShare = document.getElementById('btnShareRoute');
+  if (btnSave)  btnSave.disabled  = !enabled || !canSave;
+  if (btnShare) btnShare.disabled = !enabled || !canSave;
+}
+
+function initSaveShareButtons() {
+  const plan = currentUser?.plan || 'free';
+  const canSave = BWR.can('route_history', plan);
+
+  const btnSave = document.getElementById('btnSaveRoute');
+  const btnShare = document.getElementById('btnShareRoute');
+
+  if (!btnSave || !btnShare) return;
+
+  btnSave.disabled  = true;
+  btnShare.disabled = true;
+
+  if (!canSave) {
+    btnSave.onclick = () => showUpgradeModal('silver', 'La sauvegarde de trajets');
+    btnShare.onclick = () => showUpgradeModal('silver', 'Le partage de trajets');
+    return;
+  }
+
+  btnSave.onclick  = saveCurrentRoute;
+  btnShare.onclick = shareCurrentRoute;
+}
+
+async function saveCurrentRoute() {
+  if (!lastRoute) return;
+  const btn = document.getElementById('btnSaveRoute');
+  btn.disabled = true;
+  btn.textContent = '⏳ Sauvegarde…';
+
+  const typeLabelShort = { foot: 'Forestier', bike: 'Cyclable', champs: 'Champs', mix: 'Mix' }[pathType] || '';
+  const defaultName = `${mode === 'loop' ? 'Boucle' : 'Trajet'} ${typeLabelShort} ${(lastRoute.meters / 1000).toFixed(1)} km`;
+
+  try {
+    const res = await fetch(`${API_URL}/api/savedroutes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({
+        name: defaultName,
+        coords: lastRoute.coords,
+        meters: lastRoute.meters,
+        seconds: lastRoute.seconds,
+        difficulty,
+        pathType,
+        mode,
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || `HTTP ${res.status}`);
+    const { shareToken } = await res.json();
+    lastRoute._shareToken = shareToken;
+    showToast('Trajet sauvegardé !');
+    refreshHistoryIfOpen();
+  } catch (e) {
+    showToast(`Erreur : ${e.message}`);
+  } finally {
+    btn.textContent = '💾 Sauvegarder';
+    btn.disabled = false;
+  }
+}
+
+async function shareCurrentRoute() {
+  if (!lastRoute) return;
+
+  // If we already have a share token from saving, use it directly
+  if (lastRoute._shareToken) {
+    copyShareLink(lastRoute._shareToken);
+    return;
+  }
+
+  // Otherwise save first, then share
+  const btn = document.getElementById('btnShareRoute');
+  btn.disabled = true;
+  btn.textContent = '⏳…';
+
+  const typeLabelShort = { foot: 'Forestier', bike: 'Cyclable', champs: 'Champs', mix: 'Mix' }[pathType] || '';
+  const defaultName = `${mode === 'loop' ? 'Boucle' : 'Trajet'} ${typeLabelShort} ${(lastRoute.meters / 1000).toFixed(1)} km`;
+
+  try {
+    const res = await fetch(`${API_URL}/api/savedroutes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({
+        name: defaultName,
+        coords: lastRoute.coords,
+        meters: lastRoute.meters,
+        seconds: lastRoute.seconds,
+        difficulty,
+        pathType,
+        mode,
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || `HTTP ${res.status}`);
+    const { shareToken } = await res.json();
+    lastRoute._shareToken = shareToken;
+    copyShareLink(shareToken);
+    refreshHistoryIfOpen();
+  } catch (e) {
+    showToast(`Erreur : ${e.message}`);
+  } finally {
+    btn.textContent = '🔗 Partager';
+    btn.disabled = false;
+  }
+}
+
+function copyShareLink(token) {
+  const url = `${location.origin}${location.pathname}?share=${token}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showToast('Lien copié dans le presse-papiers !'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showToast('Lien copié !');
+  }
+}
+
+// ── Route history panel ───────────────────────────────────────────────────────
+let historyOpen = false;
+let historyLoaded = false;
+
+function initRouteHistory() {
+  const plan = currentUser?.plan || 'free';
+  const panelEl = document.getElementById('routeHistory');
+  if (!panelEl) return;
+
+  if (!BWR.can('route_history', plan)) {
+    panelEl.classList.remove('hidden');
+    const body = document.getElementById('historyBody');
+    body.style.display = 'none';
+    body.innerHTML = `
+      <div class="history-empty">
+        <p>🔒 Sauvegardez vos trajets avec le plan Argent.</p>
+        <a href="plans.html" style="color:#6d28d9;font-weight:700">Voir les plans →</a>
+      </div>`;
+    document.getElementById('historyToggle').addEventListener('click', toggleHistory);
+    return;
+  }
+
+  panelEl.classList.remove('hidden');
+  document.getElementById('historyBody').style.display = 'none';
+  document.getElementById('historyToggle').addEventListener('click', toggleHistory);
+}
+
+function toggleHistory() {
+  historyOpen = !historyOpen;
+  document.getElementById('historyChevron').classList.toggle('open', historyOpen);
+  const body = document.getElementById('historyBody');
+  body.style.display = historyOpen ? 'block' : 'none';
+
+  if (historyOpen && !historyLoaded) {
+    fetchAndRenderHistory();
+  }
+}
+
+function refreshHistoryIfOpen() {
+  if (historyOpen) fetchAndRenderHistory();
+  else historyLoaded = false;
+}
+
+async function fetchAndRenderHistory() {
+  const listEl   = document.getElementById('historyList');
+  const loadEl   = document.getElementById('historyLoading');
+  loadEl.style.display = 'block';
+  listEl.innerHTML = '';
+
+  try {
+    const res = await fetch(`${API_URL}/api/savedroutes`, { headers: authHeader() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const routes = await res.json();
+    historyLoaded = true;
+    loadEl.style.display = 'none';
+    if (!routes.length) {
+      listEl.innerHTML = '<div class="history-empty">Aucun trajet sauvegardé.</div>';
+      return;
+    }
+    listEl.innerHTML = routes.map(r => {
+      const km    = (r.meters / 1000).toFixed(1);
+      const date  = new Date(r.savedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+      const modeIcon = r.mode === 'loop' ? '🔄' : '➡️';
+      return `
+        <div class="history-item" data-id="${r.id}" data-token="${r.shareToken}">
+          <div class="history-item-info">
+            <div class="history-item-name">${escapeHtml(r.name)}</div>
+            <div class="history-item-meta">${modeIcon} ${km} km · ${date}</div>
+          </div>
+          <div class="history-item-actions">
+            <button class="btn-history-replay" title="Afficher sur la carte">▶</button>
+            <button class="btn-history-share"  title="Copier le lien de partage">🔗</button>
+            <button class="btn-history-delete" title="Supprimer">🗑</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    listEl.querySelectorAll('.history-item').forEach(el => {
+      const id    = el.dataset.id;
+      const token = el.dataset.token;
+      el.querySelector('.btn-history-replay').onclick = () => replaySavedRoute(id);
+      el.querySelector('.btn-history-share').onclick  = () => copyShareLink(token);
+      el.querySelector('.btn-history-delete').onclick = () => deleteSavedRoute(id, el);
+    });
+  } catch (e) {
+    loadEl.style.display = 'none';
+    listEl.innerHTML = `<div class="history-empty">Erreur : ${e.message}</div>`;
+  }
+}
+
+async function replaySavedRoute(id) {
+  try {
+    const res = await fetch(`${API_URL}/api/savedroutes/${id}`, { headers: authHeader() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const route = await res.json();
+    if (routeLayer) map.removeLayer(routeLayer);
+    const color = route.difficulty === 'easy' ? '#22c55e' : route.difficulty === 'medium' ? '#f97316' : '#ef4444';
+    routeLayer = L.polyline(route.coords, { color, weight: 6, opacity: 0.9 }).addTo(map);
+    map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+    showToast('Trajet affiché sur la carte.');
+  } catch (e) {
+    showToast(`Erreur : ${e.message}`);
+  }
+}
+
+async function deleteSavedRoute(id, el) {
+  if (!confirm('Supprimer ce trajet ?')) return;
+  try {
+    const res = await fetch(`${API_URL}/api/savedroutes/${id}`, {
+      method: 'DELETE',
+      headers: authHeader(),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    el.remove();
+    const listEl = document.getElementById('historyList');
+    if (!listEl.children.length) listEl.innerHTML = '<div class="history-empty">Aucun trajet sauvegardé.</div>';
+    showToast('Trajet supprimé.');
+  } catch (e) {
+    showToast(`Erreur : ${e.message}`);
+  }
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ── Shared route from URL (?share=token) ──────────────────────────────────────
+async function handleSharedRouteParam() {
+  const token = new URLSearchParams(location.search).get('share');
+  if (!token) return;
+
+  try {
+    const res = await fetch(`${API_URL}/api/savedroutes/share/${token}`);
+    if (!res.ok) { showToast('Lien de partage invalide ou expiré.'); return; }
+    const route = await res.json();
+
+    const color = route.difficulty === 'easy' ? '#22c55e' : route.difficulty === 'medium' ? '#f97316' : '#ef4444';
+    if (routeLayer) map.removeLayer(routeLayer);
+    routeLayer = L.polyline(route.coords, { color, weight: 6, opacity: 0.9 }).addTo(map);
+    map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+
+    const km   = (route.meters / 1000).toFixed(2);
+    const modeIcon = route.mode === 'loop' ? '🔄 Boucle' : '➡️ A → B';
+    const banner = document.createElement('div');
+    banner.className = 'shared-route-banner';
+    banner.innerHTML = `🔗 Trajet partagé : <strong>${escapeHtml(route.name)}</strong> — ${modeIcon}, ${km} km`;
+    document.getElementById('routeResult').prepend(banner);
+    document.getElementById('routeResult').classList.remove('hidden');
+  } catch {
+    showToast('Impossible de charger le trajet partagé.');
+  }
+}

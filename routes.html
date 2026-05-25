@@ -36,9 +36,6 @@
     <!-- ── Sidebar ── -->
     <aside class="planner-sidebar">
 
-      <!-- Free-tier weekly quota strip (hidden for Silver/Gold) -->
-      <div class="quota-strip hidden" id="quotaStrip"></div>
-
       <!-- Step 1: Mode -->
       <div class="step" id="step1">
         <div class="step-header">
@@ -123,6 +120,8 @@
           <span class="step-number">4</span>
           <span class="step-title">Générer</span>
         </div>
+        <!-- Free-tier weekly quota strip (hidden for Silver/Gold) -->
+        <div class="quota-strip hidden" id="quotaStrip"></div>
         <button class="btn-generate" id="btnGenerate" disabled>Calculer le trajet</button>
       </div>
 
@@ -162,6 +161,22 @@
           <button class="btn-gpx btn-kml" id="btnKML">⬇ KML</button>
           <button class="btn-gpx btn-strava" id="btnStrava">↗ Strava</button>
           <button class="btn-reset" id="btnReset">← Nouveau trajet</button>
+        </div>
+        <div class="result-save-row">
+          <button class="btn-save-route" id="btnSaveRoute">💾 Sauvegarder</button>
+          <button class="btn-share-route" id="btnShareRoute">🔗 Partager</button>
+        </div>
+      </div>
+
+      <!-- Route history (Silver+) -->
+      <div class="route-history hidden" id="routeHistory">
+        <div class="history-header" id="historyToggle">
+          <span>📚 Mes trajets sauvegardés</span>
+          <span class="history-chevron" id="historyChevron">▾</span>
+        </div>
+        <div class="history-body" id="historyBody">
+          <div class="history-loading" id="historyLoading">Chargement…</div>
+          <div class="history-list" id="historyList"></div>
         </div>
       </div>
 

@@ -101,10 +101,10 @@
   <button class="contact-chip" id="btnOpenContact">✉ Contact</button>
 
   <!-- Contact modal -->
-  <div class="modal-overlay hidden" id="contactModal">
+  <div class="modal-overlay hidden" id="contactModal" role="dialog" aria-modal="true" aria-labelledby="contactModalLabel">
     <div class="modal-card contact-modal-card">
-      <button class="modal-close-x" id="btnCloseContact">✕</button>
-      <h3>Contactez-nous</h3>
+      <button class="modal-close-x" id="btnCloseContact" aria-label="Fermer">✕</button>
+      <h3 id="contactModalLabel">Contactez-nous</h3>
       <p style="font-size:0.85rem;color:#6b7280;margin-bottom:12px">Une question, suggestion ou erreur signalée ? Écrivez-nous :</p>
       <form id="mapContactForm" style="display:flex;flex-direction:column;gap:10px">
         <input type="text"  id="mcName"  class="input-field" placeholder="Votre nom" required>

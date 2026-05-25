@@ -34,8 +34,8 @@ describe('normalisePlan', () => {
 // ── can ───────────────────────────────────────────────────────────────────────
 
 describe('can', () => {
-  // Loop mode: silver+
-  test('loop_mode: free → false',   () => assert.equal(can('loop_mode', 'free'),   false));
+  // Loop mode: all tiers (free capped at 3/week via routes_per_week quota)
+  test('loop_mode: free → true',    () => assert.equal(can('loop_mode', 'free'),   true));
   test('loop_mode: silver → true',  () => assert.equal(can('loop_mode', 'silver'), true));
   test('loop_mode: gold → true',    () => assert.equal(can('loop_mode', 'gold'),   true));
 
@@ -90,8 +90,8 @@ describe('limitOf', () => {
   test('offline_cache: silver = 1', () => assert.equal(limitOf('offline_cache', 'silver'), 1));
   test('offline_cache: gold = 20',  () => assert.equal(limitOf('offline_cache', 'gold'),   20));
 
-  // Boolean features → 0 when false, Infinity when true
-  test('loop_mode: free → 0',        () => assert.equal(limitOf('loop_mode', 'free'),   0));
+  // Boolean features → Infinity when true
+  test('loop_mode: free → Infinity', () => assert.equal(limitOf('loop_mode', 'free'),   Infinity));
   test('loop_mode: silver → Infinity', () => assert.equal(limitOf('loop_mode', 'silver'), Infinity));
 
   test('kml_export: free → 0',   () => assert.equal(limitOf('kml_export', 'free'),   0));
@@ -103,7 +103,7 @@ describe('limitOf', () => {
 describe('requiredTier', () => {
   test('carrefours → free (available to all)', () => assert.equal(requiredTier('carrefours'), 'free'));
   test('routes_per_week → free (quota is 3, but truthy)', () => assert.equal(requiredTier('routes_per_week'), 'free'));
-  test('loop_mode → silver',         () => assert.equal(requiredTier('loop_mode'),         'silver'));
+  test('loop_mode → free',           () => assert.equal(requiredTier('loop_mode'),         'free'));
   test('elevation_profile → silver', () => assert.equal(requiredTier('elevation_profile'), 'silver'));
   test('gpx_export → silver',        () => assert.equal(requiredTier('gpx_export'),        'silver'));
   test('satellite_tiles → gold',     () => assert.equal(requiredTier('satellite_tiles'),   'gold'));

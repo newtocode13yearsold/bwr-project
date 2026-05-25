@@ -804,25 +804,52 @@ async function loadMembers() {
     }).join('');
     list.querySelectorAll('.member-plan-btn').forEach(btn => {
       btn.addEventListener('click', () =>
-        openMemberPlan(btn.dataset.id, btn.dataset.name, btn.dataset.plan, btn.dataset.base));
+        openMemberPlan(btn.dataset.id, btn.dataset.name, btn.dataset.plan, btn.dataset.base, btn));
     });
   } catch (e) {
     list.innerHTML = `<p style="color:red">Erreur réseau</p>`;
   }
 }
 
-function openMemberPlan(userId, name, plan, planBase) {
+// ── Focus trap helper ─────────────────────────────────────────────────────────
+function trapFocus(container) {
+  const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  function handler(e) {
+    const els = [...container.querySelectorAll(FOCUSABLE)];
+    if (!els.length) return;
+    const first = els[0], last = els[els.length - 1];
+    if (e.key === 'Tab') {
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+      else            { if (document.activeElement === last)  { e.preventDefault(); first.focus(); } }
+    }
+  }
+  container.addEventListener('keydown', handler);
+  return () => container.removeEventListener('keydown', handler);
+}
+
+let _memberPlanTrigger = null;
+let _memberPlanTrapRelease = null;
+
+function openMemberPlan(userId, name, plan, planBase, triggerEl) {
   document.getElementById('memberPlanUserId').value = userId;
   document.getElementById('memberPlanTitle').textContent = `Plan de ${name}`;
   document.getElementById('memberPlanSelect').value = plan;
   document.getElementById('memberPlanBase').value = planBase || 'free';
   document.getElementById('memberPlanExpiry').value = '';
-  document.getElementById('memberPlanModal').classList.remove('hidden');
+  const modal = document.getElementById('memberPlanModal');
+  modal.classList.remove('hidden');
+  _memberPlanTrigger = triggerEl || null;
+  _memberPlanTrapRelease = trapFocus(modal);
+  document.getElementById('memberPlanSelect').focus();
+}
+function closeMemberPlan() {
+  document.getElementById('memberPlanModal').classList.add('hidden');
+  if (_memberPlanTrapRelease) { _memberPlanTrapRelease(); _memberPlanTrapRelease = null; }
+  if (_memberPlanTrigger) { _memberPlanTrigger.focus(); _memberPlanTrigger = null; }
 }
 
-document.getElementById('btnCancelMemberPlan').addEventListener('click', () => {
-  document.getElementById('memberPlanModal').classList.add('hidden');
-});
+document.getElementById('btnCancelMemberPlan').addEventListener('click', closeMemberPlan);
+document.getElementById('memberPlanModal').addEventListener('keydown', e => { if (e.key === 'Escape') closeMemberPlan(); });
 
 document.getElementById('btnSaveMemberPlan').addEventListener('click', async () => {
   const userId  = document.getElementById('memberPlanUserId').value;
@@ -842,7 +869,7 @@ document.getElementById('btnSaveMemberPlan').addEventListener('click', async () 
       body: JSON.stringify(body),
     });
     if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
-    document.getElementById('memberPlanModal').classList.add('hidden');
+    closeMemberPlan();
     showStatus('Plan mis à jour !');
     await loadMembers();
   } catch (e) {

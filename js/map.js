@@ -61,14 +61,30 @@ const PathTileLayer = L.GridLayer.extend({
     this._paths.forEach(path => {
       if (!this._filters.has(path.status)) return;
       if (!path.coordinates || path.coordinates.length < 2) return;
-      ctx.strokeStyle = STATUS_COLORS[path.status] || '#9ca3af';
-      ctx.beginPath();
-      path.coordinates.forEach(([lat, lng], i) => {
+      const pts = path.coordinates.map(([lat, lng]) => {
         const pt = map.project(L.latLng(lat, lng), z);
-        i === 0 ? ctx.moveTo(pt.x - ox, pt.y - oy)
-                : ctx.lineTo(pt.x - ox, pt.y - oy);
+        return { x: pt.x - ox, y: pt.y - oy };
       });
+
+      ctx.strokeStyle = STATUS_COLORS[path.status] || '#9ca3af';
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
       ctx.stroke();
+
+      if (path.pathType === 'bike') {
+        // Dot spacing ~18 m in pixels at this zoom
+        const dotGap = Math.max(6, Math.min(28, 18 / mpp));
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+        ctx.lineWidth = sw * 0.38;
+        ctx.lineCap = 'round';
+        ctx.setLineDash([0.1, dotGap]);
+        ctx.beginPath();
+        pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+        ctx.stroke();
+        ctx.restore();
+      }
     });
     return canvas;
   },
@@ -171,7 +187,7 @@ function _ptSegDistPx(p, a, b) {
 
 function _pathAtClick(latlng) {
   const cp = map.latLngToLayerPoint(latlng);
-  const THRESH = 12; // px
+  const THRESH = 24; // px — minimum touch target size
   let best = null, bestD = THRESH;
   allPaths.forEach(path => {
     if (!activeFilters.has(path.status)) return;
@@ -882,15 +898,47 @@ document.getElementById('btnReport').addEventListener('click', () => {
   showToast('Clique sur un chemin coloré pour signaler un problème');
 });
 
+// ── Focus trap helper ─────────────────────────────────────────────────────────
+function trapFocus(container) {
+  const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  function handler(e) {
+    const els = [...container.querySelectorAll(FOCUSABLE)];
+    if (!els.length) return;
+    const first = els[0], last = els[els.length - 1];
+    if (e.key === 'Tab') {
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+      else            { if (document.activeElement === last)  { e.preventDefault(); first.focus(); } }
+    }
+  }
+  container.addEventListener('keydown', handler);
+  return () => container.removeEventListener('keydown', handler);
+}
+
 // ── Contact modal ─────────────────────────────────────────────────────────────
 const contactModal = document.getElementById('contactModal');
-document.getElementById('btnOpenContact').addEventListener('click', () => {
+let _contactTrigger = null;
+let _contactTrapRelease = null;
+
+function openContactModal() {
   contactModal.classList.remove('hidden');
   const u = getCachedUser();
   if (u) { document.getElementById('mcName').value = u.name; document.getElementById('mcEmail').value = u.email; }
+  _contactTrapRelease = trapFocus(contactModal);
+  document.getElementById('mcName').focus();
+}
+function closeContactModal() {
+  contactModal.classList.add('hidden');
+  if (_contactTrapRelease) { _contactTrapRelease(); _contactTrapRelease = null; }
+  if (_contactTrigger) { _contactTrigger.focus(); _contactTrigger = null; }
+}
+
+document.getElementById('btnOpenContact').addEventListener('click', e => {
+  _contactTrigger = e.currentTarget;
+  openContactModal();
 });
-document.getElementById('btnCloseContact').addEventListener('click', () => contactModal.classList.add('hidden'));
-contactModal.addEventListener('click', e => { if (e.target === contactModal) contactModal.classList.add('hidden'); });
+document.getElementById('btnCloseContact').addEventListener('click', closeContactModal);
+contactModal.addEventListener('click', e => { if (e.target === contactModal) closeContactModal(); });
+contactModal.addEventListener('keydown', e => { if (e.key === 'Escape') closeContactModal(); });
 
 document.getElementById('mapContactForm').addEventListener('submit', async e => {
   e.preventDefault();
@@ -906,7 +954,7 @@ document.getElementById('mapContactForm').addEventListener('submit', async e => 
     if (!res.ok) throw new Error();
     document.getElementById('mapContactForm').reset();
     status.textContent = '✅ Message envoyé — merci !'; status.style.color = '#1e4d14';
-    setTimeout(() => { contactModal.classList.add('hidden'); status.textContent = ''; }, 1800);
+    setTimeout(() => { closeContactModal(); status.textContent = ''; }, 1800);
   } catch { status.textContent = 'Erreur, réessaye.'; status.style.color = '#dc2626'; }
   finally { btn.textContent = 'Envoyer'; btn.disabled = false; }
 });

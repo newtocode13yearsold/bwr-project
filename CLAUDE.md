@@ -38,6 +38,8 @@ Single Cloudflare Worker file with 20 API endpoints:
 - Routing: POST /api/route — proxy to OpenRouteService (needs ORS_KEY env var)
 - OSM Proxy: GET /api/osm?bbox=... — caches OpenStreetMap path data for 7 days
 - Contact: POST /api/contact — sends to ntfy.sh push notification service
+- Saved routes (Silver+): POST /api/savedroutes, GET /api/savedroutes, GET /api/savedroutes/:id, DELETE /api/savedroutes/:id
+- Share route (public): GET /api/savedroutes/share/:token — returns route by share token, no auth required
 
 Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - user:{id} — JSON user object
@@ -50,6 +52,8 @@ Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - contact:{id} — JSON contact message
 - session:{token} — session metadata (userId, expiresAt), 30-day TTL
 - osm:{bbox} — cached OpenStreetMap query results, 7-day TTL
+- savedroute:{userId}:{id} — JSON saved route (coords, stats, name, shareToken, etc.)
+- routeshare:{token} — JSON {userId, routeId}, 180-day TTL; maps share token → route
 
 Migration: POST /api/migrate (admin only) migrates legacy array keys (users/paths/reports/contact_messages) to granular keys. Run once after deploy.
 

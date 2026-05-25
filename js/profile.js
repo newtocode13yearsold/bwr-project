@@ -806,17 +806,48 @@ document.getElementById('formPassword').addEventListener('submit', async e => {
 // ── Logout ────────────────────────────────────────────────────────────────────
 document.getElementById('btnLogoutProfile').addEventListener('click', logout);
 
+// ── Focus trap helper ─────────────────────────────────────────────────────────
+function trapFocus(container) {
+  const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  function handler(e) {
+    const els = [...container.querySelectorAll(FOCUSABLE)];
+    if (!els.length) return;
+    const first = els[0], last = els[els.length - 1];
+    if (e.key === 'Tab') {
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+      else            { if (document.activeElement === last)  { e.preventDefault(); first.focus(); } }
+    }
+  }
+  container.addEventListener('keydown', handler);
+  return () => container.removeEventListener('keydown', handler);
+}
+
 // ── Delete account ────────────────────────────────────────────────────────────
 const deleteModal  = document.getElementById('deleteModal');
-document.getElementById('btnDelete').addEventListener('click', () => {
+let _deleteTrigger = null;
+let _deleteTrapRelease = null;
+
+function openDeleteModal() {
+  deleteModal.classList.remove('hidden');
+  _deleteTrapRelease = trapFocus(deleteModal);
+  document.getElementById('btnCancelDelete').focus();
+}
+function closeDeleteModal() {
+  deleteModal.classList.add('hidden');
+  if (_deleteTrapRelease) { _deleteTrapRelease(); _deleteTrapRelease = null; }
+  if (_deleteTrigger) { _deleteTrigger.focus(); _deleteTrigger = null; }
+}
+
+document.getElementById('btnDelete').addEventListener('click', e => {
   if (currentUser.role === 'admin') {
     alert('Le compte administrateur ne peut pas être supprimé.');
     return;
   }
-  deleteModal.classList.remove('hidden');
+  _deleteTrigger = e.currentTarget;
+  openDeleteModal();
 });
-document.getElementById('btnCancelDelete').addEventListener('click', () =>
-  deleteModal.classList.add('hidden'));
+document.getElementById('btnCancelDelete').addEventListener('click', closeDeleteModal);
+deleteModal.addEventListener('keydown', e => { if (e.key === 'Escape') closeDeleteModal(); });
 
 document.getElementById('btnConfirmDelete').addEventListener('click', async () => {
   const btn = document.getElementById('btnConfirmDelete');
