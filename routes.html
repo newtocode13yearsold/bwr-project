@@ -27,6 +27,7 @@
       <span class="tagline">Planifier un trajet</span>
     </div>
     <div class="header-right">
+      <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji">⬇</span><span class="btn-label">Installer</span></button>
       <div class="user-menu" id="userMenu"></div>
     </div>
   </header>
@@ -35,6 +36,15 @@
 
     <!-- ── Sidebar ── -->
     <aside class="planner-sidebar">
+
+      <div class="sheet-handle" aria-hidden="true"></div>
+
+      <!-- Offline notice -->
+      <div id="offline-routes-notice" class="offline-notice" hidden>
+        <span class="offline-notice-icon">📵</span>
+        <p class="offline-notice-title">Pas de connexion</p>
+        <p class="offline-notice-body">Le calcul d'itinéraire nécessite internet. Reconnecte-toi pour planifier une balade.</p>
+      </div>
 
       <!-- Step 1: Mode -->
       <div class="step" id="step1">
@@ -79,6 +89,14 @@
             <button class="diff-btn active" data-diff="easy"><span class="diff-dot easy"></span> Facile</button>
             <button class="diff-btn" data-diff="medium"><span class="diff-dot medium"></span> Moyen</button>
             <button class="diff-btn" data-diff="hard"><span class="diff-dot hard"></span> Difficile</button>
+          </div>
+        </div>
+
+        <div class="option-group" id="priorityGroup">
+          <label class="option-label">Priorité</label>
+          <div class="difficulty-group">
+            <button class="diff-btn active" data-priority="forest">🌲 Forestier</button>
+            <button class="diff-btn" data-priority="shortest">📏 Plus court</button>
           </div>
         </div>
 
@@ -195,6 +213,8 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="js/config.js"></script>
+  <div id="offline-pill">📶 Hors-ligne</div>
+
   <nav class="bottom-nav" aria-label="Navigation principale">
     <a href="map.html" class="bnav-item">
       <span class="bnav-icon">🗺</span>
@@ -216,5 +236,22 @@
   <script src="js/graph-router.js"></script>
   <script src="js/routes.js"></script>
   <script src="js/install.js"></script>
+  <script>
+    (function() {
+      var pill = document.getElementById('offline-pill');
+      var notice = document.getElementById('offline-routes-notice');
+      var sidebar = document.querySelector('.planner-sidebar');
+      function updatePill() { pill.classList.toggle('visible', !navigator.onLine); }
+      function updateOfflineState() {
+        var offline = !navigator.onLine;
+        notice.hidden = !offline;
+        sidebar.classList.toggle('offline', offline);
+      }
+      window.addEventListener('online',  function() { updatePill(); updateOfflineState(); });
+      window.addEventListener('offline', function() { updatePill(); updateOfflineState(); });
+      updatePill();
+      updateOfflineState();
+    })();
+  </script>
 </body>
 </html>

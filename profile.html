@@ -26,6 +26,7 @@
       <span class="tagline">Mon profil</span>
     </div>
     <div class="header-right">
+      <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji">⬇</span><span class="btn-label">Installer</span></button>
       <div class="user-menu" id="userMenu"></div>
     </div>
   </header>
@@ -109,15 +110,15 @@
         </div>
         <div class="stats-grid">
           <div class="stat-block">
-            <span class="stat-num" id="statRoutes">—</span>
+            <span class="stat-num skeleton" id="statRoutes"></span>
             <span class="stat-lbl">Trajets planifiés</span>
           </div>
           <div class="stat-block">
-            <span class="stat-num" id="statKm">—</span>
+            <span class="stat-num skeleton" id="statKm"></span>
             <span class="stat-lbl">Kilomètres générés</span>
           </div>
           <div class="stat-block">
-            <span class="stat-num" id="statPaths">—</span>
+            <span class="stat-num skeleton" id="statPaths"></span>
             <span class="stat-lbl">Chemins disponibles</span>
           </div>
         </div>
@@ -315,6 +316,8 @@
     </div>
   </div>
 
+  <div id="offline-pill">📶 Hors-ligne</div>
+
   <nav class="bottom-nav" aria-label="Navigation principale">
     <a href="map.html" class="bnav-item">
       <span class="bnav-icon">🗺</span>
@@ -335,5 +338,14 @@
   <script src="js/features.js"></script>
   <script src="js/profile.js"></script>
   <script src="js/install.js"></script>
+  <script>
+    (function() {
+      var pill = document.getElementById('offline-pill');
+      function updatePill() { pill.classList.toggle('visible', !navigator.onLine); }
+      window.addEventListener('online', updatePill);
+      window.addEventListener('offline', updatePill);
+      updatePill();
+    })();
+  </script>
 </body>
 </html>

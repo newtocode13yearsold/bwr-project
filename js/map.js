@@ -143,6 +143,103 @@ async function initUserMenu() {
   });
 }
 
+// ── Offline queue (map page) ───────────────────────────────────────────────────
+function getMapPatches() {
+  try { return JSON.parse(localStorage.getItem('bwr_map_patches') || '[]'); } catch { return []; }
+}
+function saveMapPatches(q) { localStorage.setItem('bwr_map_patches', JSON.stringify(q)); }
+
+function getMapReports() {
+  try { return JSON.parse(localStorage.getItem('bwr_map_reports') || '[]'); } catch { return []; }
+}
+function saveMapReports(q) { localStorage.setItem('bwr_map_reports', JSON.stringify(q)); }
+
+function updateMapSyncBanner() {
+  const banner = document.getElementById('mapSyncBanner');
+  if (!banner) return;
+  const total = getMapPatches().length + getMapReports().length;
+  if (total === 0) { banner.style.display = 'none'; return; }
+  banner.style.display = 'flex';
+  banner.querySelector('.sync-count').textContent =
+    `${total} changement${total > 1 ? 's' : ''} en attente de synchronisation`;
+}
+
+function queueMapPatch(pathId, newStatus) {
+  const q = getMapPatches();
+  const existing = q.findIndex(item => item.id === pathId);
+  if (existing !== -1) q[existing].status = newStatus; else q.push({ id: pathId, status: newStatus });
+  saveMapPatches(q);
+  updateMapSyncBanner();
+}
+
+function queueMapReport(data) {
+  const q = getMapReports();
+  if (q.length >= 20) { showToast('⚠️ File hors-ligne pleine (20 signalements max).'); return; }
+  q.push({ ...data, queuedAt: Date.now() });
+  try {
+    saveMapReports(q);
+  } catch {
+    // localStorage full — retry without photo
+    q[q.length - 1].photo = null;
+    try { saveMapReports(q); } catch {}
+  }
+  updateMapSyncBanner();
+}
+
+async function replayMapPatches() {
+  const q = getMapPatches();
+  if (q.length === 0) return;
+  document.getElementById('mapSyncBanner')?.classList.add('syncing');
+  let remaining = [];
+  for (const item of q) {
+    try {
+      const res = await fetch(`${API_URL}/api/paths/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ status: item.status }),
+      });
+      if (!res.ok) remaining.push(item);
+    } catch { remaining.push(item); }
+  }
+  saveMapPatches(remaining);
+  document.getElementById('mapSyncBanner')?.classList.remove('syncing');
+  updateMapSyncBanner();
+  if (remaining.length === 0 && q.length > 0) {
+    showToast('✅ Synchronisation terminée — difficultés envoyées !');
+    await loadPaths();
+  }
+}
+
+async function replayMapReports() {
+  const q = getMapReports();
+  if (q.length === 0) return;
+  document.getElementById('mapSyncBanner')?.classList.add('syncing');
+  let remaining = [];
+  for (const item of q) {
+    try {
+      const { queuedAt, ...payload } = item;
+      const res = await fetch(`${API_URL}/api/reports`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) remaining.push(item);
+    } catch { remaining.push(item); }
+  }
+  saveMapReports(remaining);
+  document.getElementById('mapSyncBanner')?.classList.remove('syncing');
+  updateMapSyncBanner();
+  if (remaining.length === 0 && q.length > 0) {
+    showToast('✅ Synchronisation terminée — signalements envoyés !');
+    loadReports();
+  }
+}
+
+window.addEventListener('online', async () => {
+  await replayMapPatches();
+  await replayMapReports();
+});
+
 // ── Paths ─────────────────────────────────────────────────────────────────────
 async function loadPaths() {
   try {
@@ -435,13 +532,6 @@ function openPathPopup(path, latlng) {
         ${condHTML}
         ${path.notes ? `<p class="popup-notes">${path.notes}</p>` : ''}
         ${difficultyHTML}
-        <div class="popup-report-section">
-          <button class="popup-fallen-btn" id="openFallenTree-${path.id}">🌲 Arbre tombé ici</button>
-          <button class="popup-fallen-btn" id="openMuddy-${path.id}">🟤 Boueux ici</button>
-          <button class="popup-fallen-btn" id="openRutted-${path.id}">🛞 Ornières ici</button>
-          <button class="popup-fallen-btn" id="openBrokenSign-${path.id}">🪧 Carrefour cassé</button>
-          <button class="popup-report-btn" id="openReport-${path.id}">⚠️ Autre problème</button>
-        </div>
         ${deleteHTML}
       </div>
     `)
@@ -466,11 +556,25 @@ function openPathPopup(path, latlng) {
               renderPaths();
               map.closePopup();
               showToast(`✅ Difficulté mise à jour : ${STATUS_LABELS[newStatus]}`);
+            } else if (!navigator.onLine || res.status === 503) {
+              path.status = newStatus;
+              const idx = allPaths.findIndex(p => p.id === path.id);
+              if (idx !== -1) allPaths[idx].status = newStatus;
+              renderPaths();
+              map.closePopup();
+              queueMapPatch(path.id, newStatus);
+              showToast('📶 Hors-ligne — changement enregistré, envoi à la reconnexion.');
             } else {
               showToast('Erreur lors de la mise à jour.');
             }
           } catch {
-            showToast('Erreur lors de la mise à jour.');
+            path.status = newStatus;
+            const idx = allPaths.findIndex(p => p.id === path.id);
+            if (idx !== -1) allPaths[idx].status = newStatus;
+            renderPaths();
+            map.closePopup();
+            queueMapPatch(path.id, newStatus);
+            showToast('📶 Hors-ligne — changement enregistré, envoi à la reconnexion.');
           }
         });
       });
@@ -485,11 +589,7 @@ function openPathPopup(path, latlng) {
       cb();
     };
 
-    document.getElementById(`openFallenTree-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'fallen_tree')));
-    document.getElementById(`openMuddy-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'muddy')));
-    document.getElementById(`openRutted-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'rutted')));
-    document.getElementById(`openBrokenSign-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'broken_sign')));
-    document.getElementById(`openReport-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng)));
+
 
     document.getElementById(`deletePath-${path.id}`)?.addEventListener('click', async () => {
       if (!confirm(`Supprimer "${path.name || 'ce chemin'}" ?`)) return;
@@ -649,22 +749,32 @@ function openReportPopup(path, latlng, defaultType = 'fallen_tree') {
 }
 
 async function submitReport(path, type, note, photo = null, latlng = null) {
+  const payload = { pathId: path?.id, type, note, photo, lat: latlng?.lat, lon: latlng?.lng };
+  if (!navigator.onLine) {
+    queueMapReport(payload);
+    showToast('📶 Hors-ligne — signalement enregistré, envoi à la reconnexion.');
+    return;
+  }
   try {
     const res = await fetch(`${API_URL}/api/reports`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pathId: path.id, type, note, photo, lat: latlng?.lat, lon: latlng?.lng }),
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify(payload),
     });
     if (res.ok) {
       const report = await res.json();
       if (latlng) { report.lat = latlng.lat; report.lon = latlng.lng; }
       placeReportMarker(report, path.coordinates);
       showToast('✅ Signalement envoyé — merci !');
+    } else if (res.status === 503) {
+      queueMapReport(payload);
+      showToast('📶 Hors-ligne — signalement enregistré, envoi à la reconnexion.');
     } else {
       showToast('Erreur lors du signalement.');
     }
   } catch {
-    showToast('Erreur lors du signalement.');
+    queueMapReport(payload);
+    showToast('📶 Hors-ligne — signalement enregistré, envoi à la reconnexion.');
   }
 }
 
@@ -755,35 +865,100 @@ document.getElementById('toggleFilters').addEventListener('click', () => {
 // ── Locate me ─────────────────────────────────────────────────────────────────
 let locationMarker = null;
 let locationCircle = null;
+let locationWatchId = null;
+// states: 'idle' | 'searching' | 'following'
+let locateState = 'idle';
+
+function showLocateToast(msg, isError = false) {
+  let t = document.getElementById('locateToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'locateToast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.className = 'locate-toast' + (isError ? ' locate-toast-error' : '');
+  t.classList.add('visible');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('visible'), 3500);
+}
+
+function stopLocating() {
+  if (locationWatchId !== null) {
+    navigator.geolocation.clearWatch(locationWatchId);
+    locationWatchId = null;
+  }
+  if (locationMarker) { map.removeLayer(locationMarker); locationMarker = null; }
+  if (locationCircle) { map.removeLayer(locationCircle); locationCircle = null; }
+  locateState = 'idle';
+  const btn = document.getElementById('btnLocate');
+  btn.textContent = '📍';
+  btn.classList.remove('locate-following', 'locate-searching');
+  btn.title = 'Ma position';
+}
+
+function updateLocationLayers(lat, lng, accuracy) {
+  if (locationCircle) locationCircle.setLatLng([lat, lng]).setRadius(accuracy);
+  else locationCircle = L.circle([lat, lng], {
+    radius: accuracy,
+    color: '#3b82f6', fillColor: '#93c5fd',
+    fillOpacity: 0.18, weight: 1.5,
+  }).addTo(map);
+
+  if (locationMarker) locationMarker.setLatLng([lat, lng]);
+  else locationMarker = L.circleMarker([lat, lng], {
+    radius: 9, color: 'white', weight: 3,
+    fillColor: '#3b82f6', fillOpacity: 1,
+  }).bindPopup('Vous êtes ici').addTo(map);
+}
 
 document.getElementById('btnLocate').addEventListener('click', () => {
-  if (!navigator.geolocation) return;
+  if (!navigator.geolocation) {
+    showLocateToast('Géolocalisation non disponible', true);
+    return;
+  }
+
+  // Cycle: idle → following → idle
+  if (locateState === 'following' || locateState === 'searching') {
+    stopLocating();
+    return;
+  }
+
   const btn = document.getElementById('btnLocate');
+  locateState = 'searching';
   btn.textContent = '⏳';
-  btn.disabled = true;
+  btn.classList.add('locate-searching');
+  btn.classList.remove('locate-following');
+  btn.title = 'Annuler';
 
-  navigator.geolocation.getCurrentPosition(
+  let firstFix = true;
+
+  locationWatchId = navigator.geolocation.watchPosition(
     ({ coords: { latitude: lat, longitude: lng, accuracy } }) => {
+      locateState = 'following';
       btn.textContent = '📍';
-      btn.disabled = false;
+      btn.classList.remove('locate-searching');
+      btn.classList.add('locate-following');
+      btn.title = 'Arrêter le suivi';
 
-      if (locationMarker) map.removeLayer(locationMarker);
-      if (locationCircle) map.removeLayer(locationCircle);
+      updateLocationLayers(lat, lng, accuracy);
 
-      locationCircle = L.circle([lat, lng], {
-        radius: accuracy,
-        color: '#3b82f6', fillColor: '#93c5fd',
-        fillOpacity: 0.18, weight: 1.5,
-      }).addTo(map);
-
-      locationMarker = L.circleMarker([lat, lng], {
-        radius: 9, color: 'white', weight: 3,
-        fillColor: '#3b82f6', fillOpacity: 1,
-      }).bindPopup('Vous êtes ici').addTo(map);
-
-      map.setView([lat, lng], Math.max(map.getZoom(), 15));
+      if (firstFix) {
+        firstFix = false;
+        map.setView([lat, lng], Math.max(map.getZoom(), 15));
+        showLocateToast('Position trouvée' + (accuracy > 50 ? ` (±${Math.round(accuracy)} m)` : ''));
+      }
     },
-    () => { btn.textContent = '📍'; btn.disabled = false; }
+    (err) => {
+      stopLocating();
+      const msgs = {
+        1: 'Permission refusée — autorise la localisation dans les réglages',
+        2: 'Position introuvable',
+        3: 'Délai dépassé — réessaie',
+      };
+      showLocateToast(msgs[err.code] || 'Erreur de localisation', true);
+    },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
   );
 });
 
@@ -893,13 +1068,6 @@ async function loadReports() {
   } catch {}
 }
 
-document.getElementById('btnReport').addEventListener('click', () => {
-  if (!BWR.can('reports_create', _userPlan)) {
-    showToast('🔒 Le signalement est disponible avec Argent — voir plans.html');
-    return;
-  }
-  showToast('Clique sur un chemin coloré pour signaler un problème');
-});
 
 // ── Focus trap helper ─────────────────────────────────────────────────────────
 function trapFocus(container) {
@@ -968,34 +1136,30 @@ function latToTileY(lat, z) {
   return Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z));
 }
 
+// Hardcoded bounding box for the entire Forêt de Compiègne
+const FOREST_BBOX = { north: 49.47, south: 49.27, west: 2.65, east: 3.10 };
+
 async function downloadOfflineTiles() {
   if (!BWR.can('offline_cache', _userPlan)) {
     showToast('🔒 Cartes hors-ligne disponibles avec Argent — voir plans.html');
     return;
   }
-  const maxAreas = BWR.limitOf('offline_cache', _userPlan);
-  const savedCount = parseInt(localStorage.getItem('bwr_offline_areas') || '0');
-  if (savedCount >= maxAreas) {
-    showToast(`Zone hors-ligne : limite de ${maxAreas} zone${maxAreas > 1 ? 's' : ''} atteinte`);
-    return;
-  }
 
-  const bounds = map.getBounds();
+  const btn = document.getElementById('btnOffline');
+  if (btn && btn.dataset.downloading === '1') return;
+
+  // Build tile list for the full forest bbox at zoom 10–15
   const tiles = [];
-  for (let z = 13; z <= 16; z++) {
-    const x0 = lonToTileX(bounds.getWest(), z),  x1 = lonToTileX(bounds.getEast(), z);
-    const y0 = latToTileY(bounds.getNorth(), z),  y1 = latToTileY(bounds.getSouth(), z);
-    const subs = ['a', 'b', 'c'];
+  const subs = ['a', 'b', 'c'];
+  for (let z = 10; z <= 15; z++) {
+    const x0 = lonToTileX(FOREST_BBOX.west, z),  x1 = lonToTileX(FOREST_BBOX.east, z);
+    const y0 = latToTileY(FOREST_BBOX.north, z),  y1 = latToTileY(FOREST_BBOX.south, z);
     for (let x = x0; x <= x1; x++)
       for (let y = y0; y <= y1; y++)
         tiles.push(`https://${subs[(x + y) % 3]}.tile.opentopomap.org/${z}/${x}/${y}.png`);
   }
 
-  if (tiles.length > 3000) { showToast('Zone trop grande — dézoomez un peu'); return; }
-
-  const btn = document.getElementById('btnOffline');
   if (btn) {
-    if (btn.dataset.downloading === '1') return;
     btn.dataset.downloading = '1';
     btn.querySelector('.btn-emoji').textContent = '⏳';
     btn.querySelector('.btn-label').textContent = '0%';
@@ -1013,14 +1177,14 @@ async function downloadOfflineTiles() {
       }));
       if (btn) btn.querySelector('.btn-label').textContent = `${Math.round(done / tiles.length * 100)}%`;
     }
-    localStorage.setItem('bwr_offline_areas', String(savedCount + 1));
-    showToast(`✅ Zone sauvegardée hors-ligne ! (${tiles.length} tuiles · ${savedCount + 1}/${maxAreas})`);
+    localStorage.setItem('bwr_forest_cached', '1');
+    showToast(`✅ Forêt de Compiègne sauvegardée hors-ligne ! (${tiles.length} tuiles)`);
   } catch { showToast('Erreur lors du téléchargement hors-ligne'); }
   finally {
     if (btn) {
       delete btn.dataset.downloading;
-      btn.querySelector('.btn-emoji').textContent = '💾';
-      btn.querySelector('.btn-label').textContent = 'Hors-ligne';
+      btn.querySelector('.btn-emoji').textContent = '✅';
+      btn.querySelector('.btn-label').textContent = 'Téléchargée';
       btn.disabled = false;
     }
   }
@@ -1032,6 +1196,10 @@ async function downloadOfflineTiles() {
   if (!btn) return;
   if (BWR.can('offline_cache', _userPlan)) {
     btn.style.display = '';
+    if (localStorage.getItem('bwr_forest_cached') === '1') {
+      btn.querySelector('.btn-emoji').textContent = '✅';
+      btn.querySelector('.btn-label').textContent = 'Téléchargée';
+    }
     btn.addEventListener('click', downloadOfflineTiles);
   }
 })();
@@ -1039,3 +1207,5 @@ async function downloadOfflineTiles() {
 initUserMenu();
 loadPaths();
 loadReports();
+if (navigator.onLine) { replayMapPatches(); replayMapReports(); }
+updateMapSyncBanner();

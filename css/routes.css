@@ -1,7 +1,7 @@
 /* ── Layout ── */
 .routes-body {
   overflow: hidden;
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -659,7 +659,9 @@
 
   .planner-layout {
     flex-direction: column;
-    height: calc(100dvh - 52px - 56px - env(safe-area-inset-bottom, 0px));
+    flex: 1;
+    min-height: 0;
+    height: auto;
   }
 
   /* Map takes top portion, with a minimum so it stays usable */
@@ -712,6 +714,12 @@
   /* Result stats — vertical stack */
   .result-stats { flex-direction: column; gap: 8px; }
 
+  /* Search dropdown — sidebar overflow: auto clips position:absolute children.
+     When results are open, temporarily allow overflow so the dropdown is visible. */
+  .planner-sidebar.search-active {
+    overflow: visible;
+  }
+
   /* Layer switcher */
   .map-layers {
     top: 8px;
@@ -736,4 +744,35 @@
 
   /* Elevation chart smaller */
   .elevation-chart-wrap { padding: 8px; }
+
+  /* Drag handle */
+  .sheet-handle {
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: #d1d5db;
+    border-radius: 99px;
+    margin: 10px auto 6px;
+    flex-shrink: 0;
+  }
 }
+
+/* ── Offline notice (routes page) ─────────────────────────────────────────── */
+.offline-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 20px;
+  text-align: center;
+  color: #6b7280;
+}
+.offline-notice-icon { font-size: 2.5rem; }
+.offline-notice-title { font-weight: 700; font-size: 1.1rem; color: #374151; margin: 0; }
+.offline-notice-body  { font-size: 0.9rem; margin: 0; line-height: 1.5; }
+
+/* Hide steps while offline */
+.planner-sidebar.offline > *:not(#offline-routes-notice) { display: none; }
+
+/* Drag handle hidden on desktop */
+.sheet-handle { display: none; }

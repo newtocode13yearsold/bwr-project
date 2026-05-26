@@ -3,6 +3,7 @@ let map = null;
 let mode = null;
 let pathType = 'foot';
 let difficulty = 'easy';
+let routingPriority = 'forest';
 let startMarker = null;
 let endMarker = null;
 let routeLayer = null;
@@ -330,11 +331,19 @@ document.querySelectorAll('.pathtype-btn').forEach(btn => {
   });
 });
 
-document.querySelectorAll('.diff-btn').forEach(btn => {
+document.querySelectorAll('.diff-btn[data-diff]').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.diff-btn[data-diff]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     difficulty = btn.dataset.diff;
+  });
+});
+
+document.querySelectorAll('.diff-btn[data-priority]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.diff-btn[data-priority]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    routingPriority = btn.dataset.priority;
   });
 });
 
@@ -589,30 +598,99 @@ function osmDataToCoordPaths(data) {
 async function fetchOsmPathsForBbox(minLat, minLng, maxLat, maxLng) {
   try {
     const bbox = `${minLat.toFixed(4)},${minLng.toFixed(4)},${maxLat.toFixed(4)},${maxLng.toFixed(4)}`;
-    const res = await fetch(`${API_URL}/api/osm?bbox=${bbox}`);
-    if (!res.ok) return [];
-    return osmDataToCoordPaths(await res.json());
-  } catch { return []; }
+    const res = await fetchWithTimeout(`${API_URL}/api/osm?bbox=${bbox}`, {}, 20000);
+    if (!res.ok) { console.warn('OSM bbox fetch failed:', res.status); return []; }
+    const data = await res.json();
+    if (!Array.isArray(data?.elements)) { console.warn('OSM response malformed'); return []; }
+    return osmDataToCoordPaths(data);
+  } catch (e) { console.warn('fetchOsmPathsForBbox:', e.message); return []; }
 }
 
-// ── Public routing entry points ────────────────────────────────────────────────
+// ── Public routing entry points ───────────────────────────────────────────────
 async function routeAtob(sLat, sLng, eLat, eLng) {
-  // 1. Hybrid graph: admin paths preferred, OSM fills gaps
-  if (savedPaths.length) {
+  // Shortest mode: Dijkstra on raw OSM forest paths (no admin bias, no weight penalty).
+  // Fetches path/track/footway/bridleway/cycleway in a wide bbox and finds the
+  // genuinely shortest forest route. Falls back to ORS then OSRM only if graph fails.
+  if (routingPriority === 'shortest') {
     try {
-      const pad = 0.02; // ~2 km padding around the A-B bounding box
+      const pad = 0.05;
       const osmPaths = await fetchOsmPathsForBbox(
         Math.min(sLat, eLat) - pad, Math.min(sLng, eLng) - pad,
         Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
       );
-      return graphAtobHybrid(sLat, sLng, eLat, eLng, filterPaths(savedPaths), osmPaths);
+      if (osmPaths.length) {
+        const r = graphAtob(sLat, sLng, eLat, eLng, osmPaths);
+        console.info(`routing: OSM graph (${osmPaths.length} chemins, ${(r.meters/1000).toFixed(1)} km)`);
+        return r;
+      }
+    } catch (e) { console.warn('OSM graph shortest:', e.message); }
+    try {
+      const r = await callORS({ profile: orsProfile(), coordinates: [[sLng, sLat], [eLng, eLat]] });
+      console.info(`routing: ORS (${(r.meters/1000).toFixed(1)} km)`);
+      return r;
+    } catch (e) { console.warn('ORS shortest:', e.message); }
+    console.info('routing: OSRM fallback');
+    return osrmRoute([{ lat: sLat, lon: sLng }, { lat: eLat, lon: eLng }]);
+  }
+
+  // 1. Hybrid graph: admin paths preferred, OSM fills gaps (skipped in 'shortest' mode)
+  if (savedPaths.length) {
+    try {
+      const filtered = filterPaths(savedPaths);
+      // Skip graph if either endpoint is more than 1.5 km from the nearest admin path.
+      // When admin paths only cover a distant area, nearestNode snaps to a faraway node
+      // and Dijkstra routes through there instead of the direct path.
+      if (filtered.length) {
+        const { nodes: adminNodes } = buildGraph(filtered);
+        const sSnap = nearestNode(adminNodes, sLat, sLng);
+        const eSnap = nearestNode(adminNodes, eLat, eLng);
+        const MAX_SNAP_M = 1500;
+        if (!sSnap || !eSnap
+          || haversineM(sLat, sLng, sSnap.lat, sSnap.lon) > MAX_SNAP_M
+          || haversineM(eLat, eLng, eSnap.lat, eSnap.lon) > MAX_SNAP_M) {
+          console.warn('graph hybrid: endpoints trop loin des chemins admin, fallback OSRM');
+          throw new Error('snap trop loin');
+        }
+      }
+      const pad = 0.02;
+      const osmPaths = await fetchOsmPathsForBbox(
+        Math.min(sLat, eLat) - pad, Math.min(sLng, eLng) - pad,
+        Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
+      );
+      const result = graphAtobHybrid(sLat, sLng, eLat, eLng, filtered, osmPaths);
+      const straightM = haversineM(sLat, sLng, eLat, eLng);
+      if (result.meters > straightM * 3) { throw new Error('graph hybrid: trop long'); }
+      // If admin route is > 1.5× straight line, try OSM-only graph to see if there's a shorter path.
+      if (result.meters > straightM * 1.5 && osmPaths.length) {
+        try {
+          const osmOnly = graphAtob(sLat, sLng, eLat, eLng, osmPaths);
+          if (osmOnly.meters < result.meters) { console.info('routing: OSM shorter than admin, using OSM'); return osmOnly; }
+        } catch {}
+      }
+      console.info('routing: admin graph');
+      return result;
     } catch (e) { console.warn('graph hybrid:', e.message); }
   }
-  // 2. ORS (needs ORS_KEY in Cloudflare)
+  // 2. OSM-only graph — forest/path network from OSM, no road penalty, no admin bias.
+  // Used when admin paths don't cover the clicked area. Wider bbox captures paths near endpoints.
+  try {
+    const pad = 0.05;
+    const osmPaths = await fetchOsmPathsForBbox(
+      Math.min(sLat, eLat) - pad, Math.min(sLng, eLng) - pad,
+      Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
+    );
+    if (osmPaths.length) {
+      const result = graphAtob(sLat, sLng, eLat, eLng, osmPaths);
+      const straightM = haversineM(sLat, sLng, eLat, eLng);
+      if (result.meters <= straightM * 4) return result;
+      console.warn('OSM graph: route trop longue, fallback OSRM');
+    }
+  } catch (e) { console.warn('OSM graph:', e.message); }
+  // 3. ORS (needs ORS_KEY in Cloudflare)
   try {
     return await callORS({ profile: orsProfile(), coordinates: [[sLng, sLat], [eLng, eLat]] });
   } catch (e) { console.warn('ORS:', e.message); }
-  // 3. OSRM — uses all roads and paths (city streets, forest paths, etc.)
+  // 4. OSRM — last resort, uses all roads and paths
   return osrmRoute([{ lat: sLat, lon: sLng }, { lat: eLat, lon: eLng }]);
 }
 

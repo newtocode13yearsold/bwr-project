@@ -39,6 +39,7 @@ let map = null;
 let drawControl = null;
 let drawnItems = null;
 let selectModeActive = false;
+let offlineSelectMode = false;
 let splitModeActive = false;
 let splitTargetPath = null;
 
@@ -181,11 +182,12 @@ function enterSelectMode() {
 
 function exitSelectMode() {
   selectModeActive = false;
+  offlineSelectMode = false;
   document.getElementById('btnSelectPath').textContent = '🗺 Sélectionner un chemin';
   document.getElementById('btnSelectPath').style.background = '';
   map.getContainer().style.cursor = '';
-  // IGN stays on — nothing to switch back
   clearOSMLayer();
+  renderPaths();
   showStatus('');
 }
 
@@ -260,6 +262,26 @@ async function loadOSMPaths() {
     return;
   }
 
+  // Offline: try cached OSM data, then fall back to editing existing paths
+  if (!navigator.onLine) {
+    const cached = localStorage.getItem('bwr_osm_cache');
+    if (cached) {
+      try {
+        renderOSMPaths(JSON.parse(cached));
+        const count = osmLayers.length;
+        showStatus(count > 0
+          ? `${count} chemins (cache hors-ligne) — clique sur un chemin en pointillés.`
+          : 'Hors-ligne — clique sur un chemin pour modifier sa couleur.');
+        if (count === 0) { offlineSelectMode = true; renderPaths(); }
+        return;
+      } catch {}
+    }
+    offlineSelectMode = true;
+    renderPaths();
+    showStatus('Hors-ligne — clique sur un chemin pour modifier sa couleur.');
+    return;
+  }
+
   showStatus('Chargement des chemins…');
 
   const b = map.getBounds();
@@ -269,6 +291,7 @@ async function loadOSMPaths() {
     const res = await fetch(`${API_URL}/api/osm?bbox=${bbox}`);
     if (!res.ok) throw new Error();
     const data = await res.json();
+    try { localStorage.setItem('bwr_osm_cache', JSON.stringify(data)); } catch {}
     renderOSMPaths(data);
     const count = osmLayers.length;
     if (count === 0) {
@@ -277,8 +300,19 @@ async function loadOSMPaths() {
       showStatus(`${count} chemins disponibles — clique sur un chemin en pointillés.`);
     }
   } catch {
-    showStatus('Impossible de charger les chemins. Réessaie.', true);
-    exitSelectMode();
+    // Network error after passing the online check — try cache, then fall back
+    const cached = localStorage.getItem('bwr_osm_cache');
+    if (cached) {
+      try {
+        renderOSMPaths(JSON.parse(cached));
+        const count = osmLayers.length;
+        if (count > 0) {
+          showStatus(`${count} chemins (cache) — clique sur un chemin en pointillés.`);
+          return;
+        }
+      } catch {}
+    }
+    showStatus('Chemins OSM indisponibles — clique sur un chemin existant pour modifier sa couleur.');
   }
 }
 
@@ -307,12 +341,19 @@ function renderOSMPaths(data) {
     const coords = el.nodes.map(id => nodes[id]).filter(Boolean);
     if (coords.length < 2) return;
 
-    // Skip paths already saved
-    const alreadySaved = allPaths.some(p =>
-      Math.abs(p.coordinates[0][0] - coords[0][0]) < 0.0001 &&
-      Math.abs(p.coordinates[0][1] - coords[0][1]) < 0.0001
-    );
-    if (alreadySaved) return;
+    // Skip paths already saved (require both endpoints to match, not just the first)
+    const last = coords[coords.length - 1];
+    const endpointsMatch = (p) => {
+      if (!p.coordinates || p.coordinates.length < 2) return false;
+      const pLast = p.coordinates[p.coordinates.length - 1];
+      return (
+        Math.abs(p.coordinates[0][0] - coords[0][0]) < 0.0001 &&
+        Math.abs(p.coordinates[0][1] - coords[0][1]) < 0.0001 &&
+        Math.abs(pLast[0] - last[0]) < 0.0001 &&
+        Math.abs(pLast[1] - last[1]) < 0.0001
+      );
+    };
+    if (allPaths.some(endpointsMatch) || getOfflineNewPaths().some(endpointsMatch)) return;
 
     const autoType = detectPathType(el.tags);
 
@@ -405,16 +446,40 @@ function openNewPathPopup(coords, name, latlng, autoType = 'foot') {
 }
 
 async function saveNewPath(name, status, coordinates, pathType = 'foot', conditions = []) {
-  const res = await fetch(`${API_URL}/api/paths`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeader() },
-    body: JSON.stringify({ name, pathType, status, notes: '', conditions, coordinates }),
-  });
-  if (res.ok) {
-    showStatus(`"${name}" enregistré !`);
-    await loadPaths();
-  } else {
-    showStatus('Erreur lors de l\'enregistrement.', true);
+  const payload = { name, pathType, status, notes: '', conditions, coordinates };
+  if (!navigator.onLine) {
+    queueOfflineNewPath(payload);
+    const tempPath = { ...payload, id: `offline_${Date.now()}` };
+    allPaths.push(tempPath);
+    localStorage.setItem('bwr_cached_paths', JSON.stringify(allPaths));
+    renderPaths();
+    showStatus(`📶 Hors-ligne — "${name}" enregistré, envoi à la reconnexion.`);
+    return;
+  }
+  try {
+    const res = await fetch(`${API_URL}/api/paths`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      showStatus(`"${name}" enregistré !`);
+      await loadPaths();
+    } else if (res.status === 503) {
+      queueOfflineNewPath(payload);
+      allPaths.push({ ...payload, id: `offline_${Date.now()}` });
+      localStorage.setItem('bwr_cached_paths', JSON.stringify(allPaths));
+      renderPaths();
+      showStatus(`📶 Hors-ligne — "${name}" enregistré, envoi à la reconnexion.`);
+    } else {
+      showStatus('Erreur lors de l\'enregistrement.', true);
+    }
+  } catch {
+    queueOfflineNewPath(payload);
+    allPaths.push({ ...payload, id: `offline_${Date.now()}` });
+    localStorage.setItem('bwr_cached_paths', JSON.stringify(allPaths));
+    renderPaths();
+    showStatus(`📶 Hors-ligne — "${name}" enregistré, envoi à la reconnexion.`);
   }
 }
 
@@ -465,10 +530,118 @@ document.getElementById('btnSavePath').addEventListener('click', async () => {
   }
 });
 
+// ── Offline queue helpers ─────────────────────────────────────────────────────
+function getOfflineQueue() {
+  try { return JSON.parse(localStorage.getItem('bwr_offline_queue') || '[]'); } catch { return []; }
+}
+function saveOfflineQueue(q) { localStorage.setItem('bwr_offline_queue', JSON.stringify(q)); }
+
+function queueOfflineChange(id, body) {
+  const q = getOfflineQueue();
+  const existing = q.findIndex(item => item.id === id);
+  if (existing !== -1) q[existing].body = body; else q.push({ id, body });
+  saveOfflineQueue(q);
+  localStorage.setItem('bwr_cached_paths', JSON.stringify(allPaths));
+  updateSyncBanner();
+  showStatus('Hors-ligne — changement enregistré, sera envoyé à la reconnexion.');
+}
+
+function updateSyncBanner() {
+  const banner = document.getElementById('syncBanner');
+  if (!banner) return;
+  const total = getOfflineQueue().length + getOfflineNewPaths().length;
+  if (total === 0) { banner.style.display = 'none'; return; }
+  banner.style.display = 'flex';
+  banner.querySelector('.sync-count').textContent =
+    `${total} changement${total > 1 ? 's' : ''} en attente de synchronisation`;
+}
+
+async function replayOfflineQueue() {
+  const q = getOfflineQueue();
+  if (q.length === 0) return;
+  document.getElementById('syncBanner')?.classList.add('syncing');
+  let remaining = [];
+  for (const item of q) {
+    try {
+      const res = await fetch(`${API_URL}/api/paths/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify(item.body),
+      });
+      if (!res.ok) remaining.push(item);
+    } catch { remaining.push(item); }
+  }
+  saveOfflineQueue(remaining);
+  document.getElementById('syncBanner')?.classList.remove('syncing');
+  updateSyncBanner();
+  if (remaining.length === 0) {
+    showStatus('Synchronisation terminée — changements envoyés !');
+    await loadPaths();
+  }
+}
+
+// ── Offline queue for new path creations ──────────────────────────────────────
+function getOfflineNewPaths() {
+  try { return JSON.parse(localStorage.getItem('bwr_offline_new_paths') || '[]'); } catch { return []; }
+}
+function saveOfflineNewPaths(q) { localStorage.setItem('bwr_offline_new_paths', JSON.stringify(q)); }
+
+function queueOfflineNewPath(data) {
+  const q = getOfflineNewPaths();
+  q.push({ ...data, queuedAt: Date.now() });
+  saveOfflineNewPaths(q);
+  updateSyncBanner();
+}
+
+async function replayOfflineNewPaths() {
+  const q = getOfflineNewPaths();
+  if (q.length === 0) return;
+  document.getElementById('syncBanner')?.classList.add('syncing');
+  let remaining = [];
+  for (const item of q) {
+    try {
+      const { queuedAt, ...payload } = item;
+      const res = await fetch(`${API_URL}/api/paths`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) remaining.push(item);
+    } catch { remaining.push(item); }
+  }
+  saveOfflineNewPaths(remaining);
+  document.getElementById('syncBanner')?.classList.remove('syncing');
+  updateSyncBanner();
+  if (remaining.length === 0 && q.length > 0) {
+    showStatus('Synchronisation terminée — nouveaux chemins envoyés !');
+    await loadPaths();
+  }
+}
+
+window.addEventListener('online', async () => {
+  await replayOfflineQueue();
+  await replayOfflineNewPaths();
+});
+
 // ── Load & render saved paths ─────────────────────────────────────────────────
 async function loadPaths() {
-  const res = await fetch(`${API_URL}/api/paths`);
-  allPaths = await res.json();
+  try {
+    const res = await fetch(`${API_URL}/api/paths`);
+    if (!res.ok) throw new Error();
+    allPaths = await res.json();
+    localStorage.setItem('bwr_cached_paths', JSON.stringify(allPaths));
+  } catch {
+    const cached = localStorage.getItem('bwr_cached_paths');
+    if (cached) { allPaths = JSON.parse(cached); }
+  }
+  // Show offline-queued new paths immediately with temp IDs until synced
+  getOfflineNewPaths().forEach(item => {
+    const tempId = `offline_${item.queuedAt}`;
+    if (!allPaths.some(p => p.id === tempId)) {
+      const { queuedAt, ...path } = item;
+      allPaths.push({ ...path, id: tempId });
+    }
+  });
   renderPaths();
 }
 
@@ -538,17 +711,23 @@ function renderPaths() {
       L.DomEvent.stopPropagation(e);
       if (splitModeActive && splitTargetPath?.id === path.id) {
         handleSplitClick(path, e.latlng);
-      } else if (!selectModeActive && !splitModeActive) {
+      } else if (!splitModeActive) {
         openColorPopup(path, e.latlng);
       }
     };
 
     // Visible line
+    const pathColor = STATUS_COLORS[path.status] || '#9ca3af';
     const line = L.polyline(path.coordinates, {
-      color: STATUS_COLORS[path.status] || '#9ca3af',
-      weight: pathWeight(),
-      opacity: 0.9,
+      color: pathColor,
+      weight: offlineSelectMode ? pathWeight() + 2 : pathWeight(),
+      opacity: 1,
+      dashArray: offlineSelectMode ? '10 7' : null,
     });
+    if (offlineSelectMode) {
+      line.on('mouseover', () => line.setStyle({ color: '#2563eb', weight: pathWeight() + 4, dashArray: '10 7' }));
+      line.on('mouseout',  () => line.setStyle({ color: pathColor,  weight: pathWeight() + 2, dashArray: '10 7' }));
+    }
     line.on('click', clickHandler);
     line.addTo(map);
 
@@ -702,16 +881,28 @@ function openColorPopup(path, latlng) {
 }
 
 async function updatePathStatus(path, newStatus) {
-  const res = await fetch(`${API_URL}/api/paths/${path.id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeader() },
-    body: JSON.stringify({ ...path, status: newStatus }),
-  });
-  if (res.ok) {
-    showStatus(`Couleur changée en "${STATUS_LABELS[newStatus]}" !`);
-    await loadPaths();
-  } else {
-    showStatus('Erreur lors du changement.', true);
+  const body = { ...path, status: newStatus };
+
+  // Optimistic local update so the map reflects the change immediately
+  const idx = allPaths.findIndex(p => p.id === path.id);
+  if (idx !== -1) { allPaths[idx] = { ...allPaths[idx], status: newStatus }; renderPaths(); }
+
+  try {
+    const res = await fetch(`${API_URL}/api/paths/${path.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      localStorage.setItem('bwr_cached_paths', JSON.stringify(allPaths));
+      showStatus(`Couleur changée en "${STATUS_LABELS[newStatus]}" !`);
+    } else if (!navigator.onLine || res.status === 503) {
+      queueOfflineChange(path.id, body);
+    } else {
+      showStatus('Erreur lors du changement.', true);
+    }
+  } catch {
+    queueOfflineChange(path.id, body);
   }
 }
 
@@ -887,3 +1078,59 @@ function showStatus(msg, isError = false) {
   el.className = 'admin-status' + (isError ? ' error' : (msg ? ' success' : ''));
   if (msg) setTimeout(() => { el.textContent = ''; el.className = 'admin-status'; }, 4000);
 }
+
+// On load: show pending banner and replay queues if already online
+updateSyncBanner();
+if (navigator.onLine) { replayOfflineQueue(); replayOfflineNewPaths(); }
+
+// ── Offline tile download (full Forêt de Compiègne) ───────────────────────
+const FOREST_BBOX = { north: 49.47, south: 49.27, west: 2.65, east: 3.10 };
+function lonToTileX(lon, z) { return Math.floor((lon + 180) / 360 * Math.pow(2, z)); }
+function latToTileY(lat, z) {
+  return Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z));
+}
+
+(async function initAdminOfflineBtn() {
+  const btn = document.getElementById('btnOfflineAdmin');
+  if (!btn) return;
+  if (localStorage.getItem('bwr_forest_cached') === '1') {
+    btn.querySelector('.btn-emoji').textContent = '✅';
+    btn.querySelector('.btn-label').textContent = 'Téléchargée';
+  }
+  btn.addEventListener('click', async () => {
+    if (btn.dataset.downloading === '1') return;
+    btn.dataset.downloading = '1';
+    btn.querySelector('.btn-emoji').textContent = '⏳';
+    btn.querySelector('.btn-label').textContent = '0%';
+    btn.disabled = true;
+    const tiles = [];
+    const subs = ['a', 'b', 'c'];
+    for (let z = 10; z <= 15; z++) {
+      const x0 = lonToTileX(FOREST_BBOX.west, z),  x1 = lonToTileX(FOREST_BBOX.east, z);
+      const y0 = latToTileY(FOREST_BBOX.north, z),  y1 = latToTileY(FOREST_BBOX.south, z);
+      for (let x = x0; x <= x1; x++)
+        for (let y = y0; y <= y1; y++)
+          tiles.push(`https://${subs[(x + y) % 3]}.tile.opentopomap.org/${z}/${x}/${y}.png`);
+    }
+    try {
+      const cache = await caches.open('bwr-offline-tiles');
+      let done = 0;
+      const BATCH = 8;
+      for (let i = 0; i < tiles.length; i += BATCH) {
+        await Promise.all(tiles.slice(i, i + BATCH).map(async url => {
+          try { await cache.put(url, await fetch(url, { mode: 'no-cors' })); } catch {}
+          done++;
+        }));
+        btn.querySelector('.btn-label').textContent = `${Math.round(done / tiles.length * 100)}%`;
+      }
+      localStorage.setItem('bwr_forest_cached', '1');
+      showStatus(`Carte hors-ligne sauvegardée ! (${tiles.length} tuiles)`);
+      btn.querySelector('.btn-emoji').textContent = '✅';
+      btn.querySelector('.btn-label').textContent = 'Téléchargée';
+    } catch { showStatus('Erreur lors du téléchargement.', true); }
+    finally {
+      delete btn.dataset.downloading;
+      btn.disabled = false;
+    }
+  });
+}());

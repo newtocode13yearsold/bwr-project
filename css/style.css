@@ -1,4 +1,4 @@
-/* ── Reset & base ── */
+/* ── Reset & base ── */ /* v2 */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ── Leaflet protection — prevent global CSS from animating map layers ──────
@@ -466,6 +466,38 @@ body {
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+/* ── Live location dot ── */
+.location-dot-icon {
+  overflow: visible !important;
+  background: none !important;
+  border: none !important;
+}
+.location-dot-inner {
+  width: 16px;
+  height: 16px;
+  background: #3b82f6;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  position: relative;
+  z-index: 1;
+}
+.location-dot-pulse {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  background: rgba(59,130,246,0.22);
+  border-radius: 50%;
+  top: -10px;
+  left: -10px;
+  animation: location-pulse 2s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes location-pulse {
+  0%   { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
 /* ── Difficulty picker (silver+) ── */
 .popup-difficulty-section {
   margin-top: 8px;
@@ -725,7 +757,7 @@ body {
 /* ── Report FAB button ── */
 .report-fab {
   position: fixed;
-  bottom: 28px;
+  bottom: 140px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1100;
@@ -1120,25 +1152,76 @@ body {
 
 /* ── Locate me button ── */
 .map-locate-btn {
-  position: absolute;
-  bottom: 88px;
-  right: 12px;
-  z-index: 1000;
-  width: 40px;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1100;
   height: 40px;
-  border-radius: 8px;
+  padding: 0 18px;
+  border-radius: 999px;
   border: none;
   background: white;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
-  font-size: 1.1rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e4d14;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, transform 0.15s;
+  gap: 6px;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.2s;
 }
-.map-locate-btn:hover { background: #f0f7ec; transform: scale(1.08); }
-.map-locate-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+.map-locate-btn:hover { background: #f0f7ec; transform: translateX(-50%) translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.22); }
+.map-locate-btn:disabled { opacity: 0.5; cursor: default; transform: translateX(-50%); }
+
+.map-locate-btn.locate-following {
+  background: #eff6ff;
+  box-shadow: 0 0 0 3px #3b82f6, 0 2px 12px rgba(59,130,246,0.35);
+  animation: locate-pulse 2s ease-in-out infinite;
+}
+.map-locate-btn.locate-searching {
+  animation: locate-spin 1s linear infinite;
+}
+
+@keyframes locate-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px #3b82f6, 0 2px 12px rgba(59,130,246,0.35); }
+  50%       { box-shadow: 0 0 0 6px rgba(59,130,246,0.25), 0 2px 12px rgba(59,130,246,0.2); }
+}
+@keyframes locate-spin {
+  from { transform: translateX(-50%) rotate(0deg); }
+  to   { transform: translateX(-50%) rotate(360deg); }
+}
+
+/* Locate toast */
+.locate-toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: rgba(30, 77, 20, 0.92);
+  color: white;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 0.83rem;
+  font-weight: 500;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  white-space: nowrap;
+  max-width: 90vw;
+  text-align: center;
+}
+.locate-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.locate-toast.locate-toast-error {
+  background: rgba(185, 28, 28, 0.92);
+}
 
 /* ── Path hover tooltip ── */
 .path-tooltip {
@@ -1250,13 +1333,15 @@ body {
     font-size: 0.95rem;
   }
 
-  /* Filter panel — full-width sheet from top */
+  /* Filter panel — full-width sheet from top, clear the notch */
   .filter-panel {
     left: 8px;
     right: 8px;
-    top: 60px;
+    top: calc(56px + env(safe-area-inset-top, 0px) + 4px);
     min-width: 0;
     border-radius: 14px;
+    max-height: calc(80dvh - env(safe-area-inset-top, 0px));
+    overflow-y: auto;
   }
 
   .filter-label { font-size: 1rem; padding: 4px 0; }
@@ -1276,11 +1361,19 @@ body {
   /* Contact chip — hide on mobile to save space */
   .contact-chip { display: none; }
 
-  /* Report FAB — respect home-indicator safe area */
+  /* Report FAB + locate button — stacked above bottom nav */
   .report-fab {
-    bottom: max(80px, calc(28px + env(safe-area-inset-bottom)));
+    bottom: max(138px, calc(86px + env(safe-area-inset-bottom)));
     padding: 9px 18px;
     font-size: 0.82rem;
+  }
+
+  .map-locate-btn {
+    bottom: max(80px, calc(68px + env(safe-area-inset-bottom)));
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.82rem;
+    padding: 0 14px;
   }
 
   /* Admin path form — full width at bottom */
@@ -1325,11 +1418,15 @@ body {
     transform: none !important;
   }
 
-  /* Locate button */
-  .map-locate-btn {
-    width: 44px;
-    height: 44px;
-    bottom: 80px;
+
+  /* Locate toast — push above the bottom nav on mobile */
+  .locate-toast {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Toast — push above the bottom nav */
+  .map-toast {
+    bottom: calc(70px + env(safe-area-inset-bottom, 0px));
   }
 
   /* Admin status — bottom bar fit */
@@ -1338,6 +1435,11 @@ body {
     right: 8px;
     bottom: 8px;
     font-size: 0.8rem;
+  }
+
+  /* Shrink map so Leaflet doesn't render paths behind the fixed bottom nav */
+  #map {
+    margin-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 
   /* Legend — push above bottom nav */
@@ -1416,19 +1518,152 @@ body {
   .header { padding: 0 8px; gap: 3px; }
 }
 
+/* ── PWA iOS install modal ── */
+#pwa-ios-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+#pwa-ios-modal.pwa-ios-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.pwa-ios-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+}
+.pwa-ios-sheet {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px max(20px, env(safe-area-inset-bottom));
+  transform: translateY(40px);
+  transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1);
+  color: #1a2e12;
+}
+#pwa-ios-modal.pwa-ios-visible .pwa-ios-sheet {
+  transform: translateY(0);
+}
+.pwa-ios-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.pwa-ios-appicon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.pwa-ios-header > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pwa-ios-header strong {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a2e12;
+}
+.pwa-ios-header span {
+  font-size: 0.82rem;
+  color: #555;
+}
+.pwa-ios-close {
+  background: #f0f0f0;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: #555;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.pwa-ios-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pwa-ios-steps li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.4;
+}
+.pwa-ios-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #1e4d14;
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pwa-ios-safari-hint {
+  text-align: center;
+  padding: 8px 0 4px;
+  color: #333;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.pwa-ios-safari-icon { font-size: 2.5rem; margin-bottom: 8px; }
+.pwa-ios-safari-hint p { margin: 4px 0; }
+.pwa-ios-copy-btn {
+  margin-top: 14px;
+  background: #1e4d14;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 28px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pwa-ios-share-svg {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  color: #007aff;
+}
+
 /* ── PWA install banner ── */
 #pwa-install-banner {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1100;
+  left: 10px;
+  right: 10px;
+  bottom: 55px;
+  z-index: 1050;
   padding: 12px 16px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  border-radius: 14px;
   background: #1e4d14;
   color: white;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
-  transform: translateY(100%);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  transform: translateY(calc(100% + 70px));
   transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
@@ -1439,7 +1674,9 @@ body {
 /* Sit above the bottom nav on mobile */
 @media (max-width: 768px) {
   #pwa-install-banner {
-    bottom: calc(56px + env(safe-area-inset-bottom));
+    bottom: calc(66px + env(safe-area-inset-bottom));
+    left: 8px;
+    right: 8px;
     padding-bottom: 12px;
     border-radius: 16px 16px 0 0;
   }
@@ -1514,3 +1751,48 @@ body {
 }
 
 .pwa-banner-dismiss:hover { color: white; }
+
+/* ── Offline pill ─────────────────────────────────────────────────────────── */
+#offline-pill {
+  position: fixed;
+  top: calc(64px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%) translateY(-60px);
+  background: #92400e;
+  color: #fef3c7;
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  z-index: 9000;
+  transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+  pointer-events: none;
+  white-space: nowrap;
+}
+#offline-pill.visible {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Sync spinner ─────────────────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.sync-icon { display: inline-block; }
+.syncing .sync-icon { animation: spin 0.8s linear infinite; }
+
+/* ── Skeleton shimmer ─────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+  color: transparent !important;
+  min-width: 48px;
+  min-height: 1.2em;
+  display: inline-block;
+}

@@ -724,14 +724,22 @@ async function loadPathCount() {
   try {
     const res = await fetch(`${API_URL}/api/paths`);
     const paths = await res.json();
-    document.getElementById('statPaths').textContent = paths.length;
-  } catch {}
+    const statPaths = document.getElementById('statPaths');
+    statPaths.classList.remove('skeleton');
+    statPaths.textContent = paths.length;
+  } catch {
+    document.getElementById('statPaths').classList.remove('skeleton');
+  }
   const serverRoutes = (currentUser?.stats?.routes) || 0;
   const serverKm     = (currentUser?.stats?.km) || 0;
   const routes = Math.max(serverRoutes, parseInt(localStorage.getItem('bwr_route_count') || '0'));
   const km     = Math.max(serverKm, parseFloat(localStorage.getItem('bwr_km_total') || '0'));
-  document.getElementById('statRoutes').textContent = routes;
-  document.getElementById('statKm').textContent     = km > 0 ? `${km.toFixed(0)} km` : '—';
+  const statRoutes = document.getElementById('statRoutes');
+  const statKm     = document.getElementById('statKm');
+  statRoutes.classList.remove('skeleton');
+  statKm.classList.remove('skeleton');
+  statRoutes.textContent = routes;
+  statKm.textContent     = km > 0 ? `${km.toFixed(0)} km` : '—';
 }
 
 // ── Form: update name / email ──────────────────────────────────────────────────

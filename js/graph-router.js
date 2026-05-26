@@ -91,6 +91,34 @@ function snapToJunction(nodes, adj, startNode) {
   return best;
 }
 
+// Remove all dead-end spurs by iteratively deleting degree-1 nodes.
+// The result only contains nodes that are part of actual cycles — routing on
+// this graph guarantees no path will need to backtrack along a dead-end branch.
+function pruneDeadEnds(adjIn) {
+  const adj = new Map([...adjIn].map(([k, edges]) => [k, [...edges]]));
+  const queue = [];
+  for (const [k, edges] of adj) {
+    if (edges.length <= 1) queue.push(k);
+  }
+  while (queue.length) {
+    const k = queue.pop();
+    if (!adj.has(k)) continue;
+    const edges = adj.get(k);
+    if (edges.length >= 2) continue;
+    const neighbor = edges.length === 1 ? edges[0].to : null;
+    adj.delete(k);
+    if (neighbor && adj.has(neighbor)) {
+      const ne = adj.get(neighbor).filter(e => e.to !== k);
+      if (ne.length === 0) { adj.delete(neighbor); }
+      else {
+        adj.set(neighbor, ne);
+        if (ne.length === 1) queue.push(neighbor);
+      }
+    }
+  }
+  return adj;
+}
+
 function dijkstra(adj, start, end = null) {
   const dist = new Map([[start, 0]]);
   const prev = new Map();
@@ -156,32 +184,51 @@ function graphAtob(sLat, sLng, eLat, eLng, paths) {
 }
 
 // Loop routing on the graph — routes out one way, removes those edges, routes back differently.
-// Tries multiple mid-point candidates and picks the one producing the least backtracking.
+// Dead-end spurs are pruned first so the router never has to backtrack along a branch.
+// The return path must arrive at start via a different edge than the outbound departure.
 // paths: pre-filtered array of path objects.
 // pathTyp: 'foot' | 'bike' | 'champs' (used only for speed in the result).
 function graphLoop(sLat, sLng, targetKm, paths, pathTyp = 'foot') {
   if (!paths.length) throw new Error('Aucun chemin de ce type enregistré');
-  const { nodes, adj } = buildGraph(paths);
+  const { nodes, adj: adjFull } = buildGraph(paths);
   if (nodes.size < 4) throw new Error('Pas assez de chemins — ajoutes-en depuis le panneau admin');
 
-  // Snap start to a real junction to avoid leaf-stem back-and-forth
-  const rawStart  = nearestNode(nodes, sLat, sLng);
-  const startNode = snapToJunction(nodes, adj, rawStart);
-  const targetM   = targetKm * 1000;
+  // Prune dead-end spurs — only nodes that are part of real cycles remain.
+  // Every node in adj has degree ≥ 2 after this step.
+  const adj = pruneDeadEnds(adjFull);
+  if (adj.size < 4) throw new Error('Pas assez de chemins en boucle dans cette zone — ajoutes-en depuis le panneau admin');
 
-  // 1. Dijkstra from start → distances to all nodes
+  // Snap start to nearest node that survived pruning
+  let startNode;
+  {
+    const raw = nearestNode(nodes, sLat, sLng);
+    if (adj.has(raw.k)) {
+      startNode = raw;
+    } else {
+      let bd = Infinity;
+      startNode = raw;
+      for (const k of adj.keys()) {
+        const n = nodes.get(k);
+        if (!n) continue;
+        const d = haversineM(sLat, sLng, n.lat, n.lon);
+        if (d < bd) { bd = d; startNode = n; }
+      }
+    }
+  }
+  const targetM = targetKm * 1000;
+
+  // 1. Dijkstra from start → distances to all nodes in the pruned graph
   const { dist, prev: prevOut } = dijkstra(adj, startNode.k);
 
-  // 2. Collect mid candidates: prefer junctions (degree ≥ 2) within ±35% of targetM/2
+  // 2. Collect mid candidates within ±35% of targetM/2
+  // All surviving nodes have degree ≥ 2, so no junction filter needed
   const half = targetM / 2;
   const candidates = [];
   for (const [k, d] of dist) {
     if (d <= 0) continue;
-    const isJunction = (adj.get(k) || []).length >= 2;
     const ratio = Math.abs(d - half) / half;
-    if (ratio < 0.35 && isJunction) candidates.push({ k, d, ratio });
+    if (ratio < 0.35) candidates.push({ k, d, ratio });
   }
-  // Fall back to any reachable node if no junctions in range
   if (!candidates.length) {
     for (const [k, d] of dist) {
       if (d > 0) candidates.push({ k, d, ratio: Math.abs(d - half) / half });
@@ -196,7 +243,9 @@ function graphLoop(sLat, sLng, targetKm, paths, pathTyp = 'foot') {
     const outKeys = rebuildPath(prevOut, startNode.k, cand.k);
     if (!outKeys) continue;
 
-    // Remove outbound edges from a copy of the adjacency list
+    // Remove outbound edges from a copy of the adjacency list.
+    // This also removes the departure edge from start, forcing the return
+    // to arrive via a different edge (= different path at start/end).
     const adjBack = new Map([...adj].map(([k, edges]) => [k, [...edges]]));
     const outEdgeSet = new Set();
     for (let i = 0; i < outKeys.length - 1; i++) {
@@ -251,6 +300,6 @@ if (typeof module !== 'undefined') {
   module.exports = {
     haversineM, nodeKey, buildGraph, dijkstra,
     rebuildPath, nearestNode, graphToResult,
-    snapToJunction, graphAtob, graphAtobHybrid, graphLoop,
+    snapToJunction, pruneDeadEnds, graphAtob, graphAtobHybrid, graphLoop,
   };
 }

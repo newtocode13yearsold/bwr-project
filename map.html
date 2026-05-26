@@ -26,6 +26,7 @@
       <span class="tagline">La carte qui simplifie ta vie</span>
     </div>
     <div class="header-right">
+      <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji">⬇</span><span class="btn-label">Installer</span></button>
       <button class="btn-icon" id="toggleFilters" title="Filtres"><span class="btn-emoji">&#9776;</span><span class="btn-label">Filtres</span></button>
       <a href="routes.html" class="btn-icon" id="btnPlanRoute" title="Planifier un trajet" style="display:none; text-decoration:none"><span class="btn-emoji">🗺</span><span class="btn-label">Planifier</span></a>
       <button class="btn-icon" id="btnOffline" title="Sauvegarder hors-ligne" style="display:none"><span class="btn-emoji">💾</span><span class="btn-label">Hors-ligne</span></button>
@@ -73,6 +74,13 @@
     </div>
   </div>
 
+  <!-- Offline sync banner -->
+  <div id="mapSyncBanner" style="display:none;background:#92400e;color:#fef3c7;padding:8px 16px;font-size:0.82rem;align-items:center;gap:10px;justify-content:center;">
+    <span class="sync-icon">↻</span>
+    <span class="sync-count"></span>
+    <button onclick="replayMapPatches();replayMapReports();" style="background:#fef3c7;color:#92400e;border:none;border-radius:6px;padding:3px 10px;font-size:0.8rem;cursor:pointer;font-weight:600;">Synchroniser maintenant</button>
+  </div>
+
   <div id="map">
     <!-- Floating search bar -->
     <div class="map-search-wrap" id="mapSearchWrap">
@@ -84,8 +92,6 @@
       </div>
       <div class="map-search-results hidden" id="mapSearchResults"></div>
     </div>
-    <!-- Locate me button -->
-    <button class="map-locate-btn" id="btnLocate" title="Ma position">📍</button>
   </div>
 
   <div class="legend">
@@ -116,7 +122,7 @@
     </div>
   </div>
 
-  <button class="report-fab" id="btnReport">⚠️ Signaler</button>
+  <button class="map-locate-btn" id="btnLocate" title="Ma position">📍 Ma position</button>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="js/config.js"></script>
@@ -124,6 +130,8 @@
   <script src="js/features.js"></script>
   <script src="js/carrefours.js"></script>
   <script src="js/map.js"></script>
+  <div id="offline-pill">📶 Hors-ligne</div>
+
   <nav class="bottom-nav" aria-label="Navigation principale">
     <a href="map.html" class="bnav-item active">
       <span class="bnav-icon">🗺</span>
@@ -141,8 +149,29 @@
 
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/bwr-project/sw.js').catch(() => {});
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
+    (function() {
+      var pill = document.getElementById('offline-pill');
+      var _checkTimer = null;
+
+      async function isReallyOffline() {
+        if (navigator.onLine === false) return true;
+        try {
+          await fetch('/manifest.json?_nc=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(3000) });
+          return false;
+        } catch { return true; }
+      }
+
+      async function updatePill() {
+        var offline = await isReallyOffline();
+        pill.classList.toggle('visible', offline);
+      }
+
+      window.addEventListener('online',  () => { clearTimeout(_checkTimer); _checkTimer = setTimeout(updatePill, 500); });
+      window.addEventListener('offline', () => { clearTimeout(_checkTimer); _checkTimer = setTimeout(updatePill, 500); });
+      updatePill();
+    })();
   </script>
   <script src="js/install.js"></script>
 </body>

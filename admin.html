@@ -31,10 +31,18 @@
         <button class="btn-icon" id="btnSelectPath" title="Sélectionner un chemin"><span class="btn-emoji">🗺</span><span class="btn-label">Sélectionner</span></button>
         <button class="btn-icon" id="btnDrawPath" title="Dessiner"><span class="btn-emoji">✏</span><span class="btn-label">Dessiner</span></button>
         <button class="btn-icon" id="btnMembers" title="Gérer les membres"><span class="btn-emoji">👥</span><span class="btn-label">Membres</span></button>
+        <button class="btn-icon" id="btnOfflineAdmin" title="Télécharger la carte hors-ligne"><span class="btn-emoji">💾</span><span class="btn-label">Carte</span></button>
         <button class="btn-icon" id="btnSplitCancel" title="Annuler le découpage" style="display:none;background:rgba(239,68,68,0.4)"><span class="btn-emoji">✕</span><span class="btn-label">Annuler</span></button>
         <div class="user-menu" id="userMenu"></div>
       </div>
     </header>
+
+    <!-- Offline sync banner -->
+    <div id="syncBanner" style="display:none;background:#92400e;color:#fef3c7;padding:8px 16px;font-size:0.82rem;align-items:center;gap:10px;justify-content:center;">
+      <span class="sync-icon">↻</span>
+      <span class="sync-count"></span>
+      <button onclick="replayOfflineQueue();replayOfflineNewPaths();" style="background:#fef3c7;color:#92400e;border:none;border-radius:6px;padding:3px 10px;font-size:0.8rem;cursor:pointer;font-weight:600;">Synchroniser maintenant</button>
+    </div>
 
     <!-- New path form -->
     <div id="pathForm" class="path-form hidden">
@@ -174,11 +182,22 @@
 
   </div>
 
+  <div id="offline-pill">📶 Hors-ligne</div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/carrefours.js"></script>
   <script src="js/admin.js"></script>
+  <script>
+    (function() {
+      var pill = document.getElementById('offline-pill');
+      function updatePill() { pill.classList.toggle('visible', !navigator.onLine); }
+      window.addEventListener('online', updatePill);
+      window.addEventListener('offline', updatePill);
+      updatePill();
+    })();
+  </script>
 </body>
 </html>

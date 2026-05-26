@@ -546,26 +546,30 @@ export default {
       return json({ message: 'Déconnecté.' });
     }
 
-    // ── GET /api/osm — proxy + cache for Overpass API ────────────────────────
+    // ── GET /api/osm — proxy + cache via Overpass API ───────────────────────
+    // Overpass has no strict bbox size limit (unlike OSM main API's 0.25°×0.25° cap).
+    // Cache key uses "osmv2:" prefix so old OSM-API cached entries are bypassed.
     if (pathname === '/api/osm' && request.method === 'GET') {
       const bbox = url.searchParams.get('bbox');
       if (!bbox) return fail('bbox parameter required');
 
-      const cacheKey = `osm:${bbox}`;
+      const cacheKey = `osmv2:${bbox}`;
       const cached = await env.BWR_KV.get(cacheKey);
       if (cached) return json(JSON.parse(cached));
 
-      // bbox from client is south,west,north,east — OSM API needs west,south,east,north
       const [s, w, n, e] = bbox.split(',');
       try {
-        const res = await fetch(
-          `https://api.openstreetmap.org/api/0.6/map.json?bbox=${w},${s},${e},${n}`,
-          { headers: { 'Accept': 'application/json' } }
-        );
-        if (!res.ok) return fail('OSM API error', 502);
+        // Overpass QL: fetch forest/foot path ways and their nodes in one shot.
+        const query = `[out:json][timeout:25];(way["highway"~"^(path|track|footway|bridleway|cycleway)$"](${s},${w},${n},${e});>;);out body;`;
+        const res = await fetch('https://overpass-api.de/api/interpreter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `data=${encodeURIComponent(query)}`,
+        });
+        if (!res.ok) return fail('Overpass API error', 502);
         const raw = await res.json();
 
-        // Keep only path/track nodes and ways
+        // Secondary filter for safety (Overpass already filtered, just keep consistent shape)
         const pathTypes = /^(path|track|footway|bridleway|cycleway)$/;
         const ways = raw.elements.filter(el =>
           el.type === 'way' && el.tags?.highway && pathTypes.test(el.tags.highway)
@@ -577,7 +581,7 @@ export default {
         await env.BWR_KV.put(cacheKey, JSON.stringify(data), { expirationTtl: 604800 });
         return json(data);
       } catch (e) {
-        return fail('OSM API unavailable', 502);
+        return fail('Overpass API unavailable', 502);
       }
     }
 
