@@ -11,6 +11,7 @@
 // osm:{bbox}         → JSON OSM data  (unchanged)
 // savedroute:{userId}:{id} → JSON saved route (coords, stats, metadata)
 // routeshare:{token}       → JSON { userId, routeId }  (180-day TTL)
+// news:{id}                → JSON news item { id, title, content, url, urlLabel, createdAt, updatedAt }
 
 async function listItems(env, prefix) {
   const keys = [];
@@ -781,13 +782,11 @@ export default {
       return json(updated);
     }
 
-    // ── PATCH /api/paths/:id — silver+ users, status-only update ────────────
+    // ── PATCH /api/paths/:id — authenticated users; 'hard' requires silver+ ──
     if (pathname.startsWith('/api/paths/') && request.method === 'PATCH') {
       const user = await getUserFromToken(env, request);
       if (!user) return fail('Connexion requise.', 401);
       const plan = effectivePlan(user);
-      const allowed = plan === 'gold' || plan === 'silver';
-      if (!allowed) return fail('Abonnement Argent requis.', 403);
 
       const id = pathname.split('/')[3];
       const body = await request.json();
@@ -797,6 +796,10 @@ export default {
       const validStatuses = ['easy', 'medium', 'hard', 'not_passable', 'no_bike'];
       if (!body.status || !validStatuses.includes(body.status)) {
         return fail('Statut invalide.', 400);
+      }
+
+      if (body.status === 'hard' && plan === 'free') {
+        return fail('Abonnement Argent requis pour marquer Difficile.', 403);
       }
 
       const oldStatus = existing.status;
@@ -1040,6 +1043,70 @@ export default {
       const route = JSON.parse(routeRaw);
       const { userId: _uid, ...publicRoute } = route;
       return json(publicRoute);
+    }
+
+    // ── GET /api/news — public news feed ─────────────────────────────────────
+    if (pathname === '/api/news' && request.method === 'GET') {
+      const items = await listItems(env, 'news:');
+      items.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      return json(items);
+    }
+
+    // ── POST /api/news — create news item (admin only) ────────────────────────
+    if (pathname === '/api/news' && request.method === 'POST') {
+      const user = await getUserFromToken(env, request);
+      if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
+
+      const body = await request.json();
+      if (!body.title?.trim()) return fail('Titre obligatoire.');
+
+      const id = crypto.randomUUID();
+      const item = {
+        id,
+        title: body.title.trim().slice(0, 200),
+        content: (body.content || '').trim().slice(0, 5000),
+        url: (body.url || '').trim().slice(0, 500),
+        urlLabel: (body.urlLabel || '').trim().slice(0, 100),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      await env.BWR_KV.put(`news:${id}`, JSON.stringify(item));
+      return json(item, 201);
+    }
+
+    // ── PUT /api/news/:id — edit news item (admin only) ───────────────────────
+    if (pathname.startsWith('/api/news/') && request.method === 'PUT') {
+      const user = await getUserFromToken(env, request);
+      if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
+
+      const id = pathname.split('/')[3];
+      const raw = await env.BWR_KV.get(`news:${id}`);
+      if (!raw) return fail('Article introuvable.', 404);
+
+      const body = await request.json();
+      if (!body.title?.trim()) return fail('Titre obligatoire.');
+
+      const existing = JSON.parse(raw);
+      const updated = {
+        ...existing,
+        title: body.title.trim().slice(0, 200),
+        content: (body.content || '').trim().slice(0, 5000),
+        url: (body.url || '').trim().slice(0, 500),
+        urlLabel: (body.urlLabel || '').trim().slice(0, 100),
+        updatedAt: new Date().toISOString(),
+      };
+      await env.BWR_KV.put(`news:${id}`, JSON.stringify(updated));
+      return json(updated);
+    }
+
+    // ── DELETE /api/news/:id — delete news item (admin only) ─────────────────
+    if (pathname.startsWith('/api/news/') && request.method === 'DELETE') {
+      const user = await getUserFromToken(env, request);
+      if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
+
+      const id = pathname.split('/')[3];
+      await env.BWR_KV.delete(`news:${id}`);
+      return json({ success: true });
     }
 
     // ── POST /api/push/subscribe — enable path alerts (gold only) ─────────────

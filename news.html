@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1e4d14" />
+  <title>Actualités — BWR · Forêt de Compiègne</title>
+  <meta name="description" content="Les dernières actualités de la forêt de Compiègne : informations, articles et liens sélectionnés par l'équipe BWR." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/home.css" />
+  <style>
+    /* ── Page-specific styles ── */
+    body { background: var(--surface-1, #fafbf7); }
+
+    .page-hero {
+      padding: 120px 24px 64px;
+      text-align: center;
+      background: linear-gradient(160deg, #0b2410 0%, #1e4d14 55%, #2d6b1f 100%);
+      color: #fff;
+    }
+    .page-hero-badge {
+      display: inline-block;
+      background: rgba(163, 230, 53, 0.18);
+      color: #a3e635;
+      border: 1px solid rgba(163, 230, 53, 0.35);
+      border-radius: 999px;
+      padding: 4px 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .page-hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      line-height: 1.15;
+    }
+    .page-hero p {
+      color: rgba(255,255,255,0.72);
+      font-size: 1.05rem;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* ── Feed ── */
+    .news-section {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 64px 24px 96px;
+    }
+
+    .news-card {
+      background: #fff;
+      border: 1px solid var(--border-soft, #ebeee5);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px -4px rgba(11,36,16,0.08);
+      transition: box-shadow 0.2s;
+    }
+    .news-card:hover { box-shadow: 0 8px 24px -8px rgba(11,36,16,0.14); }
+
+    .news-meta {
+      margin-bottom: 10px;
+    }
+    .news-date {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--forest-500, #4a8a32);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .news-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.2rem, 3vw, 1.6rem);
+      font-weight: 700;
+      color: var(--text-strong, #0b2410);
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      margin-bottom: 14px;
+    }
+    .news-content {
+      font-size: 0.97rem;
+      color: var(--text, #1f2937);
+      line-height: 1.7;
+      margin-bottom: 18px;
+      white-space: pre-line;
+    }
+    .news-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--forest-100, #f0f7ec);
+      color: var(--forest-700, #1e4d14);
+      border: 1px solid var(--forest-300, #b9d8a4);
+      border-radius: 999px;
+      padding: 7px 18px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .news-link:hover {
+      background: var(--forest-700, #1e4d14);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .news-link-locked {
+      background: var(--silver-grad-soft, linear-gradient(135deg,#f1f5f9,#e2e8f0));
+      color: var(--silver-600, #475569);
+      border-color: var(--silver-200, #e2e8f0);
+      cursor: not-allowed;
+      opacity: 0.82;
+    }
+    .news-link-locked:hover { background: var(--silver-grad-soft, linear-gradient(135deg,#f1f5f9,#e2e8f0)); color: var(--silver-600, #475569); transform: none; }
+
+    /* ── Admin controls ── */
+    .news-admin-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-soft, #ebeee5);
+    }
+    .news-btn-edit,
+    .news-btn-delete {
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .news-btn-edit   { background: #e0f2fe; color: #0369a1; }
+    .news-btn-delete { background: #fee2e2; color: #b91c1c; }
+    .news-btn-edit:hover, .news-btn-delete:hover { opacity: 0.75; }
+
+    /* ── Loading / empty ── */
+    .news-loading,
+    .news-empty {
+      text-align: center;
+      color: var(--text-muted, #6b7280);
+      padding: 64px 0;
+      font-size: 1rem;
+    }
+
+    /* ── FAB ── */
+    #fabAdd {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--forest-700, #1e4d14);
+      color: #a3e635;
+      border: none;
+      font-size: 1.6rem;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(11,36,16,0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s, box-shadow 0.15s;
+      z-index: 100;
+    }
+    #fabAdd:hover { transform: scale(1.08); box-shadow: 0 8px 28px rgba(11,36,16,0.4); }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 36, 16, 0.55);
+      backdrop-filter: blur(4px);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 20px;
+      padding: 36px;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 24px 60px -16px rgba(11,36,16,0.35);
+      animation: modalIn 0.22s cubic-bezier(0.16,1,0.30,1);
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .modal-header h2 {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-strong, #0b2410);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      color: var(--text-muted, #6b7280);
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+    }
+    .modal-close:hover { color: var(--text, #1f2937); }
+
+    .form-group { margin-bottom: 18px; }
+    .form-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-strong, #0b2410);
+      margin-bottom: 6px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .form-label span { color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .form-input,
+    .form-textarea {
+      width: 100%;
+      border: 1.5px solid var(--border, #e2e8da);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.97rem;
+      font-family: var(--font-sans);
+      color: var(--text, #1f2937);
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus,
+    .form-textarea:focus { border-color: var(--forest-600, #2d6b1f); }
+    .form-textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+
+    .modal-error {
+      color: #b91c1c;
+      font-size: 0.875rem;
+      margin-bottom: 12px;
+      min-height: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+    .btn-cancel {
+      background: var(--surface-2, #f3f4f0);
+      color: var(--text, #1f2937);
+      border: none;
+      border-radius: 10px;
+      padding: 10px 22px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-save {
+      background: var(--forest-700, #1e4d14);
+      color: #a3e635;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 28px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-save:hover:not(:disabled) { opacity: 0.88; }
+
+    /* ── Footer ── */
+    .news-footer {
+      background: #0b2410;
+      color: rgba(255,255,255,0.55);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 0.85rem;
+    }
+    .news-footer a { color: #a3e635; text-decoration: none; }
+    .news-footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .news-card { padding: 24px 20px; }
+      #fabAdd { bottom: 24px; right: 20px; }
+      .modal-box { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Navigation ── -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">BWR</a>
+      <div class="nav-links">
+        <a href="map.html">Carte</a>
+        <a href="routes.html">Planifier</a>
+        <a href="news.html" style="color:#a3e635">Actualités</a>
+      </div>
+      <div class="nav-cta">
+        <a href="plans.html" class="btn-nav-plans">Plans</a>
+        <a href="login.html" class="btn-nav-login" id="navLogin">Connexion</a>
+        <a href="map.html" class="btn-nav-map">Voir la carte</a>
+      </div>
+      <button class="nav-burger" id="navBurger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-mobile hidden" id="navMobile">
+      <a href="map.html">Carte</a>
+      <a href="routes.html">Planifier</a>
+      <a href="news.html">Actualités</a>
+      <a href="plans.html">Plans</a>
+      <a href="login.html" id="navLogin">Connexion</a>
+      <a href="map.html" class="mobile-map-btn">Voir la carte →</a>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <div class="page-hero">
+    <div class="page-hero-badge">🌲 Forêt de Compiègne</div>
+    <h1>Actualités</h1>
+    <p>Informations, articles et nouveautés sélectionnés par l'équipe BWR.</p>
+  </div>
+
+  <!-- ── News feed ── -->
+  <section class="news-section">
+    <div id="newsFeed"></div>
+  </section>
+
+  <!-- ── FAB (admin only) ── -->
+  <button id="fabAdd" title="Ajouter une actualité" onclick="openAdd()">+</button>
+
+  <!-- ── Modal ── -->
+  <div class="modal-backdrop" id="newsModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modalTitle">Nouvelle actualité</h2>
+        <button class="modal-close" onclick="closeModal()" aria-label="Fermer">×</button>
+      </div>
+      <form id="newsForm">
+        <input type="hidden" id="modalEditId" />
+
+        <div class="form-group">
+          <label class="form-label" for="fieldTitle">Titre</label>
+          <input type="text" id="fieldTitle" class="form-input" placeholder="Titre de l'actualité" required maxlength="200" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="fieldContent">Texte <span>(optionnel)</span></label>
+          <textarea id="fieldContent" class="form-textarea" placeholder="Décrivez l'actualité…" maxlength="5000"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="fieldUrl">Lien vers l'article <span>(optionnel)</span></label>
+          <input type="url" id="fieldUrl" class="form-input" placeholder="https://…" maxlength="500" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="fieldUrlLabel">Libellé du lien <span>(optionnel)</span></label>
+          <input type="text" id="fieldUrlLabel" class="form-input" placeholder="Lire l'article" maxlength="100" />
+        </div>
+
+        <p class="modal-error" id="modalError"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" onclick="closeModal()">Annuler</button>
+          <button type="submit" class="btn-save" id="modalSave">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Footer ── -->
+  <footer class="news-footer">
+    <p>© 2026 <a href="index.html">BWR</a> · Balades en forêt de Compiègne ·
+       <a href="mailto:ciril8596@gmail.com">Contact</a></p>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/news.js"></script>
+  <script>
+    // Fade-in observer (called after render too, from news.js)
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(attachFadeObserver, 100);
+    });
+  </script>
+</body>
+</html>

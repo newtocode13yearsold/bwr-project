@@ -1455,6 +1455,91 @@ body {
   .report-photo-preview, .report-popup-photo { max-height: 140px; }
 }
 
+/* ── Nav drawer ── */
+.nav-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1100;
+  opacity: 0;
+  transition: opacity 0.22s;
+}
+.nav-drawer-overlay.hidden { display: none; }
+.nav-drawer-overlay.open { display: block; opacity: 1; }
+
+.nav-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(280px, 80vw);
+  background: #fff;
+  z-index: 1101;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.nav-drawer.hidden { display: none; }
+.nav-drawer.open { display: flex; transform: translateX(0); }
+
+.nav-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  padding-top: max(20px, env(safe-area-inset-top));
+  height: calc(60px + env(safe-area-inset-top));
+  background: #1e4d14;
+  flex-shrink: 0;
+}
+.nav-drawer-logo {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #a3e635;
+}
+.nav-drawer-close {
+  background: none;
+  border: none;
+  color: #bbf7d0;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 6px;
+  line-height: 1;
+  border-radius: 6px;
+}
+.nav-drawer-close:hover { background: rgba(255,255,255,0.15); }
+
+.nav-drawer-links {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 0;
+  flex: 1;
+  overflow-y: auto;
+}
+.nav-drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 24px;
+  text-decoration: none;
+  color: #374151;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-left: 3px solid transparent;
+  transition: background 0.12s, color 0.12s;
+}
+.nav-drawer-item:hover { background: #f0f4ec; color: #1e4d14; }
+.nav-drawer-item.active {
+  color: #1e4d14;
+  font-weight: 700;
+  border-left-color: #1e4d14;
+  background: #f0f4ec;
+}
+.nav-drawer-icon { font-size: 1.25rem; width: 28px; text-align: center; }
+
 /* ── Bottom navigation bar ── */
 .bottom-nav { display: none; }
 

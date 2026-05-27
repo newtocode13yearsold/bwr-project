@@ -38,6 +38,7 @@
       <a href="map.html" class="nav-logo">BWR</a>
       <div class="nav-links">
         <a href="#features">Fonctionnalités</a>
+        <a href="news.html">Actualités</a>
         <a href="#about">À propos</a>
         <a href="#contact">Contact</a>
       </div>
@@ -50,16 +51,38 @@
         <span></span><span></span><span></span>
       </button>
     </div>
-    <!-- Mobile menu -->
-    <div class="nav-mobile hidden" id="navMobile">
-      <a href="#features">Fonctionnalités</a>
-      <a href="plans.html">Plans</a>
-      <a href="#about">À propos</a>
-      <a href="#contact">Contact</a>
-      <a href="login.html">Connexion</a>
-      <a href="map.html" class="mobile-map-btn">Voir la carte →</a>
-    </div>
   </nav>
+
+  <!-- Nav drawer overlay -->
+  <div class="nav-drawer-overlay hidden" id="navDrawerOverlay"></div>
+  <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
+    <div class="nav-drawer-header">
+      <span class="nav-drawer-logo">BWR</span>
+      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+    </div>
+    <nav class="nav-drawer-links">
+      <a href="index.html" class="nav-drawer-item active">
+        <span class="nav-drawer-icon">🏠</span>
+        <span>Accueil</span>
+      </a>
+      <a href="map.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">🗺</span>
+        <span>Carte</span>
+      </a>
+      <a href="routes.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">🧭</span>
+        <span>Planifier un trajet</span>
+      </a>
+      <a href="profile.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">👤</span>
+        <span>Mon profil</span>
+      </a>
+      <a href="plans.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">⭐</span>
+        <span>Plans &amp; abonnements</span>
+      </a>
+    </nav>
+  </div>
 
   <!-- ── Hero ── -->
   <section class="hero">
@@ -336,16 +359,30 @@
       nav.classList.toggle('scrolled', window.scrollY > 20);
     });
 
-    // Mobile burger menu
-    document.getElementById('navBurger').addEventListener('click', () => {
-      document.getElementById('navMobile').classList.toggle('hidden');
-    });
-
-    // Close mobile menu on link click
-    document.querySelectorAll('.nav-mobile a').forEach(a => {
-      a.addEventListener('click', () =>
-        document.getElementById('navMobile').classList.add('hidden'));
-    });
+    // Nav drawer
+    (function() {
+      var overlay = document.getElementById('navDrawerOverlay');
+      var drawer  = document.getElementById('navDrawer');
+      function openDrawer() {
+        overlay.classList.remove('hidden');
+        drawer.classList.remove('hidden');
+        requestAnimationFrame(function() {
+          overlay.classList.add('open');
+          drawer.classList.add('open');
+        });
+      }
+      function closeDrawer() {
+        overlay.classList.remove('open');
+        drawer.classList.remove('open');
+        setTimeout(function() {
+          overlay.classList.add('hidden');
+          drawer.classList.add('hidden');
+        }, 250);
+      }
+      document.getElementById('navBurger').addEventListener('click', openDrawer);
+      document.getElementById('btnNavDrawerClose').addEventListener('click', closeDrawer);
+      overlay.addEventListener('click', closeDrawer);
+    })();
 
     // Smooth scroll for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(a => {

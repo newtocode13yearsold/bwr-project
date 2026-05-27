@@ -115,6 +115,10 @@ async function initUserMenu() {
     document.getElementById('btnEditPaths').style.display = '';
   }
 
+  if (user.role === 'admin') {
+    document.getElementById('navDrawerAdmin')?.classList.remove('hidden');
+  }
+
   const initials = user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   menuEl.innerHTML = `
     <button class="user-btn" id="userBtn">
@@ -299,7 +303,17 @@ function _pathAtClick(latlng) {
   return best;
 }
 
+// Bounding box of the Forêt de Compiègne deployment zone
+const FOREST_BOUNDS = L.latLngBounds(
+  L.latLng(49.20, 2.65),
+  L.latLng(49.50, 3.15)
+);
+
 map.on('click', e => {
+  if (!FOREST_BOUNDS.contains(e.latlng)) {
+    showToast('Désolé, nous n\'avons pas encore déployé à cet endroit.');
+    return;
+  }
   const path = _pathAtClick(e.latlng);
   if (path) {
     dismissPathHint();
@@ -532,6 +546,13 @@ function openPathPopup(path, latlng) {
         ${condHTML}
         ${path.notes ? `<p class="popup-notes">${path.notes}</p>` : ''}
         ${difficultyHTML}
+        <div class="popup-report-section">
+          <button class="popup-fallen-btn" id="openFallenTree-${path.id}">🌲 Arbre tombé ici</button>
+          <button class="popup-fallen-btn" id="openMuddy-${path.id}">🟤 Boueux ici</button>
+          <button class="popup-fallen-btn" id="openRutted-${path.id}">🛞 Ornières ici</button>
+          <button class="popup-fallen-btn" id="openBrokenSign-${path.id}">🪧 Carrefour cassé</button>
+          <button class="popup-report-btn" id="openReport-${path.id}">⚠️ Autre problème</button>
+        </div>
         ${deleteHTML}
       </div>
     `)
@@ -589,7 +610,11 @@ function openPathPopup(path, latlng) {
       cb();
     };
 
-
+    document.getElementById(`openFallenTree-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'fallen_tree')));
+    document.getElementById(`openMuddy-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'muddy')));
+    document.getElementById(`openRutted-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'rutted')));
+    document.getElementById(`openBrokenSign-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'broken_sign')));
+    document.getElementById(`openReport-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng)));
 
     document.getElementById(`deletePath-${path.id}`)?.addEventListener('click', async () => {
       if (!confirm(`Supprimer "${path.name || 'ce chemin'}" ?`)) return;

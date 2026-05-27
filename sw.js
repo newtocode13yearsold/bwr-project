@@ -1,4 +1,4 @@
-const CACHE = 'bwr-v10';
+const CACHE = 'bwr-v11';
 const TILE_CACHE = 'bwr-offline-tiles';
 
 const APP_SHELL = [
@@ -10,6 +10,7 @@ const APP_SHELL = [
   'profile.html',
   'login.html',
   'plans.html',
+  'news.html',
   'verify.html',
   'manifest.json',
   'icons/icon.svg',
@@ -24,6 +25,7 @@ const APP_SHELL = [
   'js/login.js',
   'js/graph-router.js',
   'js/exporters.js',
+  'js/news.js',
   'js/install.js',
   'css/tokens.css',
   'css/style.css',
