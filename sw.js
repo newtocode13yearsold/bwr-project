@@ -1,4 +1,4 @@
-const CACHE = 'bwr-v11';
+const CACHE = 'bwr-v12';
 const TILE_CACHE = 'bwr-offline-tiles';
 
 const APP_SHELL = [

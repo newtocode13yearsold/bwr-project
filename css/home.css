@@ -378,6 +378,12 @@ body {
 .mockup-map { position: relative; }
 .mockup-svg { display: block; width: 100%; }
 
+#heroMap {
+  width: 100%;
+  height: 240px;
+  display: block;
+}
+
 .mockup-legend {
   position: absolute;
   bottom: 10px;
@@ -441,10 +447,164 @@ body {
   background: var(--white);
 }
 
-.features-grid {
+/* ── Peek Carousel (row 1) ── */
+.fcarousel {
+  position: relative;
+  margin-bottom: 52px;
+  overflow: hidden;
+  /* reveal side blurred cards */
+  padding: 12px 0 20px;
+}
+
+.fcarousel-track {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  height: 220px;
+  /* JS drives transforms */
+}
+
+.fcarousel-slide {
+  position: absolute;
+  top: 0;
+  width: 56%;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: pointer;
+  transition:
+    transform 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    filter     0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity    0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    scale      0.42s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* States set by JS */
+.fcarousel-slide[data-state="center"] {
+  z-index: 3;
+  filter: none;
+  opacity: 1;
+  scale: 1;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  cursor: default;
+}
+.fcarousel-slide[data-state="left"] {
+  z-index: 2;
+  filter: blur(3px);
+  opacity: 0.55;
+  scale: 0.88;
+  transform: translateX(calc(-50% - 52%));
+  pointer-events: auto;
+}
+.fcarousel-slide[data-state="right"] {
+  z-index: 2;
+  filter: blur(3px);
+  opacity: 0.55;
+  scale: 0.88;
+  transform: translateX(calc(-50% + 52%));
+  pointer-events: auto;
+}
+.fcarousel-slide[data-state="hidden-left"] {
+  z-index: 1;
+  filter: blur(6px);
+  opacity: 0;
+  scale: 0.75;
+  transform: translateX(calc(-50% - 110%));
+  pointer-events: none;
+}
+.fcarousel-slide[data-state="hidden-right"] {
+  z-index: 1;
+  filter: blur(6px);
+  opacity: 0;
+  scale: 0.75;
+  transform: translateX(calc(-50% + 110%));
+  pointer-events: none;
+}
+
+.fcard {
+  height: 100%;
+  box-shadow: 0 8px 32px rgba(30,77,20,0.12);
+}
+
+.fcarousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+.fcar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s, transform 0.2s, width 0.25s;
+}
+.fcar-dot.active {
+  background: var(--green);
+  width: 24px;
+  border-radius: 4px;
+}
+
+/* ── Feature list (row 2) ── */
+.feat-list-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.feat-list {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+.feat-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px 24px;
+  background: var(--white);
+  transition: background 0.15s;
+}
+.feat-row:hover { background: #fafdf8; }
+
+.feat-row-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+.feat-row-icon.orange { background: #ffedd5; }
+.feat-row-icon.purple { background: #ede9fe; }
+
+.feat-row-body h3 {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.feat-row-body p {
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* Last item alone → span both columns and center */
+.feat-list .feat-row:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+  max-width: 50%;
+  margin: 0 auto;
+  width: 50%;
 }
 
 .feature-card {
@@ -660,10 +820,14 @@ body {
    TEAM
 ════════════════════════════════════════════════ */
 .team-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  justify-content: center;
   gap: 24px;
   margin-bottom: 48px;
+}
+.team-grid .team-card {
+  max-width: 480px;
+  width: 100%;
 }
 
 .team-card {
@@ -907,7 +1071,8 @@ textarea.cf-input { resize: vertical; min-height: 100px; }
    RESPONSIVE
 ════════════════════════════════════════════════ */
 @media (max-width: 900px) {
-  .features-grid { grid-template-columns: 1fr 1fr; }
+  .fcarousel-slide { width: 72%; }
+  .feat-list { grid-template-columns: 1fr; }
   .team-grid { grid-template-columns: 1fr; }
   .hero { flex-direction: column; min-height: auto; }
   .hero-content { padding: 100px 24px 40px; max-width: 100%; }
@@ -923,12 +1088,16 @@ textarea.cf-input { resize: vertical; min-height: 100px; }
 }
 
 @media (max-width: 480px) {
-  .hero-visual { display: none; }
-  .hero-content { padding-bottom: 48px; }
+  .hero-content { padding-bottom: 24px; }
+  .hero-visual { padding: 0 16px 40px; }
+  .map-mockup { max-width: 100%; transform: none; }
+  .map-mockup:hover { transform: none; }
+  #heroMap { height: 200px; }
 }
 
 @media (max-width: 600px) {
-  .features-grid { grid-template-columns: 1fr; }
+  .fcarousel-slide { width: 82%; }
+  .fcarousel-track { height: 240px; }
   .hero-stats { flex-direction: column; align-items: flex-start; gap: 12px; }
   .hero-stat-sep { display: none; }
   .steps-row { flex-direction: column; }

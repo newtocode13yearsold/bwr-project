@@ -29,6 +29,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/home.css" />
+  <link rel="stylesheet" href="lib/leaflet/leaflet.css" />
 </head>
 <body>
 
@@ -37,13 +38,12 @@
     <div class="nav-inner">
       <a href="map.html" class="nav-logo">BWR</a>
       <div class="nav-links">
-        <a href="#features">Fonctionnalités</a>
+        <a href="map.html">Carte</a>
+        <a href="routes.html">Planifier</a>
         <a href="news.html">Actualités</a>
-        <a href="#about">À propos</a>
-        <a href="#contact">Contact</a>
+        <a href="plans.html">Plans</a>
       </div>
       <div class="nav-cta" id="navCta">
-        <a href="plans.html" class="btn-nav-plans">Plans</a>
         <a href="login.html" class="btn-nav-login" id="navLogin">Connexion</a>
         <a href="map.html" class="btn-nav-map">Voir la carte</a>
       </div>
@@ -126,27 +126,7 @@
           <span class="mockup-title">Carte BWR</span>
         </div>
         <div class="mockup-map">
-          <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg" class="mockup-svg">
-            <!-- Simulated forest path lines -->
-            <rect width="320" height="200" fill="#e8f5e3"/>
-            <!-- Forest zones -->
-            <rect x="0" y="0" width="140" height="90" rx="0" fill="#c8e6b0" opacity="0.5"/>
-            <rect x="160" y="20" width="160" height="120" rx="0" fill="#c8e6b0" opacity="0.5"/>
-            <rect x="40" y="110" width="200" height="90" rx="0" fill="#c8e6b0" opacity="0.5"/>
-            <!-- Paths -->
-            <path d="M20 60 Q80 40 140 70 Q180 90 240 60 Q280 45 310 50" stroke="#22c55e" stroke-width="3" fill="none" stroke-linecap="round"/>
-            <path d="M60 100 Q100 80 150 100 Q200 120 260 100 Q290 88 310 90" stroke="#22c55e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-            <path d="M10 140 Q60 120 110 140 Q160 158 200 140 Q250 120 310 130" stroke="#f97316" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-            <path d="M50 170 Q110 155 180 170 Q230 180 300 160" stroke="#22c55e" stroke-width="2" fill="none" stroke-linecap="round"/>
-            <path d="M140 10 Q130 60 140 110 Q148 155 140 190" stroke="#ef4444" stroke-width="2" fill="none" stroke-linecap="round"/>
-            <path d="M200 30 Q195 80 200 130 Q204 165 200 190" stroke="#22c55e" stroke-width="2" fill="none" stroke-linecap="round"/>
-            <!-- Start marker -->
-            <circle cx="60" cy="100" r="6" fill="#1e4d14" stroke="white" stroke-width="2"/>
-            <!-- End marker -->
-            <circle cx="260" cy="100" r="6" fill="#dc2626" stroke="white" stroke-width="2"/>
-            <!-- Active route highlight -->
-            <path d="M60 100 Q100 80 150 100 Q200 120 260 100" stroke="#1e4d14" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.8"/>
-          </svg>
+          <div id="heroMap"></div>
           <div class="mockup-legend">
             <div class="ml-item"><span class="ml-dot easy"></span>Facile</div>
             <div class="ml-item"><span class="ml-dot medium"></span>Moyen</div>
@@ -162,81 +142,98 @@
     <div class="section-inner">
       <div class="section-label">Ce que vous pouvez faire</div>
       <h2 class="section-title">Tout ce qu'il vous faut pour explorer</h2>
-      <div class="features-grid">
 
-        <div class="feature-card">
-          <div class="feature-icon-wrap green">
-            <span class="feature-icon">🗺️</span>
+      <!-- Row 1 : peek carousel -->
+      <div class="fcarousel" id="fcarousel" aria-label="Fonctionnalités principales">
+        <div class="fcarousel-track" id="fcarouselTrack">
+
+          <div class="fcarousel-slide" data-idx="0">
+            <div class="feature-card fcard">
+              <div class="feature-icon-wrap green"><span class="feature-icon">🗺️</span></div>
+              <h3>Carte interactive</h3>
+              <p>Tous les chemins de la forêt sur une carte IGN haute résolution. Filtrez par difficulté, changez de vue (IGN, satellite, OSM).</p>
+            </div>
           </div>
-          <h3>Carte interactive</h3>
-          <p>Visualisez tous les chemins de la forêt de Compiègne sur une carte IGN haute résolution. Filtrez par difficulté et changez de vue (IGN, satellite, OpenStreetMap).</p>
+
+          <div class="fcarousel-slide" data-idx="1">
+            <div class="feature-card fcard">
+              <div class="feature-icon-wrap blue"><span class="feature-icon">🧭</span></div>
+              <h3>Planifier un trajet</h3>
+              <p>Départ + distance souhaitée. Le planificateur génère une boucle ou un A→B uniquement sur des chemins vérifiés.</p>
+            </div>
+          </div>
+
+          <div class="fcarousel-slide" data-idx="2">
+            <div class="feature-card fcard">
+              <div class="feature-icon-wrap teal"><span class="feature-icon">✅</span></div>
+              <h3>Chemins vérifiés terrain</h3>
+              <p>Chaque sentier est renseigné manuellement. Forestiers, cyclables, praticables ou impraticables — vous savez à quoi vous attendre.</p>
+            </div>
+          </div>
+
+          <div class="fcarousel-slide" data-idx="3">
+            <div class="feature-card fcard">
+              <div class="feature-icon-wrap red"><span class="feature-icon">📍</span></div>
+              <h3>Géolocalisation</h3>
+              <p>Démarrez depuis votre position GPS ou recherchez n'importe quelle adresse. Toujours orienté, même en forêt.</p>
+            </div>
+          </div>
+
+        </div>
+        <div class="fcarousel-dots" id="fcarouselDots">
+          <button class="fcar-dot active" data-goto="0" aria-label="Slide 1"></button>
+          <button class="fcar-dot" data-goto="1" aria-label="Slide 2"></button>
+          <button class="fcar-dot" data-goto="2" aria-label="Slide 3"></button>
+          <button class="fcar-dot" data-goto="3" aria-label="Slide 4"></button>
+        </div>
+      </div>
+
+      <!-- Row 2 : feature list for premium features -->
+      <div class="feat-list-label">Fonctionnalités avancées</div>
+      <div class="feat-list">
+
+        <div class="feat-row">
+          <div class="feat-row-icon orange">⬇️</div>
+          <div class="feat-row-body">
+            <h3>Export GPX / KML <span class="feat-tier tier-tag silver">🥈 Argent</span></h3>
+            <p>Téléchargez vos itinéraires et importez-les dans Garmin, Strava ou Komoot pour naviguer sans connexion.</p>
+          </div>
         </div>
 
-        <div class="feature-card">
-          <div class="feature-icon-wrap blue">
-            <span class="feature-icon">🧭</span>
+        <div class="feat-row">
+          <div class="feat-row-icon purple">⛰️</div>
+          <div class="feat-row-body">
+            <h3>Profil altimétrique <span class="feat-tier tier-tag silver">🥈 Argent</span></h3>
+            <p>Dénivelé positif et négatif, altitude min/max — tout pour préparer votre sortie avant de partir.</p>
           </div>
-          <h3>Planifier un trajet</h3>
-          <p>Indiquez votre point de départ et la distance souhaitée. Le planificateur calcule automatiquement une boucle ou un trajet A → B, uniquement sur des chemins vérifiés.</p>
         </div>
 
-        <div class="feature-card">
-          <div class="feature-icon-wrap orange">
-            <span class="feature-icon">⬇️</span>
+        <div class="feat-row">
+          <div class="feat-row-icon" style="background:#dbeafe;color:#1d4ed8">📡</div>
+          <div class="feat-row-body">
+            <h3>Cartes hors-ligne <span class="feat-tier tier-tag silver">🥈 Argent</span></h3>
+            <p>Téléchargez les tuiles de votre trajet avant de partir et naviguez sans signal en forêt profonde.</p>
           </div>
-          <h3>Export GPX / KML <span class="feat-tier tier-tag silver">🥈 Argent</span></h3>
-          <p>Téléchargez vos itinéraires au format GPX et importez-les dans n'importe quelle montre GPS, Garmin, Strava ou Komoot pour naviguer sans connexion.</p>
         </div>
 
-        <div class="feature-card">
-          <div class="feature-icon-wrap purple">
-            <span class="feature-icon">⛰️</span>
+        <div class="feat-row">
+          <div class="feat-row-icon" style="background:#fef3c7;color:#b45309">🌦️</div>
+          <div class="feat-row-body">
+            <h3>Météo &amp; alertes en temps réel <span class="feat-tier tier-tag gold">👑 Or</span></h3>
+            <p>Météo forêt en temps réel, alertes push quand l'état d'un chemin change. Plus jamais de mauvaise surprise.</p>
           </div>
-          <h3>Profil altimétrique <span class="feat-tier tier-tag silver">🥈 Argent</span></h3>
-          <p>Consultez le profil d'élévation de chaque trajet généré. Dénivelé positif et négatif, altitude min/max — tout pour préparer votre sortie.</p>
         </div>
 
-        <div class="feature-card">
-          <div class="feature-icon-wrap teal">
-            <span class="feature-icon">✅</span>
+        <div class="feat-row">
+          <div class="feat-row-icon" style="background:#fde68a;color:#92400e">🤖</div>
+          <div class="feat-row-body">
+            <h3>Suggestions intelligentes <span class="feat-tier tier-tag gold">👑 Or</span></h3>
+            <p>Un nouveau trajet suggéré chaque jour, adapté à la météo, la saison et vos préférences personnelles.</p>
           </div>
-          <h3>Chemins vérifiés</h3>
-          <p>Chaque chemin est renseigné manuellement après vérification sur le terrain. Forestiers, cyclables, praticables ou impraticables — vous savez à quoi vous attendre.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon-wrap red">
-            <span class="feature-icon">📍</span>
-          </div>
-          <h3>Géolocalisation</h3>
-          <p>Utilisez votre position GPS pour démarrer un trajet depuis là où vous êtes. Recherchez aussi n'importe quel lieu par son adresse.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#fef3c7,#fde68a);color:#b45309">
-            <span class="feature-icon">🌦️</span>
-          </div>
-          <h3>Météo &amp; alertes en temps réel <span class="feat-tier tier-tag gold">👑 Or</span></h3>
-          <p>Météo forêt en temps réel sur votre profil, alertes push quand l'état d'un chemin que vous suivez change. Plus jamais de mauvaise surprise.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1d4ed8">
-            <span class="feature-icon">📡</span>
-          </div>
-          <h3>Cartes hors-ligne <span class="feat-tier tier-tag silver">🥈 Argent</span></h3>
-          <p>Téléchargez les tuiles de votre trajet avant de partir et naviguez sans signal. Idéal pour la forêt profonde.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,#fde68a,#fbbf24);color:#92400e">
-            <span class="feature-icon">🤖</span>
-          </div>
-          <h3>Suggestions intelligentes <span class="feat-tier tier-tag gold">👑 Or</span></h3>
-          <p>Notre algorithme vous propose chaque jour un nouveau trajet adapté à la météo, la saison et vos préférences.</p>
         </div>
 
       </div>
+
       <div style="text-align:center;margin-top:48px">
         <a href="plans.html" class="btn-howto" style="display:inline-block">Voir tous les plans →</a>
       </div>
@@ -276,40 +273,22 @@
   <!-- ── About ── -->
   <section class="about" id="about">
     <div class="section-inner">
-      <div class="section-label">L'équipe</div>
-      <h2 class="section-title" style="margin-bottom:48px">Qui sommes-nous ?</h2>
+      <div class="section-label">Le créateur</div>
+      <h2 class="section-title" style="margin-bottom:48px">Qui suis-je ?</h2>
       <div class="team-grid">
 
         <div class="team-card">
           <div class="team-avatar" style="background:linear-gradient(135deg,#1e4d14,#2d6b1f);color:#a3e635">TL</div>
           <div class="team-info">
             <h3>Thomas Legros</h3>
-            <span class="team-role">CEO, CTO &amp; Vérificateur terrain</span>
+            <span class="team-role">Développeur &amp; Vérificateur terrain</span>
             <p>Thomas est à l'origine du projet. Il a conçu et développé la plateforme — la carte, le planificateur de trajets, le backend et tout l'écosystème BWR. Il pilote également la stratégie globale du projet et vérifie chaque chemin sur le terrain pour garantir des données fiables.</p>
-          </div>
-        </div>
-
-        <div class="team-card">
-          <div class="team-avatar" style="background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#bfdbfe">EM</div>
-          <div class="team-info">
-            <h3>Emilien</h3>
-            <span class="team-role">Publicité & Communication</span>
-            <p>Emilien gère la communication et la publicité de BWR. Il s'assure que le projet soit connu et visible, et contribue à faire grandir la communauté autour de la forêt.</p>
-          </div>
-        </div>
-
-        <div class="team-card">
-          <div class="team-avatar" style="background:linear-gradient(135deg,#b45309,#d97706);color:#fde68a">CH</div>
-          <div class="team-info">
-            <h3>Charles</h3>
-            <span class="team-role">Vérificateur terrain</span>
-            <p>Charles parcourt la forêt pour vérifier chaque chemin sur le terrain : praticabilité, type de surface, état du sentier. Sans lui, la carte ne serait pas aussi fiable.</p>
           </div>
         </div>
 
       </div>
       <div class="about-bottom">
-        <a href="mailto:ciril8596@gmail.com" class="btn-about-contact">Nous contacter</a>
+        <a href="mailto:ciril8596@gmail.com" class="btn-about-contact">Me contacter</a>
       </div>
     </div>
   </section>
@@ -320,7 +299,7 @@
       <div class="contact-badge">✉️</div>
       <h2 class="contact-title">Une question ? Une suggestion ?</h2>
       <p class="contact-sub">
-        Vous avez repéré un chemin manquant, une erreur sur la carte, ou vous souhaitez simplement nous contacter — laissez-nous un message ci-dessous.
+        Vous avez repéré un chemin manquant, une erreur sur la carte, ou vous souhaitez simplement me contacter — laissez-moi un message ci-dessous.
       </p>
       <form class="contact-form" id="contactForm">
         <input type="text"  id="cName"  class="cf-input" placeholder="Votre nom" required>
@@ -421,7 +400,125 @@
       }
     } catch {}
   </script>
+  <script>
+    // Peek carousel
+    (function () {
+      var track  = document.getElementById('fcarouselTrack');
+      if (!track) return;
+      var slides = Array.from(track.querySelectorAll('.fcarousel-slide'));
+      var dots   = Array.from(document.querySelectorAll('.fcar-dot'));
+      var total  = slides.length;
+      var cur    = 0;
+
+      function render() {
+        slides.forEach(function (sl, i) {
+          var offset = ((i - cur) % total + total) % total;
+          // 0=center, 1=right, total-1=left, else hidden
+          if (offset === 0)          sl.dataset.state = 'center';
+          else if (offset === 1)     sl.dataset.state = 'right';
+          else if (offset === total - 1) sl.dataset.state = 'left';
+          else if (offset < total / 2)   sl.dataset.state = 'hidden-right';
+          else                           sl.dataset.state = 'hidden-left';
+        });
+        dots.forEach(function (d, i) { d.classList.toggle('active', i === cur); });
+      }
+
+      function goTo(idx) {
+        cur = ((idx % total) + total) % total;
+        render();
+      }
+
+      function next() { goTo(cur + 1); }
+      function prev() { goTo(cur - 1); }
+
+      // Click side cards
+      slides.forEach(function (sl, i) {
+        sl.addEventListener('click', function () {
+          if (sl.dataset.state === 'right') next();
+          else if (sl.dataset.state === 'left') prev();
+        });
+      });
+
+      // Dots
+      dots.forEach(function (d) {
+        d.addEventListener('click', function () { goTo(+d.dataset.goto); });
+      });
+
+      // Touch / swipe
+      var touchX = null;
+      track.addEventListener('touchstart', function (e) {
+        touchX = e.touches[0].clientX;
+      }, { passive: true });
+      track.addEventListener('touchend', function (e) {
+        if (touchX === null) return;
+        var dx = e.changedTouches[0].clientX - touchX;
+        if (Math.abs(dx) > 40) dx < 0 ? next() : prev();
+        touchX = null;
+      }, { passive: true });
+
+      // Mouse drag
+      var dragX = null;
+      track.addEventListener('mousedown', function (e) { dragX = e.clientX; });
+      window.addEventListener('mouseup', function (e) {
+        if (dragX === null) return;
+        var dx = e.clientX - dragX;
+        if (Math.abs(dx) > 40) dx < 0 ? next() : prev();
+        dragX = null;
+      });
+
+      // Keyboard
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowRight') next();
+        if (e.key === 'ArrowLeft')  prev();
+      });
+
+      render();
+    })();
+  </script>
+  <script src="lib/leaflet/leaflet.js"></script>
   <script src="js/config.js"></script>
+  <script>
+    // Hero live map
+    (function () {
+      const heroMapEl = document.getElementById('heroMap');
+      if (!heroMapEl) return;
+
+      const map = L.map('heroMap', {
+        center: MAP_CENTER,
+        zoom: MAP_ZOOM,
+        zoomControl: false,
+        scrollWheelZoom: false,
+        dragging: true,
+        attributionControl: false,
+        touchZoom: false,
+        doubleClickZoom: false,
+      });
+
+      // Fix size after page is fully painted (container may have been hidden during init)
+      window.addEventListener('load', function () { map.invalidateSize(); });
+
+      L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+      }).addTo(map);
+
+      fetch(API_URL + '/api/paths')
+        .then(r => r.ok ? r.json() : [])
+        .then(paths => {
+          if (!Array.isArray(paths)) return;
+          paths.forEach(path => {
+            if (!path.coordinates || path.coordinates.length < 2) return;
+            const color = (STATUS_COLORS && STATUS_COLORS[path.status]) || '#22c55e';
+            L.polyline(path.coordinates, {
+              color,
+              weight: 3,
+              opacity: 0.85,
+              lineJoin: 'round',
+            }).addTo(map);
+          });
+        })
+        .catch(() => {});
+    })();
+  </script>
   <script>
     // Contact form submission
     const form = document.getElementById('contactForm');
@@ -445,12 +542,21 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, message }),
         });
-        if (!res.ok) throw new Error();
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (res.status === 429) {
+            status.textContent = 'Limite atteinte — 2 messages max par heure. Réessaye plus tard.';
+          } else {
+            status.textContent = data.error || 'Erreur serveur. Réessaye ou écris directement à ciril8596@gmail.com.';
+          }
+          status.style.color = '#dc2626';
+          return;
+        }
         form.reset();
         status.textContent = '✅ Message envoyé — merci !';
         status.style.color = '#1e4d14';
       } catch {
-        status.textContent = 'Erreur, réessaye ou utilise l\'email direct.';
+        status.textContent = 'Impossible de joindre le serveur. Écris directement à ciril8596@gmail.com.';
         status.style.color = '#dc2626';
       } finally {
         btn.textContent = 'Envoyer le message';

@@ -338,6 +338,21 @@ let _editPolylines = [];
 function renderEditPolylines() {
   _editPolylines.forEach(l => map.removeLayer(l));
   _editPolylines = [];
+  allPaths.forEach(path => {
+    if (!path.coordinates || path.coordinates.length < 2) return;
+    const color = STATUS_COLORS[path.status] || '#9ca3af';
+    const line = L.polyline(path.coordinates, {
+      color,
+      weight: 6,
+      opacity: 0.85,
+      dashArray: '8, 6',
+    });
+    line.on('mouseover', () => { line.setStyle({ weight: 9, opacity: 1 }); map.getContainer().style.cursor = 'pointer'; });
+    line.on('mouseout',  () => { line.setStyle({ weight: 6, opacity: 0.85 }); map.getContainer().style.cursor = 'crosshair'; });
+    line.on('click', e => { L.DomEvent.stopPropagation(e); openDifficultyPopup(path, e.latlng); });
+    line.addTo(map);
+    _editPolylines.push(line);
+  });
 }
 
 function clearEditPolylines() {
@@ -373,8 +388,8 @@ async function loadOsmEditPaths() {
       showEditModeBar(`${count} chemins disponibles — clique sur un chemin en pointillés`);
     }
   } catch {
-    showToast('Impossible de charger les chemins OSM.');
-    exitPathEditMode();
+    showToast('Chemins OSM indisponibles — tu peux quand même modifier les chemins existants.');
+    showEditModeBar('Clique sur un chemin coloré pour changer sa difficulté');
   }
 }
 
@@ -458,6 +473,7 @@ function enterPathEditMode() {
   btn.style.background = 'rgba(239,68,68,0.15)';
   btn.style.color = '#dc2626';
   map.getContainer().style.cursor = 'crosshair';
+  renderEditPolylines();
   showEditModeBar('Chargement…');
   loadOsmEditPaths();
 }
