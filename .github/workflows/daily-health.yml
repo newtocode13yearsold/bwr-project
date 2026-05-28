@@ -1,0 +1,304 @@
+name: Daily Health Check (8h Paris)
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # 08h00 Paris été (CEST = UTC+2) / 07h00 hiver (CET = UTC+1)
+  workflow_dispatch:        # déclenchement manuel depuis GitHub UI
+
+jobs:
+  full-health-check:
+    name: Full health check — pages + API + services externes
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Init fichier de rapport partagé ────────────────────────────────────────
+      - name: Init report
+        run: |
+          echo "0" > /tmp/errors_pages.txt
+          echo "0" > /tmp/errors_api.txt
+          echo "0" > /tmp/errors_ext.txt
+          touch /tmp/failures.txt
+
+      # ── Pages HTML ─────────────────────────────────────────────────────────────
+      - name: Check HTML pages
+        run: |
+          BASE="https://bwr-worker.ciril8596.workers.dev"
+          ERRORS=0
+
+          check() {
+            local label="$1" url="$2" expected="$3"
+            STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 20 "$url")
+            if [ "$STATUS" -eq "$expected" ]; then
+              echo "  ✅  $label → $STATUS"
+            else
+              echo "  ❌  $label → reçu $STATUS, attendu $expected"
+              echo "PAGE | $label | reçu $STATUS attendu $expected" >> /tmp/failures.txt
+              ERRORS=$((ERRORS + 1))
+            fi
+          }
+
+          echo "=== Pages HTML ==="
+          check "login.html"     "$BASE/login.html"     200
+          check "index.html"     "$BASE/index.html"     200
+          check "map.html"       "$BASE/map.html"       200
+          check "routes.html"    "$BASE/routes.html"    200
+          check "profile.html"   "$BASE/profile.html"   200
+          check "admin.html"     "$BASE/admin.html"     200
+          check "plans.html"     "$BASE/plans.html"     200
+          check "news.html"      "$BASE/news.html"      200
+          check "verify.html"    "$BASE/verify.html"    200
+          check "changelog.html" "$BASE/changelog.html" 200
+
+          echo "$ERRORS" > /tmp/errors_pages.txt
+
+      # ── Endpoints API ──────────────────────────────────────────────────────────
+      - name: Check API endpoints
+        run: |
+          BASE="https://bwr-worker.ciril8596.workers.dev"
+          ERRORS=0
+
+          check() {
+            local label="$1" url="$2" expected="$3"
+            STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 20 "$url")
+            if [ "$STATUS" -eq "$expected" ]; then
+              echo "  ✅  $label → $STATUS"
+            else
+              echo "  ❌  $label → reçu $STATUS, attendu $expected"
+              echo "API  | $label | reçu $STATUS attendu $expected" >> /tmp/failures.txt
+              ERRORS=$((ERRORS + 1))
+            fi
+          }
+
+          echo "=== Endpoints API internes ==="
+
+          check "GET /api/paths          (→ 200)" "$BASE/api/paths"   200
+          check "GET /api/reports        (→ 200)" "$BASE/api/reports" 200
+          check "GET /api/news           (→ 200)" "$BASE/api/news"    200
+
+          # OSM proxy — timeout plus long (cache froid possible)
+          OSM_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 40 \
+            "$BASE/api/osm?bbox=2.85,49.32,2.95,49.42")
+          if [ "$OSM_STATUS" -eq 200 ]; then
+            echo "  ✅  GET /api/osm            (→ 200)"
+          else
+            echo "  ❌  GET /api/osm            → reçu $OSM_STATUS, attendu 200"
+            echo "API  | GET /api/osm | reçu $OSM_STATUS attendu 200" >> /tmp/failures.txt
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          check "GET /api/auth/me        (→ 401)" "$BASE/api/auth/me"  401
+          check "GET /api/users          (→ 401)" "$BASE/api/users"    401
+          check "GET /api/contacts       (→ 401)" "$BASE/api/contacts" 401
+          check "GET /api/savedroutes    (→ 401)" "$BASE/api/savedroutes" 401
+          check "GET /api/savedroutes/share/:token (→ 404)" \
+            "$BASE/api/savedroutes/share/healthcheck-nonexistent" 404
+
+          # POST body vide → jamais 5xx
+          for ENDPOINT in "/api/route" "/api/contact"; do
+            S=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 \
+              -X POST -H "Content-Type: application/json" -d '{}' "$BASE$ENDPOINT")
+            if [ "$S" -lt 500 ]; then
+              echo "  ✅  POST $ENDPOINT → $S (pas de 5xx)"
+            else
+              echo "  ❌  POST $ENDPOINT → $S (erreur serveur)"
+              echo "API  | POST $ENDPOINT | $S (erreur serveur)" >> /tmp/failures.txt
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+
+          echo "$ERRORS" > /tmp/errors_api.txt
+
+      # ── Services externes ──────────────────────────────────────────────────────
+      - name: Check external services
+        run: |
+          ERRORS=0
+
+          check() {
+            local label="$1" url="$2" expected="$3"
+            shift 3
+            STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 20 "$@" "$url")
+            if [ "$STATUS" -eq "$expected" ]; then
+              echo "  ✅  $label → $STATUS"
+            else
+              echo "  ❌  $label → reçu $STATUS, attendu $expected"
+              echo "EXT  | $label | reçu $STATUS attendu $expected" >> /tmp/failures.txt
+              ERRORS=$((ERRORS + 1))
+            fi
+          }
+
+          echo "=== Services externes ==="
+
+          check "OSRM routing" \
+            "https://router.project-osrm.org/route/v1/foot/2.9,49.35;2.91,49.36?overview=false" \
+            200
+
+          check "Open-Meteo (météo gold)" \
+            "https://api.open-meteo.com/v1/forecast?latitude=49.35&longitude=2.90&current=temperature_2m" \
+            200
+
+          check "Nominatim geocoding" \
+            "https://nominatim.openstreetmap.org/search?q=Compiegne&format=json&limit=1&countrycodes=fr" \
+            200 -H "User-Agent: BWR-HealthCheck/1.0"
+
+          check "Open-Elevation" \
+            "https://api.open-elevation.com/api/v1/lookup?locations=49.35,2.90" \
+            200
+
+          check "ntfy.sh (notifications)" \
+            "https://ntfy.sh" \
+            200
+
+          echo "$ERRORS" > /tmp/errors_ext.txt
+
+      # ── Résumé console ─────────────────────────────────────────────────────────
+      - name: Console summary
+        if: always()
+        run: |
+          EP=$(cat /tmp/errors_pages.txt 2>/dev/null || echo 0)
+          EA=$(cat /tmp/errors_api.txt   2>/dev/null || echo 0)
+          EX=$(cat /tmp/errors_ext.txt   2>/dev/null || echo 0)
+          TOTAL=$(( EP + EA + EX ))
+
+          echo ""
+          echo "╔════════════════════════════════╗"
+          echo "║     RÉSUMÉ HEALTH CHECK BWR    ║"
+          echo "╠════════════════════════════════╣"
+          printf "║  Pages HTML        : %2d erreur(s) ║\n" "$EP"
+          printf "║  API internes      : %2d erreur(s) ║\n" "$EA"
+          printf "║  Services externes : %2d erreur(s) ║\n" "$EX"
+          echo "╠════════════════════════════════╣"
+          printf "║  TOTAL             : %2d erreur(s) ║\n" "$TOTAL"
+          echo "╚════════════════════════════════╝"
+
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "✅ Tout est opérationnel."
+          else
+            echo "❌ $TOTAL problème(s) détecté(s)."
+          fi
+
+          echo "HEALTH_TOTAL=$TOTAL" >> "$GITHUB_ENV"
+          echo "HEALTH_EP=$EP"       >> "$GITHUB_ENV"
+          echo "HEALTH_EA=$EA"       >> "$GITHUB_ENV"
+          echo "HEALTH_EX=$EX"       >> "$GITHUB_ENV"
+
+      # ── Notification ntfy.sh (toujours envoyée) ────────────────────────────────
+      - name: Notify ntfy.sh (site)
+        if: always()
+        run: |
+          EP=${HEALTH_EP:-0}
+          EA=${HEALTH_EA:-0}
+          EX=${HEALTH_EX:-0}
+          TOTAL=${HEALTH_TOTAL:-?}
+          DATE=$(TZ="Europe/Paris" date "+%d/%m/%Y %H:%M")
+
+          if [ "$TOTAL" -eq 0 ] 2>/dev/null; then
+            TITLE="✅ BWR Health — $DATE"
+            MSG="Tout est opérationnel (10 pages, 12 endpoints, 5 services externes)."
+            PRIORITY="default"
+            TAGS="white_check_mark"
+          else
+            # Collect failure lines
+            DETAILS=$(cat /tmp/failures.txt 2>/dev/null | head -20 | sed 's/|/-/g' || echo "")
+            TITLE="❌ BWR Health — $TOTAL erreur(s) — $DATE"
+            MSG="Pages: $EP err | API: $EA err | Ext: $EX err
+$DETAILS"
+            PRIORITY="high"
+            TAGS="rotating_light"
+          fi
+
+          curl -s -X POST "https://ntfy.sh/bwr-ciril8596" \
+            -H "Title: $TITLE" \
+            -H "Priority: $PRIORITY" \
+            -H "Tags: $TAGS" \
+            -d "$MSG" || echo "⚠️  ntfy.sh non joignable"
+
+      # ── Email via Resend API (toujours envoyé) ─────────────────────────────────
+      - name: Send email report
+        if: always()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM: ${{ secrets.RESEND_FROM }}
+        run: |
+          EP=${HEALTH_EP:-0}
+          EA=${HEALTH_EA:-0}
+          EX=${HEALTH_EX:-0}
+          TOTAL=${HEALTH_TOTAL:-?}
+          DATE=$(TZ="Europe/Paris" date "+%d/%m/%Y à %H:%M")
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          if [ "$TOTAL" -eq 0 ] 2>/dev/null; then
+            STATUS_LABEL="✅ Tout opérationnel"
+            STATUS_COLOR="#16a34a"
+            FAILURES_HTML="<p style='color:#16a34a'>Aucune anomalie détectée.</p>"
+          else
+            STATUS_LABEL="❌ $TOTAL erreur(s) détectée(s)"
+            STATUS_COLOR="#dc2626"
+            # Build HTML list from failures file
+            FAILURES_RAW=$(cat /tmp/failures.txt 2>/dev/null || echo "")
+            FAILURES_HTML="<ul style='color:#dc2626;font-family:monospace'>"
+            while IFS= read -r line; do
+              [ -z "$line" ] && continue
+              FAILURES_HTML="${FAILURES_HTML}<li>${line}</li>"
+            done <<< "$FAILURES_RAW"
+            FAILURES_HTML="${FAILURES_HTML}</ul>"
+          fi
+
+          HTML_BODY="<!DOCTYPE html><html><body style='font-family:sans-serif;max-width:600px;margin:auto'>
+          <h2 style='color:#1d4ed8'>🌲 BWR — Rapport de santé quotidien</h2>
+          <p><strong>Date :</strong> $DATE</p>
+          <hr>
+          <h3 style='color:$STATUS_COLOR'>$STATUS_LABEL</h3>
+          <table style='border-collapse:collapse;width:100%'>
+            <tr style='background:#f3f4f6'>
+              <td style='padding:8px;border:1px solid #e5e7eb'><strong>Pages HTML</strong></td>
+              <td style='padding:8px;border:1px solid #e5e7eb'>$EP erreur(s)</td>
+            </tr>
+            <tr>
+              <td style='padding:8px;border:1px solid #e5e7eb'><strong>API internes</strong></td>
+              <td style='padding:8px;border:1px solid #e5e7eb'>$EA erreur(s)</td>
+            </tr>
+            <tr style='background:#f3f4f6'>
+              <td style='padding:8px;border:1px solid #e5e7eb'><strong>Services externes</strong></td>
+              <td style='padding:8px;border:1px solid #e5e7eb'>$EX erreur(s)</td>
+            </tr>
+          </table>
+          $FAILURES_HTML
+          <p><a href='$RUN_URL'>Voir le rapport complet sur GitHub Actions →</a></p>
+          <hr>
+          <p style='color:#9ca3af;font-size:12px'>BWR — Balades en Forêt de Compiègne</p>
+          </body></html>"
+
+          if [ -z "$RESEND_API_KEY" ]; then
+            echo "⚠️  RESEND_API_KEY non configurée — email ignoré."
+            exit 0
+          fi
+
+          FROM="${RESEND_FROM:-BWR Health <noreply@bwr.fr>}"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "https://api.resend.com/emails" \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"from\": \"$FROM\",
+              \"to\": [\"ciril8596@gmail.com\"],
+              \"subject\": \"[BWR] Rapport santé $DATE — $STATUS_LABEL\",
+              \"html\": $(echo "$HTML_BODY" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+            }")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✅ Email envoyé à ciril8596@gmail.com"
+          else
+            echo "❌ Échec envoi email (HTTP $HTTP_CODE)"
+            echo "$RESPONSE"
+          fi
+
+      # ── Fail le job si des erreurs ont été détectées ───────────────────────────
+      - name: Fail if errors
+        if: always()
+        run: |
+          TOTAL=${HEALTH_TOTAL:-0}
+          if [ "$TOTAL" -gt 0 ] 2>/dev/null; then
+            echo "❌ Health check échoué avec $TOTAL erreur(s)."
+            exit 1
+          fi
