@@ -1,0 +1,271 @@
+/* ── Legal page ─────────────────────────────────────────────────────────── */
+
+.legal-body {
+  background: var(--surface-1);
+  min-height: 100vh;
+}
+
+/* ── Nav ── */
+.lg-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(248, 251, 246, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-soft);
+}
+.lg-nav-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lg-logo {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--forest-700);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+.lg-back {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.lg-back:hover { color: var(--forest-700); }
+
+/* ── Table of contents ── */
+.lg-toc {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-6) 0;
+}
+.lg-toc-card {
+  background: var(--surface-0);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: var(--space-6);
+}
+.lg-toc-title {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--forest-600);
+  margin-bottom: var(--space-3);
+}
+.lg-toc-links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+.lg-toc-links li a {
+  font-size: var(--fs-sm);
+  color: var(--forest-600);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.lg-toc-links li a:hover {
+  color: var(--forest-700);
+  border-color: var(--forest-600);
+}
+
+/* ── Page header ── */
+.lg-header {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-6) var(--space-8);
+}
+.lg-eyebrow {
+  display: inline-block;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--forest-600);
+  margin-bottom: var(--space-3);
+}
+.lg-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 700;
+  color: var(--text-strong);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  margin: 0 0 var(--space-3);
+}
+.lg-subtitle {
+  font-size: var(--fs-md);
+  color: var(--text-muted);
+  margin: 0;
+}
+.lg-updated {
+  margin-top: var(--space-2);
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+/* ── Content ── */
+.lg-content {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 var(--space-6) var(--space-24);
+}
+
+.lg-section {
+  margin-bottom: var(--space-16);
+  scroll-margin-top: 72px;
+}
+
+.lg-section-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2.5vw, 1.6rem);
+  font-weight: 700;
+  color: var(--text-strong);
+  letter-spacing: -0.02em;
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--forest-100);
+  margin-bottom: var(--space-6);
+}
+
+.lg-section-label {
+  display: inline-block;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--forest-600);
+  margin-bottom: var(--space-2);
+}
+
+.lg-block {
+  margin-bottom: var(--space-6);
+}
+
+.lg-block h3 {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--text-strong);
+  margin-bottom: var(--space-2);
+}
+
+.lg-block p,
+.lg-block li {
+  font-size: var(--fs-sm);
+  color: var(--text-body);
+  line-height: 1.7;
+}
+
+.lg-block ul,
+.lg-block ol {
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lg-block a {
+  color: var(--forest-600);
+  text-underline-offset: 2px;
+}
+.lg-block a:hover { color: var(--forest-700); }
+
+.lg-info-box {
+  background: var(--forest-100);
+  border-left: 3px solid var(--forest-500);
+  border-radius: 0 8px 8px 0;
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--fs-sm);
+  color: var(--text-body);
+  line-height: 1.6;
+}
+.lg-info-box strong { color: var(--forest-700); }
+
+.lg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  margin-top: var(--space-4);
+}
+.lg-table th {
+  text-align: left;
+  font-weight: 600;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-soft);
+}
+.lg-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-body);
+  vertical-align: top;
+}
+.lg-table tr:last-child td { border-bottom: none; }
+
+.lg-rights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: var(--space-4);
+}
+.lg-right-card {
+  background: var(--surface-0);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: var(--space-4);
+}
+.lg-right-card strong {
+  display: block;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-strong);
+  margin-bottom: 4px;
+}
+.lg-right-card span {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ── Consent checkbox (used in login.html) ── */
+.consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: var(--space-2);
+}
+.consent-row input[type="checkbox"] {
+  margin-top: 3px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--forest-600);
+  cursor: pointer;
+}
+.consent-row label {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  line-height: 1.5;
+  cursor: pointer;
+}
+.consent-row label a {
+  color: var(--forest-600);
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .lg-table { font-size: 12px; }
+  .lg-table th, .lg-table td { padding: 8px; }
+}

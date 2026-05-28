@@ -12,13 +12,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/login.css" />
   <link rel="stylesheet" href="css/home.css" />
   <style>
     /* ── Page-specific styles ── */
+    html, body { height: auto !important; overflow: auto !important; }
     body { background: var(--surface-1, #fafbf7); }
 
     .page-hero {
-      padding: 120px 24px 64px;
+      padding: 64px 24px 64px;
       text-align: center;
       background: linear-gradient(160deg, #0b2410 0%, #1e4d14 55%, #2d6b1f 100%);
       color: #fff;
@@ -293,6 +296,62 @@
     .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-save:hover:not(:disabled) { opacity: 0.88; }
 
+    /* ── News card image ── */
+    .news-img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: block;
+    }
+    .news-img-placeholder {
+      width: 100%;
+      height: 180px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #0b2410 0%, #1e4d14 50%, #2d6b1f 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      opacity: 0.82;
+    }
+
+    /* ── Image upload in modal ── */
+    .img-upload-area {
+      border: 2px dashed var(--border, #e2e8da);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      background: #fafbf7;
+      position: relative;
+    }
+    .img-upload-area:hover { border-color: var(--forest-600, #2d6b1f); background: #f0f7ec; }
+    .img-upload-area input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .img-upload-label {
+      font-size: 0.9rem;
+      color: var(--text-muted, #6b7280);
+      pointer-events: none;
+    }
+    .img-upload-label strong { color: var(--forest-700, #1e4d14); }
+    .img-preview-wrap { margin-top: 12px; position: relative; display: inline-block; }
+    .img-preview-wrap img { max-height: 140px; border-radius: 8px; display: block; }
+    .img-remove-btn {
+      position: absolute;
+      top: -8px; right: -8px;
+      background: #b91c1c; color: #fff;
+      border: none; border-radius: 50%;
+      width: 22px; height: 22px;
+      font-size: 0.75rem; font-weight: 700;
+      cursor: pointer; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+
     /* ── Footer ── */
     .news-footer {
       background: #0b2410;
@@ -313,34 +372,60 @@
 </head>
 <body>
 
-  <!-- ── Navigation ── -->
-  <nav class="nav" id="nav">
-    <div class="nav-inner">
-      <a href="index.html" class="nav-logo">BWR</a>
-      <div class="nav-links">
-        <a href="map.html">Carte</a>
-        <a href="routes.html">Planifier</a>
-        <a href="news.html" style="color:#a3e635">Actualités</a>
-        <a href="plans.html">Plans</a>
-      </div>
-      <div class="nav-cta">
-        <a href="plans.html" class="btn-nav-plans">Plans</a>
-        <a href="login.html" class="btn-nav-login" id="navLogin">Connexion</a>
-        <a href="map.html" class="btn-nav-map">Voir la carte</a>
-      </div>
-      <button class="nav-burger" id="navBurger" aria-label="Menu">
-        <span></span><span></span><span></span>
-      </button>
+  <header class="header">
+    <div class="header-left">
+      <a href="index.html" class="logo" style="text-decoration:none">BWR</a>
+      <span class="tagline">Actualités</span>
     </div>
-    <div class="nav-mobile hidden" id="navMobile">
-      <a href="map.html">Carte</a>
-      <a href="routes.html">Planifier</a>
-      <a href="news.html">Actualités</a>
-      <a href="plans.html">Plans</a>
-      <a href="login.html" id="navLogin">Connexion</a>
-      <a href="map.html" class="mobile-map-btn">Voir la carte →</a>
+    <div class="header-right">
+      <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
+      <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji">⬇</span><span class="btn-label">Installer</span></button>
+      <div class="user-menu" id="userMenu"></div>
     </div>
-  </nav>
+  </header>
+
+  <!-- Nav drawer -->
+  <div class="nav-drawer-overlay hidden" id="navDrawerOverlay"></div>
+  <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
+    <div class="nav-drawer-header">
+      <span class="nav-drawer-logo">BWR</span>
+      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+    </div>
+    <nav class="nav-drawer-links">
+      <a href="map.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">🗺</span>
+        <span>Carte</span>
+      </a>
+      <a href="routes.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">🧭</span>
+        <span>Planifier un trajet</span>
+      </a>
+      <a href="profile.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">👤</span>
+        <span>Mon profil</span>
+      </a>
+      <a href="leaderboard.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">🏆</span>
+        <span>Classement</span>
+      </a>
+      <a href="news.html" class="nav-drawer-item active">
+        <span class="nav-drawer-icon">📰</span>
+        <span>Actualités</span>
+      </a>
+      <a href="plans.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">⭐</span>
+        <span>Plans &amp; abonnements</span>
+      </a>
+      <a href="changelog.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">📋</span>
+        <span>Changelog</span>
+      </a>
+      <a href="admin.html" class="nav-drawer-item nav-drawer-admin hidden" id="navDrawerAdmin">
+        <span class="nav-drawer-icon">⚙️</span>
+        <span>Panneau admin</span>
+      </a>
+    </nav>
+  </div>
 
   <!-- ── Hero ── -->
   <div class="page-hero">
@@ -378,6 +463,18 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label">Image <span>(optionnel)</span></label>
+          <div class="img-upload-area" id="imgUploadArea">
+            <input type="file" id="fieldImage" accept="image/*" />
+            <p class="img-upload-label">📷 <strong>Choisir une image</strong> ou glisser-déposer<br><small>JPG, PNG, WebP · max ~450 Ko après compression</small></p>
+          </div>
+          <div id="imgPreviewWrap" style="display:none" class="img-preview-wrap">
+            <img id="imgPreview" src="" alt="Aperçu" />
+            <button type="button" class="img-remove-btn" onclick="removeImage()">✕</button>
+          </div>
+        </div>
+
+        <div class="form-group">
           <label class="form-label" for="fieldUrl">Lien vers l'article <span>(optionnel)</span></label>
           <input type="url" id="fieldUrl" class="form-input" placeholder="https://…" maxlength="500" />
         </div>
@@ -402,13 +499,61 @@
        <a href="mailto:ciril8596@gmail.com">Contact</a></p>
   </footer>
 
+  <nav class="bottom-nav" aria-label="Navigation principale">
+    <a href="map.html" class="bnav-item">
+      <span class="bnav-icon">🗺</span>
+      <span class="bnav-label">Carte</span>
+    </a>
+    <a href="routes.html" class="bnav-item">
+      <span class="bnav-icon">🧭</span>
+      <span class="bnav-label">Trajets</span>
+    </a>
+    <a href="profile.html" class="bnav-item">
+      <span class="bnav-icon">👤</span>
+      <span class="bnav-label">Profil</span>
+    </a>
+  </nav>
+
   <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/features.js"></script>
   <script src="js/news.js"></script>
+  <script src="js/install.js"></script>
   <script>
     // Fade-in observer (called after render too, from news.js)
     document.addEventListener('DOMContentLoaded', () => {
       setTimeout(attachFadeObserver, 100);
     });
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
+  <script>
+    (function() {
+      var overlay = document.getElementById('navDrawerOverlay');
+      var drawer  = document.getElementById('navDrawer');
+      function openDrawer() {
+        overlay.classList.remove('hidden');
+        drawer.classList.remove('hidden');
+        requestAnimationFrame(function() {
+          overlay.classList.add('open');
+          drawer.classList.add('open');
+        });
+      }
+      function closeDrawer() {
+        overlay.classList.remove('open');
+        drawer.classList.remove('open');
+        setTimeout(function() {
+          overlay.classList.add('hidden');
+          drawer.classList.add('hidden');
+        }, 250);
+      }
+      document.getElementById('btnNavMenu').addEventListener('click', openDrawer);
+      document.getElementById('btnNavDrawerClose').addEventListener('click', closeDrawer);
+      overlay.addEventListener('click', closeDrawer);
+    })();
   </script>
 </body>
 </html>

@@ -237,7 +237,6 @@
   border: 1px solid var(--gold-200);
   color: var(--gold-text);
   position: relative;
-  overflow: hidden;
 }
 .plan-gold::before {
   content: "";

@@ -959,6 +959,68 @@ async function deletePath(id) {
 }
 
 // ── Members panel ─────────────────────────────────────────────────────────────
+// ── Messages panel ────────────────────────────────────────────────────────────
+document.getElementById('btnMessages').addEventListener('click', async () => {
+  document.getElementById('pathForm').classList.add('hidden');
+  document.getElementById('editForm').classList.add('hidden');
+  document.getElementById('membersPanel').classList.add('hidden');
+  const panel = document.getElementById('messagesPanel');
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) await loadMessages();
+});
+
+document.getElementById('btnCloseMessagesPanel').addEventListener('click', () => {
+  document.getElementById('messagesPanel').classList.add('hidden');
+});
+
+async function loadMessages() {
+  const list = document.getElementById('messagesList');
+  list.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Chargement…</p>';
+  try {
+    const res = await fetch(`${API_URL}/api/contacts`, { headers: authHeader() });
+    const messages = await res.json();
+    if (!res.ok) { list.innerHTML = `<p style="color:red">${messages.error}</p>`; return; }
+    const badge = document.getElementById('msgBadge');
+    if (messages.length > 0) { badge.textContent = messages.length; badge.style.display = ''; }
+    else badge.style.display = 'none';
+    if (messages.length === 0) { list.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Aucun message.</p>'; return; }
+    list.innerHTML = messages.map(m => {
+      const date = new Date(m.date).toLocaleString('fr-FR');
+      return `<div data-id="${m.id}" style="padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div>
+            <div style="font-weight:600;font-size:0.9rem">${m.name}</div>
+            <div style="font-size:0.78rem;color:#6b7280">${m.email} · ${date}</div>
+          </div>
+          <button class="btn-secondary msg-delete-btn" data-id="${m.id}" style="width:auto;padding:4px 10px;font-size:0.78rem;flex-shrink:0">Supprimer</button>
+        </div>
+        <p style="margin:8px 0 0;font-size:0.88rem;white-space:pre-wrap;color:#374151">${m.message.replace(/</g,'&lt;')}</p>
+        <a href="mailto:${m.email}?subject=Re: votre message BWR" style="display:inline-block;margin-top:8px;font-size:0.8rem;color:#166534;text-decoration:underline">↩ Répondre par email</a>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.msg-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.textContent = '…'; btn.disabled = true;
+        await fetch(`${API_URL}/api/contacts/${btn.dataset.id}`, { method: 'DELETE', headers: authHeader() });
+        await loadMessages();
+      });
+    });
+  } catch {
+    list.innerHTML = '<p style="color:red">Erreur réseau</p>';
+  }
+}
+
+// load badge count on startup
+(async () => {
+  try {
+    const res = await fetch(`${API_URL}/api/contacts`, { headers: authHeader() });
+    if (!res.ok) return;
+    const msgs = await res.json();
+    const badge = document.getElementById('msgBadge');
+    if (msgs.length > 0) { badge.textContent = msgs.length; badge.style.display = ''; }
+  } catch {}
+})();
+
 document.getElementById('btnMembers').addEventListener('click', async () => {
   document.getElementById('pathForm').classList.add('hidden');
   document.getElementById('editForm').classList.add('hidden');

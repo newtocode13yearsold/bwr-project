@@ -245,17 +245,94 @@ window.addEventListener('online', async () => {
 });
 
 // ── Paths ─────────────────────────────────────────────────────────────────────
+let walkedPathLayer = null;
+
 async function loadPaths() {
   try {
     const res = await fetch(`${API_URL}/api/paths`);
     allPaths = await res.json();
     renderPaths();
     showPathHintIfNeeded();
+    if (_userPlan === 'gold') loadWalkedOverlay();
   } catch {}
 }
 
 function renderPaths() {
   pathTileLayer.setPaths(allPaths, activeFilters);
+}
+
+// ── Passive walked-path tracking ─────────────────────────────────────────────
+// Runs on every GPS fix while live location is active. Requires 3 hits within
+// 35 m before marking a path as walked, to avoid false positives from inaccurate GPS.
+const _walkHits = new Map();      // pathId → hit count
+const _walkConfirmed = new Set(); // pathIds already sent to server this session
+let _walkFlushTimer = null;
+
+function _mapHaversineM(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function trackWalkedPaths(lat, lng) {
+  if (!allPaths.length || !getToken()) return;
+  let newConfirmed = false;
+  for (const path of allPaths) {
+    if (!path.id || _walkConfirmed.has(path.id)) continue;
+    if (!path.coordinates || path.coordinates.length < 2) continue;
+    const near = path.coordinates.some(([plat, plng]) => _mapHaversineM(lat, lng, plat, plng) < 35);
+    if (near) {
+      const hits = (_walkHits.get(path.id) || 0) + 1;
+      _walkHits.set(path.id, hits);
+      if (hits >= 3) {
+        _walkConfirmed.add(path.id);
+        newConfirmed = true;
+      }
+    }
+  }
+  if (!newConfirmed) return;
+  clearTimeout(_walkFlushTimer);
+  _walkFlushTimer = setTimeout(() => {
+    fetch(`${API_URL}/api/walkedpaths`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ pathIds: [..._walkConfirmed] }),
+    })
+      .then(r => r.json())
+      .then(() => { if (_userPlan === 'gold') loadWalkedOverlay(); })
+      .catch(() => {});
+  }, 4000);
+}
+
+async function loadWalkedOverlay() {
+  try {
+    const res = await fetch(`${API_URL}/api/walkedpaths`, {
+      headers: { ...authHeader() },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    renderWalkedOverlay(new Set(data.walkedPathIds || []));
+  } catch {}
+}
+
+function renderWalkedOverlay(walkedIds) {
+  if (walkedPathLayer) { walkedPathLayer.remove(); walkedPathLayer = null; }
+  if (!walkedIds.size) return;
+  walkedPathLayer = L.layerGroup();
+  allPaths.forEach(path => {
+    if (!walkedIds.has(path.id) || !path.coordinates || path.coordinates.length < 2) return;
+    L.polyline(path.coordinates, {
+      color: '#22c55e',
+      weight: 7,
+      opacity: 0.45,
+      lineCap: 'round',
+      lineJoin: 'round',
+    }).addTo(walkedPathLayer);
+  });
+  walkedPathLayer.addTo(map);
 }
 
 // ── Silver path-edit hint chip ────────────────────────────────────────────────
@@ -528,6 +605,14 @@ function openPathPopup(path, latlng) {
   const deleteHTML = canEdit
     ? `<button class="popup-delete-path-btn" id="deletePath-${path.id}">🗑 Supprimer ce chemin</button>`
     : '';
+
+  const freeGradesLeft = canEdit
+    ? Math.max(0, 5 - (_cachedUser?.stats?.unwalkedGrades || 0))
+    : 0;
+  const gradeHint = canEdit && freeGradesLeft < 5
+    ? `<div class="popup-grade-quota">${freeGradesLeft > 0 ? `${freeGradesLeft} notation${freeGradesLeft > 1 ? 's' : ''} libre${freeGradesLeft > 1 ? 's' : ''} restante${freeGradesLeft > 1 ? 's' : ''}` : '🔒 Limite atteinte — parcourez ce chemin pour noter'}</div>`
+    : '';
+
   const difficultyHTML = canEdit
     ? `<div class="popup-difficulty-section">
         <div class="popup-difficulty-label">🎨 Changer la difficulté :</div>
@@ -547,6 +632,7 @@ function openPathPopup(path, latlng) {
           <span style="color:${STATUS_COLORS.not_passable}">● Impraticable</span>
           <span style="color:${STATUS_COLORS.no_bike}">● Vélo interdit</span>
         </div>
+        ${gradeHint}
       </div>`
     : `<div class="popup-difficulty-locked">
         <span class="lock-tag">🔒 Argent</span>
@@ -590,9 +676,15 @@ function openPathPopup(path, latlng) {
               path.status = newStatus;
               const idx = allPaths.findIndex(p => p.id === path.id);
               if (idx !== -1) allPaths[idx].status = newStatus;
+              if (_cachedUser?.stats && !res.headers.get('x-already-graded')) {
+                _cachedUser.stats.unwalkedGrades = (_cachedUser.stats.unwalkedGrades || 0) + 1;
+              }
               renderPaths();
               map.closePopup();
               showToast(`✅ Difficulté mise à jour : ${STATUS_LABELS[newStatus]}`);
+            } else if (res.status === 403) {
+              const data = await res.json().catch(() => ({}));
+              showToast(`🔒 ${data.error || 'Notation non autorisée.'}`);
             } else if (!navigator.onLine || res.status === 503) {
               path.status = newStatus;
               const idx = allPaths.findIndex(p => p.id === path.id);
@@ -713,6 +805,9 @@ function openDifficultyPopup(path, latlng) {
             renderPaths();
             map.closePopup();
             showToast(`✅ Difficulté mise à jour : ${STATUS_LABELS[newStatus]}`);
+          } else if (res.status === 403) {
+            const data = await res.json().catch(() => ({}));
+            showToast(`🔒 ${data.error || 'Notation non autorisée.'}`);
           } else {
             showToast('Erreur lors de la mise à jour.');
           }
@@ -907,7 +1002,9 @@ document.getElementById('toggleFilters').addEventListener('click', () => {
 let locationMarker = null;
 let locationCircle = null;
 let locationWatchId = null;
-// states: 'idle' | 'searching' | 'following'
+// states: 'idle' | 'searching' | 'following' | 'watching'
+// 'following' = map re-centers on every GPS update (like Google Maps navigation)
+// 'watching'  = dot visible but map no longer auto-pans (user dragged away)
 let locateState = 'idle';
 
 function showLocateToast(msg, isError = false) {
@@ -924,6 +1021,32 @@ function showLocateToast(msg, isError = false) {
   t._timer = setTimeout(() => t.classList.remove('visible'), 3500);
 }
 
+function _updateLocateBtn() {
+  const btn = document.getElementById('btnLocate');
+  if (!btn) return;
+  btn.classList.remove('locate-following', 'locate-searching', 'locate-watching');
+  switch (locateState) {
+    case 'searching':
+      btn.textContent = '⏳';
+      btn.classList.add('locate-searching');
+      btn.title = 'Annuler';
+      break;
+    case 'following':
+      btn.textContent = '◎ Suivi actif';
+      btn.classList.add('locate-following');
+      btn.title = 'Arrêter le suivi';
+      break;
+    case 'watching':
+      btn.textContent = '📍 Recentrer';
+      btn.classList.add('locate-watching');
+      btn.title = 'Recentrer sur ma position';
+      break;
+    default:
+      btn.textContent = '📍 Ma position';
+      btn.title = 'Ma position';
+  }
+}
+
 function stopLocating() {
   if (locationWatchId !== null) {
     navigator.geolocation.clearWatch(locationWatchId);
@@ -932,10 +1055,7 @@ function stopLocating() {
   if (locationMarker) { map.removeLayer(locationMarker); locationMarker = null; }
   if (locationCircle) { map.removeLayer(locationCircle); locationCircle = null; }
   locateState = 'idle';
-  const btn = document.getElementById('btnLocate');
-  btn.textContent = '📍';
-  btn.classList.remove('locate-following', 'locate-searching');
-  btn.title = 'Ma position';
+  _updateLocateBtn();
 }
 
 function updateLocationLayers(lat, lng, accuracy) {
@@ -943,15 +1063,30 @@ function updateLocationLayers(lat, lng, accuracy) {
   else locationCircle = L.circle([lat, lng], {
     radius: accuracy,
     color: '#3b82f6', fillColor: '#93c5fd',
-    fillOpacity: 0.18, weight: 1.5,
+    fillOpacity: 0.15, weight: 1.5,
+    interactive: false,
   }).addTo(map);
 
   if (locationMarker) locationMarker.setLatLng([lat, lng]);
-  else locationMarker = L.circleMarker([lat, lng], {
-    radius: 9, color: 'white', weight: 3,
-    fillColor: '#3b82f6', fillOpacity: 1,
+  else locationMarker = L.marker([lat, lng], {
+    icon: L.divIcon({
+      className: 'location-dot-icon',
+      html: '<div class="location-dot-inner"><div class="location-dot-pulse"></div></div>',
+      iconAnchor: [8, 8],
+      iconSize: [16, 16],
+    }),
+    zIndexOffset: 1000,
+    interactive: true,
   }).bindPopup('Vous êtes ici').addTo(map);
 }
+
+// When the user manually pans the map, stop auto-centering but keep the dot
+map.on('dragstart', () => {
+  if (locateState === 'following') {
+    locateState = 'watching';
+    _updateLocateBtn();
+  }
+});
 
 document.getElementById('btnLocate').addEventListener('click', () => {
   if (!navigator.geolocation) {
@@ -959,35 +1094,42 @@ document.getElementById('btnLocate').addEventListener('click', () => {
     return;
   }
 
-  // Cycle: idle → following → idle
+  // Dot visible but map drifted away → re-center and resume following
+  if (locateState === 'watching') {
+    if (locationMarker) {
+      map.setView(locationMarker.getLatLng(), Math.max(map.getZoom(), 15), { animate: true, duration: 0.6 });
+    }
+    locateState = 'following';
+    _updateLocateBtn();
+    return;
+  }
+
+  // Active → stop everything
   if (locateState === 'following' || locateState === 'searching') {
     stopLocating();
     return;
   }
 
-  const btn = document.getElementById('btnLocate');
+  // idle → start
   locateState = 'searching';
-  btn.textContent = '⏳';
-  btn.classList.add('locate-searching');
-  btn.classList.remove('locate-following');
-  btn.title = 'Annuler';
-
-  let firstFix = true;
+  _updateLocateBtn();
 
   locationWatchId = navigator.geolocation.watchPosition(
     ({ coords: { latitude: lat, longitude: lng, accuracy } }) => {
-      locateState = 'following';
-      btn.textContent = '📍';
-      btn.classList.remove('locate-searching');
-      btn.classList.add('locate-following');
-      btn.title = 'Arrêter le suivi';
+      const wasSearching = locateState === 'searching';
+      if (wasSearching) {
+        locateState = 'following';
+        _updateLocateBtn();
+        showLocateToast('Position trouvée' + (accuracy > 50 ? ` (±${Math.round(accuracy)} m)` : ''));
+      }
 
       updateLocationLayers(lat, lng, accuracy);
+      trackWalkedPaths(lat, lng);
 
-      if (firstFix) {
-        firstFix = false;
-        map.setView([lat, lng], Math.max(map.getZoom(), 15));
-        showLocateToast('Position trouvée' + (accuracy > 50 ? ` (±${Math.round(accuracy)} m)` : ''));
+      // Re-center map on every fix while following (Google Maps-style continuous tracking)
+      if (locateState === 'following') {
+        const targetZoom = wasSearching ? Math.max(map.getZoom(), 15) : map.getZoom();
+        map.setView([lat, lng], targetZoom, { animate: true, duration: wasSearching ? 0.8 : 0.4 });
       }
     },
     (err) => {

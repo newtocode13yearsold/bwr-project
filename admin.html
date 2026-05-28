@@ -28,15 +28,58 @@
         <span class="tagline admin-tag">Admin</span>
       </div>
       <div class="header-right">
+        <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
         <button class="btn-icon" id="btnSelectPath" title="Sélectionner un chemin"><span class="btn-emoji">🗺</span><span class="btn-label">Sélectionner</span></button>
         <button class="btn-icon" id="btnDrawPath" title="Dessiner"><span class="btn-emoji">✏</span><span class="btn-label">Dessiner</span></button>
+        <button class="btn-icon" id="btnMessages" title="Messages de contact" style="position:relative"><span class="btn-emoji">📬</span><span class="btn-label">Messages</span><span id="msgBadge" style="display:none;position:absolute;top:4px;right:4px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:700;border-radius:999px;padding:1px 5px;line-height:1.4"></span></button>
         <button class="btn-icon" id="btnMembers" title="Gérer les membres"><span class="btn-emoji">👥</span><span class="btn-label">Membres</span></button>
-        <button class="btn-icon" id="btnOfflineAdmin" title="Télécharger la carte hors-ligne"><span class="btn-emoji">💾</span><span class="btn-label">Carte</span></button>
         <button class="btn-icon" id="btnSplitCancel" title="Annuler le découpage" style="display:none;background:rgba(239,68,68,0.4)"><span class="btn-emoji">✕</span><span class="btn-label">Annuler</span></button>
-        <a href="news.html" class="btn-icon" title="Actualités" style="text-decoration:none"><span class="btn-emoji">📰</span><span class="btn-label">Actus</span></a>
         <div class="user-menu" id="userMenu"></div>
       </div>
     </header>
+
+    <!-- Nav drawer -->
+    <div class="nav-drawer-overlay hidden" id="navDrawerOverlay"></div>
+    <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
+      <div class="nav-drawer-header">
+        <span class="nav-drawer-logo">BWR</span>
+        <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+      </div>
+      <nav class="nav-drawer-links">
+        <a href="map.html" class="nav-drawer-item">
+          <span class="nav-drawer-icon">🗺</span>
+          <span>Carte</span>
+        </a>
+        <a href="routes.html" class="nav-drawer-item">
+          <span class="nav-drawer-icon">🧭</span>
+          <span>Planifier un trajet</span>
+        </a>
+        <a href="profile.html" class="nav-drawer-item">
+          <span class="nav-drawer-icon">👤</span>
+          <span>Mon profil</span>
+        </a>
+        <a href="leaderboard.html" class="nav-drawer-item">
+          <span class="nav-drawer-icon">🏆</span>
+          <span>Classement</span>
+        </a>
+        <a href="news.html" class="nav-drawer-item">
+          <span class="nav-drawer-icon">📰</span>
+          <span>Actualités</span>
+        </a>
+        <a href="plans.html" class="nav-drawer-item">
+          <span class="nav-drawer-icon">⭐</span>
+          <span>Plans &amp; abonnements</span>
+        </a>
+        <a href="changelog.html" class="nav-drawer-item">
+          <span class="nav-drawer-icon">📋</span>
+          <span>Changelog</span>
+        </a>
+        <a href="admin.html" class="nav-drawer-item active">
+          <span class="nav-drawer-icon">⚙️</span>
+          <span>Panneau admin</span>
+        </a>
+      </nav>
+    </div>
 
     <!-- Offline sync banner -->
     <div id="syncBanner" style="display:none;background:#92400e;color:#fef3c7;padding:8px 16px;font-size:0.82rem;align-items:center;gap:10px;justify-content:center;">
@@ -128,6 +171,15 @@
       </div>
     </div>
 
+    <!-- Messages panel -->
+    <div id="messagesPanel" class="path-form hidden" style="max-height:80vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0">📬 Messages de contact</h3>
+        <button class="btn-secondary" id="btnCloseMessagesPanel" style="width:auto;padding:6px 14px">✕</button>
+      </div>
+      <div id="messagesList" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+
     <!-- Members management panel -->
     <div id="membersPanel" class="path-form hidden" style="max-height:80vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -198,6 +250,31 @@
       window.addEventListener('online', updatePill);
       window.addEventListener('offline', updatePill);
       updatePill();
+    })();
+  </script>
+  <script>
+    (function() {
+      var overlay = document.getElementById('navDrawerOverlay');
+      var drawer  = document.getElementById('navDrawer');
+      function openDrawer() {
+        overlay.classList.remove('hidden');
+        drawer.classList.remove('hidden');
+        requestAnimationFrame(function() {
+          overlay.classList.add('open');
+          drawer.classList.add('open');
+        });
+      }
+      function closeDrawer() {
+        overlay.classList.remove('open');
+        drawer.classList.remove('open');
+        setTimeout(function() {
+          overlay.classList.add('hidden');
+          drawer.classList.add('hidden');
+        }, 250);
+      }
+      document.getElementById('btnNavMenu').addEventListener('click', openDrawer);
+      document.getElementById('btnNavDrawerClose').addEventListener('click', closeDrawer);
+      overlay.addEventListener('click', closeDrawer);
     })();
   </script>
 </body>

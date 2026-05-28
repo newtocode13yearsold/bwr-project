@@ -1,5 +1,6 @@
 let currentUser = null;
 let allNews = [];
+let pendingImageDataUri = '';
 
 async function init() {
   // Try to detect logged-in user (non-blocking — page works without auth)
@@ -52,12 +53,21 @@ function renderFeed() {
   attachFadeObserver();
 }
 
+const FOREST_PLACEHOLDERS = ['🌲', '🌳', '🦌', '🍄', '🌿', '🐦'];
+
 function newsCard(item) {
   const date = new Date(item.createdAt).toLocaleDateString('fr-FR', {
     day: 'numeric', month: 'long', year: 'numeric',
   });
   const plan = currentUser?.role === 'admin' ? 'gold' : (currentUser?.plan || 'free');
   const canLink = plan === 'silver' || plan === 'gold';
+
+  // Image or placeholder (uploaded data URI takes priority over external URL)
+  const imgSrc = item.imageDataUri || item.imageUrl || '';
+  const imgHtml = imgSrc
+    ? `<img class="news-img" src="${escHtml(imgSrc)}" alt="${escHtml(item.title)}" loading="lazy" />`
+    : `<div class="news-img-placeholder">${FOREST_PLACEHOLDERS[Math.abs(item.id?.charCodeAt(0) ?? 0) % FOREST_PLACEHOLDERS.length]}</div>`;
+
   const linkHtml = item.url
     ? canLink
       ? `<a href="${escHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="news-link">
@@ -75,6 +85,7 @@ function newsCard(item) {
     : '';
   return `
     <article class="news-card fade-up" data-id="${item.id}">
+      ${imgHtml}
       <div class="news-meta">
         <span class="news-date">${date}</span>
       </div>
@@ -112,8 +123,28 @@ function openModal(item) {
   document.getElementById('fieldUrlLabel').value = item?.urlLabel || '';
   document.getElementById('modalEditId').value = item?.id || '';
   document.getElementById('modalError').textContent = '';
+
+  // Image
+  pendingImageDataUri = item?.imageDataUri || '';
+  document.getElementById('fieldImage').value = '';
+  if (pendingImageDataUri) {
+    document.getElementById('imgPreview').src = pendingImageDataUri;
+    document.getElementById('imgPreviewWrap').style.display = 'block';
+    document.getElementById('imgUploadArea').style.display = 'none';
+  } else {
+    document.getElementById('imgPreviewWrap').style.display = 'none';
+    document.getElementById('imgUploadArea').style.display = 'block';
+  }
+
   document.getElementById('newsModal').classList.add('open');
   document.getElementById('fieldTitle').focus();
+}
+
+function removeImage() {
+  pendingImageDataUri = '';
+  document.getElementById('fieldImage').value = '';
+  document.getElementById('imgPreviewWrap').style.display = 'none';
+  document.getElementById('imgUploadArea').style.display = 'block';
 }
 
 function closeModal() {
@@ -125,14 +156,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === e.currentTarget) closeModal();
   });
 
+  document.getElementById('fieldImage').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      pendingImageDataUri = await resizeImage(file, 900, 0.82);
+      document.getElementById('imgPreview').src = pendingImageDataUri;
+      document.getElementById('imgPreviewWrap').style.display = 'block';
+      document.getElementById('imgUploadArea').style.display = 'none';
+    } catch {
+      document.getElementById('modalError').textContent = 'Impossible de charger l\'image.';
+    }
+  });
+
   document.getElementById('newsForm').addEventListener('submit', async e => {
     e.preventDefault();
     const id = document.getElementById('modalEditId').value;
     const payload = {
-      title:    document.getElementById('fieldTitle').value.trim(),
-      content:  document.getElementById('fieldContent').value.trim(),
-      url:      document.getElementById('fieldUrl').value.trim(),
-      urlLabel: document.getElementById('fieldUrlLabel').value.trim(),
+      title:        document.getElementById('fieldTitle').value.trim(),
+      content:      document.getElementById('fieldContent').value.trim(),
+      url:          document.getElementById('fieldUrl').value.trim(),
+      urlLabel:     document.getElementById('fieldUrlLabel').value.trim(),
+      imageDataUri: pendingImageDataUri,
     };
     const errEl = document.getElementById('modalError');
     const btn = document.getElementById('modalSave');
@@ -166,21 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Sticky nav
-  const nav = document.getElementById('nav');
-  window.addEventListener('scroll', () => {
-    nav.classList.toggle('scrolled', window.scrollY > 20);
-  });
-
-  // Mobile burger
-  document.getElementById('navBurger').addEventListener('click', () => {
-    document.getElementById('navMobile').classList.toggle('hidden');
-  });
-  document.querySelectorAll('.nav-mobile a').forEach(a => {
-    a.addEventListener('click', () =>
-      document.getElementById('navMobile').classList.add('hidden'));
-  });
-
   init();
 });
 
@@ -198,6 +228,27 @@ async function deleteItem(id) {
   } catch {
     alert('Erreur réseau.');
   }
+}
+
+function resizeImage(file, maxPx, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = ev => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function attachFadeObserver() {

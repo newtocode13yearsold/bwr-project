@@ -21,24 +21,60 @@
 </head>
 <body class="plans-body">
 
-  <!-- ── Navigation ── -->
-  <nav class="plans-nav" id="plansNav">
-    <div class="plans-nav-inner">
-      <a href="index.html" class="plans-logo">
-        <span class="plans-logo-mark">B</span>
-        <span class="plans-logo-text">BWR</span>
-      </a>
-      <div class="plans-nav-links">
-        <a href="map.html">Carte</a>
-        <a href="routes.html">Planifier</a>
-        <a href="news.html">Actualités</a>
-        <a href="plans.html" style="color:#fde68a">Plans</a>
-      </div>
-      <div class="plans-nav-cta">
-        <a href="map.html" class="btn-ghost">← Retour à la carte</a>
-      </div>
+  <header class="header">
+    <div class="header-left">
+      <a href="index.html" class="logo" style="text-decoration:none">BWR</a>
+      <span class="tagline">Plans &amp; abonnements</span>
     </div>
-  </nav>
+    <div class="header-right">
+      <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
+      <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji">⬇</span><span class="btn-label">Installer</span></button>
+      <div class="user-menu" id="userMenu"></div>
+    </div>
+  </header>
+
+  <!-- Nav drawer -->
+  <div class="nav-drawer-overlay hidden" id="navDrawerOverlay"></div>
+  <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
+    <div class="nav-drawer-header">
+      <span class="nav-drawer-logo">BWR</span>
+      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+    </div>
+    <nav class="nav-drawer-links">
+      <a href="map.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">🗺</span>
+        <span>Carte</span>
+      </a>
+      <a href="routes.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">🧭</span>
+        <span>Planifier un trajet</span>
+      </a>
+      <a href="profile.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">👤</span>
+        <span>Mon profil</span>
+      </a>
+      <a href="leaderboard.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">🏆</span>
+        <span>Classement</span>
+      </a>
+      <a href="news.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">📰</span>
+        <span>Actualités</span>
+      </a>
+      <a href="plans.html" class="nav-drawer-item active">
+        <span class="nav-drawer-icon">⭐</span>
+        <span>Plans &amp; abonnements</span>
+      </a>
+      <a href="changelog.html" class="nav-drawer-item">
+        <span class="nav-drawer-icon">📋</span>
+        <span>Changelog</span>
+      </a>
+      <a href="admin.html" class="nav-drawer-item nav-drawer-admin hidden" id="navDrawerAdmin">
+        <span class="nav-drawer-icon">⚙️</span>
+        <span>Panneau admin</span>
+      </a>
+    </nav>
+  </div>
 
   <main class="plans-main">
 
@@ -379,6 +415,21 @@
     </div>
   </footer>
 
+  <nav class="bottom-nav" aria-label="Navigation principale">
+    <a href="map.html" class="bnav-item">
+      <span class="bnav-icon">🗺</span>
+      <span class="bnav-label">Carte</span>
+    </a>
+    <a href="routes.html" class="bnav-item">
+      <span class="bnav-icon">🧭</span>
+      <span class="bnav-label">Trajets</span>
+    </a>
+    <a href="profile.html" class="bnav-item">
+      <span class="bnav-icon">👤</span>
+      <span class="bnav-label">Profil</span>
+    </a>
+  </nav>
+
   <!-- ── Activation request modal ─────────────────────────────────────── -->
   <div class="modal-overlay hidden" id="activationModal" role="dialog" aria-modal="true" aria-labelledby="activationTitle">
     <div class="modal-card modal-activation">
@@ -572,6 +623,39 @@ Message : ${message || '(aucun)'}
         if (tgt) { ev.preventDefault(); tgt.scrollIntoView({ behavior: 'smooth' }); }
       });
     });
+  </script>
+  <script src="js/auth.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/install.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
+  <script>
+    (function() {
+      var overlay = document.getElementById('navDrawerOverlay');
+      var drawer  = document.getElementById('navDrawer');
+      function openDrawer() {
+        overlay.classList.remove('hidden');
+        drawer.classList.remove('hidden');
+        requestAnimationFrame(function() {
+          overlay.classList.add('open');
+          drawer.classList.add('open');
+        });
+      }
+      function closeDrawer() {
+        overlay.classList.remove('open');
+        drawer.classList.remove('open');
+        setTimeout(function() {
+          overlay.classList.add('hidden');
+          drawer.classList.add('hidden');
+        }, 250);
+      }
+      document.getElementById('btnNavMenu').addEventListener('click', openDrawer);
+      document.getElementById('btnNavDrawerClose').addEventListener('click', closeDrawer);
+      overlay.addEventListener('click', closeDrawer);
+    })();
   </script>
 
 </body>

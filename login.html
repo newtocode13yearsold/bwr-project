@@ -60,6 +60,14 @@
           <label>Mot de passe</label>
           <input type="password" id="signupPassword" class="input-field" placeholder="6 caractères minimum" required />
         </div>
+        <div class="field" style="margin-top:4px">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+            <input type="checkbox" id="signupConsent" required style="margin-top:3px;flex-shrink:0;width:16px;height:16px;accent-color:#2d6b1f;cursor:pointer" />
+            <span style="font-size:13px;color:#6b7280;line-height:1.5">
+              J'ai lu et j'accepte les <a href="legal.html" target="_blank" style="color:#2d6b1f">CGU et la politique de confidentialité</a>
+            </span>
+          </label>
+        </div>
         <div id="signupError" class="form-error hidden"></div>
         <div id="signupSuccess" class="form-success hidden"></div>
         <button type="submit" class="btn-primary">Créer mon compte</button>

@@ -541,6 +541,13 @@ body {
   font-size: 0.72rem;
   color: #6b7280;
 }
+.popup-grade-quota {
+  margin-top: 6px;
+  font-size: 0.74rem;
+  color: #6b7280;
+  text-align: center;
+}
+.popup-grade-quota:has(span) { color: #dc2626; font-weight: 600; }
 .popup-difficulty-locked {
   margin-top: 8px;
   padding: 6px 10px;
@@ -1179,8 +1186,18 @@ body {
 
 .map-locate-btn.locate-following {
   background: #eff6ff;
+  color: #1d4ed8;
   box-shadow: 0 0 0 3px #3b82f6, 0 2px 12px rgba(59,130,246,0.35);
   animation: locate-pulse 2s ease-in-out infinite;
+}
+.map-locate-btn.locate-watching {
+  background: #f8faff;
+  color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.35), 0 2px 12px rgba(59,130,246,0.12);
+}
+.map-locate-btn.locate-watching:hover {
+  background: #eff6ff;
+  transform: translateX(-50%) translateY(-2px);
 }
 .map-locate-btn.locate-searching {
   animation: locate-spin 1s linear infinite;

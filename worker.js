@@ -12,6 +12,8 @@
 // savedroute:{userId}:{id} → JSON saved route (coords, stats, metadata)
 // routeshare:{token}       → JSON { userId, routeId }  (180-day TTL)
 // news:{id}                → JSON news item { id, title, content, url, urlLabel, createdAt, updatedAt }
+// pathgrade:{pathId}:{userId} → JSON { walkedWhenGraded: bool } (legacy '1' = unwalked)
+// walkedpath:{userId}:{pathId} → ISO timestamp string (legacy '1' = walked, unknown time)
 
 async function listItems(env, prefix) {
   const keys = [];
@@ -806,6 +808,37 @@ export default {
       const updated = { ...existing, status: body.status };
       await putPath(env, updated);
 
+      const gradeKey = `pathgrade:${id}:${user.id}`;
+      const [alreadyGraded, walkedRaw] = await Promise.all([
+        env.BWR_KV.get(gradeKey),
+        env.BWR_KV.get(`walkedpath:${user.id}:${id}`),
+      ]);
+
+      // Check if user walked this specific path in the last 24 h
+      let walkedRecently = false;
+      if (walkedRaw && walkedRaw !== '1') {
+        const walkedAt = new Date(walkedRaw);
+        if (!isNaN(walkedAt) && Date.now() - walkedAt.getTime() < 86_400_000) {
+          walkedRecently = true;
+        }
+      }
+
+      if (!alreadyGraded) {
+        if (!walkedRecently) {
+          const unwalkedGrades = user.stats?.unwalkedGrades || 0;
+          if (unwalkedGrades >= 5) {
+            return fail('Limite de 5 notations libres atteinte. Parcourez ce chemin pour le noter sans limite.', 403);
+          }
+        }
+        const gStats = user.stats || { routes: 0, km: 0 };
+        const newStats = { ...gStats, pathGrades: (gStats.pathGrades || 0) + 1 };
+        if (!walkedRecently) newStats.unwalkedGrades = (gStats.unwalkedGrades || 0) + 1;
+        await Promise.all([
+          env.BWR_KV.put(gradeKey, JSON.stringify({ walkedWhenGraded: walkedRecently })),
+          putUser(env, { ...user, stats: newStats }),
+        ]);
+      }
+
       if (body.status !== oldStatus) {
         const statusLabels = { easy: 'Facile', medium: 'Moyen', hard: 'Difficile', not_passable: 'Impraticable', no_bike: 'Vélo interdit' };
         const allUsers = await listItems(env, 'user:');
@@ -834,6 +867,29 @@ export default {
 
       const id = pathname.split('/')[3];
       await env.BWR_KV.delete(`path:${id}`);
+
+      // Reverse XP for every user who graded this path
+      const gradePrefix = `pathgrade:${id}:`;
+      const gradePage = await env.BWR_KV.list({ prefix: gradePrefix, limit: 1000 });
+      if (gradePage.keys.length > 0) {
+        await Promise.all(gradePage.keys.map(async k => {
+          const graderId = k.name.slice(gradePrefix.length);
+          const gradeRaw = await env.BWR_KV.get(k.name);
+          let walkedWhenGraded = false;
+          if (gradeRaw && gradeRaw !== '1') {
+            try { walkedWhenGraded = JSON.parse(gradeRaw).walkedWhenGraded; } catch {}
+          }
+          const grader = await getUser(env, graderId);
+          if (grader) {
+            const gs = grader.stats || {};
+            const newStats = { ...gs, pathGrades: Math.max(0, (gs.pathGrades || 0) - 1) };
+            if (!walkedWhenGraded) newStats.unwalkedGrades = Math.max(0, (gs.unwalkedGrades || 0) - 1);
+            await putUser(env, { ...grader, stats: newStats });
+          }
+          await env.BWR_KV.delete(k.name);
+        }));
+      }
+
       return json({ success: true });
     }
 
@@ -888,6 +944,7 @@ export default {
 
       const report = {
         id: crypto.randomUUID(),
+        userId: reporter.id,
         pathId: body.pathId || null,
         type: body.type || 'other',
         note: (body.note || '').slice(0, 300),
@@ -903,6 +960,8 @@ export default {
       }
 
       await putReport(env, report);
+      const rStats = reporter.stats || { routes: 0, km: 0 };
+      await putUser(env, { ...reporter, stats: { ...rStats, reports: (rStats.reports || 0) + 1 } });
 
       const typeLabels = { fallen_tree: 'Arbre tombé', flooded: 'Chemin inondé', muddy: 'Boueux', rutted: 'Ornières', broken_sign: 'Carrefour cassé', closed: 'Chemin fermé', danger: 'Danger', other: 'Autre' };
       try {
@@ -929,6 +988,24 @@ export default {
       return json({ success: true });
     }
 
+    // ── GET /api/contacts — admin only, list all contact messages ───────────
+    if (pathname === '/api/contacts' && request.method === 'GET') {
+      const admin = await getUserFromToken(env, request);
+      if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+      const messages = await listItems(env, 'contact:');
+      messages.sort((a, b) => new Date(b.date) - new Date(a.date));
+      return json(messages);
+    }
+
+    // ── DELETE /api/contacts/:id — admin only ────────────────────────────────
+    if (pathname.startsWith('/api/contacts/') && request.method === 'DELETE') {
+      const admin = await getUserFromToken(env, request);
+      if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+      const id = pathname.split('/')[3];
+      await env.BWR_KV.delete(`contact:${id}`);
+      return json({ success: true });
+    }
+
     // ── POST /api/contact — send a contact message ──────────────────────────
     if (pathname === '/api/contact' && request.method === 'POST') {
       const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -942,6 +1019,7 @@ export default {
         id, name, email, message: message.slice(0, 2000), date: new Date().toISOString(),
       }));
 
+      const adminEmail = env.ADMIN_EMAIL || 'ciril8596@gmail.com';
       try {
         await fetch('https://ntfy.sh/bwr-ciril8596', {
           method: 'POST',
@@ -949,6 +1027,23 @@ export default {
           body: `${email}\n\n${message}`,
         });
       } catch {}
+      if (env.RESEND_API_KEY) {
+        try {
+          await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: env.RESEND_FROM || 'BWR <noreply@bwr.ciril8596.workers.dev>',
+              to: adminEmail,
+              subject: `BWR — Nouveau message de ${name}`,
+              html: `<p><strong>De :</strong> ${name} &lt;${email}&gt;</p>
+<p><strong>Date :</strong> ${new Date().toLocaleString('fr-FR')}</p>
+<hr/>
+<p>${message.replace(/\n/g, '<br/>')}</p>`,
+            }),
+          });
+        } catch {}
+      }
 
       return json({ success: true });
     }
@@ -1061,12 +1156,16 @@ export default {
       if (!body.title?.trim()) return fail('Titre obligatoire.');
 
       const id = crypto.randomUUID();
+      const imageDataUri = (body.imageDataUri || '').trim();
+      if (imageDataUri && imageDataUri.length > 600000) return fail('Image trop grande (max ~450 Ko).');
       const item = {
         id,
         title: body.title.trim().slice(0, 200),
         content: (body.content || '').trim().slice(0, 5000),
         url: (body.url || '').trim().slice(0, 500),
         urlLabel: (body.urlLabel || '').trim().slice(0, 100),
+        imageDataUri: imageDataUri || '',
+        imageUrl: (body.imageUrl || '').trim().slice(0, 1000),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -1087,12 +1186,16 @@ export default {
       if (!body.title?.trim()) return fail('Titre obligatoire.');
 
       const existing = JSON.parse(raw);
+      const imageDataUri = (body.imageDataUri || '').trim();
+      if (imageDataUri && imageDataUri.length > 600000) return fail('Image trop grande (max ~450 Ko).');
       const updated = {
         ...existing,
         title: body.title.trim().slice(0, 200),
         content: (body.content || '').trim().slice(0, 5000),
         url: (body.url || '').trim().slice(0, 500),
         urlLabel: (body.urlLabel || '').trim().slice(0, 100),
+        imageDataUri: imageDataUri,
+        imageUrl: (body.imageUrl || '').trim().slice(0, 1000),
         updatedAt: new Date().toISOString(),
       };
       await env.BWR_KV.put(`news:${id}`, JSON.stringify(updated));
@@ -1127,6 +1230,134 @@ export default {
 
       await putUser(env, { ...user, alertsEnabled: false });
       return json({ success: true });
+    }
+
+    // ── POST /api/walkedpaths — mark admin paths as walked ─────────────────────
+    if (pathname === '/api/walkedpaths' && request.method === 'POST') {
+      const user = await getUserFromToken(env, request);
+      if (!user) return json({ error: 'Non authentifié' }, 401);
+
+      const body = await request.json().catch(() => ({}));
+      const pathIds = Array.isArray(body.pathIds) ? body.pathIds.slice(0, 200) : [];
+
+      if (pathIds.length === 0) return json({ walkedPathsCount: user.stats?.walkedPathsCount || 0 });
+
+      const checks = await Promise.all(
+        pathIds.map(pid => env.BWR_KV.get(`walkedpath:${user.id}:${pid}`))
+      );
+      const newPaths = pathIds.filter((_, i) => !checks[i]);
+
+      // Always update timestamp so the 24 h grading window stays fresh on revisit
+      const now = new Date().toISOString();
+      await Promise.all(pathIds.map(pid => env.BWR_KV.put(`walkedpath:${user.id}:${pid}`, now)));
+
+      if (newPaths.length > 0) {
+        const prev = user.stats?.walkedPathsCount || 0;
+        await putUser(env, { ...user, stats: { ...(user.stats || {}), walkedPathsCount: prev + newPaths.length } });
+      }
+
+      return json({ walkedPathsCount: (user.stats?.walkedPathsCount || 0) + newPaths.length });
+    }
+
+    // ── GET /api/walkedpaths — get walked path info for current user ────────────
+    if (pathname === '/api/walkedpaths' && request.method === 'GET') {
+      const user = await getUserFromToken(env, request);
+      if (!user) return json({ error: 'Non authentifié' }, 401);
+
+      const plan = effectivePlan(user);
+      const walkedPathsCount = user.stats?.walkedPathsCount || 0;
+      const pathKeyPage = await env.BWR_KV.list({ prefix: 'path:', limit: 1000 });
+      const totalPaths = pathKeyPage.keys.length;
+      const coverage = totalPaths > 0 ? Math.round(walkedPathsCount / totalPaths * 100) : 0;
+
+      if (plan !== 'gold') {
+        return json({ walkedPathIds: [], coverage, total: totalPaths });
+      }
+
+      const walkedKeys = await env.BWR_KV.list({ prefix: `walkedpath:${user.id}:`, limit: 1000 });
+      const walkedPathIds = walkedKeys.keys.map(k => k.name.split(':').slice(2).join(':'));
+      return json({ walkedPathIds, coverage, total: totalPaths });
+    }
+
+    // ── GET /api/leaderboard — public ──────────────────────────────────────────
+    if (pathname === '/api/leaderboard' && request.method === 'GET') {
+      const [allUsers, pathKeyPage] = await Promise.all([
+        listItems(env, 'user:'),
+        env.BWR_KV.list({ prefix: 'path:', limit: 1000 }),
+      ]);
+      const totalPaths = pathKeyPage.keys.length;
+
+      const entries = allUsers
+        .filter(u => u.id && u.name)
+        .map(u => {
+          const s = u.stats || {};
+          const reports = s.reports || 0;
+          const pathGrades = s.pathGrades || 0;
+          const points = reports * 2 + pathGrades;
+          const walkedPathsCount = s.walkedPathsCount || 0;
+          const forestCoverage = totalPaths > 0 ? Math.round(walkedPathsCount / totalPaths * 100) : 0;
+          return { id: u.id, name: u.name, reports, pathGrades, points, forestCoverage };
+        })
+        .sort((a, b) => b.points - a.points || b.reports - a.reports);
+
+      return json(entries);
+    }
+
+    // ── POST /api/ai-tip — personalized AI hiking tip ────────────────────────
+    if (pathname === '/api/ai-tip' && request.method === 'POST') {
+      const user = await getUserFromToken(env, request);
+      if (!user) return fail('Non authentifié.', 401);
+
+      if (!env.ANTHROPIC_API_KEY) {
+        const fallbacks = [
+          'Essaye un nouveau sentier aujourd\'hui pour varier les plaisirs !',
+          'Observe la faune au lever du jour — la forêt s\'éveille doucement.',
+          'Une sortie en boucle est parfaite pour se ressourcer.',
+        ];
+        return json({ tip: fallbacks[Math.floor(Math.random() * fallbacks.length)] });
+      }
+
+      const allowed = await checkRateLimit(env, 'aitip', user.id, 5, 86400);
+      if (!allowed) return fail('Limite de conseils atteinte pour aujourd\'hui.', 429);
+
+      const stats = user.stats || {};
+      const km = (stats.km || 0).toFixed(1);
+      const routes = stats.routes || 0;
+      const month = new Date().getMonth();
+      const season = month <= 1 || month === 11 ? 'hiver' : month <= 4 ? 'printemps' : month <= 7 ? 'été' : 'automne';
+      const plan = effectivePlan(user);
+      const level = plan === 'gold' ? 'expert' : plan === 'silver' ? 'intermédiaire' : 'débutant';
+
+      const prompt = `Tu es un guide de randonnée expert de la Forêt de Compiègne en France.
+Génère UN conseil de randonnée personnalisé et motivant en français (1-2 phrases, 20-35 mots max).
+Le conseil doit être concret, spécifique à la forêt de Compiègne, et adapté à ce profil :
+- Kilomètres parcourus au total : ${km} km
+- Nombre de sorties effectuées : ${routes}
+- Saison actuelle : ${season}
+- Niveau du randonneur : ${level}
+Réponds uniquement avec le texte du conseil, sans guillemets ni explication.`;
+
+      try {
+        const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 120,
+            messages: [{ role: 'user', content: prompt }],
+          }),
+        });
+        if (!aiRes.ok) throw new Error('AI error');
+        const aiData = await aiRes.json();
+        const tip = aiData.content?.[0]?.text?.trim() || 'Profite de la forêt aujourd\'hui !';
+        return json({ tip });
+      } catch {
+        return json({ tip: 'La forêt t\'attend — sors et découvre un nouveau sentier !' });
+      }
     }
 
     return new Response('Not found', { status: 404, headers: cors });

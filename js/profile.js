@@ -435,8 +435,15 @@ async function spinWheel(plan) {
       });
       const data = await res.json();
       if (!res.ok) {
-        // Server rejected (cooldown) — swap to a tip instead
-        const fallback = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
+        // Server rejected (cooldown) — swap to an AI tip instead
+        let fallback = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
+        try {
+          const tipRes = await fetch(`${API_URL}/api/ai-tip`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeader() },
+          });
+          if (tipRes.ok) fallback = (await tipRes.json()).tip;
+        } catch {}
         wheelText.textContent = `🌲 ${fallback}`;
         localStorage.setItem('bwr_wheel_last', today);
         localStorage.setItem('bwr_wheel_result', JSON.stringify({ icon: '🌲', label: 'Conseil sentier', desc: fallback }));
@@ -471,7 +478,20 @@ async function spinWheel(plan) {
   } else if (prize.type === 'badge') {
     localStorage.setItem('bwr_lucky_badge', '1');
   } else if (prize.type === 'tip') {
-    prize.desc = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
+    try {
+      const res = await fetch(`${API_URL}/api/ai-tip`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        prize.desc = data.tip;
+      } else {
+        prize.desc = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
+      }
+    } catch {
+      prize.desc = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
+    }
   }
 
   wheelText.innerHTML = `${prize.icon} <strong>${prize.label}</strong> — ${prize.desc}`;
