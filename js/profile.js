@@ -109,37 +109,37 @@ function initUserMenu() {
 
 const BADGES = [
   // Free tier badges
-  { id: 'first_route',  icon: '🌱', label: 'Première sortie',  tier: 'free',   test: s => s.routes >= 1 },
-  { id: 'hiker',        icon: '🥾', label: 'Randonneur',       tier: 'free',   test: s => s.routes >= 5 },
-  { id: 'explorer',     icon: '🌲', label: 'Explorateur',      tier: 'free',   test: s => s.routes >= 10 },
-  { id: 'forest_friend',icon: '🦌', label: 'Ami forêt',        tier: 'free',   test: s => s.routes >= 25 },
-  { id: 'marathoner',   icon: '🏃', label: 'Marathonien',      tier: 'free',   test: s => s.km >= 25 },
-  { id: 'adventurer',   icon: '🗻', label: 'Aventurier',       tier: 'free',   test: s => s.km >= 50 },
-  { id: 'legend',       icon: '🏆', label: 'Légende',          tier: 'free',   test: s => s.km >= 100 },
-  { id: 'champion',     icon: '👑', label: 'Champion',         tier: 'free',   test: s => s.km >= 250 },
+  { id: 'first_route',  icon: '🌱', label: 'Première sortie',  tier: 'free',   desc: 'Complète ta première balade en forêt',   test: s => s.routes >= 1 },
+  { id: 'hiker',        icon: '🥾', label: 'Randonneur',       tier: 'free',   desc: 'Effectue 5 balades',                     test: s => s.routes >= 5 },
+  { id: 'explorer',     icon: '🌲', label: 'Explorateur',      tier: 'free',   desc: 'Effectue 10 balades',                    test: s => s.routes >= 10 },
+  { id: 'forest_friend',icon: '🦌', label: 'Ami forêt',        tier: 'free',   desc: 'Effectue 25 balades',                    test: s => s.routes >= 25 },
+  { id: 'marathoner',   icon: '🏃', label: 'Marathonien',      tier: 'free',   desc: 'Parcours 25 km au total',                test: s => s.km >= 25 },
+  { id: 'adventurer',   icon: '🗻', label: 'Aventurier',       tier: 'free',   desc: 'Parcours 50 km au total',                test: s => s.km >= 50 },
+  { id: 'legend',       icon: '🏆', label: 'Légende',          tier: 'free',   desc: 'Parcours 100 km au total',               test: s => s.km >= 100 },
+  { id: 'champion',     icon: '👑', label: 'Champion',         tier: 'free',   desc: 'Parcours 250 km au total',               test: s => s.km >= 250 },
   // Silver tier badges
-  { id: 'tree_lover',   icon: '🌳', label: 'Amoureux arbres',  tier: 'silver', test: s => s.routes >= 50 },
-  { id: 'compass',      icon: '🧭', label: 'Boussole',         tier: 'silver', test: s => s.routes >= 75 },
-  { id: 'tent',         icon: '⛺', label: 'Campeur',          tier: 'silver', test: s => s.km >= 150 },
-  { id: 'mountain',     icon: '⛰️', label: 'Sommet',           tier: 'silver', test: s => s.km >= 200 },
-  { id: 'leaf',         icon: '🍃', label: 'Naturaliste',      tier: 'silver', test: s => s.routes >= 100 },
-  { id: 'mushroom',     icon: '🍄', label: 'Cueilleur',        tier: 'silver', test: s => s.routes >= 30 },
-  { id: 'fire',         icon: '🔥', label: 'Endurance',        tier: 'silver', test: s => s.km >= 75 },
-  { id: 'star',         icon: '⭐', label: 'Étoile montante',  tier: 'silver', test: s => s.routes >= 15 },
-  { id: 'compass2',     icon: '🎯', label: 'Précision',        tier: 'silver', test: s => s.routes >= 40 },
-  { id: 'sunrise',      icon: '🌅', label: 'Aube',             tier: 'silver', test: s => s.routes >= 20 },
-  { id: 'fox',          icon: '🦊', label: 'Rusé renard',      tier: 'silver', test: s => s.km >= 125 },
-  { id: 'rabbit',       icon: '🐇', label: 'Rapide',           tier: 'silver', test: s => s.routes >= 60 },
-  { id: 'owl',          icon: '🦉', label: 'Sage chouette',    tier: 'silver', test: s => s.km >= 175 },
+  { id: 'tree_lover',   icon: '🌳', label: 'Amoureux arbres',  tier: 'silver', desc: 'Effectue 50 balades',                    test: s => s.routes >= 50 },
+  { id: 'compass',      icon: '🧭', label: 'Boussole',         tier: 'silver', desc: 'Effectue 75 balades',                    test: s => s.routes >= 75 },
+  { id: 'tent',         icon: '⛺', label: 'Campeur',          tier: 'silver', desc: 'Parcours 150 km au total',               test: s => s.km >= 150 },
+  { id: 'mountain',     icon: '⛰️', label: 'Sommet',           tier: 'silver', desc: 'Parcours 200 km au total',               test: s => s.km >= 200 },
+  { id: 'leaf',         icon: '🍃', label: 'Naturaliste',      tier: 'silver', desc: 'Effectue 100 balades',                   test: s => s.routes >= 100 },
+  { id: 'mushroom',     icon: '🍄', label: 'Cueilleur',        tier: 'silver', desc: 'Effectue 30 balades',                    test: s => s.routes >= 30 },
+  { id: 'fire',         icon: '🔥', label: 'Endurance',        tier: 'silver', desc: 'Parcours 75 km au total',                test: s => s.km >= 75 },
+  { id: 'star',         icon: '⭐', label: 'Étoile montante',  tier: 'silver', desc: 'Effectue 15 balades',                    test: s => s.routes >= 15 },
+  { id: 'compass2',     icon: '🎯', label: 'Précision',        tier: 'silver', desc: 'Effectue 40 balades',                    test: s => s.routes >= 40 },
+  { id: 'sunrise',      icon: '🌅', label: 'Aube',             tier: 'silver', desc: 'Effectue 20 balades',                    test: s => s.routes >= 20 },
+  { id: 'fox',          icon: '🦊', label: 'Rusé renard',      tier: 'silver', desc: 'Parcours 125 km au total',               test: s => s.km >= 125 },
+  { id: 'rabbit',       icon: '🐇', label: 'Rapide',           tier: 'silver', desc: 'Effectue 60 balades',                    test: s => s.routes >= 60 },
+  { id: 'owl',          icon: '🦉', label: 'Sage chouette',    tier: 'silver', desc: 'Parcours 175 km au total',               test: s => s.km >= 175 },
   // Gold tier badges
-  { id: 'crown',        icon: '👑', label: 'Couronne d\'or',   tier: 'gold',   test: s => s.km >= 500 },
-  { id: 'medal',        icon: '🏅', label: 'Médaillé',         tier: 'gold',   test: s => s.routes >= 150 },
-  { id: 'rocket',       icon: '🚀', label: 'Fusée',            tier: 'gold',   test: s => s.km >= 300 },
-  { id: 'diamond',      icon: '💎', label: 'Diamant',          tier: 'gold',   test: s => s.km >= 1000 },
-  { id: 'dragon',       icon: '🐉', label: 'Dragon',           tier: 'gold',   test: s => s.routes >= 200 },
-  { id: 'phoenix',      icon: '🔥', label: 'Phoenix',          tier: 'gold',   test: s => s.km >= 750 },
-  { id: 'wolf',         icon: '🐺', label: 'Loup alpha',       tier: 'gold',   test: s => s.routes >= 250 },
-  { id: 'eagle',        icon: '🦅', label: 'Aigle royal',      tier: 'gold',   test: s => s.km >= 400 },
+  { id: 'crown',        icon: '👑', label: 'Couronne d\'or',   tier: 'gold',   desc: 'Parcours 500 km au total',               test: s => s.km >= 500 },
+  { id: 'medal',        icon: '🏅', label: 'Médaillé',         tier: 'gold',   desc: 'Effectue 150 balades',                   test: s => s.routes >= 150 },
+  { id: 'rocket',       icon: '🚀', label: 'Fusée',            tier: 'gold',   desc: 'Parcours 300 km au total',               test: s => s.km >= 300 },
+  { id: 'diamond',      icon: '💎', label: 'Diamant',          tier: 'gold',   desc: 'Parcours 1 000 km au total',             test: s => s.km >= 1000 },
+  { id: 'dragon',       icon: '🐉', label: 'Dragon',           tier: 'gold',   desc: 'Effectue 200 balades',                   test: s => s.routes >= 200 },
+  { id: 'phoenix',      icon: '🔥', label: 'Phoenix',          tier: 'gold',   desc: 'Parcours 750 km au total',               test: s => s.km >= 750 },
+  { id: 'wolf',         icon: '🐺', label: 'Loup alpha',       tier: 'gold',   desc: 'Effectue 250 balades',                   test: s => s.routes >= 250 },
+  { id: 'eagle',        icon: '🦅', label: 'Aigle royal',      tier: 'gold',   desc: 'Parcours 400 km au total',               test: s => s.km >= 400 },
 ];
 
 const TRAIL_TIPS = [
@@ -159,6 +159,189 @@ const TRAIL_TIPS = [
   '🌊 Après la pluie, les rus de la forêt reprennent vie.',
   '🍁 Saison idéale pour les photos en sous-bois.',
 ];
+
+// ── Canvas roulette wheel ──────────────────────────────────────────────────────
+const WHEEL_SIZE = 260; // logical px (CSS pixels)
+const WHEEL_COLORS = [
+  '#16a34a', // green
+  '#d97706', // amber
+  '#2563eb', // blue
+  '#9333ea', // purple
+  '#dc2626', // red
+  '#0891b2', // cyan
+  '#ea580c', // orange
+  '#65a30d', // lime
+];
+
+let _wheelRotation = 0;   // current cumulative rotation (radians)
+let _wheelSegments = null; // built once per plan on render
+
+function _buildWheelSegments(plan) {
+  const prizes = WHEEL_PRIZES[BWR.normalisePlan(plan)] || WHEEL_PRIZES.free;
+  const total  = prizes.reduce((s, p) => s + p.weight, 0);
+  const segs   = [];
+  let angle = 0;
+  prizes.forEach((p, i) => {
+    const sweep = (p.weight / total) * Math.PI * 2;
+    segs.push({ prize: p, startAngle: angle, sweep, color: WHEEL_COLORS[i % WHEEL_COLORS.length] });
+    angle += sweep;
+  });
+  return segs;
+}
+
+function _initWheelCanvas() {
+  const canvas = document.getElementById('wheelCanvas');
+  if (!canvas) return null;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width  = WHEEL_SIZE * dpr;
+  canvas.height = WHEEL_SIZE * dpr;
+  canvas.style.width  = WHEEL_SIZE + 'px';
+  canvas.style.height = WHEEL_SIZE + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return ctx;
+}
+
+function _drawWheelCanvas(rotation) {
+  const canvas = document.getElementById('wheelCanvas');
+  if (!canvas || !_wheelSegments) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const cx = WHEEL_SIZE / 2;
+  const cy = WHEEL_SIZE / 2;
+  const r  = cx - 8;
+
+  // ── Outer decorative ring ──
+  ctx.beginPath();
+  ctx.arc(cx, cy, r + 7, 0, Math.PI * 2);
+  ctx.fillStyle = '#14532d';
+  ctx.fill();
+
+  // ── Pass 1 : filled segments ──
+  _wheelSegments.forEach(seg => {
+    const startA = seg.startAngle + rotation - Math.PI / 2;
+    const endA   = startA + seg.sweep;
+    const midA   = startA + seg.sweep / 2;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startA, endA);
+    ctx.closePath();
+    ctx.fillStyle = seg.color;
+    ctx.fill();
+
+    // Radial highlight
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startA, endA);
+    ctx.closePath();
+    ctx.clip();
+    const grad = ctx.createRadialGradient(cx, cy, r * 0.25, cx, cy, r);
+    grad.addColorStop(0,   'rgba(255,255,255,0.20)');
+    grad.addColorStop(0.6, 'rgba(255,255,255,0.04)');
+    grad.addColorStop(1,   'rgba(0,0,0,0.15)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.restore();
+
+    // ── Icon ──
+    ctx.save();
+    ctx.translate(cx + Math.cos(midA) * r * 0.68, cy + Math.sin(midA) * r * 0.68);
+    ctx.rotate(midA + Math.PI / 2);
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = seg.sweep > 0.9 ? '17px serif' : '13px serif';
+    ctx.fillText(seg.prize.icon, 0, 0);
+
+    if (seg.sweep > 0.6) {
+      ctx.font        = `bold ${seg.sweep > 1.1 ? 9 : 7.5}px system-ui, sans-serif`;
+      ctx.fillStyle   = '#fff';
+      ctx.shadowColor = 'rgba(0,0,0,0.7)';
+      ctx.shadowBlur  = 3;
+      const line = seg.prize.label.length > 13 ? seg.prize.label.slice(0, 12) + '…' : seg.prize.label;
+      ctx.fillText(line, 0, 14);
+    }
+    ctx.restore();
+  });
+
+  // ── Pass 2 : thick white spokes drawn over everything ──
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth   = 4;
+  _wheelSegments.forEach(seg => {
+    const angle = seg.startAngle + rotation - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
+    ctx.stroke();
+  });
+
+  // Outer rim
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth   = 2;
+  ctx.stroke();
+
+  // ── Center hub ──
+  ctx.beginPath();
+  ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+  ctx.fillStyle = '#14532d';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth   = 2.5;
+  ctx.stroke();
+
+  ctx.font = '15px serif';
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff';
+  ctx.fillText('⭐', cx, cy);
+}
+
+function _animateWheelSpin(prizeIndex, onDone) {
+  const seg    = _wheelSegments[prizeIndex];
+  const midSeg = seg.startAngle + seg.sweep / 2;
+
+  // Jitter: land anywhere in the middle 60 % of the segment
+  const jitter = (Math.random() - 0.5) * seg.sweep * 0.6;
+  // For the top pointer (angle 0 in rotated frame), we need: midSeg + rotation = 0
+  let targetRot = -(midSeg + jitter);
+
+  // Bring targetRot into the range [_wheelRotation, _wheelRotation + 2π]
+  while (targetRot < _wheelRotation) targetRot += Math.PI * 2;
+  while (targetRot > _wheelRotation + Math.PI * 2) targetRot -= Math.PI * 2;
+
+  // Add 5–7 full extra spins for drama
+  const extraSpins = 5 + Math.floor(Math.random() * 3);
+  targetRot += extraSpins * Math.PI * 2;
+
+  const startRot   = _wheelRotation;
+  const totalDelta = targetRot - startRot;
+  const duration   = 3800; // ms – feels snappy yet satisfying
+
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+  const t0 = performance.now();
+  function frame(now) {
+    const t      = Math.min(1, (now - t0) / duration);
+    const eased  = easeOutCubic(t);
+    _wheelRotation = startRot + totalDelta * eased;
+    _drawWheelCanvas(_wheelRotation);
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      _wheelRotation = targetRot;
+      _drawWheelCanvas(_wheelRotation);
+      onDone();
+    }
+  }
+  requestAnimationFrame(frame);
+}
 
 // Prizes by tier.
 // Total weight pool = 840 (LCM of 120 and 70) so that:
@@ -204,6 +387,7 @@ function populatePage(user) {
   document.getElementById('heroName').textContent  = user.name;
   document.getElementById('inputName').value       = user.name;
   document.getElementById('inputEmail').value      = user.email;
+  if (user.homeAddress) document.getElementById('inputHomeAddress').value = user.homeAddress;
 
   const roleMap = { admin: '👑 Administrateur', free: '🌲 Membre' };
   const roleEl  = document.getElementById('roleBadge');
@@ -294,6 +478,7 @@ function renderPlanAndProgress(user) {
     return `<div class="badge-item ${earned ? 'earned' : 'locked'} tier-${b.tier}" title="${b.label}">
       <span class="badge-icon">${b.icon}</span>
       <span class="badge-label">${b.label}</span>
+      <span class="badge-desc">${b.desc}</span>
     </div>`;
   }).join('');
 
@@ -398,7 +583,15 @@ function renderDailyWheel(plan) {
   const wheelBtn  = document.getElementById('wheelSpinBtn');
   const wheelText = document.getElementById('wheelText');
 
+  // Build segments for this plan
+  _wheelSegments = _buildWheelSegments(plan);
+  _initWheelCanvas();
+
   if (lastSpin === today) {
+    // Restore wheel at the saved winning angle so it looks "landed"
+    _wheelRotation = parseFloat(localStorage.getItem('bwr_wheel_rot') || '0');
+    _drawWheelCanvas(_wheelRotation);
+
     const saved = localStorage.getItem('bwr_wheel_result');
     try {
       const prize = JSON.parse(saved);
@@ -409,33 +602,42 @@ function renderDailyWheel(plan) {
     wheelBtn.disabled = true;
     wheelBtn.textContent = '✓ Tournée';
   } else {
+    _wheelRotation = 0;
+    _drawWheelCanvas(0);
     wheelBtn.disabled = false;
     wheelBtn.onclick = () => spinWheel(plan);
   }
 }
 
 async function spinWheel(plan) {
-  const today   = new Date().toISOString().slice(0, 10);
-  const prize   = pickPrize(plan);
-  const wheelBtn  = document.getElementById('wheelSpinBtn');
-  const wheelText = document.getElementById('wheelText');
-  const emoji   = document.getElementById('wheelEmoji');
+  const today      = new Date().toISOString().slice(0, 10);
+  const prize      = pickPrize(plan);
+  const wheelBtn   = document.getElementById('wheelSpinBtn');
+  const wheelText  = document.getElementById('wheelText');
+  const prizes     = WHEEL_PRIZES[BWR.normalisePlan(plan)] || WHEEL_PRIZES.free;
+  const prizeIndex = prizes.findIndex(p => p.id === prize.id);
 
-  wheelBtn.disabled = true;
+  wheelBtn.disabled    = true;
   wheelBtn.textContent = '🎡 En cours…';
-  emoji.classList.add('spin');
+  wheelText.textContent = '';
 
-  // Apply prize effects
+  // ── 1. Spin the wheel visually ───────────────────────────────────────────────
+  await new Promise(resolve => _animateWheelSpin(prizeIndex, resolve));
+
+  // Save the final rotation so we can restore it on page reload
+  localStorage.setItem('bwr_wheel_rot', String(_wheelRotation));
+
+  // ── 2. Apply prize effects ───────────────────────────────────────────────────
   if (prize.type === 'plan') {
     try {
-      const res = await fetch(`${API_URL}/api/auth/wheel-prize`, {
+      const res  = await fetch(`${API_URL}/api/auth/wheel-prize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({ prizeType: 'plan', plan: prize.plan, days: prize.days }),
       });
       const data = await res.json();
       if (!res.ok) {
-        // Server rejected (cooldown) — swap to an AI tip instead
+        // Server rejected (cooldown) — downgrade to a trail tip
         let fallback = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
         try {
           const tipRes = await fetch(`${API_URL}/api/ai-tip`, {
@@ -450,12 +652,11 @@ async function spinWheel(plan) {
         wheelBtn.textContent = '✓ Tournée';
         return;
       }
-      // Update cached user plan so page reflects upgrade immediately
       const cached = getCachedUser();
       if (cached) setSession(localStorage.getItem('bwr_token'), { ...cached, plan: prize.plan, planExpiresAt: data.expiresAt });
     } catch {
       wheelText.textContent = '❌ Erreur réseau — réessaie.';
-      wheelBtn.disabled = false;
+      wheelBtn.disabled    = false;
       wheelBtn.textContent = '🎡 Tourner la roue';
       return;
     }
@@ -464,9 +665,9 @@ async function spinWheel(plan) {
     w.count = Math.max(0, w.count - 1);
     localStorage.setItem('bwr_routes_week', JSON.stringify(w));
   } else if (prize.type === 'xp_bonus') {
-    const km = parseFloat(localStorage.getItem('bwr_km_total') || '0');
+    const km      = parseFloat(localStorage.getItem('bwr_km_total') || '0');
     const bonusKm = (prize.xp || 0) / 20;
-    localStorage.setItem('bwr_km_total', (km + bonusKm).toFixed(2)); // 1 XP ≈ 0.05 km
+    localStorage.setItem('bwr_km_total', (km + bonusKm).toFixed(2));
     fetch(`${API_URL}/api/auth/stats`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
@@ -483,23 +684,19 @@ async function spinWheel(plan) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader() },
       });
-      if (res.ok) {
-        const data = await res.json();
-        prize.desc = data.tip;
-      } else {
-        prize.desc = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
-      }
+      if (res.ok) { const d = await res.json(); prize.desc = d.tip; }
+      else          prize.desc = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
     } catch {
       prize.desc = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
     }
   }
 
+  // ── 3. Show result ────────────────────────────────────────────────────────────
   wheelText.innerHTML = `${prize.icon} <strong>${prize.label}</strong> — ${prize.desc}`;
   localStorage.setItem('bwr_wheel_last', today);
   localStorage.setItem('bwr_wheel_result', JSON.stringify({ icon: prize.icon, label: prize.label, desc: prize.desc }));
   wheelBtn.textContent = '✓ Tournée';
 
-  // If plan upgraded, reload page to show new privileges
   if (prize.type === 'plan') {
     setTimeout(() => window.location.reload(), 1800);
   }
@@ -619,20 +816,75 @@ async function renderDailySuggestion(plan) {
   const btnEl  = document.getElementById('suggestionBtn');
   if (!textEl || !btnEl) return;
 
-  // Silver: one suggestion per week; Gold: every day
-  const isGold   = BWR.normalisePlan(plan) === 'gold';
+  const isGold     = BWR.normalisePlan(plan) === 'gold';
   const storageKey = isGold ? 'bwr_sugg_day' : 'bwr_sugg_week';
   const todayKey   = isGold
     ? new Date().toISOString().slice(0, 10)
     : new Date().toISOString().slice(0, 7) + '-W' + Math.ceil(new Date().getDate() / 7);
 
-  const cached = localStorage.getItem('bwr_sugg_cache');
-  const cacheDate = localStorage.getItem(storageKey);
-  if (cacheDate === todayKey && cached) {
-    textEl.innerHTML = cached;
+  // Show cached version immediately to avoid flash of loading state
+  const cachedHtml = localStorage.getItem('bwr_sugg_html');
+  const cacheDate  = localStorage.getItem(storageKey);
+  if (cacheDate === todayKey && cachedHtml) {
+    textEl.innerHTML = cachedHtml;
+    const cachedBtn = localStorage.getItem('bwr_sugg_btn');
+    if (cachedBtn) {
+      const b = JSON.parse(cachedBtn);
+      if (b.href) { btnEl.href = b.href; btnEl.style.opacity = ''; btnEl.textContent = 'Générer ce trajet →'; }
+      else        { btnEl.removeAttribute('href'); btnEl.style.opacity = '0.5'; btnEl.textContent = b.text || 'Pas de sortie conseillée'; }
+    }
     return;
   }
 
+  // Loading state
+  textEl.innerHTML = `<span class="suggestion-icon">⏳</span><div><p class="suggestion-text">L'IA analyse la météo et ton profil…</p></div>`;
+
+  try {
+    const res  = await fetch(`${API_URL}/api/ai-suggestion`, { headers: authHeader() });
+    if (!res.ok) throw new Error('API error');
+    const sugg = await res.json();
+
+    applySuggestionToUI(textEl, btnEl, sugg);
+    localStorage.setItem('bwr_sugg_html', textEl.innerHTML);
+    localStorage.setItem('bwr_sugg_btn', JSON.stringify(
+      sugg.dist > 0
+        ? { href: buildRouteUrl(sugg) }
+        : { text: 'Pas de sortie conseillée' }
+    ));
+    localStorage.setItem(storageKey, todayKey);
+  } catch {
+    // Fallback: client-side suggestion without address personalisation
+    renderSuggestionFallback(plan, textEl, btnEl, storageKey, todayKey);
+  }
+}
+
+function buildRouteUrl(sugg) {
+  let url = `routes.html?dist=${sugg.dist}&mode=${sugg.mode || 'loop'}`;
+  if (sugg.startLat && sugg.startLng) url += `&startLat=${sugg.startLat}&startLng=${sugg.startLng}`;
+  return url;
+}
+
+function applySuggestionToUI(textEl, btnEl, sugg) {
+  const html = `
+    <span style="font-size:1.6rem;flex-shrink:0">${sugg.icon}</span>
+    <div>
+      <p style="margin:0 0 4px;font-size:0.88rem;color:#1e293b">${sugg.advice}</p>
+      <p style="margin:0;font-size:0.78rem;color:#6b7280">🌡 ${sugg.temp}°C · 💨 ${sugg.wind} km/h</p>
+    </div>`;
+  textEl.innerHTML = html;
+
+  if (sugg.dist > 0) {
+    btnEl.href = buildRouteUrl(sugg);
+    btnEl.style.opacity = '';
+    btnEl.textContent = 'Générer ce trajet →';
+  } else {
+    btnEl.removeAttribute('href');
+    btnEl.style.opacity = '0.5';
+    btnEl.textContent = 'Pas de sortie conseillée';
+  }
+}
+
+async function renderSuggestionFallback(plan, textEl, btnEl, storageKey, todayKey) {
   let weatherCode = 0, temp = 15, wind = 10;
   try {
     const res  = await fetch('https://api.open-meteo.com/v1/forecast?latitude=49.35&longitude=2.90&current=temperature_2m,weather_code,wind_speed_10m&timezone=Europe/Paris');
@@ -642,46 +894,24 @@ async function renderDailySuggestion(plan) {
     wind        = data.current.wind_speed_10m;
   } catch {}
 
-  const month  = new Date().getMonth();
-  const season = month < 3 ? 'winter' : month < 6 ? 'spring' : month < 9 ? 'summer' : 'autumn';
-  const km     = parseFloat(localStorage.getItem('bwr_km_total') || '0');
-  const suggestKm = km < 5 ? 4 : km < 25 ? 7 : km < 50 ? 12 : 15;
+  const km        = parseFloat(localStorage.getItem('bwr_km_total') || '0');
+  const typicalKm = km < 5 ? 4 : km < 25 ? 7 : km < 50 ? 12 : 15;
+  const isHot     = temp >= 25;
+  const isStormy  = weatherCode >= 95;
+  const isRainy   = weatherCode >= 61 && weatherCode <= 82;
+  const isWindy   = wind > 30;
 
-  const seasonTips = {
-    winter: '❄️ Paysage hivernal — habillez-vous chaud et profitez du calme absolu de la forêt.',
-    spring: '🌸 Les bourgeons s\'ouvrent — sortie parfaite pour observer la renaissance de la forêt.',
-    summer: '☀️ Partez tôt le matin avant la chaleur — la forêt est magnifique à l\'aube.',
-    autumn: '🍂 Couleurs d\'automne — emportez un appareil photo pour les sous-bois.',
-  };
+  let icon, advice, dist;
+  if (isStormy)     { icon = '⛈️'; dist = 0; advice = 'Orages signalés — restez en sécurité, ne sortez pas en forêt aujourd\'hui.'; }
+  else if (isRainy) { icon = '🌧️'; dist = Math.max(3, typicalKm - 3); advice = `Pluie prévue — sortie courte de ${dist} km avec imperméable.`; }
+  else if (isWindy) { icon = '💨'; dist = Math.max(4, typicalKm - 2); advice = `Vent fort (${Math.round(wind)} km/h) — boucle courte de ${dist} km recommandée.`; }
+  else if (isHot)   { icon = '🏖️'; dist = typicalKm; advice = `Chaleur ${Math.round(temp)}°C — privilégiez les sentiers ombragés au bord des étangs de la forêt.`; }
+  else              { icon = '✅'; dist = typicalKm; advice = `Conditions idéales pour une boucle de ${dist} km en forêt de Compiègne !`; }
 
-  let icon, advice;
-  if (weatherCode >= 61 && weatherCode <= 82) {
-    icon = '🌧️'; advice = `Pluie prévue — optez pour une courte exploration de 3-4 km avec un imperméable, ou remettez à demain.`;
-    btnEl.href = `routes.html?dist=4&mode=loop`;
-  } else if (wind > 30) {
-    icon = '💨'; advice = `Vent fort (${Math.round(wind)} km/h) — évitez les zones boisées denses. Boucle courte de 5 km recommandée.`;
-    btnEl.href = `routes.html?dist=5&mode=loop`;
-  } else if (weatherCode >= 95) {
-    icon = '⛈️'; advice = `Orages signalés — restez en sécurité, ne sortez pas en forêt aujourd'hui.`;
-    btnEl.textContent = 'Pas de sortie conseillée';
-    btnEl.removeAttribute('href');
-    btnEl.style.opacity = '0.5';
-  } else if (weatherCode <= 3) {
-    icon = '✅'; advice = `Conditions idéales ! ${seasonTips[season]} Objectif suggéré : ${suggestKm} km en boucle.`;
-    btnEl.href = `routes.html?dist=${suggestKm}&mode=loop`;
-  } else {
-    icon = '⛅'; advice = `Ciel variable mais praticable. ${seasonTips[season]} Sortie de ${Math.max(3, suggestKm - 3)} km conseillée.`;
-    btnEl.href = `routes.html?dist=${Math.max(3, suggestKm - 3)}&mode=loop`;
-  }
-
-  const html = `
-    <span style="font-size:1.6rem;flex-shrink:0">${icon}</span>
-    <div>
-      <p style="margin:0 0 4px;font-size:0.88rem;color:#1e293b">${advice}</p>
-      <p style="margin:0;font-size:0.78rem;color:#6b7280">Temp : ${Math.round(temp)}°C · Vent : ${Math.round(wind)} km/h</p>
-    </div>`;
-  textEl.innerHTML = html;
-  localStorage.setItem('bwr_sugg_cache', html);
+  const sugg = { icon, advice, dist, mode: 'loop', startLat: 49.35, startLng: 2.90, temp: Math.round(temp), wind: Math.round(wind) };
+  applySuggestionToUI(textEl, btnEl, sugg);
+  localStorage.setItem('bwr_sugg_html', textEl.innerHTML);
+  localStorage.setItem('bwr_sugg_btn', JSON.stringify(dist > 0 ? { href: buildRouteUrl(sugg) } : { text: 'Pas de sortie conseillée' }));
   localStorage.setItem(storageKey, todayKey);
 }
 
@@ -762,33 +992,60 @@ async function loadPathCount() {
   statKm.textContent     = km > 0 ? `${km.toFixed(0)} km` : '—';
 }
 
-// ── Form: update name / email ──────────────────────────────────────────────────
+async function geocodeAddressClient(address) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=fr`;
+    const res  = await fetch(url, { headers: { 'Accept-Language': 'fr' } });
+    const data = await res.json();
+    if (data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch {}
+  return null;
+}
+
+// ── Form: update name / email / home address ──────────────────────────────────
 document.getElementById('formInfo').addEventListener('submit', async e => {
   e.preventDefault();
-  const name  = document.getElementById('inputName').value.trim();
-  const email = document.getElementById('inputEmail').value.trim().toLowerCase();
+  const name        = document.getElementById('inputName').value.trim();
+  const email       = document.getElementById('inputEmail').value.trim().toLowerCase();
+  const homeAddress = document.getElementById('inputHomeAddress').value.trim();
   if (!name || !email) return showMsg('infoMsg', 'Tous les champs sont obligatoires.');
 
   const btn = e.target.querySelector('button[type=submit]');
   btn.textContent = 'Enregistrement…';
   btn.disabled = true;
 
+  // Geocode address client-side so coords are ready for the worker
+  let homeCoords = null;
+  if (homeAddress) {
+    homeCoords = await geocodeAddressClient(homeAddress);
+  }
+
   try {
     const res = await fetch(`${API_URL}/api/auth/profile`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ name, email }),
+      body: JSON.stringify({ name, email, homeAddress: homeAddress || null, homeCoords }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erreur serveur');
 
     // Update cached user
     const cached = getCachedUser();
-    setSession(localStorage.getItem('bwr_token'), { ...cached, name, email });
-    currentUser.name  = name;
-    currentUser.email = email;
+    setSession(localStorage.getItem('bwr_token'), { ...cached, name, email, homeAddress: homeAddress || null, homeCoords });
+    currentUser.name        = name;
+    currentUser.email       = email;
+    currentUser.homeAddress = homeAddress || null;
+    currentUser.homeCoords  = homeCoords;
     document.getElementById('heroName').textContent = name;
-    showMsg('infoMsg', 'Profil mis à jour avec succès !', 'success');
+
+    // Invalidate suggestion cache so it regenerates from new address
+    localStorage.removeItem('bwr_sugg_day');
+    localStorage.removeItem('bwr_sugg_week');
+    localStorage.removeItem('bwr_sugg_html');
+    localStorage.removeItem('bwr_sugg_btn');
+
+    const addrNote = homeAddress && homeCoords ? ' · Adresse de départ enregistrée ✓' : homeAddress && !homeCoords ? ' · Adresse introuvable, vérifiez l\'orthographe.' : '';
+    showMsg('infoMsg', `Profil mis à jour avec succès !${addrNote}`, homeAddress && !homeCoords ? 'error' : 'success');
   } catch (err) {
     showMsg('infoMsg', err.message);
   } finally {

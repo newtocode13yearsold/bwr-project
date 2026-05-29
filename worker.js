@@ -14,6 +14,7 @@
 // news:{id}                → JSON news item { id, title, content, url, urlLabel, createdAt, updatedAt }
 // pathgrade:{pathId}:{userId} → JSON { walkedWhenGraded: bool } (legacy '1' = unwalked)
 // walkedpath:{userId}:{pathId} → ISO timestamp string (legacy '1' = walked, unknown time)
+// aisugg:{userId}:{date}   → JSON AI suggestion { icon, advice, dist, mode, startLat, startLng }  (48h TTL)
 
 async function listItems(env, prefix) {
   const keys = [];
@@ -623,12 +624,12 @@ export default {
       }
     }
 
-    // ── PUT /api/auth/profile — update name / email ──────────────────────────
+    // ── PUT /api/auth/profile — update name / email / home address ───────────
     if (pathname === '/api/auth/profile' && request.method === 'PUT') {
       const user = await getUserFromToken(env, request);
       if (!user) return fail('Non authentifié.', 401);
 
-      const { name, email } = await request.json();
+      const { name, email, homeAddress, homeCoords } = await request.json();
       if (!name || !email) return fail('Nom et email obligatoires.');
 
       const newEmail = email.toLowerCase();
@@ -641,9 +642,15 @@ export default {
         ]);
       }
 
-      const updated = { ...user, name, email: newEmail };
+      const updated = {
+        ...user,
+        name,
+        email: newEmail,
+        homeAddress: homeAddress || user.homeAddress || null,
+        homeCoords: homeCoords || user.homeCoords || null,
+      };
       await putUser(env, updated);
-      return json({ id: updated.id, name: updated.name, email: updated.email, role: updated.role });
+      return json({ id: updated.id, name: updated.name, email: updated.email, role: updated.role, homeAddress: updated.homeAddress, homeCoords: updated.homeCoords });
     }
 
     // ── POST /api/auth/stats — increment route/km stats ─────────────────────────
@@ -1303,6 +1310,24 @@ export default {
       return json(entries);
     }
 
+    // ── GET /api/ai-suggestion — personalized AI hike suggestion (Silver/Gold) ─
+    if (pathname === '/api/ai-suggestion' && request.method === 'GET') {
+      const user = await getUserFromToken(env, request);
+      if (!user) return fail('Non authentifié.', 401);
+      const plan = effectivePlan(user);
+      if (plan === 'free') return fail('Réservé aux membres Argent et Or.', 403);
+
+      const today = new Date().toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' }); // YYYY-MM-DD Paris
+      const cacheKey = `aisugg:${user.id}:${today}`;
+      const cached = await env.BWR_KV.get(cacheKey);
+      if (cached) return json(JSON.parse(cached));
+
+      // Not pre-generated yet — generate on-demand and cache
+      const suggestion = await generateAISuggestionForUser(env, user, today);
+      await env.BWR_KV.put(cacheKey, JSON.stringify(suggestion), { expirationTtl: 172800 }); // 48h
+      return json(suggestion);
+    }
+
     // ── POST /api/ai-tip — personalized AI hiking tip ────────────────────────
     if (pathname === '/api/ai-tip' && request.method === 'POST') {
       const user = await getUserFromToken(env, request);
@@ -1362,4 +1387,167 @@ Réponds uniquement avec le texte du conseil, sans guillemets ni explication.`;
 
     return new Response('Not found', { status: 404, headers: cors });
   },
+
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(generateDailySuggestions(env));
+  },
 };
+
+// ── AI suggestion helpers ─────────────────────────────────────────────────────
+
+async function geocodeAddress(address) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=fr`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'BWR-App/1.0' } });
+    const data = await res.json();
+    if (data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch {}
+  return null;
+}
+
+async function fetchWeatherForCoords(lat, lng) {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code,wind_speed_10m,apparent_temperature&timezone=Europe%2FParis`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return {
+      temp: data.current?.temperature_2m ?? 15,
+      feels: data.current?.apparent_temperature ?? 15,
+      code: data.current?.weather_code ?? 0,
+      wind: data.current?.wind_speed_10m ?? 10,
+    };
+  } catch {
+    return { temp: 15, feels: 15, code: 0, wind: 10 };
+  }
+}
+
+async function generateAISuggestionForUser(env, user, date) {
+  const stats = user.stats || {};
+  const km = stats.km || 0;
+  const routes = stats.routes || 0;
+
+  // Determine typical distance from user stats
+  const typicalKm = km < 5 ? 4 : km < 25 ? 7 : km < 50 ? 12 : km < 100 ? 15 : 18;
+
+  // Starting coords: user's home address geocoded, fallback to forest center
+  let startLat = 49.35, startLng = 2.90;
+  if (user.homeCoords) {
+    startLat = user.homeCoords.lat;
+    startLng = user.homeCoords.lng;
+  } else if (user.homeAddress && env.ANTHROPIC_API_KEY) {
+    const coords = await geocodeAddress(user.homeAddress);
+    if (coords) { startLat = coords.lat; startLng = coords.lng; }
+  }
+
+  const weather = await fetchWeatherForCoords(startLat, startLng);
+  const month = new Date().getMonth();
+  const season = month <= 1 || month === 11 ? 'hiver' : month <= 4 ? 'printemps' : month <= 7 ? 'été' : 'automne';
+  const plan = effectivePlan(user);
+  const level = plan === 'gold' ? 'expert' : 'intermédiaire';
+
+  // Hot weather flag → suggest lake/river paths
+  const isHot = weather.temp >= 25;
+  const isStormy = weather.code >= 95;
+  const isRainy = weather.code >= 61 && weather.code <= 82;
+  const isWindy = weather.wind > 30;
+
+  if (!env.ANTHROPIC_API_KEY) {
+    return buildFallbackSuggestion(weather, typicalKm, isHot, isStormy, isRainy, isWindy, startLat, startLng);
+  }
+
+  const weatherDesc = isStormy ? 'orages signalés' : isRainy ? `pluie (code ${weather.code})` : isWindy ? `vent fort ${Math.round(weather.wind)} km/h` : isHot ? `chaleur ${Math.round(weather.temp)}°C` : `agréable ${Math.round(weather.temp)}°C`;
+  const homeHint = user.homeAddress ? `L'utilisateur habite "${user.homeAddress}".` : 'Départ depuis la forêt de Compiègne.';
+
+  const prompt = `Tu es un guide expert de la Forêt de Compiègne (France).
+Génère UNE suggestion de balade personnalisée en français (2-3 phrases max, 40-60 mots).
+Profil randonneur : ${km.toFixed(0)} km total, ${routes} sorties, niveau ${level}, saison ${season}.
+Météo aujourd'hui : ${weatherDesc}.
+${homeHint}
+${isHot ? 'Comme il fait chaud, suggère un sentier ombragé au bord d\'un lac ou d\'un cours d\'eau dans la forêt.' : ''}
+${isStormy ? 'Déconseille la sortie et propose une alternative.' : ''}
+Distance suggérée : environ ${typicalKm} km.
+Inclus le nom d'un lieu réel de la forêt de Compiègne. Réponds uniquement avec la suggestion, sans guillemets.`;
+
+  let icon = isStormy ? '⛈️' : isRainy ? '🌧️' : isWindy ? '💨' : isHot ? '🏖️' : '✅';
+  let advice = '';
+  let dist = isStormy ? 0 : isRainy ? Math.max(3, typicalKm - 3) : typicalKm;
+  const mode = 'loop';
+
+  try {
+    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 180,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    if (aiRes.ok) {
+      const d = await aiRes.json();
+      advice = d.content?.[0]?.text?.trim() || '';
+    }
+  } catch {}
+
+  if (!advice) return buildFallbackSuggestion(weather, typicalKm, isHot, isStormy, isRainy, isWindy, startLat, startLng);
+
+  return { icon, advice, dist, mode, startLat, startLng, temp: Math.round(weather.temp), wind: Math.round(weather.wind) };
+}
+
+function buildFallbackSuggestion(weather, typicalKm, isHot, isStormy, isRainy, isWindy, startLat, startLng) {
+  let icon, advice, dist;
+  if (isStormy) {
+    icon = '⛈️'; dist = 0;
+    advice = 'Orages signalés aujourd\'hui — restez en sécurité, ne partez pas en forêt.';
+  } else if (isRainy) {
+    icon = '🌧️'; dist = Math.max(3, typicalKm - 3);
+    advice = `Pluie prévue — sortie courte de ${dist} km conseillée avec un imperméable.`;
+  } else if (isWindy) {
+    icon = '💨'; dist = Math.max(4, typicalKm - 2);
+    advice = `Vent fort (${Math.round(weather.wind)} km/h) — évitez les zones boisées denses, boucle de ${dist} km recommandée.`;
+  } else if (isHot) {
+    icon = '🏖️'; dist = typicalKm;
+    advice = `Chaleur ${Math.round(weather.temp)}°C — partez tôt et privilégiez les sentiers ombragés au bord des étangs de la forêt.`;
+  } else {
+    icon = '✅'; dist = typicalKm;
+    advice = `Conditions idéales — profitez d'une boucle de ${dist} km à travers les beaux sentiers de la forêt de Compiègne.`;
+  }
+  return { icon, advice, dist, mode: 'loop', startLat, startLng, temp: Math.round(weather.temp), wind: Math.round(weather.wind) };
+}
+
+async function generateDailySuggestions(env) {
+  const today = new Date().toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' });
+
+  // List all users
+  const keys = [];
+  let cursor;
+  do {
+    const page = await env.BWR_KV.list({ prefix: 'user:', limit: 1000, cursor });
+    keys.push(...page.keys);
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
+
+  for (const key of keys) {
+    try {
+      const raw = await env.BWR_KV.get(key.name);
+      if (!raw) continue;
+      const user = JSON.parse(raw);
+      const plan = effectivePlan(user);
+      if (plan === 'free') continue; // only silver/gold
+
+      const cacheKey = `aisugg:${user.id}:${today}`;
+      const existing = await env.BWR_KV.get(cacheKey);
+      if (existing) continue; // already generated today
+
+      const suggestion = await generateAISuggestionForUser(env, user, today);
+      await env.BWR_KV.put(cacheKey, JSON.stringify(suggestion), { expirationTtl: 172800 });
+
+      // Small delay to avoid hammering Claude API
+      await new Promise(r => setTimeout(r, 300));
+    } catch {}
+  }
+}

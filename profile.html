@@ -115,6 +115,16 @@
             <label for="inputEmail">Adresse e-mail</label>
             <input type="email" id="inputEmail" class="input-field" placeholder="ton@email.com" required />
           </div>
+          <div class="field">
+            <label for="inputHomeAddress">
+              Adresse de départ
+              <span class="field-why" title="Pourquoi cette adresse ?">?</span>
+            </label>
+            <input type="text" id="inputHomeAddress" class="input-field" placeholder="Ex : 12 rue de la Forêt, Compiègne" autocomplete="street-address" />
+            <span class="field-hint field-hint--address">
+              🤖 Utilisée uniquement par l'IA pour calculer le point de départ de ta <strong>suggestion du jour</strong> depuis chez toi. Non partagée.
+            </span>
+          </div>
           <div id="infoMsg"></div>
           <button type="submit" class="btn-save">Enregistrer les modifications</button>
         </form>
@@ -204,10 +214,13 @@
         <!-- Daily wheel -->
         <div class="feature-block">
           <h3 class="feature-title">🎡 Roue quotidienne</h3>
-          <div class="wheel-row">
-            <span class="wheel-emoji" id="wheelEmoji">🎯</span>
-            <p class="wheel-text" id="wheelText">Tourne la roue pour tenter de gagner un prix !</p>
+          <div class="wheel-container">
+            <div class="wheel-pointer-wrap">
+              <div class="wheel-pointer"></div>
+              <canvas id="wheelCanvas"></canvas>
+            </div>
           </div>
+          <p class="wheel-result" id="wheelText">Tourne la roue pour tenter de gagner un prix !</p>
           <button class="btn-save" id="wheelSpinBtn">🎡 Tourner la roue</button>
           <div class="wheel-prizes-list" id="wheelPrizesList"></div>
         </div>

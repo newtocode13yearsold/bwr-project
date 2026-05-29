@@ -181,6 +181,34 @@
   margin-top: 2px;
 }
 
+.field-hint--address {
+  display: block;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #166534;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin-top: 6px;
+}
+
+.field-why {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: default;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
 .btn-save {
   padding: 12px;
   background: #1e4d14;
@@ -433,6 +461,15 @@
 .badge-item.locked { opacity: 0.4; filter: grayscale(0.6); }
 .badge-icon { font-size: 1.6rem; line-height: 1; }
 .badge-label { font-size: 0.7rem; font-weight: 600; color: #374151; }
+.badge-desc {
+  display: none;
+  font-size: 0.65rem;
+  color: #6b7280;
+  line-height: 1.3;
+  margin-top: 2px;
+}
+.badge-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: default; }
+.badge-item:hover .badge-desc { display: block; }
 
 @media (max-width: 760px) {
   .card-progress { grid-column: 1; }
@@ -518,19 +555,46 @@
   margin-bottom: 10px;
 }
 
-.wheel-row {
+/* ── Canvas roulette wheel ──────────────────────────────────────────────────── */
+.wheel-container {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px;
+  justify-content: center;
+  margin: 4px 0 14px;
+}
+.wheel-pointer-wrap {
+  position: relative;
+  display: inline-block;
+}
+/* Downward-pointing triangle fixed at top-centre of the wheel */
+.wheel-pointer {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 22px solid #14532d;
+  z-index: 2;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+}
+#wheelCanvas {
+  display: block;
+  border-radius: 50%;
+  box-shadow: 0 6px 28px rgba(0,0,0,0.18);
+}
+.wheel-result {
+  font-size: 0.92rem;
+  color: #1a2e12;
+  text-align: center;
+  padding: 10px 12px;
   background: #f0fdf4;
   border-radius: 10px;
   margin-bottom: 10px;
+  min-height: 42px;
 }
-.wheel-emoji { font-size: 2.2rem; display: inline-block; }
-.wheel-emoji.spin { animation: spin 0.6s ease-out; }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(1080deg); } }
-.wheel-text { font-size: 0.9rem; color: #1a2e12; flex: 1; }
+.wheel-text { font-size: 0.9rem; color: #1a2e12; }
 
 /* Prize list */
 .wheel-prizes-list { margin-top: 14px; }

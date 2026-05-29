@@ -4,6 +4,7 @@ let mode = null;
 let pathType = 'foot';
 let difficulty = 'easy';
 let routingPriority = 'forest';
+let surfaceFilter = 'any';
 let startMarker = null;
 let endMarker = null;
 let routeLayer = null;
@@ -25,6 +26,7 @@ let lastRoute = null;      // most recent computed route — used by save/share
   initSaveShareButtons();
   initRouteHistory();
   await handleSharedRouteParam();
+  applyAISuggestionParams();
 })();
 
 // ── Plan-based UI gating ──────────────────────────────────────────────────────
@@ -347,6 +349,14 @@ document.querySelectorAll('.diff-btn[data-priority]').forEach(btn => {
   });
 });
 
+document.querySelectorAll('.diff-btn[data-surface]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.diff-btn[data-surface]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    surfaceFilter = btn.dataset.surface;
+  });
+});
+
 // ── Step 3: Map clicks ────────────────────────────────────────────────────────
 function onMapClick(e) {
   if (!mode || !pickingPoint) return;
@@ -590,9 +600,36 @@ function osmDataToCoordPaths(data) {
   data.elements.forEach(el => {
     if (el.type !== 'way') return;
     const coordinates = el.nodes.map(id => nodeMap[id]).filter(Boolean);
-    if (coordinates.length >= 2) result.push({ coordinates });
+    if (coordinates.length >= 2) result.push({
+      coordinates,
+      _highway: el.tags?.highway,
+      _surface: el.tags?.surface,
+    });
   });
   return result;
+}
+
+function applyOsmSurfaceWeights(paths) {
+  if (surfaceFilter === 'any') return paths;
+  return paths.map(p => {
+    const highway = p._highway || '';
+    const surface = p._surface || '';
+    const isPaved = /^(asphalt|paved|concrete|sett|cobblestone|paving_stones)$/.test(surface);
+    let w = 1;
+    if (surfaceFilter === 'natural') {
+      // Prefer unpaved; penalize paved surfaces and types usually paved
+      if (isPaved) w = 6;
+      else if (highway === 'footway' || highway === 'cycleway') w = 2;
+    } else if (surfaceFilter === 'paved') {
+      // Prefer asphalt/concrete; penalize dirt tracks and narrow paths
+      if (isPaved) w = 1;
+      else if (highway === 'footway' || highway === 'cycleway') w = 1.5;
+      else if (highway === 'track') w = 5;
+      else if (highway === 'path' || highway === 'bridleway') w = 4;
+    }
+    if (w === 1) return p;
+    return { ...p, _weight: (p._weight || 1) * w };
+  });
 }
 
 async function fetchOsmPathsForBbox(minLat, minLng, maxLat, maxLng) {
@@ -619,7 +656,7 @@ async function routeAtob(sLat, sLng, eLat, eLng) {
         Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
       );
       if (osmPaths.length) {
-        const r = graphAtob(sLat, sLng, eLat, eLng, osmPaths);
+        const r = graphAtob(sLat, sLng, eLat, eLng, applyOsmSurfaceWeights(osmPaths));
         console.info(`routing: OSM graph (${osmPaths.length} chemins, ${(r.meters/1000).toFixed(1)} km)`);
         return r;
       }
@@ -657,13 +694,14 @@ async function routeAtob(sLat, sLng, eLat, eLng) {
         Math.min(sLat, eLat) - pad, Math.min(sLng, eLng) - pad,
         Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
       );
-      const result = graphAtobHybrid(sLat, sLng, eLat, eLng, filtered, osmPaths);
+      const weightedOsmPaths = applyOsmSurfaceWeights(osmPaths);
+      const result = graphAtobHybrid(sLat, sLng, eLat, eLng, filtered, weightedOsmPaths);
       const straightM = haversineM(sLat, sLng, eLat, eLng);
       if (result.meters > straightM * 3) { throw new Error('graph hybrid: trop long'); }
       // If admin route is > 1.5× straight line, try OSM-only graph to see if there's a shorter path.
-      if (result.meters > straightM * 1.5 && osmPaths.length) {
+      if (result.meters > straightM * 1.5 && weightedOsmPaths.length) {
         try {
-          const osmOnly = graphAtob(sLat, sLng, eLat, eLng, osmPaths);
+          const osmOnly = graphAtob(sLat, sLng, eLat, eLng, weightedOsmPaths);
           if (osmOnly.meters < result.meters) { console.info('routing: OSM shorter than admin, using OSM'); return osmOnly; }
         } catch {}
       }
@@ -680,7 +718,7 @@ async function routeAtob(sLat, sLng, eLat, eLng) {
       Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
     );
     if (osmPaths.length) {
-      const result = graphAtob(sLat, sLng, eLat, eLng, osmPaths);
+      const result = graphAtob(sLat, sLng, eLat, eLng, applyOsmSurfaceWeights(osmPaths));
       const straightM = haversineM(sLat, sLng, eLat, eLng);
       if (result.meters <= straightM * 4) return result;
       console.warn('OSM graph: route trop longue, fallback OSRM');
@@ -1256,6 +1294,54 @@ async function deleteSavedRoute(id, el) {
 
 function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ── AI suggestion URL params (?dist=X&mode=Y&startLat=Z&startLng=W) ──────────
+function applyAISuggestionParams() {
+  const p = new URLSearchParams(location.search);
+  const dist     = parseFloat(p.get('dist'));
+  const modeVal  = p.get('mode');
+  const startLat = parseFloat(p.get('startLat'));
+  const startLng = parseFloat(p.get('startLng'));
+
+  if (!dist && !modeVal) return;
+
+  // Pre-select mode card
+  if (modeVal === 'loop' || modeVal === 'atob') {
+    const modeCard = document.querySelector(`.mode-card[data-mode="${modeVal}"]`);
+    if (modeCard && !modeCard.classList.contains('locked-feature')) modeCard.click();
+  }
+
+  // Pre-fill distance slider / input if it exists
+  const distInput = document.getElementById('distInput') || document.getElementById('inputDist');
+  if (distInput && dist > 0) {
+    distInput.value = dist;
+    distInput.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  const distSlider = document.getElementById('distSlider') || document.getElementById('sliderDist');
+  if (distSlider && dist > 0) {
+    distSlider.value = dist;
+    distSlider.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  // Pre-place start marker from home address coords
+  if (!isNaN(startLat) && !isNaN(startLng) && map) {
+    const latlng = L.latLng(startLat, startLng);
+    if (startMarker) map.removeLayer(startMarker);
+    startMarker = L.marker(latlng, { draggable: true }).addTo(map);
+    startMarker.on('dragend', () => { /* coords update on compute */ });
+    map.setView(latlng, 13);
+
+    // Show a banner to inform the user the start was preset
+    const banner = document.createElement('div');
+    banner.className = 'ai-sugg-banner';
+    banner.innerHTML = `🤖 Départ préréglé depuis votre domicile · <button id="clearAiStart">Effacer</button>`;
+    document.querySelector('.routes-sidebar')?.prepend(banner);
+    document.getElementById('clearAiStart')?.addEventListener('click', () => {
+      if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
+      banner.remove();
+    });
+  }
 }
 
 // ── Shared route from URL (?share=token) ──────────────────────────────────────

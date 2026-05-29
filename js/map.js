@@ -650,6 +650,7 @@ function openPathPopup(path, latlng) {
         ${difficultyHTML}
         <div class="popup-report-section">
           <button class="popup-fallen-btn" id="openFallenTree-${path.id}">🌲 Arbre tombé ici</button>
+          <button class="popup-fallen-btn" id="openFlooded-${path.id}">💧 Chemin inondé</button>
           <button class="popup-fallen-btn" id="openMuddy-${path.id}">🟤 Boueux ici</button>
           <button class="popup-fallen-btn" id="openRutted-${path.id}">🛞 Ornières ici</button>
           <button class="popup-fallen-btn" id="openBrokenSign-${path.id}">🪧 Carrefour cassé</button>
@@ -719,6 +720,7 @@ function openPathPopup(path, latlng) {
     };
 
     document.getElementById(`openFallenTree-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'fallen_tree')));
+    document.getElementById(`openFlooded-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'flooded')));
     document.getElementById(`openMuddy-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'muddy')));
     document.getElementById(`openRutted-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'rutted')));
     document.getElementById(`openBrokenSign-${path.id}`)?.addEventListener('click', () => guardReport(() => openReportPopup(path, latlng, 'broken_sign')));
