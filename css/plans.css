@@ -250,8 +250,10 @@
   pointer-events: none;
 }
 .plan-gold.featured {
-  box-shadow: var(--shadow-md), var(--gold-glow);
+  transform: scale(1.02);
+  box-shadow: var(--shadow-lg), 0 0 0 2.5px #fbbf24, var(--gold-glow);
 }
+.plan-gold.featured:hover { transform: scale(1.02) translateY(-6px); }
 
 /* Flags */
 .popular-flag, .featured-flag {
@@ -542,6 +544,19 @@
 .compare-table th.ct-feature { text-align: left; }
 .compare-table th.ct-silver { background: var(--silver-grad-deep); }
 .compare-table th.ct-gold   { background: var(--gold-grad-deep); }
+.ct-rec-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 7px;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: var(--radius-pill);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
 
 .compare-table tbody tr { border-bottom: 1px solid var(--border-soft); }
 .compare-table tbody tr:last-child { border-bottom: none; }
@@ -568,6 +583,14 @@
 .compare-table .ok  { color: var(--forest-700); font-weight: 600; }
 .compare-table .no  { color: var(--text-faint); }
 .compare-table .num { color: var(--text); font-weight: 600; }
+
+/* Gold column recommended highlight */
+.compare-table tbody td:nth-child(4) {
+  background: rgba(251, 191, 36, 0.05);
+}
+.compare-table .ct-section td:nth-child(4) {
+  background: rgba(251, 191, 36, 0.09);
+}
 
 @media (max-width: 720px) {
   .compare-table-wrap { overflow-x: auto; }

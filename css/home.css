@@ -1211,4 +1211,4 @@ textarea.cf-input { resize: vertical; min-height: 100px; }
   border-left-color: #1e4d14;
   background: #f0f4ec;
 }
-.nav-drawer-icon { font-size: 1.25rem; width: 28px; text-align: center; }
+.nav-drawer-icon { width: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }

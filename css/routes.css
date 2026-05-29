@@ -256,22 +256,52 @@
 .point-tag.set { background: #dcfce7; color: #166534; }
 .point-tag.waiting { background: #f3f4f6; color: #6b7280; }
 
+/* ── Option section separator ── */
+.option-sep {
+  border: none;
+  border-top: 1px solid #e2e8da;
+  margin: 2px 0 16px;
+}
+
+/* ── CTA step (Generate) ── */
+.step-cta {
+  background: #fff;
+  border-bottom: none;
+  border-top: 2px solid #1e4d14;
+  box-shadow: 0 -2px 12px rgba(30,77,20,0.07);
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+
+.step-cta .step-number {
+  background: #22c55e;
+  width: 22px;
+  height: 22px;
+  font-size: 0.72rem;
+}
+
 /* ── Generate button ── */
 .btn-generate {
   width: 100%;
-  padding: 14px;
+  padding: 15px;
   background: #1e4d14;
   color: white;
   border: none;
   border-radius: 10px;
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+  letter-spacing: 0.2px;
 }
 
-.btn-generate:hover:not(:disabled) { background: #2d6b1f; transform: translateY(-1px); }
-.btn-generate:disabled { background: #9ca3af; cursor: not-allowed; transform: none; }
+.btn-generate:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(30,77,20,0.28);
+}
+
+.btn-generate:hover:not(:disabled) { background: #2d6b1f; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(30,77,20,0.35); }
+.btn-generate:disabled { background: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; }
 .btn-generate.loading { background: #4b7a3c; }
 
 /* ── Results ── */

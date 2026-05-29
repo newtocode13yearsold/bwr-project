@@ -107,12 +107,9 @@ async function initUserMenu() {
     return;
   }
 
-  // Show route planner button for logged-in users
-  document.getElementById('btnPlanRoute').style.display = '';
-
-  // Show path-edit button for silver+ users
+  // Show path-edit button in drawer for silver+ users
   if (BWR.can('path_difficulty_edit', _userPlan)) {
-    document.getElementById('btnEditPaths').style.display = '';
+    document.getElementById('btnEditPaths')?.classList.remove('hidden');
   }
 
   if (user.role === 'admin') {
