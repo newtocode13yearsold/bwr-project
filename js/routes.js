@@ -3,6 +3,22 @@ let map = null;
 let mode = null;
 let pathType = 'foot';
 let difficulty = 'easy';
+
+// ── Lazy-loader helper ────────────────────────────────────────────────────────
+const _scriptCache = {};
+function loadScript(src) {
+  if (_scriptCache[src]) return _scriptCache[src];
+  _scriptCache[src] = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.head.appendChild(s);
+  });
+  return _scriptCache[src];
+}
+const _loadElevation  = () => loadScript('js/elevation.js');
+const _loadRouteSave  = () => loadScript('js/route-save.js');
 let routingPriority = 'forest';
 let surfaceFilter = 'any';
 let startMarker = null;
@@ -899,9 +915,10 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
     }
   }
 
-  // Elevation profile — only for Silver+
+  // Elevation profile — only for Silver+ (lazy-loaded)
   if (BWR.can('elevation_profile', plan)) {
-    fetchElevation(coords)
+    _loadElevation()
+      .then(() => fetchElevation(coords))
       .then(elevs => drawElevationChart(elevs, meters))
       .catch(() => { document.getElementById('statAscent').textContent = '—'; });
   } else {
@@ -959,66 +976,7 @@ function showQuotaExceededModal(quota) {
   m.addEventListener('click', e => { if (e.target === m) closeQuota(); });
 }
 
-// ── Elevation profile (Open-Elevation API) ────────────────────────────────────
-async function fetchElevation(coords) {
-  // Sample up to 100 evenly-spaced points to stay under API limits
-  const step = Math.max(1, Math.floor(coords.length / 100));
-  const sampled = coords.filter((_, i) => i % step === 0);
-  if (sampled[sampled.length - 1] !== coords[coords.length - 1])
-    sampled.push(coords[coords.length - 1]);
-
-  const locations = sampled.map(([lat, lon]) => ({ latitude: lat, longitude: lon }));
-  const res = await fetch('https://api.open-elevation.com/api/v1/lookup', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ locations }),
-  });
-  if (!res.ok) throw new Error('elevation API error');
-  const data = await res.json();
-  return data.results.map(r => r.elevation);
-}
-
-function drawElevationChart(elevations, meters) {
-  const wrap = document.getElementById('elevationWrap');
-  const el = document.getElementById('elevationChart');
-  if (!elevations || elevations.length < 2) { wrap.classList.add('hidden'); return; }
-
-  const minE = Math.min(...elevations);
-  const maxE = Math.max(...elevations);
-  const range = maxE - minE || 1;
-  const W = 260, H = 70, PAD = 4;
-
-  const pts = elevations.map((e, i) => {
-    const x = PAD + (i / (elevations.length - 1)) * (W - PAD * 2);
-    const y = H - PAD - ((e - minE) / range) * (H - PAD * 2);
-    return `${x},${y}`;
-  });
-
-  const polyFill = `M${pts[0]} ` + pts.slice(1).map(p => `L${p}`).join(' ')
-    + ` L${W - PAD},${H - PAD} L${PAD},${H - PAD} Z`;
-  const polyLine = `M${pts[0]} ` + pts.slice(1).map(p => `L${p}`).join(' ');
-
-  // Ascent / descent
-  let ascent = 0, descent = 0;
-  for (let i = 1; i < elevations.length; i++) {
-    const d = elevations[i] - elevations[i - 1];
-    if (d > 0) ascent += d; else descent -= d;
-  }
-
-  document.getElementById('statAscent').textContent =
-    `+${Math.round(ascent)} m / -${Math.round(descent)} m`;
-
-  el.innerHTML = `
-    <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px;display:block">
-      <path d="${polyFill}" fill="rgba(30,77,20,0.15)" stroke="none"/>
-      <path d="${polyLine}" fill="none" stroke="#1e4d14" stroke-width="2" stroke-linejoin="round"/>
-      <text x="${PAD}" y="${H - 2}" font-size="9" fill="#6b7280">${Math.round(minE)} m</text>
-      <text x="${PAD}" y="10" font-size="9" fill="#6b7280">${Math.round(maxE)} m</text>
-      <text x="${W / 2}" y="${H - 2}" font-size="9" fill="#9ca3af" text-anchor="middle">${(meters / 1000).toFixed(1)} km</text>
-    </svg>
-  `;
-  wrap.classList.remove('hidden');
-}
+// ── Elevation profile → js/elevation.js (lazy-loaded) ────────────────────────
 
 // ── GPX/KML export now lives in js/exporters.js (downloadGPX, downloadKML, pushToStrava)
 
@@ -1072,118 +1030,24 @@ function initSaveShareButtons() {
   btnShare.disabled = true;
 
   if (!canSave) {
-    btnSave.onclick = () => showUpgradeModal('silver', 'La sauvegarde de trajets');
+    btnSave.onclick  = () => showUpgradeModal('silver', 'La sauvegarde de trajets');
     btnShare.onclick = () => showUpgradeModal('silver', 'Le partage de trajets');
     return;
   }
 
-  btnSave.onclick  = saveCurrentRoute;
-  btnShare.onclick = shareCurrentRoute;
+  // Lazy-load route-save.js on first click
+  btnSave.onclick  = async () => { await _loadRouteSave(); saveCurrentRoute(); };
+  btnShare.onclick = async () => { await _loadRouteSave(); shareCurrentRoute(); };
 }
 
-async function saveCurrentRoute() {
-  if (!lastRoute) return;
-  const btn = document.getElementById('btnSaveRoute');
-  btn.disabled = true;
-  btn.textContent = '⏳ Sauvegarde…';
-
-  const typeLabelShort = { foot: 'Forestier', bike: 'Cyclable', champs: 'Champs', mix: 'Mix' }[pathType] || '';
-  const defaultName = `${mode === 'loop' ? 'Boucle' : 'Trajet'} ${typeLabelShort} ${(lastRoute.meters / 1000).toFixed(1)} km`;
-
-  try {
-    const res = await fetch(`${API_URL}/api/savedroutes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({
-        name: defaultName,
-        coords: lastRoute.coords,
-        meters: lastRoute.meters,
-        seconds: lastRoute.seconds,
-        difficulty,
-        pathType,
-        mode,
-      }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error || `HTTP ${res.status}`);
-    const { shareToken } = await res.json();
-    lastRoute._shareToken = shareToken;
-    showToast('Trajet sauvegardé !');
-    refreshHistoryIfOpen();
-  } catch (e) {
-    showToast(`Erreur : ${e.message}`);
-  } finally {
-    btn.textContent = '💾 Sauvegarder';
-    btn.disabled = false;
-  }
-}
-
-async function shareCurrentRoute() {
-  if (!lastRoute) return;
-
-  // If we already have a share token from saving, use it directly
-  if (lastRoute._shareToken) {
-    copyShareLink(lastRoute._shareToken);
-    return;
-  }
-
-  // Otherwise save first, then share
-  const btn = document.getElementById('btnShareRoute');
-  btn.disabled = true;
-  btn.textContent = '⏳…';
-
-  const typeLabelShort = { foot: 'Forestier', bike: 'Cyclable', champs: 'Champs', mix: 'Mix' }[pathType] || '';
-  const defaultName = `${mode === 'loop' ? 'Boucle' : 'Trajet'} ${typeLabelShort} ${(lastRoute.meters / 1000).toFixed(1)} km`;
-
-  try {
-    const res = await fetch(`${API_URL}/api/savedroutes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({
-        name: defaultName,
-        coords: lastRoute.coords,
-        meters: lastRoute.meters,
-        seconds: lastRoute.seconds,
-        difficulty,
-        pathType,
-        mode,
-      }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error || `HTTP ${res.status}`);
-    const { shareToken } = await res.json();
-    lastRoute._shareToken = shareToken;
-    copyShareLink(shareToken);
-    refreshHistoryIfOpen();
-  } catch (e) {
-    showToast(`Erreur : ${e.message}`);
-  } finally {
-    btn.textContent = '🔗 Partager';
-    btn.disabled = false;
-  }
-}
-
-function copyShareLink(token) {
-  const url = `${location.origin}${location.pathname}?share=${token}`;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => showToast('Lien copié dans le presse-papiers !'));
-  } else {
-    const ta = document.createElement('textarea');
-    ta.value = url;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    ta.remove();
-    showToast('Lien copié !');
-  }
-}
-
-// ── Route history panel ───────────────────────────────────────────────────────
-let historyOpen = false;
-let historyLoaded = false;
+// ── Save / share / history → js/route-save.js (lazy-loaded) ──────────────────
 
 function initRouteHistory() {
   const plan = currentUser?.plan || 'free';
   const panelEl = document.getElementById('routeHistory');
   if (!panelEl) return;
+
+  const lazyToggle = async () => { await _loadRouteSave(); toggleHistory(); };
 
   if (!BWR.can('route_history', plan)) {
     panelEl.classList.remove('hidden');
@@ -1194,108 +1058,13 @@ function initRouteHistory() {
         <p>🔒 Sauvegardez vos trajets avec le plan Argent.</p>
         <a href="plans.html" style="color:#6d28d9;font-weight:700">Voir les plans →</a>
       </div>`;
-    document.getElementById('historyToggle').addEventListener('click', toggleHistory);
+    document.getElementById('historyToggle').addEventListener('click', lazyToggle);
     return;
   }
 
   panelEl.classList.remove('hidden');
   document.getElementById('historyBody').style.display = 'none';
-  document.getElementById('historyToggle').addEventListener('click', toggleHistory);
-}
-
-function toggleHistory() {
-  historyOpen = !historyOpen;
-  document.getElementById('historyChevron').classList.toggle('open', historyOpen);
-  const body = document.getElementById('historyBody');
-  body.style.display = historyOpen ? 'block' : 'none';
-
-  if (historyOpen && !historyLoaded) {
-    fetchAndRenderHistory();
-  }
-}
-
-function refreshHistoryIfOpen() {
-  if (historyOpen) fetchAndRenderHistory();
-  else historyLoaded = false;
-}
-
-async function fetchAndRenderHistory() {
-  const listEl   = document.getElementById('historyList');
-  const loadEl   = document.getElementById('historyLoading');
-  loadEl.style.display = 'block';
-  listEl.innerHTML = '';
-
-  try {
-    const res = await fetch(`${API_URL}/api/savedroutes`, { headers: authHeader() });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const routes = await res.json();
-    historyLoaded = true;
-    loadEl.style.display = 'none';
-    if (!routes.length) {
-      listEl.innerHTML = '<div class="history-empty">Aucun trajet sauvegardé.</div>';
-      return;
-    }
-    listEl.innerHTML = routes.map(r => {
-      const km    = (r.meters / 1000).toFixed(1);
-      const date  = new Date(r.savedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-      const modeIcon = r.mode === 'loop' ? '🔄' : '➡️';
-      return `
-        <div class="history-item" data-id="${r.id}" data-token="${r.shareToken}">
-          <div class="history-item-info">
-            <div class="history-item-name">${escapeHtml(r.name)}</div>
-            <div class="history-item-meta">${modeIcon} ${km} km · ${date}</div>
-          </div>
-          <div class="history-item-actions">
-            <button class="btn-history-replay" title="Afficher sur la carte">▶</button>
-            <button class="btn-history-share"  title="Copier le lien de partage">🔗</button>
-            <button class="btn-history-delete" title="Supprimer">🗑</button>
-          </div>
-        </div>`;
-    }).join('');
-
-    listEl.querySelectorAll('.history-item').forEach(el => {
-      const id    = el.dataset.id;
-      const token = el.dataset.token;
-      el.querySelector('.btn-history-replay').onclick = () => replaySavedRoute(id);
-      el.querySelector('.btn-history-share').onclick  = () => copyShareLink(token);
-      el.querySelector('.btn-history-delete').onclick = () => deleteSavedRoute(id, el);
-    });
-  } catch (e) {
-    loadEl.style.display = 'none';
-    listEl.innerHTML = `<div class="history-empty">Erreur : ${e.message}</div>`;
-  }
-}
-
-async function replaySavedRoute(id) {
-  try {
-    const res = await fetch(`${API_URL}/api/savedroutes/${id}`, { headers: authHeader() });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const route = await res.json();
-    if (routeLayer) map.removeLayer(routeLayer);
-    const color = route.difficulty === 'easy' ? '#22c55e' : route.difficulty === 'medium' ? '#f97316' : '#ef4444';
-    routeLayer = L.polyline(route.coords, { color, weight: 6, opacity: 0.9 }).addTo(map);
-    map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
-    showToast('Trajet affiché sur la carte.');
-  } catch (e) {
-    showToast(`Erreur : ${e.message}`);
-  }
-}
-
-async function deleteSavedRoute(id, el) {
-  if (!confirm('Supprimer ce trajet ?')) return;
-  try {
-    const res = await fetch(`${API_URL}/api/savedroutes/${id}`, {
-      method: 'DELETE',
-      headers: authHeader(),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    el.remove();
-    const listEl = document.getElementById('historyList');
-    if (!listEl.children.length) listEl.innerHTML = '<div class="history-empty">Aucun trajet sauvegardé.</div>';
-    showToast('Trajet supprimé.');
-  } catch (e) {
-    showToast(`Erreur : ${e.message}`);
-  }
+  document.getElementById('historyToggle').addEventListener('click', lazyToggle);
 }
 
 function escapeHtml(s) {
