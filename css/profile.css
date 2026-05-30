@@ -508,7 +508,23 @@
 
 /* ── Locked badges by tier ── */
 .badge-item.tier-silver.earned { background: linear-gradient(135deg, #f3f4f6, #d1d5db); border-color: #6b7280; }
-.badge-item.tier-gold.earned   { background: linear-gradient(135deg, #fef3c7, #fde68a); border-color: #f59e0b; box-shadow: 0 4px 12px rgba(245,158,11,0.25); }
+.badge-item.tier-gold.earned   { background: linear-gradient(135deg, #fef3c7, #fde68a); border-color: #f59e0b; box-shadow: 0 4px 12px rgba(245,158,11,0.25); animation: badge-gold-glow 2.5s ease-in-out infinite; }
+
+@keyframes badge-gold-glow {
+  0%, 100% { box-shadow: 0 4px 12px rgba(245,158,11,0.25); }
+  50%      { box-shadow: 0 6px 22px rgba(245,158,11,0.55); }
+}
+
+/* Exclusive wheel badge — stronger shimmer */
+.badge-item.badge-exclusive.earned {
+  background: linear-gradient(135deg, #fef9c3, #fde68a, #fbbf24);
+  border-color: #d97706;
+  animation: badge-exclusive-shine 1.8s ease-in-out infinite;
+}
+@keyframes badge-exclusive-shine {
+  0%, 100% { box-shadow: 0 4px 16px rgba(245,158,11,0.35); filter: brightness(1); }
+  50%      { box-shadow: 0 6px 30px rgba(245,158,11,0.75); filter: brightness(1.08); }
+}
 
 .badges-locked-hint {
   margin-top: 12px;
@@ -781,4 +797,92 @@
   font-size: var(--fs-xs);
   color: var(--text-muted);
   margin: var(--space-3) 0 6px;
+}
+
+/* ── Dark mode ── */
+@media (prefers-color-scheme: dark) {
+  .profile-body                        { background: #0e1a11; }
+
+  .profile-card                        { background: #16201a; box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+  .card-header                         { border-bottom-color: #2a3a30; }
+  .card-title                          { color: #d4edbc; }
+
+  .stat-block                          { background: #1c2a20; border-color: #2a3a30; }
+  .stat-num                            { color: #a3e635; }
+  .stat-lbl                            { color: #8fa887; }
+
+  .level-block                         { background: #1c2a20; }
+  .level-num                           { color: #a3e635; }
+  .level-xp                            { color: #8fa887; }
+  .xp-bar                              { background: #2a3a30; }
+
+  .badges-title                        { color: #c8dcc0; }
+  .badge-item                          { background: #1c2a20; border-color: #2a3a30; }
+  .badge-item.earned                   { background: linear-gradient(135deg, #3a2600, #512f00); }
+  .badge-item.tier-silver.earned       { background: linear-gradient(135deg, #1e2a24, #2d3f38); border-color: #475569; }
+  .badge-label                         { color: #c8dcc0; }
+  .badge-desc                          { color: #8fa887; }
+  .badges-locked-hint                  { background: #1c2a20; color: #8fa887; }
+  .badges-locked-hint a                { color: #a3e635; }
+
+  .plan-pill.plan-free                 { background: #1c3020; color: #a3e635; }
+  .plan-pill.plan-silver               { background: #2a3a30; color: #c8dcc0; }
+  .plan-pill.plan-gold                 { background: #3d2a00; color: #fcd34d; }
+  .plan-upgrade-link                   { color: #a3e635; }
+
+  .card-silvergold                     { background: linear-gradient(135deg, #16201a, #1c2a20); border-color: #2a3a30; }
+  .card-gold-only                      { background: linear-gradient(135deg, #2a1f00, #3d2a00); border-color: #b45309; }
+  .card-premium                        { background: linear-gradient(135deg, #1a2a00, #162018); border-color: #2d5c30; }
+
+  .feature-block                       { background: #1c2a20; border-color: #2a3a30; }
+  .feature-title                       { color: #d4edbc; }
+
+  .field-hint                          { color: #8fa887; }
+  .field-hint--address                 { background: #1a2e1c; border-color: #2d5c30; color: #a8d4a0; }
+  .field-why                           { background: #2a3a30; color: #8fa887; }
+
+  .btn-save                            { background: #2d6b1f; }
+  .btn-save:hover:not(:disabled)       { background: #3a8428; }
+  .btn-save:disabled                   { background: #334d3b; }
+
+  .btn-map                             { background: #1c3020; color: #a3e635; }
+  .btn-map:hover                       { background: #233828; }
+  .btn-routes                          { background: #1a2240; color: #93c5fd; }
+  .btn-routes:hover                    { background: #1e2a50; }
+  .btn-logout                          { background: #2a3a30; color: #c8dcc0; }
+  .btn-logout:hover                    { background: #334d3b; }
+  .btn-delete                          { background: #3d1515; color: #fca5a5; }
+  .btn-delete:hover                    { background: #4d1a1a; }
+
+  .modal-box                           { background: #16201a; }
+  .modal-body                          { color: #c8dcc0; }
+  .btn-modal-cancel                    { background: #2a3a30; color: #c8dcc0; }
+  .btn-modal-cancel:hover              { background: #334d3b; }
+
+  .wheel-result                        { background: #1c3020; color: #d4edbc; }
+  .wheel-text                          { color: #d4edbc; }
+  .wheel-pointer                       { border-top-color: #a3e635; }
+  .prize-chip                          { background: #2a3a30; border-color: #334d3b; color: #c8dcc0; }
+  .prize-chip.prize-rare               { background: #1a2240; border-color: #3b5bdb; color: #93c5fd; }
+  .prizes-title                        { color: #8fa887; }
+
+  .weather-card                        { background: linear-gradient(135deg, #101d36 0%, #152040 100%); }
+  .weather-main strong                 { color: #93c5fd; }
+  .weather-main span:first-of-type     { color: #60a5fa; }
+  .weather-main span:last-of-type      { color: #8fa8c8; }
+  .weather-details span                { background: rgba(30,42,80,0.6); border-color: #334d8b; color: #60a5fa; }
+  .weather-day                         { background: rgba(20,34,70,0.7); border-color: #334d8b; }
+  .weather-day-name                    { color: #60a5fa; }
+  .weather-day-temps                   { color: #c8d8f0; }
+  .weather-day-temps b                 { color: #93c5fd; }
+  .weather-day-rain                    { color: #60a5fa; }
+  .weather-suit--great                 { background: #1a3020; color: #4ade80; }
+  .weather-suit--ok                    { background: #3d2a00; color: #fcd34d; }
+  .weather-suit--bad                   { background: #3d1515; color: #fca5a5; }
+
+  .push-setup-box                      { background: #1c2a20; }
+  .push-setup-label                    { color: #c8dcc0; }
+  .ntfy-channel                        { background: #2a3a30; color: #c8dcc0; }
+
+  .suggestion-box                      { background: #1c3020; }
 }

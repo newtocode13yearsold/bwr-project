@@ -137,9 +137,12 @@ const BADGES = [
   { id: 'rocket',       icon: '🚀', label: 'Fusée',            tier: 'gold',   desc: 'Parcours 300 km au total',               test: s => s.km >= 300 },
   { id: 'diamond',      icon: '💎', label: 'Diamant',          tier: 'gold',   desc: 'Parcours 1 000 km au total',             test: s => s.km >= 1000 },
   { id: 'dragon',       icon: '🐉', label: 'Dragon',           tier: 'gold',   desc: 'Effectue 200 balades',                   test: s => s.routes >= 200 },
-  { id: 'phoenix',      icon: '🔥', label: 'Phoenix',          tier: 'gold',   desc: 'Parcours 750 km au total',               test: s => s.km >= 750 },
+  { id: 'phoenix',      icon: '🔥', label: 'Phénix',           tier: 'gold',   desc: 'Parcours 750 km au total',               test: s => s.km >= 750 },
   { id: 'wolf',         icon: '🐺', label: 'Loup alpha',       tier: 'gold',   desc: 'Effectue 250 balades',                   test: s => s.routes >= 250 },
   { id: 'eagle',        icon: '🦅', label: 'Aigle royal',      tier: 'gold',   desc: 'Parcours 400 km au total',               test: s => s.km >= 400 },
+  // Roue de la chance — badges exclusifs
+  { id: 'lucky_badge',    icon: '🍀', label: 'Badge Chanceux',    tier: 'silver', desc: 'Remporté en tournant la roue de la chance',   test: () => localStorage.getItem('bwr_lucky_badge') === '1' },
+  { id: 'exclusive_badge', icon: '✨', label: 'Badge Or Exclusif', tier: 'gold',   desc: 'Badge animé exclusif gagné à la roue de la chance', test: () => localStorage.getItem('bwr_exclusive_badge') === '1' },
 ];
 
 const TRAIL_TIPS = [
@@ -428,13 +431,14 @@ function renderPlanAndProgress(user) {
   // Keep localStorage in sync for offline use
   if (routes > localRoutes) localStorage.setItem('bwr_route_count', String(routes));
   if (km > localKm) localStorage.setItem('bwr_km_total', km.toFixed(2));
-  // One-time migration: push localStorage surplus to server if server has no data yet
-  if (serverRoutes === 0 && routes > 0 && !localStorage.getItem('bwr_stats_synced')) {
-    localStorage.setItem('bwr_stats_synced', '1');
+  // Sync any offline surplus to server (covers routes completed offline or on another device)
+  const deltaRoutes = localRoutes - serverRoutes;
+  const deltaKm     = localKm - serverKm;
+  if (deltaRoutes > 0 || deltaKm > 0) {
     fetch(`${API_URL}/api/auth/stats`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ routes, km }),
+      body: JSON.stringify({ routes: Math.max(0, deltaRoutes), km: Math.max(0, parseFloat(deltaKm.toFixed(2))) }),
     }).catch(() => {});
   }
 
@@ -475,7 +479,8 @@ function renderPlanAndProgress(user) {
       </div>`;
     }
     const earned = b.test(stats);
-    return `<div class="badge-item ${earned ? 'earned' : 'locked'} tier-${b.tier}" title="${b.label}">
+    const extraClass = b.id === 'exclusive_badge' ? ' badge-exclusive' : '';
+    return `<div class="badge-item ${earned ? 'earned' : 'locked'} tier-${b.tier}${extraClass}" title="${b.label}">
       <span class="badge-icon">${b.icon}</span>
       <span class="badge-label">${b.label}</span>
       <span class="badge-desc">${b.desc}</span>
@@ -677,7 +682,11 @@ async function spinWheel(plan) {
     const expires = Date.now() + (prize.hours || 24) * 3600000;
     localStorage.setItem('bwr_double_xp_until', expires);
   } else if (prize.type === 'badge') {
-    localStorage.setItem('bwr_lucky_badge', '1');
+    if (prize.id === 'exclusive_badge') {
+      localStorage.setItem('bwr_exclusive_badge', '1');
+    } else {
+      localStorage.setItem('bwr_lucky_badge', '1');
+    }
   } else if (prize.type === 'tip') {
     try {
       const res = await fetch(`${API_URL}/api/ai-tip`, {
@@ -860,7 +869,7 @@ async function renderDailySuggestion(plan) {
 
 function buildRouteUrl(sugg) {
   let url = `routes.html?dist=${sugg.dist}&mode=${sugg.mode || 'loop'}`;
-  if (sugg.startLat && sugg.startLng) url += `&startLat=${sugg.startLat}&startLng=${sugg.startLng}`;
+  if (sugg.fromHome && sugg.startLat && sugg.startLng) url += `&startLat=${sugg.startLat}&startLng=${sugg.startLng}&fromHome=1`;
   return url;
 }
 

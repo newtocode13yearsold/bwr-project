@@ -78,6 +78,8 @@
     requestAnimationFrame(() => modal.classList.add('pwa-ios-visible'));
     modal.querySelector('.pwa-ios-close').addEventListener('click', dismissBanner);
     modal.querySelector('.pwa-ios-backdrop').addEventListener('click', dismissBanner);
+    const onKeyIOS = e => { if (e.key === 'Escape') { dismissBanner(); document.removeEventListener('keydown', onKeyIOS); } };
+    document.addEventListener('keydown', onKeyIOS);
   }
 
   function dismissBanner() {

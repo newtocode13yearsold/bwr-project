@@ -219,3 +219,26 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-0:  #16201a;
+    --surface-1:  #1c2a20;
+    --surface-2:  #233028;
+    --surface-3:  #2a3a30;
+    --surface-ink: #e8f5e3;
+
+    --text-strong:   #e8f5e3;
+    --text:          #c8dcc0;
+    --text-muted:    #8fa887;
+    --text-faint:    #6b7f64;
+    --text-inverse:  #16201a;
+
+    --border-soft:   #2a3a30;
+    --border:        #334d3b;
+    --border-strong: #4a6852;
+
+    --silver-50:  #1e2a24;
+    --silver-200: #2d3f38;
+  }
+}

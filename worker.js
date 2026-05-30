@@ -15,16 +15,23 @@
 // pathgrade:{pathId}:{userId} → JSON { walkedWhenGraded: bool } (legacy '1' = unwalked)
 // walkedpath:{userId}:{pathId} → ISO timestamp string (legacy '1' = walked, unknown time)
 // aisugg:{userId}:{date}   → JSON AI suggestion { icon, advice, dist, mode, startLat, startLng }  (48h TTL)
+// leaderboard:cache        → JSON sorted entries array  (5-min TTL)
 
-async function listItems(env, prefix) {
+async function listKeys(env, prefix) {
   const keys = [];
-  let cursor = undefined;
+  let cursor;
   do {
-    const page = await env.BWR_KV.list({ prefix, limit: 1000, cursor });
+    const opts = { prefix, limit: 1000 };
+    if (cursor) opts.cursor = cursor;
+    const page = await env.BWR_KV.list(opts);
     keys.push(...page.keys);
     cursor = page.list_complete ? undefined : page.cursor;
   } while (cursor !== undefined);
+  return keys;
+}
 
+async function listItems(env, prefix) {
+  const keys = await listKeys(env, prefix);
   if (keys.length === 0) return [];
   const values = await Promise.all(keys.map(k => env.BWR_KV.get(k.name)));
   return values.filter(Boolean).map(v => JSON.parse(v));
@@ -56,6 +63,24 @@ async function putPath(env, path) {
 
 async function putReport(env, report) {
   await env.BWR_KV.put(`report:${report.id}`, JSON.stringify(report));
+}
+
+async function patchLeaderboardCache(env, updatedUser) {
+  const raw = await env.BWR_KV.get('leaderboard:cache');
+  if (!raw) return; // cache absent, sera reconstruit à la prochaine lecture GET /api/leaderboard
+  const entries = JSON.parse(raw);
+  const totalPaths = (await listKeys(env, 'path:')).length;
+  const s = updatedUser.stats || {};
+  const reports = s.reports || 0;
+  const pathGrades = s.pathGrades || 0;
+  const points = reports * 2 + pathGrades;
+  const forestCoverage = totalPaths > 0
+    ? Math.round((s.walkedPathsCount || 0) / totalPaths * 100) : 0;
+  const entry = { id: updatedUser.id, name: updatedUser.name, reports, pathGrades, points, forestCoverage };
+  const idx = entries.findIndex(e => e.id === updatedUser.id);
+  if (idx >= 0) entries[idx] = entry; else entries.push(entry);
+  entries.sort((a, b) => b.points - a.points || b.reports - a.reports);
+  await env.BWR_KV.put('leaderboard:cache', JSON.stringify(entries));
 }
 
 // Returns the effective plan for a user, treating admin role as gold.
@@ -589,6 +614,30 @@ export default {
       }
     }
 
+    // ── DELETE /api/osm/cache — admin: flush one bbox or all osmv2 entries ───
+    if (pathname === '/api/osm/cache' && request.method === 'DELETE') {
+      const user = await getUserFromToken(env, request);
+      if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
+
+      const bbox = url.searchParams.get('bbox');
+      if (bbox) {
+        await env.BWR_KV.delete(`osmv2:${bbox}`);
+        return json({ deleted: 1, bbox });
+      }
+
+      // No bbox → flush all osmv2:* keys
+      let deleted = 0;
+      let cursor;
+      do {
+        const page = await env.BWR_KV.list({ prefix: 'osmv2:', limit: 1000, cursor });
+        await Promise.all(page.keys.map(k => env.BWR_KV.delete(k.name)));
+        deleted += page.keys.length;
+        cursor = page.list_complete ? undefined : page.cursor;
+      } while (cursor);
+
+      return json({ deleted });
+    }
+
     // ── POST /api/route — proxy to OpenRouteService ──────────────────────────
     if (pathname === '/api/route' && request.method === 'POST') {
       const user = await getUserFromToken(env, request);
@@ -840,10 +889,12 @@ export default {
         const gStats = user.stats || { routes: 0, km: 0 };
         const newStats = { ...gStats, pathGrades: (gStats.pathGrades || 0) + 1 };
         if (!walkedRecently) newStats.unwalkedGrades = (gStats.unwalkedGrades || 0) + 1;
+        const gradedUser = { ...user, stats: newStats };
         await Promise.all([
           env.BWR_KV.put(gradeKey, JSON.stringify({ walkedWhenGraded: walkedRecently })),
-          putUser(env, { ...user, stats: newStats }),
+          putUser(env, gradedUser),
         ]);
+        patchLeaderboardCache(env, gradedUser);
       }
 
       if (body.status !== oldStatus) {
@@ -963,12 +1014,21 @@ export default {
       };
 
       if (body.photo) {
+        const MAX_PHOTO_BYTES = 1_048_576; // 1 MB base64 string (~750 KB decoded)
+        if (body.photo.length > MAX_PHOTO_BYTES) {
+          return new Response(JSON.stringify({ error: 'Photo trop volumineuse (max 1 Mo)' }), {
+            status: 413,
+            headers: { ...cors, 'Content-Type': 'application/json' },
+          });
+        }
         await env.BWR_KV.put(`photo:${report.id}`, body.photo, { expirationTtl: 7776000 });
       }
 
       await putReport(env, report);
       const rStats = reporter.stats || { routes: 0, km: 0 };
-      await putUser(env, { ...reporter, stats: { ...rStats, reports: (rStats.reports || 0) + 1 } });
+      const updatedReporter = { ...reporter, stats: { ...rStats, reports: (rStats.reports || 0) + 1 } };
+      await putUser(env, updatedReporter);
+      patchLeaderboardCache(env, updatedReporter);
 
       const typeLabels = { fallen_tree: 'Arbre tombé', flooded: 'Chemin inondé', muddy: 'Boueux', rutted: 'Ornières', broken_sign: 'Carrefour cassé', closed: 'Chemin fermé', danger: 'Danger', other: 'Autre' };
       try {
@@ -1260,7 +1320,9 @@ export default {
 
       if (newPaths.length > 0) {
         const prev = user.stats?.walkedPathsCount || 0;
-        await putUser(env, { ...user, stats: { ...(user.stats || {}), walkedPathsCount: prev + newPaths.length } });
+        const walkedUser = { ...user, stats: { ...(user.stats || {}), walkedPathsCount: prev + newPaths.length } };
+        await putUser(env, walkedUser);
+        patchLeaderboardCache(env, walkedUser);
       }
 
       return json({ walkedPathsCount: (user.stats?.walkedPathsCount || 0) + newPaths.length });
@@ -1288,11 +1350,14 @@ export default {
 
     // ── GET /api/leaderboard — public ──────────────────────────────────────────
     if (pathname === '/api/leaderboard' && request.method === 'GET') {
-      const [allUsers, pathKeyPage] = await Promise.all([
+      const cached = await env.BWR_KV.get('leaderboard:cache');
+      if (cached) return json(JSON.parse(cached));
+
+      const [allUsers, pathKeys] = await Promise.all([
         listItems(env, 'user:'),
-        env.BWR_KV.list({ prefix: 'path:', limit: 1000 }),
+        listKeys(env, 'path:'),
       ]);
-      const totalPaths = pathKeyPage.keys.length;
+      const totalPaths = pathKeys.length;
 
       const entries = allUsers
         .filter(u => u.id && u.name)
@@ -1307,6 +1372,7 @@ export default {
         })
         .sort((a, b) => b.points - a.points || b.reports - a.reports);
 
+      await env.BWR_KV.put('leaderboard:cache', JSON.stringify(entries), { expirationTtl: 300 });
       return json(entries);
     }
 
@@ -1389,7 +1455,15 @@ Réponds uniquement avec le texte du conseil, sans guillemets ni explication.`;
   },
 
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(generateDailySuggestions(env));
+    ctx.waitUntil(
+      generateDailySuggestions(env).catch(err =>
+        fetch('https://ntfy.sh/bwr-ciril8596', {
+          method: 'POST',
+          headers: { Title: 'BWR cron FAILED', Priority: 'high', Tags: 'rotating_light' },
+          body: `generateDailySuggestions crash: ${err?.message ?? err}`,
+        }).catch(() => {})
+      )
+    );
   },
 };
 
@@ -1430,13 +1504,14 @@ async function generateAISuggestionForUser(env, user, date) {
   const typicalKm = km < 5 ? 4 : km < 25 ? 7 : km < 50 ? 12 : km < 100 ? 15 : 18;
 
   // Starting coords: user's home address geocoded, fallback to forest center
-  let startLat = 49.35, startLng = 2.90;
+  let startLat = 49.35, startLng = 2.90, fromHome = false;
   if (user.homeCoords) {
     startLat = user.homeCoords.lat;
     startLng = user.homeCoords.lng;
+    fromHome = true;
   } else if (user.homeAddress && env.ANTHROPIC_API_KEY) {
     const coords = await geocodeAddress(user.homeAddress);
-    if (coords) { startLat = coords.lat; startLng = coords.lng; }
+    if (coords) { startLat = coords.lat; startLng = coords.lng; fromHome = true; }
   }
 
   const weather = await fetchWeatherForCoords(startLat, startLng);
@@ -1452,7 +1527,7 @@ async function generateAISuggestionForUser(env, user, date) {
   const isWindy = weather.wind > 30;
 
   if (!env.ANTHROPIC_API_KEY) {
-    return buildFallbackSuggestion(weather, typicalKm, isHot, isStormy, isRainy, isWindy, startLat, startLng);
+    return buildFallbackSuggestion(weather, typicalKm, isHot, isStormy, isRainy, isWindy, startLat, startLng, fromHome);
   }
 
   const weatherDesc = isStormy ? 'orages signalés' : isRainy ? `pluie (code ${weather.code})` : isWindy ? `vent fort ${Math.round(weather.wind)} km/h` : isHot ? `chaleur ${Math.round(weather.temp)}°C` : `agréable ${Math.round(weather.temp)}°C`;
@@ -1493,12 +1568,12 @@ Inclus le nom d'un lieu réel de la forêt de Compiègne. Réponds uniquement av
     }
   } catch {}
 
-  if (!advice) return buildFallbackSuggestion(weather, typicalKm, isHot, isStormy, isRainy, isWindy, startLat, startLng);
+  if (!advice) return buildFallbackSuggestion(weather, typicalKm, isHot, isStormy, isRainy, isWindy, startLat, startLng, fromHome);
 
-  return { icon, advice, dist, mode, startLat, startLng, temp: Math.round(weather.temp), wind: Math.round(weather.wind) };
+  return { icon, advice, dist, mode, startLat, startLng, fromHome, temp: Math.round(weather.temp), wind: Math.round(weather.wind) };
 }
 
-function buildFallbackSuggestion(weather, typicalKm, isHot, isStormy, isRainy, isWindy, startLat, startLng) {
+function buildFallbackSuggestion(weather, typicalKm, isHot, isStormy, isRainy, isWindy, startLat, startLng, fromHome = false) {
   let icon, advice, dist;
   if (isStormy) {
     icon = '⛈️'; dist = 0;
@@ -1516,13 +1591,12 @@ function buildFallbackSuggestion(weather, typicalKm, isHot, isStormy, isRainy, i
     icon = '✅'; dist = typicalKm;
     advice = `Conditions idéales — profitez d'une boucle de ${dist} km à travers les beaux sentiers de la forêt de Compiègne.`;
   }
-  return { icon, advice, dist, mode: 'loop', startLat, startLng, temp: Math.round(weather.temp), wind: Math.round(weather.wind) };
+  return { icon, advice, dist, mode: 'loop', startLat, startLng, fromHome, temp: Math.round(weather.temp), wind: Math.round(weather.wind) };
 }
 
 async function generateDailySuggestions(env) {
   const today = new Date().toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' });
 
-  // List all users
   const keys = [];
   let cursor;
   do {
@@ -1531,23 +1605,36 @@ async function generateDailySuggestions(env) {
     cursor = page.list_complete ? undefined : page.cursor;
   } while (cursor);
 
+  let ok = 0, skipped = 0;
+  const errors = [];
+
   for (const key of keys) {
     try {
       const raw = await env.BWR_KV.get(key.name);
-      if (!raw) continue;
+      if (!raw) { skipped++; continue; }
       const user = JSON.parse(raw);
       const plan = effectivePlan(user);
-      if (plan === 'free') continue; // only silver/gold
+      if (plan === 'free') { skipped++; continue; }
 
       const cacheKey = `aisugg:${user.id}:${today}`;
       const existing = await env.BWR_KV.get(cacheKey);
-      if (existing) continue; // already generated today
+      if (existing) { skipped++; continue; }
 
       const suggestion = await generateAISuggestionForUser(env, user, today);
       await env.BWR_KV.put(cacheKey, JSON.stringify(suggestion), { expirationTtl: 172800 });
+      ok++;
 
-      // Small delay to avoid hammering Claude API
       await new Promise(r => setTimeout(r, 300));
-    } catch {}
+    } catch (err) {
+      errors.push(`${key.name}: ${err?.message ?? err}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    await fetch('https://ntfy.sh/bwr-ciril8596', {
+      method: 'POST',
+      headers: { Title: `BWR cron: ${errors.length} erreur(s)`, Priority: 'default', Tags: 'warning' },
+      body: `OK: ${ok} | Ignorés: ${skipped} | Erreurs: ${errors.length}\n\n${errors.slice(0, 10).join('\n')}`,
+    }).catch(() => {});
   }
 }

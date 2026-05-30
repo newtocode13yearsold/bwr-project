@@ -107,9 +107,12 @@ function showUpgradeModal(tier, featureLabel) {
     </div>
   `;
   document.body.appendChild(m);
-  m.querySelector('.um-close').onclick   = () => m.remove();
-  m.querySelector('.um-secondary').onclick = () => m.remove();
-  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  const closeUpgrade = () => { document.removeEventListener('keydown', onKeyUpgrade); m.remove(); };
+  const onKeyUpgrade = e => { if (e.key === 'Escape') closeUpgrade(); };
+  document.addEventListener('keydown', onKeyUpgrade);
+  m.querySelector('.um-close').onclick    = closeUpgrade;
+  m.querySelector('.um-secondary').onclick = closeUpgrade;
+  m.addEventListener('click', e => { if (e.target === m) closeUpgrade(); });
 }
 
 // ── Weekly route quota strip ──────────────────────────────────────────────────
@@ -948,9 +951,12 @@ function showQuotaExceededModal(quota) {
     </div>
   `;
   document.body.appendChild(m);
-  m.querySelector('.um-close').onclick   = () => m.remove();
-  m.querySelector('.um-secondary').onclick = () => m.remove();
-  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  const closeQuota = () => { document.removeEventListener('keydown', onKeyQuota); m.remove(); };
+  const onKeyQuota = e => { if (e.key === 'Escape') closeQuota(); };
+  document.addEventListener('keydown', onKeyQuota);
+  m.querySelector('.um-close').onclick    = closeQuota;
+  m.querySelector('.um-secondary').onclick = closeQuota;
+  m.addEventListener('click', e => { if (e.target === m) closeQuota(); });
 }
 
 // ── Elevation profile (Open-Elevation API) ────────────────────────────────────
@@ -1324,15 +1330,14 @@ function applyAISuggestionParams() {
     distSlider.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
-  // Pre-place start marker from home address coords
-  if (!isNaN(startLat) && !isNaN(startLng) && map) {
+  // Pre-place start marker only when actual home coords were provided
+  if (p.get('fromHome') === '1' && !isNaN(startLat) && !isNaN(startLng) && map) {
     const latlng = L.latLng(startLat, startLng);
     if (startMarker) map.removeLayer(startMarker);
     startMarker = L.marker(latlng, { draggable: true }).addTo(map);
     startMarker.on('dragend', () => { /* coords update on compute */ });
     map.setView(latlng, 13);
 
-    // Show a banner to inform the user the start was preset
     const banner = document.createElement('div');
     banner.className = 'ai-sugg-banner';
     banner.innerHTML = `🤖 Départ préréglé depuis votre domicile · <button id="clearAiStart">Effacer</button>`;

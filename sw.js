@@ -1,4 +1,4 @@
-const CACHE = 'bwr-v12';
+const CACHE = 'bwr-v13';
 const TILE_CACHE = 'bwr-offline-tiles';
 
 const APP_SHELL = [
@@ -96,7 +96,8 @@ self.addEventListener('fetch', e => {
 
   // Network first for app files — ensures latest version is always served when online
   if (e.request.method === 'GET' &&
-      (url.endsWith('.html') || url.endsWith('.js') || url.endsWith('.css') ||
+      (e.request.mode === 'navigate' ||
+       url.endsWith('.html') || url.endsWith('.js') || url.endsWith('.css') ||
        url.includes('unpkg.com') || url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com'))) {
     e.respondWith(
       fetch(e.request).then(res => {

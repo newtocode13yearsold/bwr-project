@@ -155,6 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('newsModal').addEventListener('click', e => {
     if (e.target === e.currentTarget) closeModal();
   });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
   document.getElementById('fieldImage').addEventListener('change', async e => {
     const file = e.target.files[0];
