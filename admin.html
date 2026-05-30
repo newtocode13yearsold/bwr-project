@@ -37,7 +37,7 @@
         </nav>
       </div>
       <div class="header-right">
-        <button class="btn-icon" id="btnThemeToggle" onclick="__bwrToggleTheme()" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
+        <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
         <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
         <button class="btn-icon" id="btnSelectPath" title="Sélectionner un chemin"><span class="btn-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span><span class="btn-label">Sélectionner</span></button>
         <button class="btn-icon" id="btnDrawPath" title="Dessiner"><span class="btn-emoji">✏</span><span class="btn-label">Dessiner</span></button>
@@ -95,7 +95,7 @@
     <div id="syncBanner" style="display:none;background:#92400e;color:#fef3c7;padding:8px 16px;font-size:0.82rem;align-items:center;gap:10px;justify-content:center;">
       <span class="sync-icon">↻</span>
       <span class="sync-count"></span>
-      <button onclick="replayOfflineQueue();replayOfflineNewPaths();" style="background:#fef3c7;color:#92400e;border:none;border-radius:6px;padding:3px 10px;font-size:0.8rem;cursor:pointer;font-weight:600;">Synchroniser maintenant</button>
+      <button id="btnAdminSync" style="background:#fef3c7;color:#92400e;border:none;border-radius:6px;padding:3px 10px;font-size:0.8rem;cursor:pointer;font-weight:600;">Synchroniser maintenant</button>
     </div>
 
     <!-- New path form -->
@@ -253,39 +253,6 @@
   <script defer src="js/auth.js"></script>
   <script defer src="js/carrefours.js"></script>
   <script defer src="js/admin.js"></script>
-  <script>
-    (function() {
-      var pill = document.getElementById('offline-pill');
-      function updatePill() { pill.classList.toggle('visible', !navigator.onLine); }
-      window.addEventListener('online', updatePill);
-      window.addEventListener('offline', updatePill);
-      updatePill();
-    })();
-  </script>
-  <script>
-    (function() {
-      var overlay = document.getElementById('navDrawerOverlay');
-      var drawer  = document.getElementById('navDrawer');
-      function openDrawer() {
-        overlay.classList.remove('hidden');
-        drawer.classList.remove('hidden');
-        requestAnimationFrame(function() {
-          overlay.classList.add('open');
-          drawer.classList.add('open');
-        });
-      }
-      function closeDrawer() {
-        overlay.classList.remove('open');
-        drawer.classList.remove('open');
-        setTimeout(function() {
-          overlay.classList.add('hidden');
-          drawer.classList.add('hidden');
-        }, 250);
-      }
-      document.getElementById('btnNavMenu').addEventListener('click', openDrawer);
-      document.getElementById('btnNavDrawerClose').addEventListener('click', closeDrawer);
-      overlay.addEventListener('click', closeDrawer);
-    })();
-  </script>
+  <script defer src="js/ui-shared.js"></script>
 </body>
 </html>

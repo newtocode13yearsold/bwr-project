@@ -25,5 +25,9 @@
     updateIcons();
   };
 
-  document.addEventListener('DOMContentLoaded', updateIcons);
+  document.addEventListener('DOMContentLoaded', function () {
+    updateIcons();
+    var btn = document.getElementById('btnThemeToggle');
+    if (btn) btn.addEventListener('click', window.__bwrToggleTheme);
+  });
 })();

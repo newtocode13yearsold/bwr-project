@@ -36,7 +36,7 @@
       </nav>
     </div>
     <div class="header-right">
-      <button class="btn-icon" id="btnThemeToggle" onclick="__bwrToggleTheme()" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
+      <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
       <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
       <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji">⬇</span><span class="btn-label">Installer</span></button>
       <div class="user-menu" id="userMenu"></div>
@@ -301,47 +301,6 @@
   <script defer src="js/graph-router.js"></script>
   <script defer src="js/routes.js"></script>
   <script defer src="js/install.js"></script>
-  <script>
-    (function() {
-      var overlay = document.getElementById('navDrawerOverlay');
-      var drawer  = document.getElementById('navDrawer');
-      function openDrawer() {
-        overlay.classList.remove('hidden');
-        drawer.classList.remove('hidden');
-        requestAnimationFrame(function() {
-          overlay.classList.add('open');
-          drawer.classList.add('open');
-        });
-      }
-      function closeDrawer() {
-        overlay.classList.remove('open');
-        drawer.classList.remove('open');
-        setTimeout(function() {
-          overlay.classList.add('hidden');
-          drawer.classList.add('hidden');
-        }, 250);
-      }
-      document.getElementById('btnNavMenu').addEventListener('click', openDrawer);
-      document.getElementById('btnNavDrawerClose').addEventListener('click', closeDrawer);
-      overlay.addEventListener('click', closeDrawer);
-    })();
-  </script>
-  <script>
-    (function() {
-      var pill = document.getElementById('offline-pill');
-      var notice = document.getElementById('offline-routes-notice');
-      var sidebar = document.querySelector('.planner-sidebar');
-      function updatePill() { pill.classList.toggle('visible', !navigator.onLine); }
-      function updateOfflineState() {
-        var offline = !navigator.onLine;
-        notice.hidden = !offline;
-        sidebar.classList.toggle('offline', offline);
-      }
-      window.addEventListener('online',  function() { updatePill(); updateOfflineState(); });
-      window.addEventListener('offline', function() { updatePill(); updateOfflineState(); });
-      updatePill();
-      updateOfflineState();
-    })();
-  </script>
+  <script defer src="js/ui-shared.js"></script>
 </body>
 </html>

@@ -384,7 +384,7 @@
       </nav>
     </div>
     <div class="header-right">
-      <button class="btn-icon" id="btnThemeToggle" onclick="__bwrToggleTheme()" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
+      <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
       <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
       <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji">⬇</span><span class="btn-label">Installer</span></button>
       <div class="user-menu" id="userMenu"></div>
@@ -447,14 +447,14 @@
   </section>
 
   <!-- ── FAB (admin only) ── -->
-  <button id="fabAdd" title="Ajouter une actualité" onclick="openAdd()">+</button>
+  <button id="fabAdd" title="Ajouter une actualité">+</button>
 
   <!-- ── Modal ── -->
   <div class="modal-backdrop" id="newsModal">
     <div class="modal-box">
       <div class="modal-header">
         <h2 id="modalTitle">Nouvelle actualité</h2>
-        <button class="modal-close" onclick="closeModal()" aria-label="Fermer">×</button>
+        <button class="modal-close" aria-label="Fermer">×</button>
       </div>
       <form id="newsForm">
         <input type="hidden" id="modalEditId" />
@@ -477,7 +477,7 @@
           </div>
           <div id="imgPreviewWrap" style="display:none" class="img-preview-wrap">
             <img id="imgPreview" src="" alt="Aperçu" />
-            <button type="button" class="img-remove-btn" onclick="removeImage()">✕</button>
+            <button type="button" class="img-remove-btn">✕</button>
           </div>
         </div>
 
@@ -526,41 +526,6 @@
   <script src="js/features.js"></script>
   <script src="js/news.js"></script>
   <script src="js/install.js"></script>
-  <script>
-    // Fade-in observer (called after render too, from news.js)
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(attachFadeObserver, 100);
-    });
-  </script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    }
-  </script>
-  <script>
-    (function() {
-      var overlay = document.getElementById('navDrawerOverlay');
-      var drawer  = document.getElementById('navDrawer');
-      function openDrawer() {
-        overlay.classList.remove('hidden');
-        drawer.classList.remove('hidden');
-        requestAnimationFrame(function() {
-          overlay.classList.add('open');
-          drawer.classList.add('open');
-        });
-      }
-      function closeDrawer() {
-        overlay.classList.remove('open');
-        drawer.classList.remove('open');
-        setTimeout(function() {
-          overlay.classList.add('hidden');
-          drawer.classList.add('hidden');
-        }, 250);
-      }
-      document.getElementById('btnNavMenu').addEventListener('click', openDrawer);
-      document.getElementById('btnNavDrawerClose').addEventListener('click', closeDrawer);
-      overlay.addEventListener('click', closeDrawer);
-    })();
-  </script>
+  <script src="js/ui-shared.js"></script>
 </body>
 </html>

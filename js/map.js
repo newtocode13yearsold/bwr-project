@@ -1010,3 +1010,6 @@ loadPaths();
 loadReports();
 if (navigator.onLine) { replayMapPatches(); replayMapReports(); }
 updateMapSyncBanner();
+
+const btnMapSync = document.getElementById('btnMapSync');
+if (btnMapSync) btnMapSync.addEventListener('click', function () { replayMapPatches(); replayMapReports(); });

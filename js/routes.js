@@ -1144,3 +1144,21 @@ async function handleSharedRouteParam() {
     showToast('Impossible de charger le trajet partagé.');
   }
 }
+
+// Offline state: pill + routes-specific notice and sidebar class
+(function () {
+  var pill    = document.getElementById('offline-pill');
+  var notice  = document.getElementById('offline-routes-notice');
+  var sidebar = document.querySelector('.planner-sidebar');
+  if (!pill) return;
+  function updatePill() { pill.classList.toggle('visible', !navigator.onLine); }
+  function updateOfflineState() {
+    var offline = !navigator.onLine;
+    if (notice) notice.hidden = !offline;
+    if (sidebar) sidebar.classList.toggle('offline', offline);
+  }
+  window.addEventListener('online',  function () { updatePill(); updateOfflineState(); });
+  window.addEventListener('offline', function () { updatePill(); updateOfflineState(); });
+  updatePill();
+  updateOfflineState();
+})();

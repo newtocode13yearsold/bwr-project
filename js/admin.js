@@ -1145,6 +1145,9 @@ function showStatus(msg, isError = false) {
 updateSyncBanner();
 if (navigator.onLine) { replayOfflineQueue(); replayOfflineNewPaths(); }
 
+const btnAdminSync = document.getElementById('btnAdminSync');
+if (btnAdminSync) btnAdminSync.addEventListener('click', function () { replayOfflineQueue(); replayOfflineNewPaths(); });
+
 // ── Offline tile download (full Forêt de Compiègne) ───────────────────────
 const FOREST_BBOX = { north: 49.47, south: 49.27, west: 2.65, east: 3.10 };
 function lonToTileX(lon, z) { return Math.floor((lon + 180) / 360 * Math.pow(2, z)); }

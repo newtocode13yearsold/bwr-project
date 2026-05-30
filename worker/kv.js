@@ -17,6 +17,7 @@
 // aisugg:{userId}:{date}   → JSON AI suggestion  (48h TTL)
 // leaderboard:cache        → JSON sorted entries array  (5-min TTL)
 
+/** Paginates KV list() to return all keys under a prefix (KV caps single calls at 1 000). */
 export async function listKeys(env, prefix) {
   const keys = [];
   let cursor;
@@ -30,6 +31,7 @@ export async function listKeys(env, prefix) {
   return keys;
 }
 
+/** Fetches and JSON-parses every value whose key starts with `prefix`. */
 export async function listItems(env, prefix) {
   const keys = await listKeys(env, prefix);
   if (keys.length === 0) return [];
@@ -37,6 +39,7 @@ export async function listItems(env, prefix) {
   return values.filter(Boolean).map(v => JSON.parse(v));
 }
 
+/** Returns the user object for `id`, or null if not found. */
 export async function getUser(env, id) {
   const raw = await env.BWR_KV.get(`user:${id}`);
   return raw ? JSON.parse(raw) : null;
@@ -46,6 +49,7 @@ export async function putUser(env, user) {
   await env.BWR_KV.put(`user:${user.id}`, JSON.stringify(user));
 }
 
+/** Resolves email → userId via the uemail: index, then fetches the user. O(2) KV reads. */
 export async function getUserByEmail(env, email) {
   const userId = await env.BWR_KV.get(`uemail:${email.toLowerCase()}`);
   if (!userId) return null;
@@ -65,6 +69,10 @@ export async function putReport(env, report) {
   await env.BWR_KV.put(`report:${report.id}`, JSON.stringify(report));
 }
 
+/**
+ * Updates a single entry in the leaderboard cache without a full rebuild.
+ * No-ops when the cache key is absent (next GET /api/leaderboard will rebuild it).
+ */
 export async function patchLeaderboardCache(env, updatedUser) {
   const raw = await env.BWR_KV.get('leaderboard:cache');
   if (!raw) return;
@@ -83,6 +91,7 @@ export async function patchLeaderboardCache(env, updatedUser) {
   await env.BWR_KV.put('leaderboard:cache', JSON.stringify(entries));
 }
 
+/** Returns the user's active plan, forcing 'gold' for admin accounts regardless of stored value. */
 export function effectivePlan(user) {
   if (user.role === 'admin') return 'gold';
   return user.plan || 'free';

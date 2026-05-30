@@ -1,5 +1,6 @@
 import { getUser } from './kv.js';
 
+/** SHA-256 hash used by pre-PBKDF2 accounts. Only called during login migration. */
 export async function hashPasswordLegacy(password, salt) {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + salt);
@@ -25,6 +26,7 @@ export async function hashPassword(password, salt) {
   return Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+/** Extracts the Bearer token from the request, validates the session in KV, and returns the user or null. */
 export async function getUserFromToken(env, request) {
   const auth = request.headers.get('Authorization');
   if (!auth || !auth.startsWith('Bearer ')) return null;
@@ -39,6 +41,7 @@ export async function getUserFromToken(env, request) {
   return getUser(env, session.userId);
 }
 
+/** Returns the ISO date string (YYYY-MM-DD) of the Monday that starts the week containing `d`. */
 export function isoMonday(d = new Date()) {
   const day = (d.getDay() + 6) % 7; // 0 = Monday
   const monday = new Date(d);
@@ -50,6 +53,11 @@ export function isoMonday(d = new Date()) {
 // Generic fixed-window rate limiter
 // KV key: ratelimit:{scope}:{key} → { count }  TTL = windowSeconds
 // Returns true when the request is allowed, false when the limit is exceeded.
+/**
+ * Fixed-window rate limiter backed by KV.
+ * @returns true when the request is allowed, false when the limit is exceeded.
+ * Note: TTL is set only on the first write; subsequent increments don't reset the window.
+ */
 export async function checkRateLimit(env, scope, key, maxCount, windowSeconds) {
   const kvKey = `ratelimit:${scope}:${key}`;
   const raw = await env.BWR_KV.get(kvKey);
@@ -82,6 +90,7 @@ export async function recordFailedLogin(env, email) {
 export const PENDING_TTL = 86400; // 24 hours
 export const RESEND_COOLDOWN = 300; // 5 minutes between resend requests
 
+/** Sends the account-activation email via Resend. Silently no-ops if RESEND_API_KEY is unset (dev). */
 export async function sendVerificationEmail(env, origin, email, name, token) {
   if (!env.RESEND_API_KEY) return; // skip in dev if key not set
   const verifyUrl = `${origin}/verify.html?token=${token}`;

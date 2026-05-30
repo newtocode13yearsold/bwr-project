@@ -152,6 +152,15 @@ function closeModal() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  const fabAdd = document.getElementById('fabAdd');
+  if (fabAdd) fabAdd.addEventListener('click', openAdd);
+
+  const modalCloseBtn = document.querySelector('#newsModal .modal-close');
+  if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
+
+  const imgRemoveBtn = document.querySelector('.img-remove-btn');
+  if (imgRemoveBtn) imgRemoveBtn.addEventListener('click', removeImage);
+
   document.getElementById('newsModal').addEventListener('click', e => {
     if (e.target === e.currentTarget) closeModal();
   });
