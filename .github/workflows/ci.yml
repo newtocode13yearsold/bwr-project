@@ -31,6 +31,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Check bundle sizes
+        run: node scripts/check-size.js
+
   # ── 2. Deploy to Cloudflare Workers (main branch only, after tests pass) ─────
   deploy:
     name: Deploy to Cloudflare Workers
