@@ -1,3 +1,29 @@
+/* ── Badge toast ── */
+.badge-toast {
+  position: fixed;
+  bottom: 88px;
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: #14532d;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  z-index: var(--z-toast, 6000);
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+.badge-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 /* ── Page layout ── */
 .profile-body {
   overflow: auto;
@@ -470,6 +496,12 @@
 }
 .badge-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: default; }
 .badge-item:hover .badge-desc { display: block; }
+.badge-date {
+  font-size: 0.6rem;
+  color: #6b7280;
+  margin-top: 3px;
+  font-style: italic;
+}
 
 @media (max-width: 760px) {
   .card-progress { grid-column: 1; }
@@ -799,90 +831,89 @@
   margin: var(--space-3) 0 6px;
 }
 
-/* ── Dark mode ── */
-@media (prefers-color-scheme: dark) {
-  .profile-body                        { background: #0e1a11; }
+/* ── Dark mode (toggled via [data-theme="dark"] on <html>) ── */
+[data-theme="dark"] .profile-body                { background: #0e1a11; }
 
-  .profile-card                        { background: #16201a; box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
-  .card-header                         { border-bottom-color: #2a3a30; }
-  .card-title                          { color: #d4edbc; }
+[data-theme="dark"] .profile-card                { background: #16201a; box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+[data-theme="dark"] .card-header                 { border-bottom-color: #2a3a30; }
+[data-theme="dark"] .card-title                  { color: #d4edbc; }
 
-  .stat-block                          { background: #1c2a20; border-color: #2a3a30; }
-  .stat-num                            { color: #a3e635; }
-  .stat-lbl                            { color: #8fa887; }
+[data-theme="dark"] .stat-block                  { background: #1c2a20; border-color: #2a3a30; }
+[data-theme="dark"] .stat-num                    { color: #a3e635; }
+[data-theme="dark"] .stat-lbl                    { color: #8fa887; }
 
-  .level-block                         { background: #1c2a20; }
-  .level-num                           { color: #a3e635; }
-  .level-xp                            { color: #8fa887; }
-  .xp-bar                              { background: #2a3a30; }
+[data-theme="dark"] .level-block                 { background: #1c2a20; }
+[data-theme="dark"] .level-num                   { color: #a3e635; }
+[data-theme="dark"] .level-xp                    { color: #8fa887; }
+[data-theme="dark"] .xp-bar                      { background: #2a3a30; }
 
-  .badges-title                        { color: #c8dcc0; }
-  .badge-item                          { background: #1c2a20; border-color: #2a3a30; }
-  .badge-item.earned                   { background: linear-gradient(135deg, #3a2600, #512f00); }
-  .badge-item.tier-silver.earned       { background: linear-gradient(135deg, #1e2a24, #2d3f38); border-color: #475569; }
-  .badge-label                         { color: #c8dcc0; }
-  .badge-desc                          { color: #8fa887; }
-  .badges-locked-hint                  { background: #1c2a20; color: #8fa887; }
-  .badges-locked-hint a                { color: #a3e635; }
+[data-theme="dark"] .badges-title                { color: #c8dcc0; }
+[data-theme="dark"] .badge-item                  { background: #1c2a20; border-color: #2a3a30; }
+[data-theme="dark"] .badge-item.earned           { background: linear-gradient(135deg, #3a2600, #512f00); }
+[data-theme="dark"] .badge-item.tier-silver.earned { background: linear-gradient(135deg, #1e2a24, #2d3f38); border-color: #475569; }
+[data-theme="dark"] .badge-label                 { color: #c8dcc0; }
+[data-theme="dark"] .badge-desc                  { color: #8fa887; }
+[data-theme="dark"] .badge-date                  { color: #6b7280; }
+[data-theme="dark"] .badges-locked-hint          { background: #1c2a20; color: #8fa887; }
+[data-theme="dark"] .badges-locked-hint a        { color: #a3e635; }
 
-  .plan-pill.plan-free                 { background: #1c3020; color: #a3e635; }
-  .plan-pill.plan-silver               { background: #2a3a30; color: #c8dcc0; }
-  .plan-pill.plan-gold                 { background: #3d2a00; color: #fcd34d; }
-  .plan-upgrade-link                   { color: #a3e635; }
+[data-theme="dark"] .plan-pill.plan-free         { background: #1c3020; color: #a3e635; }
+[data-theme="dark"] .plan-pill.plan-silver       { background: #2a3a30; color: #c8dcc0; }
+[data-theme="dark"] .plan-pill.plan-gold         { background: #3d2a00; color: #fcd34d; }
+[data-theme="dark"] .plan-upgrade-link           { color: #a3e635; }
 
-  .card-silvergold                     { background: linear-gradient(135deg, #16201a, #1c2a20); border-color: #2a3a30; }
-  .card-gold-only                      { background: linear-gradient(135deg, #2a1f00, #3d2a00); border-color: #b45309; }
-  .card-premium                        { background: linear-gradient(135deg, #1a2a00, #162018); border-color: #2d5c30; }
+[data-theme="dark"] .card-silvergold             { background: linear-gradient(135deg, #16201a, #1c2a20); border-color: #2a3a30; }
+[data-theme="dark"] .card-gold-only              { background: linear-gradient(135deg, #2a1f00, #3d2a00); border-color: #b45309; }
+[data-theme="dark"] .card-premium                { background: linear-gradient(135deg, #1a2a00, #162018); border-color: #2d5c30; }
 
-  .feature-block                       { background: #1c2a20; border-color: #2a3a30; }
-  .feature-title                       { color: #d4edbc; }
+[data-theme="dark"] .feature-block               { background: #1c2a20; border-color: #2a3a30; }
+[data-theme="dark"] .feature-title               { color: #d4edbc; }
 
-  .field-hint                          { color: #8fa887; }
-  .field-hint--address                 { background: #1a2e1c; border-color: #2d5c30; color: #a8d4a0; }
-  .field-why                           { background: #2a3a30; color: #8fa887; }
+[data-theme="dark"] .field-hint                  { color: #8fa887; }
+[data-theme="dark"] .field-hint--address         { background: #1a2e1c; border-color: #2d5c30; color: #a8d4a0; }
+[data-theme="dark"] .field-why                   { background: #2a3a30; color: #8fa887; }
 
-  .btn-save                            { background: #2d6b1f; }
-  .btn-save:hover:not(:disabled)       { background: #3a8428; }
-  .btn-save:disabled                   { background: #334d3b; }
+[data-theme="dark"] .btn-save                    { background: #2d6b1f; }
+[data-theme="dark"] .btn-save:hover:not(:disabled) { background: #3a8428; }
+[data-theme="dark"] .btn-save:disabled           { background: #334d3b; }
 
-  .btn-map                             { background: #1c3020; color: #a3e635; }
-  .btn-map:hover                       { background: #233828; }
-  .btn-routes                          { background: #1a2240; color: #93c5fd; }
-  .btn-routes:hover                    { background: #1e2a50; }
-  .btn-logout                          { background: #2a3a30; color: #c8dcc0; }
-  .btn-logout:hover                    { background: #334d3b; }
-  .btn-delete                          { background: #3d1515; color: #fca5a5; }
-  .btn-delete:hover                    { background: #4d1a1a; }
+[data-theme="dark"] .btn-map                     { background: #1c3020; color: #a3e635; }
+[data-theme="dark"] .btn-map:hover               { background: #233828; }
+[data-theme="dark"] .btn-routes                  { background: #1a2240; color: #93c5fd; }
+[data-theme="dark"] .btn-routes:hover            { background: #1e2a50; }
+[data-theme="dark"] .btn-logout                  { background: #2a3a30; color: #c8dcc0; }
+[data-theme="dark"] .btn-logout:hover            { background: #334d3b; }
+[data-theme="dark"] .btn-delete                  { background: #3d1515; color: #fca5a5; }
+[data-theme="dark"] .btn-delete:hover            { background: #4d1a1a; }
 
-  .modal-box                           { background: #16201a; }
-  .modal-body                          { color: #c8dcc0; }
-  .btn-modal-cancel                    { background: #2a3a30; color: #c8dcc0; }
-  .btn-modal-cancel:hover              { background: #334d3b; }
+[data-theme="dark"] .modal-box                   { background: #16201a; }
+[data-theme="dark"] .modal-body                  { color: #c8dcc0; }
+[data-theme="dark"] .btn-modal-cancel            { background: #2a3a30; color: #c8dcc0; }
+[data-theme="dark"] .btn-modal-cancel:hover      { background: #334d3b; }
 
-  .wheel-result                        { background: #1c3020; color: #d4edbc; }
-  .wheel-text                          { color: #d4edbc; }
-  .wheel-pointer                       { border-top-color: #a3e635; }
-  .prize-chip                          { background: #2a3a30; border-color: #334d3b; color: #c8dcc0; }
-  .prize-chip.prize-rare               { background: #1a2240; border-color: #3b5bdb; color: #93c5fd; }
-  .prizes-title                        { color: #8fa887; }
+[data-theme="dark"] .wheel-result                { background: #1c3020; color: #d4edbc; }
+[data-theme="dark"] .wheel-text                  { color: #d4edbc; }
+[data-theme="dark"] .wheel-pointer               { border-top-color: #a3e635; }
+[data-theme="dark"] .prize-chip                  { background: #2a3a30; border-color: #334d3b; color: #c8dcc0; }
+[data-theme="dark"] .prize-chip.prize-rare       { background: #1a2240; border-color: #3b5bdb; color: #93c5fd; }
+[data-theme="dark"] .prizes-title                { color: #8fa887; }
 
-  .weather-card                        { background: linear-gradient(135deg, #101d36 0%, #152040 100%); }
-  .weather-main strong                 { color: #93c5fd; }
-  .weather-main span:first-of-type     { color: #60a5fa; }
-  .weather-main span:last-of-type      { color: #8fa8c8; }
-  .weather-details span                { background: rgba(30,42,80,0.6); border-color: #334d8b; color: #60a5fa; }
-  .weather-day                         { background: rgba(20,34,70,0.7); border-color: #334d8b; }
-  .weather-day-name                    { color: #60a5fa; }
-  .weather-day-temps                   { color: #c8d8f0; }
-  .weather-day-temps b                 { color: #93c5fd; }
-  .weather-day-rain                    { color: #60a5fa; }
-  .weather-suit--great                 { background: #1a3020; color: #4ade80; }
-  .weather-suit--ok                    { background: #3d2a00; color: #fcd34d; }
-  .weather-suit--bad                   { background: #3d1515; color: #fca5a5; }
+[data-theme="dark"] .weather-card                { background: linear-gradient(135deg, #101d36 0%, #152040 100%); }
+[data-theme="dark"] .weather-main strong         { color: #93c5fd; }
+[data-theme="dark"] .weather-main span:first-of-type { color: #60a5fa; }
+[data-theme="dark"] .weather-main span:last-of-type  { color: #8fa8c8; }
+[data-theme="dark"] .weather-details span        { background: rgba(30,42,80,0.6); border-color: #334d8b; color: #60a5fa; }
+[data-theme="dark"] .weather-day                 { background: rgba(20,34,70,0.7); border-color: #334d8b; }
+[data-theme="dark"] .weather-day-name            { color: #60a5fa; }
+[data-theme="dark"] .weather-day-temps           { color: #c8d8f0; }
+[data-theme="dark"] .weather-day-temps b         { color: #93c5fd; }
+[data-theme="dark"] .weather-day-rain            { color: #60a5fa; }
+[data-theme="dark"] .weather-suit--great         { background: #1a3020; color: #4ade80; }
+[data-theme="dark"] .weather-suit--ok            { background: #3d2a00; color: #fcd34d; }
+[data-theme="dark"] .weather-suit--bad           { background: #3d1515; color: #fca5a5; }
 
-  .push-setup-box                      { background: #1c2a20; }
-  .push-setup-label                    { color: #c8dcc0; }
-  .ntfy-channel                        { background: #2a3a30; color: #c8dcc0; }
+[data-theme="dark"] .push-setup-box              { background: #1c2a20; }
+[data-theme="dark"] .push-setup-label            { color: #c8dcc0; }
+[data-theme="dark"] .ntfy-channel                { background: #2a3a30; color: #c8dcc0; }
 
-  .suggestion-box                      { background: #1c3020; }
-}
+[data-theme="dark"] .suggestion-box              { background: #1c3020; }

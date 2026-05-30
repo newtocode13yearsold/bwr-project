@@ -72,10 +72,11 @@ test.describe('Authentification', () => {
     }
   });
 
-  test('redirige vers login.html si non authentifié', async ({ page }) => {
+  test('map.html est accessible sans auth et affiche le lien Connexion', async ({ page }) => {
     await page.goto('/map.html');
-    // La page doit rediriger vers login (requireAuth() dans map.js)
-    await expect(page).toHaveURL(/login\.html/, { timeout: 8_000 });
+    // map.html est public — pas de redirect. Un visiteur non connecté voit le lien "Connexion".
+    await expect(page.locator('.leaflet-container')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('a[href="login.html"], a:has-text("Connexion")')).toBeVisible();
   });
 
   test('déconnexion efface la session', async ({ page }) => {

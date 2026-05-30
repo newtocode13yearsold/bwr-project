@@ -61,9 +61,10 @@ test.describe('Carte (map.html)', () => {
 
     await expect(page.locator('.leaflet-container')).toBeVisible({ timeout: 10_000 });
 
-    // Le filtre de surface doit être présent dans le DOM
-    const filterEl = page.locator('#surfaceFilter, [data-filter], .filter-btn').first();
-    await expect(filterEl).toBeVisible({ timeout: 5_000 });
+    // Le panneau est caché par défaut — ouvrir via le bouton toggle
+    await page.click('#toggleFilters');
+    // Les cases à cocher de filtre doivent être visibles dans le panneau ouvert
+    await expect(page.locator('#filterPanel .filter-check').first()).toBeVisible({ timeout: 5_000 });
   });
 
   test('intercepte /api/reports et affiche les marqueurs', async ({ page }) => {
@@ -74,8 +75,9 @@ test.describe('Carte (map.html)', () => {
         {
           id: 'r1',
           lat: 49.35,
-          lng: 2.90,
+          lon: 2.90,
           type: 'fallen_tree',
+          status: 'open',
           description: 'Arbre tombé',
           createdAt: new Date().toISOString(),
         },
@@ -93,14 +95,19 @@ test.describe('Carte (map.html)', () => {
 
 test.describe('Signalement de problème', () => {
 
-  test('le bouton Signaler est présent', async ({ page }) => {
+  test('le bouton Contact (signalement) est présent', async ({ page }) => {
     await mockAuthMe(page);
     await injectSession(page);
     await page.goto('/map.html');
 
     await expect(page.locator('.leaflet-container')).toBeVisible({ timeout: 10_000 });
 
-    const btn = page.locator('button:has-text("Signaler"), #reportBtn, [id*="report"]').first();
-    await expect(btn).toBeVisible({ timeout: 5_000 });
+    // Le bouton Signaler apparaît dans les popups de chemin (clic sur un tracé).
+    // On vérifie ici que le bouton Contact (#btnOpenContact) est accessible,
+    // et que le panneau de filtre contient les cases "not_passable" / "no_bike"
+    // — preuve que l'UI de signalement est présente.
+    await expect(page.locator('#btnOpenContact')).toBeVisible({ timeout: 5_000 });
+    await page.click('#toggleFilters');
+    await expect(page.locator('#filterPanel input[value="not_passable"]')).toBeAttached();
   });
 });

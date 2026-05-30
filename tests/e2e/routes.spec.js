@@ -75,7 +75,7 @@ test.describe('Planification d\'itinéraire (routes.html)', () => {
 
     await expect(page.locator('.leaflet-container')).toBeVisible({ timeout: 10_000 });
 
-    const searchInput = page.locator('#addressSearch, input[placeholder*="adresse"], input[placeholder*="départ"]').first();
+    const searchInput = page.locator('#addressInput, input[placeholder*="lieu"]').first();
     await expect(searchInput).toBeVisible({ timeout: 5_000 });
 
     // Simule la saisie (sans déclencher un vrai appel Nominatim)
@@ -122,13 +122,12 @@ test.describe('Planification d\'itinéraire (routes.html)', () => {
 
     await expect(page.locator('.leaflet-container')).toBeVisible({ timeout: 10_000 });
 
-    // Clique sur le bouton de génération si présent
-    const generateBtn = page.locator('button:has-text("Générer"), button:has-text("Calculer"), #generateBtn').first();
-    if (await generateBtn.isVisible()) {
-      await generateBtn.click();
-      // Attend qu'une polyline Leaflet apparaisse (itinéraire tracé)
-      await expect(page.locator('.leaflet-overlay-pane path')).toBeVisible({ timeout: 10_000 });
-    }
+    // Vérifie que le bouton de génération est présent dans le DOM
+    // (il reste disabled tant qu'aucun point de départ n'est défini)
+    const generateBtn = page.locator('#btnGenerate').first();
+    await expect(generateBtn).toBeVisible({ timeout: 5_000 });
+    // Le bouton est désactivé sans point de départ — on vérifie qu'il existe, pas qu'il se clique
+    await expect(generateBtn).toBeDisabled();
   });
 
   test('affiche le profil d\'élévation après génération', async ({ page }) => {

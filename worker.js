@@ -712,9 +712,28 @@ export default {
       const deltaKm     = Math.max(0, parseFloat(body.km) || 0);
 
       const prev = user.stats || { routes: 0, km: 0 };
+      const today = new Date().toISOString().slice(0, 10);
+      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const lastDate = prev.lastRouteDate;
+      let streak = prev.streak || 0;
+      let lastRouteDate = lastDate;
+      if (deltaRoutes > 0) {
+        if (lastDate === today) {
+          // already counted today — keep streak as-is
+        } else if (lastDate === yesterday) {
+          streak += 1;
+          lastRouteDate = today;
+        } else {
+          streak = 1;
+          lastRouteDate = today;
+        }
+      }
       const updatedStats = {
+        ...prev,
         routes: (prev.routes || 0) + deltaRoutes,
         km: parseFloat(((prev.km || 0) + deltaKm).toFixed(2)),
+        streak,
+        lastRouteDate,
       };
       await putUser(env, { ...user, stats: updatedStats });
       return json({ stats: updatedStats });

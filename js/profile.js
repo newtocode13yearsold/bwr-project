@@ -63,6 +63,35 @@ function buildColorSwatches(user) {
   });
 }
 
+let _toastQueue = [];
+let _toastRunning = false;
+
+function showBadgeToast(badge) {
+  _toastQueue.push(badge);
+  if (!_toastRunning) _drainToastQueue();
+}
+
+function _drainToastQueue() {
+  if (!_toastQueue.length) { _toastRunning = false; return; }
+  _toastRunning = true;
+  const badge = _toastQueue.shift();
+
+  let el = document.getElementById('badgeToast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'badgeToast';
+    el.className = 'badge-toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = `🎉 Nouveau badge débloqué : ${badge.icon} ${badge.label}`;
+  el.classList.add('show');
+
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(_drainToastQueue, 300);
+  }, 3200);
+}
+
 function showMsg(id, text, type = 'error') {
   const el = document.getElementById(id);
   el.innerHTML = `<div class="${type === 'error' ? 'form-error' : 'form-success'}">${text}</div>`;
@@ -140,8 +169,12 @@ const BADGES = [
   { id: 'phoenix',      icon: '🔥', label: 'Phénix',           tier: 'gold',   desc: 'Parcours 750 km au total',               test: s => s.km >= 750 },
   { id: 'wolf',         icon: '🐺', label: 'Loup alpha',       tier: 'gold',   desc: 'Effectue 250 balades',                   test: s => s.routes >= 250 },
   { id: 'eagle',        icon: '🦅', label: 'Aigle royal',      tier: 'gold',   desc: 'Parcours 400 km au total',               test: s => s.km >= 400 },
+  // Streak badges
+  { id: 'streak_3',  icon: '🔥', label: '3 jours de suite',   tier: 'free',   desc: 'Effectue une balade 3 jours consécutifs',   test: s => s.streak >= 3 },
+  { id: 'streak_7',  icon: '⚡', label: '7 jours de suite',   tier: 'silver', desc: 'Effectue une balade 7 jours consécutifs',   test: s => s.streak >= 7 },
+  { id: 'streak_30', icon: '💫', label: '30 jours de suite',  tier: 'gold',   desc: 'Effectue une balade 30 jours consécutifs',  test: s => s.streak >= 30 },
   // Roue de la chance — badges exclusifs
-  { id: 'lucky_badge',    icon: '🍀', label: 'Badge Chanceux',    tier: 'silver', desc: 'Remporté en tournant la roue de la chance',   test: () => localStorage.getItem('bwr_lucky_badge') === '1' },
+  { id: 'lucky_badge',    icon: '🍀', label: 'Badge Chanceux',    tier: 'free',   desc: 'Remporté en tournant la roue de la chance',   test: () => localStorage.getItem('bwr_lucky_badge') === '1' },
   { id: 'exclusive_badge', icon: '✨', label: 'Badge Or Exclusif', tier: 'gold',   desc: 'Badge animé exclusif gagné à la roue de la chance', test: () => localStorage.getItem('bwr_exclusive_badge') === '1' },
 ];
 
@@ -368,7 +401,7 @@ const WHEEL_PRIZES = {
     { id: 'trail_tip',    icon: '🌲', label: 'Conseil sentier',        desc: 'Une suggestion pour ta prochaine sortie', type: 'tip',                                  weight: 274 },
   ],
   gold: [
-    { id: 'exclusive_badge', icon: '👑', label: 'Badge Or exclusif', desc: 'Badge animé réservé aux membres Or',       type: 'badge',                                weight: 10 },
+    { id: 'exclusive_badge', icon: '✨', label: 'Badge Or exclusif', desc: 'Badge animé réservé aux membres Or',       type: 'badge',                                weight: 10 },
     { id: 'double_xp_48',    icon: '⭐', label: 'Double XP 48h',     desc: 'Progression doublée pendant 48 heures',   type: 'double_xp',   hours: 48,                weight: 15 },
     { id: 'xp_bonus_500',    icon: '🎯', label: '+500 XP bonus',     desc: 'Bonus d\'expérience immédiat',             type: 'xp_bonus',    xp: 500,                  weight: 25 },
     { id: 'trail_tip',       icon: '🌲', label: 'Conseil sentier VIP', desc: 'Suggestion exclusive pour membres Or',   type: 'tip',                                  weight: 50 },
@@ -466,9 +499,24 @@ function renderPlanAndProgress(user) {
   document.getElementById('xpFill').style.width   = `${xpPct}%`;
 
   // Badges — for free users, show locked silhouettes for higher-tier badges
-  const stats = { routes, km };
-  const grid  = document.getElementById('badgesGrid');
+  const streak = user.stats?.streak || 0;
+  const stats = { routes, km, streak };
+
   const tierVisible = { free: ['free'], silver: ['free', 'silver'], gold: ['free', 'silver', 'gold'] };
+
+  // Detect newly earned badges and notify with a toast
+  const accessibleBadges = BADGES.filter(b => tierVisible[plan].includes(b.tier));
+  const nowEarned = new Set(accessibleBadges.filter(b => b.test(stats)).map(b => b.id));
+  const prevEarned = new Set(JSON.parse(localStorage.getItem('bwr_earned_badges') || '[]'));
+  accessibleBadges.forEach(b => {
+    if (nowEarned.has(b.id) && !prevEarned.has(b.id)) {
+      showBadgeToast(b);
+      localStorage.setItem(`bwr_badge_date_${b.id}`, new Date().toISOString());
+    }
+  });
+  localStorage.setItem('bwr_earned_badges', JSON.stringify([...nowEarned]));
+
+  const grid  = document.getElementById('badgesGrid');
   grid.innerHTML = BADGES.map(b => {
     const accessible = tierVisible[plan].includes(b.tier);
     if (!accessible) {
@@ -479,11 +527,16 @@ function renderPlanAndProgress(user) {
       </div>`;
     }
     const earned = b.test(stats);
+    const rawDate = earned ? localStorage.getItem(`bwr_badge_date_${b.id}`) : null;
+    const dateStr = rawDate
+      ? new Date(rawDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+      : null;
     const extraClass = b.id === 'exclusive_badge' ? ' badge-exclusive' : '';
     return `<div class="badge-item ${earned ? 'earned' : 'locked'} tier-${b.tier}${extraClass}" title="${b.label}">
       <span class="badge-icon">${b.icon}</span>
       <span class="badge-label">${b.label}</span>
       <span class="badge-desc">${b.desc}</span>
+      ${dateStr ? `<span class="badge-date">Obtenu le ${dateStr}</span>` : ''}
     </div>`;
   }).join('');
 
@@ -498,7 +551,7 @@ function renderPlanAndProgress(user) {
   } else if (plan === 'silver') {
     const goldCount = BADGES.filter(b => b.tier === 'gold').length;
     lockedHint.innerHTML =
-      `🔒 <strong>${goldCount} badges Or animés</strong> exclusifs · <a href="plans.html">Passer à Or →</a>`;
+      `🔒 <strong>${goldCount} badges Or exclusifs</strong> (dont un badge animé) · <a href="plans.html">Passer à Or →</a>`;
     lockedHint.style.display = '';
   } else {
     lockedHint.style.display = 'none';
