@@ -27,7 +27,7 @@ function updateNav() {
   if (!loginLink) return;
   if (currentUser) {
     loginLink.textContent = '👤 ' + (currentUser.name?.split(' ')[0] || 'Profil');
-    loginLink.href = 'profile.html';
+    loginLink.href = 'profile';
   }
 }
 

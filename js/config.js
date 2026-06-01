@@ -1,6 +1,9 @@
 // Change this to your Cloudflare Worker URL after deploying
 const API_URL = 'https://bwr-worker.ciril8596.workers.dev';
 
+// Fallback contact address shown in error messages when the API is unreachable
+const CONTACT_EMAIL = 'ciril8596@gmail.com';
+
 // Map starting position: Forêt de Compiègne
 const MAP_CENTER = [49.35, 2.90];
 const MAP_ZOOM = 13;

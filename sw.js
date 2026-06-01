@@ -1,19 +1,24 @@
-const CACHE = 'bwr-v13';
+const CACHE = 'bwr-v18';
 const TILE_CACHE = 'bwr-offline-tiles';
+const TILE_MAX_ENTRIES = 500;
+const TILE_MAX_AGE_MS  = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 const APP_SHELL = [
   '/',
-  'index.html',
-  'map.html',
-  'admin.html',
-  'routes.html',
-  'profile.html',
-  'login.html',
-  'plans.html',
-  'news.html',
-  'verify.html',
+  'map',
+  'admin',
+  'routes',
+  'profile',
+  'login',
+  'plans',
+  'news',
+  'verify',
+  'changelog',
+  'leaderboard',
   'manifest.json',
   'icons/icon.svg',
+  'lib/leaflet.js',
+  'lib/leaflet.css',
   'js/config.js',
   'js/auth.js',
   'js/features.js',
@@ -37,10 +42,8 @@ const APP_SHELL = [
   'css/profile.css',
 ];
 
-// CDN resources fetched with CORS so they can be cached (not opaque)
+// CDN resources still fetched from external CDN (leaflet-draw, admin only)
 const CDN_SHELL = [
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css',
   'https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js',
 ];
@@ -80,14 +83,24 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Tiles — cache first so panning offline is instant; fetch+store when not cached
+  // Tiles — cache first so panning offline is instant; re-fetch when stale or not cached
   if (url.includes('tile') || url.includes('opentopomap') || url.includes('geopf.fr')) {
     e.respondWith(
       caches.open(TILE_CACHE).then(async cache => {
         const cached = await cache.match(e.request);
-        if (cached) return cached;
+        if (cached) {
+          const age = Date.now() - new Date(cached.headers.get('date') || 0).getTime();
+          if (age < TILE_MAX_AGE_MS) return cached;
+        }
         const res = await fetch(e.request);
-        if (res && res.ok) cache.put(e.request, res.clone());
+        if (res && res.ok) {
+          // Evict oldest entries once the cache reaches the size limit
+          const keys = await cache.keys();
+          if (keys.length >= TILE_MAX_ENTRIES) {
+            await Promise.all(keys.slice(0, keys.length - TILE_MAX_ENTRIES + 1).map(k => cache.delete(k)));
+          }
+          cache.put(e.request, res.clone());
+        }
         return res;
       }).catch(() => new Response('', { status: 504 }))
     );
@@ -95,6 +108,16 @@ self.addEventListener('fetch', e => {
   }
 
   // Network first for app files — ensures latest version is always served when online
+  // Navigate requests to .html URLs: the SW redirects to the clean URL (e.g. /map.html → /map).
+  // Cloudflare also redirects .html → clean URL, but Chrome raises ERR_FAILED when a SW
+  // returns any kind of redirect response (opaque or followed) for a navigate request
+  // whose redirect mode is 'manual' (which Chrome always sets on navigate requests).
+  // Responding with our own 302 here lets the browser follow it cleanly.
+  if (e.request.mode === 'navigate' && url.endsWith('.html')) {
+    e.respondWith(Promise.resolve(Response.redirect(url.replace(/\.html$/, ''), 302)));
+    return;
+  }
+
   if (e.request.method === 'GET' &&
       (e.request.mode === 'navigate' ||
        url.endsWith('.html') || url.endsWith('.js') || url.endsWith('.css') ||
@@ -104,8 +127,10 @@ self.addEventListener('fetch', e => {
         if (res && res.status === 200 && res.type !== 'opaque') {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
         }
-        return res;
+        // Non-200 from network (e.g. CDN 503) → fall back to cache
+        return caches.match(e.request).then(cached => cached || res);
       }).catch(() => caches.match(e.request))
     );
     return;

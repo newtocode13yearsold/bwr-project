@@ -853,7 +853,7 @@
 [data-theme="dark"] .badge-item.tier-silver.earned { background: linear-gradient(135deg, #1e2a24, #2d3f38); border-color: #475569; }
 [data-theme="dark"] .badge-label                 { color: #c8dcc0; }
 [data-theme="dark"] .badge-desc                  { color: #8fa887; }
-[data-theme="dark"] .badge-date                  { color: #6b7280; }
+[data-theme="dark"] .badge-date                  { color: var(--text-faint); }
 [data-theme="dark"] .badges-locked-hint          { background: #1c2a20; color: #8fa887; }
 [data-theme="dark"] .badges-locked-hint a        { color: #a3e635; }
 

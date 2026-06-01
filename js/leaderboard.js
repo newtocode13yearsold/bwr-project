@@ -148,15 +148,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const drawer = document.getElementById('navDrawer');
   const overlay = document.getElementById('navDrawerOverlay');
   const btnClose = document.getElementById('btnNavDrawerClose');
+  const closeDrawer = () => { drawer?.classList.add('hidden'); overlay?.classList.add('hidden'); };
   if (btnMenu) btnMenu.addEventListener('click', () => { drawer.classList.remove('hidden'); overlay.classList.remove('hidden'); });
-  if (btnClose) btnClose.addEventListener('click', () => { drawer.classList.add('hidden'); overlay.classList.add('hidden'); });
-  if (overlay) overlay.addEventListener('click', () => { drawer.classList.add('hidden'); overlay.classList.add('hidden'); });
+  if (btnClose) btnClose.addEventListener('click', closeDrawer);
+  if (overlay) overlay.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 
   // User menu
   const user = getCachedUser();
   const userMenu = document.getElementById('userMenu');
   if (userMenu && user) {
-    userMenu.innerHTML = `<a href="profile.html" class="btn-icon" style="text-decoration:none"><span class="btn-emoji">👤</span><span class="btn-label">${escHtml(user.name.split(' ')[0])}</span></a>`;
+    userMenu.innerHTML = `<a href="profile" class="btn-icon" style="text-decoration:none"><span class="btn-emoji">👤</span><span class="btn-label">${escHtml(user.name.split(' ')[0])}</span></a>`;
     if (user.role === 'admin') {
       const navAdmin = document.getElementById('navDrawerAdmin');
       if (navAdmin) navAdmin.classList.remove('hidden');

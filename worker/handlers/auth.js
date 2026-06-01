@@ -7,6 +7,8 @@ import {
   sendVerificationEmail,
 } from '../auth-utils.js';
 
+const REGISTER_RATE_LIMIT = { max: 5, window: 3600 };
+
 /**
  * Auth endpoints: register, verify, login, logout, me, profile, password,
  * account deletion, plan management, stats, weekly quota, wheel prize.
@@ -17,11 +19,15 @@ import {
  */
 export async function handleAuth(request, env, { pathname, url, json, fail }) {
   if (pathname === '/api/auth/register' && request.method === 'POST') {
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    if (!await checkRateLimit(env, 'register', ip, REGISTER_RATE_LIMIT.max, REGISTER_RATE_LIMIT.window))
+      return fail('Trop de tentatives. Réessayez dans une heure.', 429);
+
     const body = await request.json();
     const { name, email, password } = body;
 
     if (!name || !email || !password) return fail('Tous les champs sont obligatoires.');
-    if (password.length < 6) return fail('Le mot de passe doit faire au moins 6 caractères.');
+    if (password.length < 8) return fail('Le mot de passe doit faire au moins 8 caractères.');
 
     const emailKey = email.toLowerCase();
     const [existingUser, existingPending] = await Promise.all([
@@ -178,8 +184,9 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
     await env.BWR_KV.delete(`loginattempts:${emailKey}`);
 
     const token = crypto.randomUUID();
+    const issuedAt = new Date().toISOString();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    await env.BWR_KV.put(`session:${token}`, JSON.stringify({ userId: user.id, expiresAt }), { expirationTtl: 2592000 });
+    await env.BWR_KV.put(`session:${token}`, JSON.stringify({ userId: user.id, issuedAt, expiresAt }), { expirationTtl: 2592000 });
 
     return json({
       token,
@@ -366,7 +373,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
 
     const { oldPassword, newPassword } = await request.json();
     if (!oldPassword || !newPassword) return fail('Champs obligatoires.');
-    if (newPassword.length < 6) return fail('Le nouveau mot de passe doit faire au moins 6 caractères.');
+    if (newPassword.length < 8) return fail('Le nouveau mot de passe doit faire au moins 8 caractères.');
 
     const verifyHash = user.hashVersion === 2
       ? await hashPassword(oldPassword, user.salt)
@@ -375,7 +382,13 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
 
     const newSalt = crypto.randomUUID();
     const newHash = await hashPassword(newPassword, newSalt);
-    await putUser(env, { ...user, passwordHash: newHash, salt: newSalt, hashVersion: 2 });
+    await putUser(env, {
+      ...user,
+      passwordHash: newHash,
+      salt: newSalt,
+      hashVersion: 2,
+      sessionsInvalidatedAt: new Date().toISOString(),
+    });
     return json({ message: 'Mot de passe modifié avec succès.' });
   }
 

@@ -118,7 +118,7 @@ function showUpgradeModal(tier, featureLabel) {
       <div class="um-icon">${icon}</div>
       <h3>${featureLabel} est réservé au plan ${planLabel}</h3>
       <p>Débloquez les trajets illimités, l'export GPX, le profil altimétrique et bien plus.</p>
-      <a href="plans.html" class="um-cta">Voir le plan ${planLabel} →</a>
+      <a href="plans" class="um-cta">Voir le plan ${planLabel} →</a>
       <button class="um-secondary">Plus tard</button>
     </div>
   `;
@@ -162,7 +162,7 @@ function updateQuotaStrip() {
     <div class="qs-bar"><div class="qs-fill" style="width:${pct}%"></div></div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
       <span class="qs-count">${count} / ${limit}</span>
-      <a href="plans.html" class="qs-cta">Illimité avec Argent →</a>
+      <a href="plans" class="qs-cta">Illimité avec Argent →</a>
     </div>
   `;
 }
@@ -177,10 +177,10 @@ function initUserMenu() {
     </button>
     <div class="user-dropdown hidden" id="userDropdown">
       <span class="dropdown-name">${currentUser.name}</span>
-      <a href="index.html">🏠 Accueil</a>
-      <a href="map.html">🗺 Voir la carte</a>
-      <a href="profile.html">👤 Mon profil</a>
-      ${currentUser.role === 'admin' ? '<a href="admin.html">⚙️ Admin</a>' : ''}
+      <a href="/">🏠 Accueil</a>
+      <a href="map">🗺 Voir la carte</a>
+      <a href="profile">👤 Mon profil</a>
+      ${currentUser.role === 'admin' ? '<a href="admin">⚙️ Admin</a>' : ''}
       <button class="dropdown-logout" id="btnLogout">Se déconnecter</button>
     </div>
   `;
@@ -930,7 +930,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
           <span class="el-icon">⛰️</span>
           <strong>Profil altimétrique</strong>
           <p>Voyez le dénivelé, l'altitude min/max et la pente — disponibles à partir du plan Argent.</p>
-          <a href="plans.html" class="el-cta">Débloquer avec Argent →</a>
+          <a href="plans" class="el-cta">Débloquer avec Argent →</a>
         </div>
       `;
     }
@@ -963,7 +963,7 @@ function showQuotaExceededModal(quota) {
         </div>
       </div>
       <p class="qm-perks">+ Mode boucle, profil altimétrique, export GPX, suggestions, cartes hors-ligne…</p>
-      <a href="plans.html" class="um-cta">Passer à Argent</a>
+      <a href="plans" class="um-cta">Passer à Argent</a>
       <button class="um-secondary">Revenir lundi</button>
     </div>
   `;
@@ -1056,7 +1056,7 @@ function initRouteHistory() {
     body.innerHTML = `
       <div class="history-empty">
         <p>🔒 Sauvegardez vos trajets avec le plan Argent.</p>
-        <a href="plans.html" style="color:#6d28d9;font-weight:700">Voir les plans →</a>
+        <a href="plans" style="color:#6d28d9;font-weight:700">Voir les plans →</a>
       </div>`;
     document.getElementById('historyToggle').addEventListener('click', lazyToggle);
     return;

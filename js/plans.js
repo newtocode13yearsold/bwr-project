@@ -110,7 +110,7 @@ Message : ${message || '(aucun)'}
     afStatus.style.color = 'var(--forest-700)';
     setTimeout(closeActivation, 3500);
   } catch {
-    afStatus.textContent = 'Erreur d\'envoi. Écrivez-moi directement à ciril8596@gmail.com';
+    afStatus.textContent = 'Erreur d\'envoi. Écrivez-moi directement à ${CONTACT_EMAIL}';
     afStatus.style.color = 'var(--danger)';
   } finally {
     btn.textContent = 'Envoyer la demande';

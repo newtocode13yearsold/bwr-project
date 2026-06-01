@@ -20,6 +20,10 @@ export async function handleSavedRoutes(request, env, { pathname, json, fail }) 
     const id = crypto.randomUUID();
     const shareToken = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
 
+    const VALID_DIFFICULTIES = new Set(['easy', 'medium', 'hard']);
+    const VALID_PATH_TYPES = new Set(['foot', 'bike']);
+    const VALID_MODES = new Set(['atob', 'loop']);
+
     const route = {
       id,
       userId: user.id,
@@ -27,9 +31,9 @@ export async function handleSavedRoutes(request, env, { pathname, json, fail }) 
       coords: body.coords,
       meters: Math.round(body.meters) || 0,
       seconds: Math.round(body.seconds) || 0,
-      difficulty: body.difficulty || 'easy',
-      pathType: body.pathType || 'foot',
-      mode: body.mode || 'atob',
+      difficulty: VALID_DIFFICULTIES.has(body.difficulty) ? body.difficulty : 'easy',
+      pathType: VALID_PATH_TYPES.has(body.pathType) ? body.pathType : 'foot',
+      mode: VALID_MODES.has(body.mode) ? body.mode : 'atob',
       shareToken,
       savedAt: new Date().toISOString(),
     };

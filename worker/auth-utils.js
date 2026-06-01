@@ -38,7 +38,14 @@ export async function getUserFromToken(env, request) {
     await env.BWR_KV.delete(`session:${token}`);
     return null;
   }
-  return getUser(env, session.userId);
+  const user = await getUser(env, session.userId);
+  if (!user) return null;
+  if (user.sessionsInvalidatedAt && session.issuedAt &&
+      new Date(session.issuedAt) < new Date(user.sessionsInvalidatedAt)) {
+    await env.BWR_KV.delete(`session:${token}`);
+    return null;
+  }
+  return user;
 }
 
 /** Returns the ISO date string (YYYY-MM-DD) of the Monday that starts the week containing `d`. */
@@ -93,7 +100,7 @@ export const RESEND_COOLDOWN = 300; // 5 minutes between resend requests
 /** Sends the account-activation email via Resend. Silently no-ops if RESEND_API_KEY is unset (dev). */
 export async function sendVerificationEmail(env, origin, email, name, token) {
   if (!env.RESEND_API_KEY) return; // skip in dev if key not set
-  const verifyUrl = `${origin}/verify.html?token=${token}`;
+  const verifyUrl = `${origin}/verify?token=${token}`;
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {

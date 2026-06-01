@@ -119,7 +119,7 @@ async function initUserMenu() {
   const menuEl = document.getElementById('userMenu');
 
   if (!user) {
-    menuEl.innerHTML = `<a href="login.html" class="btn-icon">Connexion</a>`;
+    menuEl.innerHTML = `<a href="login" class="btn-icon">Connexion</a>`;
     return;
   }
 
@@ -140,9 +140,9 @@ async function initUserMenu() {
     </button>
     <div class="user-dropdown hidden" id="userDropdown">
       <span class="dropdown-name">${user.name}</span>
-      <a href="index.html">🏠 Accueil</a>
-      <a href="profile.html">👤 Mon profil</a>
-      ${user.role === 'admin' ? '<a href="admin.html">⚙️ Panneau admin</a>' : ''}
+      <a href="/">🏠 Accueil</a>
+      <a href="profile">👤 Mon profil</a>
+      ${user.role === 'admin' ? '<a href="admin">⚙️ Panneau admin</a>' : ''}
       <button class="dropdown-logout" id="btnLogout">Se déconnecter</button>
     </div>
   `;
@@ -554,7 +554,7 @@ function openPathPopup(path, latlng) {
     const guardReport = async (type) => {
       if (!BWR.can('reports_create', _userPlan)) {
         map.closePopup();
-        showToast('🔒 Le signalement est disponible avec Argent — voir plans.html');
+        showToast('🔒 Le signalement est disponible avec Argent — voir plans');
         return;
       }
       await _loadMapEdit();

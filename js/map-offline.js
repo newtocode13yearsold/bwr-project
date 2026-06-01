@@ -11,7 +11,7 @@ const FOREST_BBOX = { north: 49.47, south: 49.27, west: 2.65, east: 3.10 };
 
 async function downloadOfflineTiles() {
   if (!BWR.can('offline_cache', _userPlan)) {
-    showToast('🔒 Cartes hors-ligne disponibles avec Argent — voir plans.html');
+    showToast('🔒 Cartes hors-ligne disponibles avec Argent — voir plans');
     return;
   }
 

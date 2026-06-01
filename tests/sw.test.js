@@ -96,16 +96,19 @@ function makeSWContext() {
 
 const APP_SHELL_EXPECTED = [
   '/',
-  'index.html',
-  'map.html',
-  'admin.html',
-  'routes.html',
-  'profile.html',
-  'login.html',
-  'plans.html',
-  'news.html',
-  'verify.html',
+  'map',
+  'admin',
+  'routes',
+  'profile',
+  'login',
+  'plans',
+  'news',
+  'verify',
+  'changelog',
+  'leaderboard',
   'manifest.json',
+  'lib/leaflet.js',
+  'lib/leaflet.css',
   'js/config.js',
   'js/auth.js',
   'js/features.js',
@@ -178,7 +181,8 @@ describe('fetch handler: tile requests → cache-first', () => {
     const { handlers, mockCaches, ctx, makeFetchEvent } = makeSWContext();
 
     const tileUrl = 'https://tile.openstreetmap.org/13/4200/2800.png';
-    const cachedResponse = new Response('PNG_DATA', { status: 200 });
+    // Real tile responses always include a Date header — our age check relies on it.
+    const cachedResponse = new Response('PNG_DATA', { status: 200, headers: { Date: new Date().toUTCString() } });
 
     // Pre-populate TILE_CACHE
     const tileCache = await mockCaches.open('bwr-offline-tiles');
@@ -236,7 +240,7 @@ describe('fetch handler: app files → network-first with cache fallback', () =>
 
     const htmlUrl = 'https://bwr.test/map.html';
     const cachedPage = new Response('<html></html>', { status: 200 });
-    const appCache = await mockCaches.open('bwr-v13');
+    const appCache = await mockCaches.open('bwr-v18');
     await appCache.put(htmlUrl, cachedPage);
 
     // 'navigate' mode is not supported by Node's undici Request; the sw.js
@@ -252,7 +256,7 @@ describe('fetch handler: app files → network-first with cache fallback', () =>
 
     const jsUrl = 'https://bwr.test/js/map.js';
     const cachedJs = new Response('// js', { status: 200 });
-    const appCache = await mockCaches.open('bwr-v13');
+    const appCache = await mockCaches.open('bwr-v18');
     await appCache.put(jsUrl, cachedJs);
 
     const { event, getResponse } = makeFetchEvent(jsUrl);
@@ -281,7 +285,7 @@ describe('activate handler: old caches deleted', () => {
 
     // Seed old + current caches
     await mockCaches.open('bwr-v1');           // old → must be deleted
-    await mockCaches.open('bwr-v13');          // current CACHE → keep
+    await mockCaches.open('bwr-v18');          // current CACHE → keep
     await mockCaches.open('bwr-offline-tiles'); // TILE_CACHE → keep
 
     const event = { waitUntil: (p) => p };
@@ -289,7 +293,7 @@ describe('activate handler: old caches deleted', () => {
 
     const remaining = await mockCaches.keys();
     assert.ok(!remaining.includes('bwr-v1'), 'old cache bwr-v1 must be deleted');
-    assert.ok(remaining.includes('bwr-v13'), 'current CACHE must be kept');
+    assert.ok(remaining.includes('bwr-v18'), 'current CACHE must be kept');
     assert.ok(remaining.includes('bwr-offline-tiles'), 'TILE_CACHE must be kept');
   });
 });

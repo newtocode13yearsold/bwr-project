@@ -12,6 +12,9 @@ const ALLOWED_ORIGINS = new Set([
   'http://localhost:8787',
 ]);
 
+// Cloudflare Pages preview deployments (*.pages.dev) are also allowed
+const isAllowedOrigin = o => ALLOWED_ORIGINS.has(o) || /^https:\/\/[^.]+\.pages\.dev$/.test(o);
+
 /**
  * @typedef {{ BWR_KV: KVNamespace, ORS_KEY?: string, ANTHROPIC_API_KEY?: string,
  *             RESEND_API_KEY?: string, RESEND_FROM?: string,
@@ -30,15 +33,19 @@ export default {
     const url      = new URL(request.url);
     const pathname = url.pathname;
     const origin   = request.headers.get('Origin') ?? '';
-    const allowedOrigin = ALLOWED_ORIGINS.has(origin)
+    const allowedOrigin = isAllowedOrigin(origin)
       ? origin
       : 'https://bwr-worker.ciril8596.workers.dev';
 
     const cors = {
       'Access-Control-Allow-Origin':  allowedOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Password',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Vary': 'Origin',
+      'X-Frame-Options': 'DENY',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Permissions-Policy': 'geolocation=(self)',
     };
 
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors });

@@ -173,7 +173,7 @@
 .bt-opt:hover { color: var(--text); }
 .bt-opt.active {
   background: var(--surface-0);
-  color: var(--forest-900);
+  color: var(--text-strong);
   box-shadow: var(--shadow-sm);
 }
 .bt-save {

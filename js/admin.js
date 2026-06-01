@@ -63,9 +63,9 @@ function initUserMenu() {
     </button>
     <div class="user-dropdown hidden" id="userDropdown">
       <span class="dropdown-name">${currentUser.name}</span>
-      <a href="index.html">🏠 Accueil</a>
-      <a href="map.html">🗺 Voir la carte</a>
-      <a href="profile.html">👤 Mon profil</a>
+      <a href="/">🏠 Accueil</a>
+      <a href="map">🗺 Voir la carte</a>
+      <a href="profile">👤 Mon profil</a>
       <button class="dropdown-logout" id="btnLogout">Se déconnecter</button>
     </div>
   `;

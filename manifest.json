@@ -2,7 +2,7 @@
   "name": "BWR — Forêt de Compiègne",
   "short_name": "BWR",
   "description": "La carte qui simplifie ta vie en forêt de Compiègne",
-  "start_url": "/map.html",
+  "start_url": "/map",
   "scope": "/",
   "display": "standalone",
   "background_color": "#1e4d14",
@@ -16,10 +16,10 @@
       "purpose": "any"
     },
     {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ]
 }

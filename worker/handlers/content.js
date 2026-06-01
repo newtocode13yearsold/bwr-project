@@ -96,7 +96,7 @@ export async function handleContent(request, env, { pathname, url, json, fail })
       if (!res.ok) return fail(data?.error?.message || 'ORS error', res.status);
       return json(data);
     } catch (e) {
-      return fail('Service de routage indisponible: ' + e.message, 503);
+      return fail('Service de routage indisponible.', 503);
     }
   }
 
@@ -124,7 +124,7 @@ export async function handleContent(request, env, { pathname, url, json, fail })
       url: (body.url || '').trim().slice(0, 500),
       urlLabel: (body.urlLabel || '').trim().slice(0, 100),
       imageDataUri: imageDataUri || '',
-      imageUrl: (body.imageUrl || '').trim().slice(0, 1000),
+      imageUrl: /^https?:\/\//.test((body.imageUrl || '').trim()) ? body.imageUrl.trim().slice(0, 1000) : '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -153,7 +153,7 @@ export async function handleContent(request, env, { pathname, url, json, fail })
       url: (body.url || '').trim().slice(0, 500),
       urlLabel: (body.urlLabel || '').trim().slice(0, 100),
       imageDataUri: imageDataUri,
-      imageUrl: (body.imageUrl || '').trim().slice(0, 1000),
+      imageUrl: /^https?:\/\//.test((body.imageUrl || '').trim()) ? body.imageUrl.trim().slice(0, 1000) : '',
       updatedAt: new Date().toISOString(),
     };
     await env.BWR_KV.put(`news:${id}`, JSON.stringify(updated));
@@ -182,7 +182,7 @@ export async function handleContent(request, env, { pathname, url, json, fail })
       id, name, email, message: message.slice(0, 2000), date: new Date().toISOString(),
     }));
 
-    const adminEmail = env.ADMIN_EMAIL || 'ciril8596@gmail.com';
+    const adminEmail = env.ADMIN_EMAIL;
     try {
       await fetch('https://ntfy.sh/bwr-ciril8596', {
         method: 'POST',
@@ -190,7 +190,7 @@ export async function handleContent(request, env, { pathname, url, json, fail })
         body: `${email}\n\n${message}`,
       });
     } catch {}
-    if (env.RESEND_API_KEY) {
+    if (env.RESEND_API_KEY && adminEmail) {
       try {
         await fetch('https://api.resend.com/emails', {
           method: 'POST',

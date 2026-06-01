@@ -42,19 +42,20 @@ async function logout() {
     }).catch(() => {});
   }
   clearSession();
-  window.location.href = 'login.html';
+  window.location.href = 'login';
 }
 
 // Redirects to login if not authenticated, or if requiredRole is set and user doesn't have it
 async function requireAuth(requiredRole = null) {
   const user = await fetchCurrentUser();
   if (!user) {
-    window.location.href = 'login.html';
+    sessionStorage.setItem('bwr_redirect', window.location.href);
+    window.location.href = 'login';
     return null;
   }
   if (requiredRole && user.role !== requiredRole) {
     alert('Accès réservé à l\'administrateur.');
-    window.location.href = 'map.html';
+    window.location.href = 'map';
     return null;
   }
   return user;

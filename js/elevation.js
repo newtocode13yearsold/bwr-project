@@ -9,13 +9,15 @@ async function fetchElevation(coords) {
     sampled.push(coords[coords.length - 1]);
 
   const locations = sampled.map(([lat, lon]) => ({ latitude: lat, longitude: lon }));
-  const res = await fetch('https://api.open-elevation.com/api/v1/lookup', {
+  // opentopodata.org is already in the CSP connect-src allowlist; open-elevation.com is not
+  const res = await fetch('https://api.opentopodata.org/v1/srtm30m', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json'},
     body: JSON.stringify({ locations }),
   });
   if (!res.ok) throw new Error('elevation API error');
   const data = await res.json();
+  if (data.status !== 'OK') throw new Error('elevation API error');
   return data.results.map(r => r.elevation);
 }
 

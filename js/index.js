@@ -32,6 +32,7 @@ if (nav) {
   burger.addEventListener('click', openDrawer);
   if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
   overlay.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeDrawer(); });
 })();
 
 /* ── Smooth scroll for anchor links ──────────────────────────────────── */
@@ -61,12 +62,12 @@ try {
     const loginLink = document.getElementById('navLogin');
     if (loginLink) {
       loginLink.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> ' + (user.name?.split(' ')[0] || 'Profil');
-      loginLink.href = 'profile.html';
+      loginLink.href = 'profile';
     }
-    const mobileLogin = document.querySelector('.nav-mobile a[href="login.html"]');
+    const mobileLogin = document.querySelector('.nav-mobile a[href="login"]');
     if (mobileLogin) {
       mobileLogin.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Mon profil';
-      mobileLogin.href = 'profile.html';
+      mobileLogin.href = 'profile';
     }
   }
 } catch {}
@@ -206,7 +207,7 @@ form?.addEventListener('submit', async e => {
       if (res.status === 429) {
         status.textContent = 'Limite atteinte — 2 messages max par heure. Réessaye plus tard.';
       } else {
-        status.textContent = data.error || 'Erreur serveur. Réessaye ou écris directement à ciril8596@gmail.com.';
+        status.textContent = data.error || `Erreur serveur. Réessaye ou écris directement à ${CONTACT_EMAIL}.`;
       }
       status.style.color = '#dc2626';
       return;
@@ -215,7 +216,7 @@ form?.addEventListener('submit', async e => {
     status.textContent = '✅ Message envoyé — merci !';
     status.style.color = '#1e4d14';
   } catch {
-    status.textContent = 'Impossible de joindre le serveur. Écris directement à ciril8596@gmail.com.';
+    status.textContent = `Impossible de joindre le serveur. Écris directement à ${CONTACT_EMAIL}.`;
     status.style.color = '#dc2626';
   } finally {
     btn.textContent = 'Envoyer le message';

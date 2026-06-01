@@ -121,10 +121,10 @@ function initUserMenu() {
     </button>
     <div class="user-dropdown hidden" id="userDropdown">
       <span class="dropdown-name">${currentUser.name}</span>
-      <a href="index.html">🏠 Accueil</a>
-      <a href="map.html">🗺 Voir la carte</a>
-      <a href="routes.html">🧭 Planifier un trajet</a>
-      ${currentUser.role === 'admin' ? '<a href="admin.html">⚙️ Admin</a>' : ''}
+      <a href="/">🏠 Accueil</a>
+      <a href="map">🗺 Voir la carte</a>
+      <a href="routes">🧭 Planifier un trajet</a>
+      ${currentUser.role === 'admin' ? '<a href="admin">⚙️ Admin</a>' : ''}
       <button class="dropdown-logout" id="btnLogout">Se déconnecter</button>
     </div>
   `;
@@ -508,10 +508,18 @@ function renderPlanAndProgress(user) {
   const accessibleBadges = BADGES.filter(b => tierVisible[plan].includes(b.tier));
   const nowEarned = new Set(accessibleBadges.filter(b => b.test(stats)).map(b => b.id));
   const prevEarned = new Set(JSON.parse(localStorage.getItem('bwr_earned_badges') || '[]'));
+  const cachedForPush = getCachedUser();
   accessibleBadges.forEach(b => {
     if (nowEarned.has(b.id) && !prevEarned.has(b.id)) {
       showBadgeToast(b);
       localStorage.setItem(`bwr_badge_date_${b.id}`, new Date().toISOString());
+      if (cachedForPush?.alertsEnabled && cachedForPush?.alertsChannel) {
+        fetch(`https://ntfy.sh/${cachedForPush.alertsChannel}`, {
+          method: 'POST',
+          headers: { Title: 'BWR — Badge débloqué !', Tags: 'trophy', 'Content-Type': 'text/plain; charset=utf-8' },
+          body: `${b.icon} ${b.label} — ${b.desc}`,
+        }).catch(() => {});
+      }
     }
   });
   localStorage.setItem('bwr_earned_badges', JSON.stringify([...nowEarned]));
@@ -546,12 +554,12 @@ function renderPlanAndProgress(user) {
     const silverCount = BADGES.filter(b => b.tier === 'silver').length;
     const goldCount   = BADGES.filter(b => b.tier === 'gold').length;
     lockedHint.innerHTML =
-      `🔒 <strong>${silverCount + goldCount} badges supplémentaires</strong> à débloquer · <a href="plans.html">Voir les plans →</a>`;
+      `🔒 <strong>${silverCount + goldCount} badges supplémentaires</strong> à débloquer · <a href="plans">Voir les plans →</a>`;
     lockedHint.style.display = '';
   } else if (plan === 'silver') {
     const goldCount = BADGES.filter(b => b.tier === 'gold').length;
     lockedHint.innerHTML =
-      `🔒 <strong>${goldCount} badges Or exclusifs</strong> (dont un badge animé) · <a href="plans.html">Passer à Or →</a>`;
+      `🔒 <strong>${goldCount} badges Or exclusifs</strong> (dont un badge animé) · <a href="plans">Passer à Or →</a>`;
     lockedHint.style.display = '';
   } else {
     lockedHint.style.display = 'none';
@@ -628,7 +636,7 @@ function renderQuotaStrip(plan) {
         <strong>${count} / ${limit}</strong> trajets cette semaine
         <span>${overLimit ? 'Limite atteinte · réinitialisation lundi' : `${remaining} restant${remaining > 1 ? 's' : ''}`}</span>
       </div>
-      <a href="plans.html" class="pqs-cta">Passer à illimité →</a>
+      <a href="plans" class="pqs-cta">Passer à illimité →</a>
     </div>
     <div class="pqs-bar"><div class="pqs-fill" style="width:${pct}%"></div></div>
   `;
@@ -921,7 +929,7 @@ async function renderDailySuggestion(plan) {
 }
 
 function buildRouteUrl(sugg) {
-  let url = `routes.html?dist=${sugg.dist}&mode=${sugg.mode || 'loop'}`;
+  let url = `routes?dist=${sugg.dist}&mode=${sugg.mode || 'loop'}`;
   if (sugg.fromHome && sugg.startLat && sugg.startLng) url += `&startLat=${sugg.startLat}&startLng=${sugg.startLng}&fromHome=1`;
   return url;
 }
@@ -1211,7 +1219,7 @@ document.getElementById('btnConfirmDelete').addEventListener('click', async () =
       throw new Error(d.error || 'Erreur serveur');
     }
     clearSession();
-    window.location.href = 'login.html';
+    window.location.href = 'login';
   } catch (err) {
     alert('Erreur : ' + err.message);
     btn.textContent = 'Oui, supprimer';

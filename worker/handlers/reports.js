@@ -16,7 +16,8 @@ const TYPE_LABELS = {
  */
 export async function handleReports(request, env, { pathname, json, fail, cors }) {
   if (pathname === '/api/reports' && request.method === 'GET') {
-    return json(await listItems(env, 'report:'));
+    const reports = await listItems(env, 'report:');
+    return json(reports.map(({ userId: _, ...r }) => r));
   }
 
   if (pathname.startsWith('/api/photos/') && request.method === 'GET') {
@@ -44,15 +45,19 @@ export async function handleReports(request, env, { pathname, json, fail, cors }
       if (found) pathName = found.name || 'Chemin sans nom';
     }
 
+    const isValidCoord = (v, min, max) => typeof v === 'number' && isFinite(v) && v >= min && v <= max;
+    const lat = isValidCoord(body.lat, -90, 90) ? body.lat : null;
+    const lon = isValidCoord(body.lon, -180, 180) ? body.lon : null;
+
     const report = {
       id: crypto.randomUUID(),
       userId: reporter.id,
       pathId: body.pathId || null,
-      type: body.type || 'other',
+      type: TYPE_LABELS[body.type] ? body.type : 'other',
       note: (body.note || '').slice(0, 300),
       hasPhoto: !!body.photo,
-      lat: body.lat || null,
-      lon: body.lon || null,
+      lat,
+      lon,
       date: new Date().toISOString(),
       status: 'open',
     };

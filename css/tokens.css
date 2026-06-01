@@ -162,6 +162,14 @@ body {
   letter-spacing: -0.02em;
 }
 
+/* h1 and h2 get Fraunces by default — editorial weight across all pages */
+h1, h2 {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-variation-settings: "opsz" 72, "SOFT" 40;
+  letter-spacing: -0.02em;
+}
+
 /* ── Reusable utility classes ─────────────────────────────────────────────── */
 
 .tier-tag {
@@ -229,8 +237,8 @@ body {
 
   --text-strong:   #e8f5e3;
   --text:          #c8dcc0;
-  --text-muted:    #8fa887;
-  --text-faint:    #6b7f64;
+  --text-muted:    #98b090;  /* was #8fa887 — lifted to 4.6:1 on surface-3 */
+  --text-faint:    #85a87f;  /* was #6b7f64 — lifted to 4.7:1 on surface-1 */
   --text-inverse:  #16201a;
 
   --border-soft:   #2a3a30;

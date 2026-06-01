@@ -31,6 +31,7 @@
       burger.addEventListener('click', openDrawer);
       if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
       overlay.addEventListener('click', closeDrawer);
+      document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeDrawer(); });
     }
 
     var pill = document.getElementById('offline-pill');

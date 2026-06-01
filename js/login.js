@@ -2,7 +2,7 @@
 const existingToken = localStorage.getItem('bwr_token');
 if (existingToken) {
   fetch(`${API_URL}/api/auth/me`, { headers: { Authorization: `Bearer ${existingToken}` } })
-    .then(r => { if (r.ok) window.location.href = 'map.html'; })
+    .then(r => { if (r.ok) window.location.href = 'map'; })
     .catch(() => {});
 }
 
@@ -78,7 +78,9 @@ loginForm.addEventListener('submit', async (e) => {
 
     localStorage.setItem('bwr_token', data.token);
     localStorage.setItem('bwr_user', JSON.stringify(data.user));
-    window.location.href = 'map.html';
+    const redirect = sessionStorage.getItem('bwr_redirect');
+    sessionStorage.removeItem('bwr_redirect');
+    window.location.href = redirect || 'map';
   } catch {
     errorEl.textContent = 'Impossible de contacter le serveur.';
     errorEl.classList.remove('hidden');

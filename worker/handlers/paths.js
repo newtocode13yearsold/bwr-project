@@ -36,13 +36,18 @@ export async function handlePaths(request, env, { pathname, json, fail }) {
     if (plan !== 'gold' && plan !== 'silver') return fail('Abonnement Argent requis.', 403);
 
     const body = await request.json();
+    const VALID_STATUSES = new Set(['easy', 'medium', 'hard', 'not_passable', 'no_bike']);
+    const VALID_PATH_TYPES = new Set(['foot', 'bike']);
+    const VALID_CONDITIONS = new Set(['muddy', 'flooded', 'fallen_tree', 'rutted', 'closed', 'other']);
     const newPath = {
       id: crypto.randomUUID(),
-      name: body.name || 'Chemin sans nom',
-      pathType: body.pathType || 'foot',
-      status: body.status || 'easy',
-      notes: body.notes || '',
-      conditions: Array.isArray(body.conditions) ? body.conditions : [],
+      name: (body.name || 'Chemin sans nom').slice(0, 200),
+      pathType: VALID_PATH_TYPES.has(body.pathType) ? body.pathType : 'foot',
+      status: VALID_STATUSES.has(body.status) ? body.status : 'easy',
+      notes: (body.notes || '').slice(0, 1000),
+      conditions: Array.isArray(body.conditions)
+        ? body.conditions.filter(c => VALID_CONDITIONS.has(c))
+        : [],
       coordinates: body.coordinates,
       createdAt: new Date().toISOString(),
     };
@@ -103,6 +108,8 @@ export async function handlePaths(request, env, { pathname, json, fail }) {
       env.BWR_KV.get(`walkedpath:${user.id}:${id}`),
     ]);
 
+    // Legacy entries stored the string '1' (no timestamp). New entries store an ISO timestamp.
+    // '1' is treated as "walked at unknown time" → walkedRecently stays false.
     let walkedRecently = false;
     if (walkedRaw && walkedRaw !== '1') {
       const walkedAt = new Date(walkedRaw);

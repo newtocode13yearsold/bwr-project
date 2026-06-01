@@ -1,5 +1,7 @@
 import { effectivePlan } from './kv.js';
 
+export const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
+
 export async function geocodeAddress(address) {
   try {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=fr`;
@@ -85,7 +87,7 @@ Inclus le nom d'un lieu réel de la forêt de Compiègne. Réponds uniquement av
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: CLAUDE_MODEL,
         max_tokens: 180,
         messages: [{ role: 'user', content: prompt }],
       }),

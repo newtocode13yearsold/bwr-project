@@ -88,7 +88,7 @@ export async function patchLeaderboardCache(env, updatedUser) {
   const idx = entries.findIndex(e => e.id === updatedUser.id);
   if (idx >= 0) entries[idx] = entry; else entries.push(entry);
   entries.sort((a, b) => b.points - a.points || b.reports - a.reports);
-  await env.BWR_KV.put('leaderboard:cache', JSON.stringify(entries));
+  await env.BWR_KV.put('leaderboard:cache', JSON.stringify(entries), { expirationTtl: 300 });
 }
 
 /** Returns the user's active plan, forcing 'gold' for admin accounts regardless of stored value. */

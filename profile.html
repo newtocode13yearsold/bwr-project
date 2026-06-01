@@ -9,7 +9,6 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
   <title>BWR — Mon profil</title>
-  <link rel="prefetch" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin />
   <link rel="prefetch" href="js/graph-router.js" />
   <link rel="prefetch" href="js/exporters.js" />
   <link rel="prefetch" href="js/routes.js" />
@@ -27,12 +26,12 @@
 
   <header class="header">
     <div class="header-left">
-      <a href="index.html" class="logo" style="text-decoration:none">BWR</a>
+      <a href="/" class="logo" style="text-decoration:none">BWR</a>
       <nav class="header-nav-links">
-        <a href="map.html">Carte</a>
-        <a href="routes.html">Planifier</a>
-        <a href="news.html">Actualités</a>
-        <a href="plans.html">Plans</a>
+        <a href="map">Carte</a>
+        <a href="routes">Planifier</a>
+        <a href="news">Actualités</a>
+        <a href="plans">Plans</a>
       </nav>
     </div>
     <div class="header-right">
@@ -51,35 +50,35 @@
       <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
     </div>
     <nav class="nav-drawer-links">
-      <a href="map.html" class="nav-drawer-item">
+      <a href="map" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
         <span>Carte</span>
       </a>
-      <a href="routes.html" class="nav-drawer-item">
+      <a href="routes" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
         <span>Planifier un trajet</span>
       </a>
-      <a href="profile.html" class="nav-drawer-item active">
+      <a href="profile" class="nav-drawer-item active">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
         <span>Mon profil</span>
       </a>
-      <a href="leaderboard.html" class="nav-drawer-item">
+      <a href="leaderboard" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>
         <span>Classement</span>
       </a>
-      <a href="news.html" class="nav-drawer-item">
+      <a href="news" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg></span>
         <span>Actualités</span>
       </a>
-      <a href="plans.html" class="nav-drawer-item">
+      <a href="plans" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
         <span>Plans &amp; abonnements</span>
       </a>
-      <a href="changelog.html" class="nav-drawer-item">
+      <a href="changelog" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span>
         <span>Changelog</span>
       </a>
-      <a href="admin.html" class="nav-drawer-item nav-drawer-admin hidden" id="navDrawerAdmin">
+      <a href="admin" class="nav-drawer-item nav-drawer-admin hidden" id="navDrawerAdmin">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
         <span>Panneau admin</span>
       </a>
@@ -197,7 +196,7 @@
         </div>
         <div class="plan-row">
           <span class="plan-pill" id="planPill">Gratuit</span>
-          <a href="plans.html" class="plan-upgrade-link" id="planUpgradeLink">Améliorer →</a>
+          <a href="plans" class="plan-upgrade-link" id="planUpgradeLink">Améliorer →</a>
         </div>
 
         <div class="level-block">
@@ -259,7 +258,7 @@
             <span class="suggestion-icon">⏳</span>
             <div><p class="suggestion-text">Analyse de la météo en cours…</p></div>
           </div>
-          <a href="routes.html" class="btn-save btn-save--inline" id="suggestionBtn">Générer ce trajet →</a>
+          <a href="routes" class="btn-save btn-save--inline" id="suggestionBtn">Générer ce trajet →</a>
         </div>
 
         <!-- Weather (Gold only) -->
@@ -350,7 +349,7 @@
           </div>
         </div>
         <div class="upsell-cta-row">
-          <a href="plans.html" class="upsell-cta">Voir les plans →</a>
+          <a href="plans" class="upsell-cta">Voir les plans →</a>
           <span class="upsell-price">À partir de <strong>3,99€</strong>/mois</span>
         </div>
       </div>
@@ -362,8 +361,8 @@
           <h2 class="card-title">Compte</h2>
         </div>
         <div class="account-actions">
-          <a href="map.html" class="btn-action btn-map"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg> Retour à la carte</a>
-          <a href="routes.html" class="btn-action btn-routes"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg> Planifier un trajet</a>
+          <a href="map" class="btn-action btn-map"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg> Retour à la carte</a>
+          <a href="routes" class="btn-action btn-routes"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg> Planifier un trajet</a>
           <button class="btn-action btn-logout" id="btnLogoutProfile">Se déconnecter</button>
           <button class="btn-action btn-delete" id="btnDelete">Supprimer mon compte</button>
         </div>
@@ -387,15 +386,15 @@
   <div id="offline-pill">📶 Hors-ligne</div>
 
   <nav class="bottom-nav" aria-label="Navigation principale">
-    <a href="map.html" class="bnav-item">
+    <a href="map" class="bnav-item">
       <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
       <span class="bnav-label">Carte</span>
     </a>
-    <a href="routes.html" class="bnav-item">
+    <a href="routes" class="bnav-item">
       <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
       <span class="bnav-label">Trajets</span>
     </a>
-    <a href="profile.html" class="bnav-item active">
+    <a href="profile" class="bnav-item active">
       <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
       <span class="bnav-label">Profil</span>
     </a>
