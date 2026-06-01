@@ -752,10 +752,22 @@ async function routeAtob(sLat, sLng, eLat, eLng) {
 }
 
 async function routeLoop(sLat, sLng, targetKm) {
-  // 1. Graph router — real loop, forest only
-  if (savedPaths.length) {
-    try { return graphLoop(sLat, sLng, targetKm, filterPaths(savedPaths), pathType); } catch (e) { console.warn('graph:', e.message); }
-  }
+  // 1. Hybrid graph router — real loop. Admin paths are the primary network and
+  //    OSM (unnoted) paths fill gaps, so the loop continues past the edge of the
+  //    curated network instead of stopping where noted paths run out.
+  try {
+    const admin = filterPaths(savedPaths);
+    // bbox roughly covers the loop's reach around the start point (radius ≈ half the target)
+    const radiusKm = Math.max(targetKm / 2, 1);
+    const padLat = radiusKm / 111;
+    const padLng = radiusKm / (111 * Math.cos(sLat * Math.PI / 180));
+    const osmPaths = applyOsmSurfaceWeights(
+      await fetchOsmPathsForBbox(sLat - padLat, sLng - padLng, sLat + padLat, sLng + padLng),
+    );
+    if (admin.length || osmPaths.length) {
+      return graphLoopHybrid(sLat, sLng, targetKm, admin, osmPaths, pathType);
+    }
+  } catch (e) { console.warn('graph loop hybrid:', e.message); }
   // 2. ORS round_trip (needs ORS_KEY)
   try {
     return await callORS({

@@ -281,11 +281,21 @@ function graphLoop(sLat, sLng, targetKm, paths, pathTyp = 'foot') {
   return graphToResult(nodes, bestLoop, pathTyp);
 }
 
+// Cost multiplier applied to unnoted OSM paths when blended with curated admin
+// paths. A mild >1 value makes the router prefer admin paths when they are
+// roughly as direct, but still flow onto OSM paths to continue past the edge of
+// the curated network instead of taking a long detour to stay on admin paths.
+// (A large value like 3 caused the router to cling to noted paths and detour.)
+const OSM_GAPFILL_WEIGHT = 1.4;
+
+// Tag OSM paths with the gap-fill weight, preserving any existing surface weight.
+function tagOsmGapFill(osmPaths) {
+  return osmPaths.map(p => ({ ...p, _weight: (p._weight || 1) * OSM_GAPFILL_WEIGHT }));
+}
+
 // A→B routing with admin paths as primary network and OSM paths as weighted gap-fill.
-// osmPaths are tagged with _weight:3 so the router uses them only when necessary.
 function graphAtobHybrid(sLat, sLng, eLat, eLng, adminPaths, osmPaths) {
-  const tagged = osmPaths.map(p => ({ ...p, _weight: 3 }));
-  const all    = [...adminPaths, ...tagged];
+  const all = [...adminPaths, ...tagOsmGapFill(osmPaths)];
   if (!all.length) throw new Error('Aucun chemin disponible');
   const { nodes, adj } = buildGraph(all);
   const sNode = nearestNode(nodes, sLat, sLng);
@@ -296,10 +306,17 @@ function graphAtobHybrid(sLat, sLng, eLat, eLng, adminPaths, osmPaths) {
   return graphToResult(nodes, keys, 'foot');
 }
 
+// Loop routing with admin paths as primary network and OSM paths as weighted
+// gap-fill, so loops can continue past the edge of the curated network.
+function graphLoopHybrid(sLat, sLng, targetKm, adminPaths, osmPaths, pathTyp = 'foot') {
+  const all = [...adminPaths, ...tagOsmGapFill(osmPaths)];
+  return graphLoop(sLat, sLng, targetKm, all, pathTyp);
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     haversineM, nodeKey, buildGraph, dijkstra,
     rebuildPath, nearestNode, graphToResult,
-    snapToJunction, pruneDeadEnds, graphAtob, graphAtobHybrid, graphLoop,
+    snapToJunction, pruneDeadEnds, graphAtob, graphAtobHybrid, graphLoop, graphLoopHybrid,
   };
 }
