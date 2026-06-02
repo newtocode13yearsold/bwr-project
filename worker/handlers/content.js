@@ -194,6 +194,41 @@ export async function handleContent(request, env, { pathname, url, json, fail })
     return json({ success: true });
   }
 
+  // ── News reactions (public: like / dislike, one vote per user-or-IP) ─────────
+  if (pathname.startsWith('/api/news/') && pathname.endsWith('/react') && request.method === 'POST') {
+    const id = pathname.split('/')[3];
+    const raw = await env.BWR_KV.get(`news:${id}`);
+    if (!raw) return fail('Article introuvable.', 404);
+
+    const { reaction } = await request.json();
+    if (reaction !== 'like' && reaction !== 'dislike' && reaction !== null)
+      return fail('Réaction invalide.');
+
+    // One vote per logged-in user, or per IP for anonymous visitors.
+    const user = await getUserFromToken(env, request);
+    const voter = user ? `u:${user.id}` : `ip:${request.headers.get('CF-Connecting-IP') || 'unknown'}`;
+    const reactKey = `newsreact:${id}:${voter}`;
+    const prev = await env.BWR_KV.get(reactKey); // 'like' | 'dislike' | null
+
+    const item = JSON.parse(raw);
+    let likes = item.likes || 0;
+    let dislikes = item.dislikes || 0;
+
+    if (prev === 'like') likes--;
+    else if (prev === 'dislike') dislikes--;
+    if (reaction === 'like') likes++;
+    else if (reaction === 'dislike') dislikes++;
+
+    item.likes = Math.max(0, likes);
+    item.dislikes = Math.max(0, dislikes);
+    await env.BWR_KV.put(`news:${id}`, JSON.stringify(item));
+
+    if (reaction) await env.BWR_KV.put(reactKey, reaction);
+    else await env.BWR_KV.delete(reactKey);
+
+    return json({ likes: item.likes, dislikes: item.dislikes, reaction: reaction || null });
+  }
+
   // ── Contact form ───────────────────────────────────────────────────────────
   if (pathname === '/api/contact' && request.method === 'POST') {
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';

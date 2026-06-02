@@ -36,6 +36,7 @@ let lastRoute = null;      // most recent computed route — used by save/share
   if (!currentUser) return;
   initUserMenu();
   initMap();
+  restoreSavedAddress();
   loadSavedPaths();
   applyPlanGates();
   updateQuotaStrip();
@@ -260,7 +261,11 @@ let searchTimeout = null;
 document.getElementById('addressInput').addEventListener('input', e => {
   clearTimeout(searchTimeout);
   const q = e.target.value.trim();
-  if (q.length < 3) { hideSearch(); return; }
+  if (q.length < 3) {
+    hideSearch();
+    if (!q) localStorage.removeItem('bwr_saved_address');
+    return;
+  }
   searchTimeout = setTimeout(() => doSearch(q), 400);
 });
 
@@ -292,8 +297,10 @@ function showSearchResults(results) {
     item.addEventListener('mousedown', () => {
       const lat = parseFloat(item.dataset.lat);
       const lng = parseFloat(item.dataset.lon);
+      const label = item.textContent.trim();
       map.setView([lat, lng], 15);
-      document.getElementById('addressInput').value = item.textContent.trim();
+      document.getElementById('addressInput').value = label;
+      localStorage.setItem('bwr_saved_address', JSON.stringify({ label, lat, lng }));
       hideSearch();
       if (mode) onMapClick({ latlng: { lat, lng } });
     });
@@ -302,6 +309,15 @@ function showSearchResults(results) {
 
 function hideSearch() {
   document.getElementById('searchResults').classList.add('hidden');
+}
+
+function restoreSavedAddress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('bwr_saved_address'));
+    if (!saved) return;
+    document.getElementById('addressInput').value = saved.label;
+    map.setView([saved.lat, saved.lng], 15);
+  } catch (_) {}
 }
 
 async function loadSavedPaths() {

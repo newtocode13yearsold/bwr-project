@@ -11,7 +11,8 @@
 // osm:{bbox}         → JSON OSM data  (7-day TTL)
 // savedroute:{userId}:{id} → JSON saved route (coords, stats, metadata)
 // routeshare:{token}       → JSON { userId, routeId }  (180-day TTL)
-// news:{id}                → JSON news item
+// news:{id}                → JSON news item (incl. likes / dislikes counts)
+// newsreact:{newsId}:{voter} → 'like' | 'dislike'  (voter = u:{userId} or ip:{addr})
 // pathgrade:{pathId}:{userId} → JSON { walkedWhenGraded: bool }
 // walkedpath:{userId}:{pathId} → ISO timestamp string
 // aisugg:{userId}:{date}   → JSON AI suggestion  (48h TTL)

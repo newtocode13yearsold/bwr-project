@@ -342,6 +342,16 @@
   font-weight: 500;
 }
 .plan-gold .pc-period { color: rgba(74, 44, 0, 0.65); }
+.pc-annual-note {
+  text-align: center;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--forest-700);
+  margin: 8px 0 0;
+  min-height: 1.2em;
+}
+.pc-annual-note:empty { margin: 0; min-height: 0; }
+.plan-gold .pc-annual-note { color: var(--gold-700, #b45309); }
 
 /* Features list */
 .pc-features {

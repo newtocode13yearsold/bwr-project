@@ -191,7 +191,7 @@ form?.addEventListener('submit', async e => {
   const status  = document.getElementById('cStatus');
   if (!name || !email || !message) {
     status.textContent = 'Tous les champs sont obligatoires.';
-    status.style.color = '#dc2626';
+    status.style.color = '#fca5a5';
     return;
   }
   btn.textContent = 'Envoi…';
@@ -209,15 +209,15 @@ form?.addEventListener('submit', async e => {
       } else {
         status.textContent = data.error || `Erreur serveur. Réessaye ou écris directement à ${CONTACT_EMAIL}.`;
       }
-      status.style.color = '#dc2626';
+      status.style.color = '#fca5a5';
       return;
     }
     form.reset();
     status.textContent = '✅ Message envoyé — merci !';
-    status.style.color = '#1e4d14';
+    status.style.color = '#a3e635';
   } catch {
     status.textContent = `Impossible de joindre le serveur. Écris directement à ${CONTACT_EMAIL}.`;
-    status.style.color = '#dc2626';
+    status.style.color = '#fca5a5';
   } finally {
     btn.textContent = 'Envoyer le message';
     btn.disabled = false;

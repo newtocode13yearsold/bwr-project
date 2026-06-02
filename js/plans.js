@@ -13,6 +13,11 @@ billingToggles.forEach(btn => {
       const val = el.dataset[currentPeriod];
       if (val) el.textContent = val;
     });
+
+    // Annual-only note: total billed per year + savings vs full price
+    document.querySelectorAll('.pc-annual-note').forEach(el => {
+      el.textContent = currentPeriod === 'annual' ? (el.dataset.annual || '') : '';
+    });
   });
 });
 
@@ -87,7 +92,7 @@ document.getElementById('activationForm').addEventListener('submit', async e => 
   btn.disabled = true;
 
   const planLabel   = plan === 'gold' ? 'Or (7,99€/mois)' : 'Argent (3,99€/mois)';
-  const periodLabel = period === 'annual' ? 'annuel (-20 %)' : 'mensuel';
+  const periodLabel = period === 'annual' ? 'annuel (-15 %)' : 'mensuel';
   const formatted = `=== Demande d'activation BWR ===
 Plan : ${planLabel}
 Période : ${periodLabel}

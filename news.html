@@ -127,6 +127,46 @@
     }
     .news-link-locked:hover { background: var(--silver-grad-soft, linear-gradient(135deg,#f1f5f9,#e2e8f0)); color: var(--silver-600, #475569); transform: none; }
 
+    /* ── Reactions (like / dislike) ── */
+    .news-reactions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .news-react {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--surface-2, #f3f4f0);
+      border: 1.5px solid var(--border-soft, #ebeee5);
+      border-radius: 999px;
+      padding: 6px 15px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text, #1f2937);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      user-select: none;
+    }
+    .news-react:hover { transform: translateY(-1px); }
+    .news-react:active { transform: scale(0.96); }
+    .news-react-icon { font-size: 1.05rem; line-height: 1; }
+    .news-react-count {
+      font-variant-numeric: tabular-nums;
+      min-width: 12px;
+      text-align: center;
+    }
+    .news-like.active {
+      background: var(--forest-100, #f0f7ec);
+      border-color: var(--forest-300, #b9d8a4);
+      color: var(--forest-700, #1e4d14);
+    }
+    .news-dislike.active {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #b91c1c;
+    }
+
     /* ── Admin controls ── */
     .news-admin-row {
       display: flex;
@@ -493,7 +533,7 @@
 
         <p class="modal-error" id="modalError"></p>
         <div class="modal-actions">
-          <button type="button" class="btn-cancel" onclick="closeModal()">Annuler</button>
+          <button type="button" class="btn-cancel">Annuler</button>
           <button type="submit" class="btn-save" id="modalSave">Enregistrer</button>
         </div>
       </form>
