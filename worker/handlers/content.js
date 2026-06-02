@@ -19,29 +19,54 @@ export async function handleContent(request, env, { pathname, url, json, fail })
     if (cached) return json(JSON.parse(cached));
 
     const [s, w, n, e] = bbox.split(',');
-    try {
-      const query = `[out:json][timeout:25];(way["highway"~"^(path|track|footway|bridleway|cycleway)$"](${s},${w},${n},${e});>;);out body;`;
-      const res = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `data=${encodeURIComponent(query)}`,
-      });
-      if (!res.ok) return fail('Overpass API error', 502);
-      const raw = await res.json();
+    const query = `[out:json][timeout:25];(way["highway"~"^(path|track|footway|bridleway|cycleway)$"](${s},${w},${n},${e});>;);out body;`;
+    // The public Overpass instances are flaky: any single one intermittently returns
+    // 406/429/502/504. We try several mirrors in turn (each with a meaningful
+    // User-Agent — required now — and a per-mirror timeout) and use the first that
+    // succeeds, so OSM path data keeps flowing even when one instance is overloaded.
+    // overpass-api.de is the fastest when up but fails intermittently (fast 502s), so we
+    // give it two attempts before falling back to a mirror. Even if the client has already
+    // timed out, a late success here still gets cached for the next request.
+    const ATTEMPTS = [
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass.private.coffee/api/interpreter',
+    ];
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'BWR-Compiegne/1.0 (https://bwr-worker.ciril8596.workers.dev; ciril8596@gmail.com)',
+    };
 
-      const pathTypes = /^(path|track|footway|bridleway|cycleway)$/;
-      const ways = raw.elements.filter(el =>
-        el.type === 'way' && el.tags?.highway && pathTypes.test(el.tags.highway)
-      );
-      const usedNodeIds = new Set(ways.flatMap(w => w.nodes));
-      const nodes = raw.elements.filter(el => el.type === 'node' && usedNodeIds.has(el.id));
-      const data = { elements: [...nodes, ...ways] };
+    for (const endpoint of ATTEMPTS) {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 24000);
+        let res;
+        try {
+          res = await fetch(endpoint, { method: 'POST', headers, body: `data=${encodeURIComponent(query)}`, signal: ctrl.signal });
+        } finally {
+          clearTimeout(timer);
+        }
+        if (!res.ok) continue; // try next mirror
 
-      await env.BWR_KV.put(cacheKey, JSON.stringify(data), { expirationTtl: 604800 });
-      return json(data);
-    } catch {
-      return fail('Overpass API unavailable', 502);
+        const raw = await res.json();
+        if (!Array.isArray(raw?.elements)) continue;
+
+        const pathTypes = /^(path|track|footway|bridleway|cycleway)$/;
+        const ways = raw.elements.filter(el =>
+          el.type === 'way' && el.tags?.highway && pathTypes.test(el.tags.highway)
+        );
+        const usedNodeIds = new Set(ways.flatMap(w => w.nodes));
+        const nodes = raw.elements.filter(el => el.type === 'node' && usedNodeIds.has(el.id));
+        const data = { elements: [...nodes, ...ways] };
+
+        await env.BWR_KV.put(cacheKey, JSON.stringify(data), { expirationTtl: 604800 });
+        return json(data);
+      } catch {
+        // network error / abort / parse error → fall through to the next mirror
+      }
     }
+    return fail('Overpass API unavailable', 502);
   }
 
   if (pathname === '/api/osm/cache' && request.method === 'DELETE') {

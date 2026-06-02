@@ -654,7 +654,9 @@ function applyOsmSurfaceWeights(paths) {
 async function fetchOsmPathsForBbox(minLat, minLng, maxLat, maxLng) {
   try {
     const bbox = `${minLat.toFixed(4)},${minLng.toFixed(4)},${maxLat.toFixed(4)},${maxLng.toFixed(4)}`;
-    const res = await fetchWithTimeout(`${API_URL}/api/osm?bbox=${bbox}`, {}, 20000);
+    // Generous timeout: the worker may retry a flaky Overpass instance. A late
+    // success is still cached server-side, making the user's next attempt instant.
+    const res = await fetchWithTimeout(`${API_URL}/api/osm?bbox=${bbox}`, {}, 35000);
     if (!res.ok) { console.warn('OSM bbox fetch failed:', res.status); return []; }
     const data = await res.json();
     if (!Array.isArray(data?.elements)) { console.warn('OSM response malformed'); return []; }
@@ -689,65 +691,40 @@ async function routeAtob(sLat, sLng, eLat, eLng) {
     return osrmRoute([{ lat: sLat, lon: sLng }, { lat: eLat, lon: eLng }]);
   }
 
-  // 1. Hybrid graph: admin paths preferred, OSM fills gaps (skipped in 'shortest' mode)
-  if (savedPaths.length) {
+  // Forest mode: route over ALL paths on the map. The OSM forest-path network
+  // (path/track/footway/bridleway/cycleway) plus the admin paths are merged into one
+  // stitched graph (see buildGraph), so the router can use every path and transfer
+  // between networks wherever they cross — no more being trapped on the admin network.
+  const straightM = haversineM(sLat, sLng, eLat, eLng);
+  const pad = 0.05;
+  const osmPaths = await fetchOsmPathsForBbox(
+    Math.min(sLat, eLat) - pad, Math.min(sLng, eLng) - pad,
+    Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
+  );
+  const weightedOsmPaths = applyOsmSurfaceWeights(osmPaths);
+  const admin = savedPaths.length ? filterPaths(savedPaths) : [];
+
+  // 1. Combined admin + OSM graph (admin mildly preferred). Also compute the OSM-only
+  //    route and keep whichever is shorter — guards against any residual admin detour.
+  if (weightedOsmPaths.length || admin.length) {
+    let best = null;
     try {
-      const filtered = filterPaths(savedPaths);
-      // Skip graph if either endpoint is more than 1.5 km from the nearest admin path.
-      // When admin paths only cover a distant area, nearestNode snaps to a faraway node
-      // and Dijkstra routes through there instead of the direct path.
-      if (filtered.length) {
-        const { nodes: adminNodes } = buildGraph(filtered);
-        const sSnap = nearestNode(adminNodes, sLat, sLng);
-        const eSnap = nearestNode(adminNodes, eLat, eLng);
-        const MAX_SNAP_M = 1500;
-        if (!sSnap || !eSnap
-          || haversineM(sLat, sLng, sSnap.lat, sSnap.lon) > MAX_SNAP_M
-          || haversineM(eLat, eLng, eSnap.lat, eSnap.lon) > MAX_SNAP_M) {
-          console.warn('graph hybrid: endpoints trop loin des chemins admin, fallback OSRM');
-          throw new Error('snap trop loin');
-        }
-      }
-      const pad = 0.02;
-      const osmPaths = await fetchOsmPathsForBbox(
-        Math.min(sLat, eLat) - pad, Math.min(sLng, eLng) - pad,
-        Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
-      );
-      const weightedOsmPaths = applyOsmSurfaceWeights(osmPaths);
-      const result = graphAtobHybrid(sLat, sLng, eLat, eLng, filtered, weightedOsmPaths);
-      const straightM = haversineM(sLat, sLng, eLat, eLng);
-      if (result.meters > straightM * 3) { throw new Error('graph hybrid: trop long'); }
-      // If admin route is > 1.5× straight line, try OSM-only graph to see if there's a shorter path.
-      if (result.meters > straightM * 1.5 && weightedOsmPaths.length) {
-        try {
-          const osmOnly = graphAtob(sLat, sLng, eLat, eLng, weightedOsmPaths);
-          if (osmOnly.meters < result.meters) { console.info('routing: OSM shorter than admin, using OSM'); return osmOnly; }
-        } catch {}
-      }
-      console.info('routing: admin graph');
-      return result;
+      const hybrid = graphAtobHybrid(sLat, sLng, eLat, eLng, admin, weightedOsmPaths);
+      if (hybrid.meters <= straightM * 4) best = hybrid;
     } catch (e) { console.warn('graph hybrid:', e.message); }
-  }
-  // 2. OSM-only graph — forest/path network from OSM, no road penalty, no admin bias.
-  // Used when admin paths don't cover the clicked area. Wider bbox captures paths near endpoints.
-  try {
-    const pad = 0.05;
-    const osmPaths = await fetchOsmPathsForBbox(
-      Math.min(sLat, eLat) - pad, Math.min(sLng, eLng) - pad,
-      Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
-    );
-    if (osmPaths.length) {
-      const result = graphAtob(sLat, sLng, eLat, eLng, applyOsmSurfaceWeights(osmPaths));
-      const straightM = haversineM(sLat, sLng, eLat, eLng);
-      if (result.meters <= straightM * 4) return result;
-      console.warn('OSM graph: route trop longue, fallback OSRM');
+    if (weightedOsmPaths.length) {
+      try {
+        const osmOnly = graphAtob(sLat, sLng, eLat, eLng, weightedOsmPaths);
+        if (osmOnly.meters <= straightM * 4 && (!best || osmOnly.meters < best.meters)) best = osmOnly;
+      } catch (e) { console.warn('OSM graph:', e.message); }
     }
-  } catch (e) { console.warn('OSM graph:', e.message); }
-  // 3. ORS (needs ORS_KEY in Cloudflare)
+    if (best) { console.info(`routing: forest graph (${(best.meters / 1000).toFixed(1)} km)`); return best; }
+  }
+  // 2. ORS (needs ORS_KEY in Cloudflare)
   try {
     return await callORS({ profile: orsProfile(), coordinates: [[sLng, sLat], [eLng, eLat]] });
   } catch (e) { console.warn('ORS:', e.message); }
-  // 4. OSRM — last resort, uses all roads and paths
+  // 3. OSRM — last resort, uses all roads and paths
   return osrmRoute([{ lat: sLat, lon: sLng }, { lat: eLat, lon: eLng }]);
 }
 

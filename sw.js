@@ -1,4 +1,4 @@
-const CACHE = 'bwr-v18';
+const CACHE = 'bwr-v21';
 const TILE_CACHE = 'bwr-offline-tiles';
 const TILE_MAX_ENTRIES = 500;
 const TILE_MAX_AGE_MS  = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -136,7 +136,14 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache first for other assets (images, fonts, etc.)
+  // Cross-origin requests we don't specifically handle (e.g. external news
+  // article images) must NOT be intercepted: a fetch() issued from inside the
+  // service worker is governed by the SW's own CSP connect-src, which doesn't
+  // list arbitrary third-party hosts. Letting the request pass through to the
+  // browser means it's governed by the page's img-src instead (allows https:).
+  if (new URL(url).origin !== self.location.origin) return;
+
+  // Cache first for other same-origin assets (images, fonts, etc.)
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );

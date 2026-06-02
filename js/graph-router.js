@@ -73,6 +73,35 @@ function buildGraph(paths) {
     }
   }
 
+  // Stitch crossings: connect ANY two nodes (not just endpoints) within STITCH_M.
+  // Separate networks — e.g. hand-drawn admin paths and the OSM path network — rarely
+  // share exact coordinates where they cross, so without this they stay disconnected
+  // and the router gets trapped on whichever network it snapped onto, forcing a long
+  // detour. Linking nearby nodes lets the route transfer between every path on the map.
+  const STITCH_M = 35;
+  const SCELL = 0.0004; // ~44 m cells → ±1 neighbour covers all 35 m pairs
+  const allNodes = [...nodes.values()];
+  const sgrid = new Map();
+  allNodes.forEach(n => {
+    const ck = `${Math.floor(n.lat / SCELL)},${Math.floor(n.lon / SCELL)}`;
+    if (!sgrid.has(ck)) sgrid.set(ck, []);
+    sgrid.get(ck).push(n);
+  });
+  for (const n of allNodes) {
+    const cr = Math.floor(n.lat / SCELL), cc = Math.floor(n.lon / SCELL);
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        const bucket = sgrid.get(`${cr + dr},${cc + dc}`);
+        if (!bucket) continue;
+        for (const m of bucket) {
+          if (m.k <= n.k) continue; // visit each unordered pair once
+          const d = haversineM(n.lat, n.lon, m.lat, m.lon);
+          if (d > 0 && d < STITCH_M && !adj.get(n.k).some(e => e.to === m.k)) link(n.k, m.k, d);
+        }
+      }
+    }
+  }
+
   return { nodes, adj };
 }
 

@@ -62,6 +62,7 @@ function makeSWContext() {
     addEventListener: (event, handler) => { handlers[event] = handler; },
     skipWaiting: () => Promise.resolve(),
     clients: { claim: () => Promise.resolve() },
+    location: { origin: 'https://bwr-worker.ciril8596.workers.dev' },
   };
 
   // Run sw.js inside this context
@@ -72,6 +73,7 @@ function makeSWContext() {
     fetch: () => Promise.reject(new Error('offline')),
     Request: globalThis.Request,
     Response: globalThis.Response,
+    URL: globalThis.URL,
     Promise,
     console,
   });
@@ -240,7 +242,7 @@ describe('fetch handler: app files → network-first with cache fallback', () =>
 
     const htmlUrl = 'https://bwr.test/map.html';
     const cachedPage = new Response('<html></html>', { status: 200 });
-    const appCache = await mockCaches.open('bwr-v18');
+    const appCache = await mockCaches.open('bwr-v21');
     await appCache.put(htmlUrl, cachedPage);
 
     // 'navigate' mode is not supported by Node's undici Request; the sw.js
@@ -256,7 +258,7 @@ describe('fetch handler: app files → network-first with cache fallback', () =>
 
     const jsUrl = 'https://bwr.test/js/map.js';
     const cachedJs = new Response('// js', { status: 200 });
-    const appCache = await mockCaches.open('bwr-v18');
+    const appCache = await mockCaches.open('bwr-v21');
     await appCache.put(jsUrl, cachedJs);
 
     const { event, getResponse } = makeFetchEvent(jsUrl);
@@ -277,6 +279,28 @@ describe('fetch handler: app files → network-first with cache fallback', () =>
   });
 });
 
+// ── Cross-origin pass-through ─────────────────────────────────────────────────
+
+describe('fetch handler: cross-origin assets → not intercepted', () => {
+  test('external news image → SW does not call respondWith (browser handles it)', async () => {
+    const { handlers, makeFetchEvent } = makeSWContext();
+    // An <img> pointing at a third-party host must pass straight through so the
+    // page's img-src CSP governs it, not the SW's connect-src.
+    const imgUrl = 'https://www.benmazue.com/wp-content/uploads/2026/02/photo.jpg';
+    const { event, getResponse } = makeFetchEvent(imgUrl);
+    handlers.fetch(event);
+    assert.strictEqual(getResponse(), null, 'cross-origin image must not be intercepted');
+  });
+
+  test('same-origin asset → still intercepted (cache-first)', async () => {
+    const { handlers, makeFetchEvent } = makeSWContext();
+    const iconUrl = 'https://bwr-worker.ciril8596.workers.dev/icons/icon.svg';
+    const { event, getResponse } = makeFetchEvent(iconUrl);
+    handlers.fetch(event);
+    assert.notStrictEqual(getResponse(), null, 'same-origin asset must be handled by the SW');
+  });
+});
+
 // ── Activate: old caches deleted ─────────────────────────────────────────────
 
 describe('activate handler: old caches deleted', () => {
@@ -285,7 +309,7 @@ describe('activate handler: old caches deleted', () => {
 
     // Seed old + current caches
     await mockCaches.open('bwr-v1');           // old → must be deleted
-    await mockCaches.open('bwr-v18');          // current CACHE → keep
+    await mockCaches.open('bwr-v21');          // current CACHE → keep
     await mockCaches.open('bwr-offline-tiles'); // TILE_CACHE → keep
 
     const event = { waitUntil: (p) => p };
@@ -293,7 +317,7 @@ describe('activate handler: old caches deleted', () => {
 
     const remaining = await mockCaches.keys();
     assert.ok(!remaining.includes('bwr-v1'), 'old cache bwr-v1 must be deleted');
-    assert.ok(remaining.includes('bwr-v18'), 'current CACHE must be kept');
+    assert.ok(remaining.includes('bwr-v21'), 'current CACHE must be kept');
     assert.ok(remaining.includes('bwr-offline-tiles'), 'TILE_CACHE must be kept');
   });
 });
