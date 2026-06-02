@@ -297,7 +297,11 @@ describe('fetch handler: cross-origin assets → not intercepted', () => {
     const iconUrl = 'https://bwr-worker.ciril8596.workers.dev/icons/icon.svg';
     const { event, getResponse } = makeFetchEvent(iconUrl);
     handlers.fetch(event);
-    assert.notStrictEqual(getResponse(), null, 'same-origin asset must be handled by the SW');
+    const responsePromise = getResponse();
+    assert.notStrictEqual(responsePromise, null, 'same-origin asset must be handled by the SW');
+    // Cache is empty + network offline → the cache-first fetch rejects; swallow
+    // it so it doesn't surface as an unhandled rejection after the test ends.
+    await responsePromise.catch(() => {});
   });
 });
 
