@@ -1576,35 +1576,30 @@ async function loadRevenue() {
   }
 
   function updateForecast() {
-    const quality = parseFloat(document.getElementById('aifQuality').value);
-    const target  = parseInt(document.getElementById('aifTarget').value, 10);
+    const target = parseInt(document.getElementById('aifTarget').value, 10);
 
-    const visitors = _realData ? _realData.visitors : 500;
-    const slope    = _realData ? _realData.slope    : 0;
-    const rate     = convRate(quality);
-
-    // Show real MRR when available, fall back to quality-based projection
-    const displayMRR  = _realData ? _realData.realMRR  : visitors * (rate / 100) * ARPU;
-    const displaySubs = _realData ? _realData.payingUsers : visitors * (rate / 100);
+    const visitors   = _realData ? _realData.visitors   : 0;
+    const slope      = _realData ? _realData.slope       : 0;
+    const displayMRR = _realData ? _realData.realMRR     : 0;
+    const displaySubs = _realData ? _realData.payingUsers : 0;
+    // Implied conversion rate from real data for projection
+    const impliedRate = visitors > 0 && _realData ? (_realData.payingUsers / visitors * 100) : 0;
     const prob = Math.max(1, Math.min(99, Math.round(100 / (1 + Math.exp(-7 * (displayMRR / (target || 1) - 0.85))))));
 
-    document.getElementById('aifQualVal').textContent   = fmtNum(quality) + ' / 10';
     document.getElementById('aifTargetVal').textContent = fmtEur(target);
-    document.getElementById('aifQualHint').textContent  = (QUALITY_LABELS[Math.round(quality)] || 'Bon') + ' — conversion estimée : ' + fmtNum(rate) + ' %';
     document.getElementById('aifMRR').textContent       = fmtEur(displayMRR);
-    document.getElementById('aifSubs').textContent      = _realData ? String(displaySubs) : fmtNum(displaySubs);
+    document.getElementById('aifSubs').textContent      = String(displaySubs);
     document.getElementById('aifProb').textContent      = prob + ' %';
 
-    // 6-month forecast chart
+    // 6-month forecast chart — project visitors via trend, keep real conversion rate
     const now = new Date();
     const labels = Array.from({ length: 6 }, (_, i) => {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
       return MONTHS[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
     });
     const data = Array.from({ length: 6 }, (_, i) => {
-      const v = Math.max(0, visitors + slope * (i + 1)) * (rate / 100) * ARPU;
-      // Anchor month-0 to real MRR when available
-      return i === 0 && _realData ? _realData.realMRR : v;
+      if (i === 0 && _realData) return _realData.realMRR;
+      return Math.max(0, visitors + slope * (i + 1)) * (impliedRate / 100) * ARPU;
     });
     const upper = data.map((v, i) => v * (1 + 0.12 + i * 0.03));
     const lower = data.map((v, i) => Math.max(0, v * (1 - 0.12 - i * 0.03)));
@@ -1649,10 +1644,8 @@ async function loadRevenue() {
   }
 
   function wireInputs() {
-    ['aifQuality', 'aifTarget'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.addEventListener('input', updateForecast);
-    });
+    const el = document.getElementById('aifTarget');
+    if (el) el.addEventListener('input', updateForecast);
     updateForecast();
     loadRealData();
   }
@@ -1661,20 +1654,19 @@ async function loadRevenue() {
     const btn = document.getElementById('aifAnalyseBtn');
     if (!btn) return;
     btn.addEventListener('click', async () => {
-      const quality = parseFloat(document.getElementById('aifQuality').value);
-      const target  = parseInt(document.getElementById('aifTarget').value, 10);
-      const rate    = convRate(quality);
+      const target = parseInt(document.getElementById('aifTarget').value, 10);
 
-      const visitors   = _realData ? _realData.visitors   : 500;
+      const visitors   = _realData ? _realData.visitors   : 0;
       const history    = _realData ? _realData.history     : [];
       const slope      = _realData ? _realData.slope       : 0;
-      const subs       = _realData ? _realData.payingUsers : visitors * (rate / 100);
-      const mrr        = _realData ? _realData.realMRR     : subs * ARPU;
+      const subs       = _realData ? _realData.payingUsers : 0;
+      const mrr        = _realData ? _realData.realMRR     : 0;
       const arr        = mrr * 12;
       const silver     = _realData ? _realData.silver      : 0;
       const gold       = _realData ? _realData.gold        : 0;
       const totalUsers = _realData ? _realData.totalUsers  : 0;
-      const realConv   = _realData ? _realData.realConv    : rate;
+      const realConv   = _realData ? _realData.realConv    : 0;
+      const rate       = realConv;
       const prob       = Math.max(1, Math.min(99, Math.round(100 / (1 + Math.exp(-7 * (mrr / (target || 1) - 0.85))))));
 
       btn.disabled = true;

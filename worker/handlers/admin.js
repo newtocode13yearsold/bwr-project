@@ -146,7 +146,7 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     let body;
     try { body = await request.json(); } catch { return fail('JSON invalide.'); }
 
-    const { visitors = 0, quality = 5, rate = 0, mrr = 0, arr = 0,
+    const { visitors = 0, rate = 0, mrr = 0, arr = 0,
             subs = 0, slope = 0, target = 200, prob = 0, history = [],
             silver = 0, gold = 0, totalUsers = 0, realConv = 0 } = body;
 
@@ -165,12 +165,11 @@ Données réelles (tirées du tableau de bord admin) :
 - Visiteurs ce mois : ${Math.round(visitors)}
 - Historique trafic : ${histStr}
 - Tendance trafic : ${trendStr}
-- Membres total : ${totalUsers} (dont ${Math.round(totalUsers - silver - gold)} gratuits, ${silver} Argent, ${gold} Or)
-- Abonnés payants réels : ${Math.round(subs)} (${Number(realConv > 0 ? realConv : rate).toFixed(1)} % de conversion)
+- Membres total : ${totalUsers} (dont ${Math.round(totalUsers - silver - gold)} gratuits, ${silver} Argent 3,99€/mois, ${gold} Or 7,99€/mois)
+- Abonnés payants : ${Math.round(subs)} (${Number(realConv > 0 ? realConv : rate).toFixed(2)} % de conversion)
 - MRR réel : ${Number(mrr).toFixed(2)} €/mois
 - ARR annualisé : ${Math.round(arr)} €/an
-- Qualité perçue du site : ${quality}/10
-- Objectif MRR visé : ${target} €
+- Objectif MRR visé par l'admin : ${target} €
 - Probabilité d'atteindre l'objectif : ${prob} %
 
 Donne une analyse directe en 3-4 phrases, en français, qui couvre :
