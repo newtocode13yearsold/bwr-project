@@ -1026,12 +1026,119 @@ document.getElementById('btnMembers').addEventListener('click', async () => {
   document.getElementById('editForm').classList.add('hidden');
   const panel = document.getElementById('membersPanel');
   panel.classList.toggle('hidden');
-  if (!panel.classList.contains('hidden')) await loadMembers();
+  if (!panel.classList.contains('hidden')) {
+    // Show whichever tab is currently active
+    const activeTab = panel.querySelector('.members-tab.active')?.dataset.tab || 'members';
+    if (activeTab === 'visits') await loadVisits();
+    else await loadMembers();
+  }
 });
 
 document.getElementById('btnCloseMembersPanel').addEventListener('click', () => {
   document.getElementById('membersPanel').classList.add('hidden');
 });
+
+// ── Members / Visits tab switching ────────────────────────────────────────────
+document.querySelectorAll('.members-tab').forEach(tab => {
+  tab.addEventListener('click', async () => {
+    document.querySelectorAll('.members-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const which = tab.dataset.tab;
+    document.getElementById('membersList').style.display  = which === 'members' ? 'flex' : 'none';
+    document.getElementById('visitsList').style.display   = which === 'visits'  ? 'flex' : 'none';
+    if (which === 'members') await loadMembers();
+    else                     await loadVisits();
+  });
+});
+
+async function loadVisits() {
+  const statsEl = document.getElementById('visitsStats');
+  const itemsEl = document.getElementById('visitsItems');
+  itemsEl.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Chargement…</p>';
+  statsEl.innerHTML = '';
+  try {
+    const res    = await fetch(`${API_URL}/api/analytics/visits`, { headers: authHeader() });
+    const visits = await res.json();
+    if (!res.ok) { itemsEl.innerHTML = `<p style="color:red">${visits.error}</p>`; return; }
+
+    const logged  = visits.filter(v => v.userId);
+    const anon    = visits.filter(v => !v.userId);
+
+    // Compute quick stats (total = logged + anon)
+    const now   = Date.now();
+    const DAY   = 86400000;
+    const WEEK  = 7 * DAY;
+    const today = visits.filter(v => now - new Date(v.timestamp).getTime() < DAY).length;
+    const week  = visits.filter(v => now - new Date(v.timestamp).getTime() < WEEK).length;
+
+    const statCard = (label, val, color) =>
+      `<div style="flex:1;min-width:70px;background:${color};border-radius:10px;padding:10px 12px;text-align:center">
+         <div style="font-size:1.3rem;font-weight:800;color:#1e4d14">${val}</div>
+         <div style="font-size:0.7rem;color:#374151;margin-top:2px;font-weight:600">${label}</div>
+       </div>`;
+    statsEl.innerHTML =
+      statCard("Aujourd'hui", today, '#d1fae5') +
+      statCard('Cette semaine', week, '#fef3c7') +
+      statCard('Total', visits.length, '#e0e7ff') +
+      statCard('Connectés', logged.length, '#ede9fe') +
+      statCard('Anonymes', anon.length, '#fce7f3');
+
+    if (visits.length === 0) {
+      itemsEl.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Aucune visite enregistrée.</p>';
+      return;
+    }
+
+    const pageName = p => {
+      const s = (p || '/').replace(/^\//, '') || 'accueil';
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    };
+    const deviceIcon = ua => {
+      if (!ua) return '🖥️';
+      const u = ua.toLowerCase();
+      if (/iphone|ipad|android|mobile/.test(u)) return '📱';
+      if (/tablet/.test(u)) return '📲';
+      return '🖥️';
+    };
+    const formatTime = iso => {
+      const d = new Date(iso);
+      return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' })
+           + ' ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+    };
+    const visitRow = v => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px">
+        <span style="font-size:1.1rem">${deviceIcon(v.userAgent)}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            📄 ${pageName(v.page)}
+          </div>
+          <div style="font-size:0.75rem;color:#6b7280">
+            ${v.userName ? `👤 ${v.userName}` : '🔓 Anonyme'} — ${formatTime(v.timestamp)}
+          </div>
+        </div>
+      </div>`;
+
+    const sectionTitle = (emoji, label, count) =>
+      `<div style="font-weight:700;font-size:0.82rem;color:#374151;margin:14px 0 6px;display:flex;align-items:center;gap:6px">
+         ${emoji} ${label} <span style="background:#e5e7eb;border-radius:999px;padding:1px 8px;font-size:0.75rem">${count}</span>
+       </div>`;
+
+    let html = '';
+
+    if (logged.length > 0) {
+      html += sectionTitle('👤', 'Utilisateurs connectés', logged.length);
+      html += logged.slice(0, 100).map(visitRow).join('');
+    }
+
+    if (anon.length > 0) {
+      html += sectionTitle('🔓', 'Visiteurs anonymes (non connectés)', anon.length);
+      html += anon.slice(0, 100).map(visitRow).join('');
+    }
+
+    itemsEl.innerHTML = html;
+  } catch {
+    itemsEl.innerHTML = '<p style="color:red">Erreur réseau</p>';
+  }
+}
 
 async function loadMembers() {
   const list = document.getElementById('membersList');
@@ -1132,6 +1239,437 @@ document.getElementById('btnSaveMemberPlan').addEventListener('click', async () 
     btn.disabled = false;
   }
 });
+
+// ── Revenue dashboard ─────────────────────────────────────────────────────────
+const PLAN_PRICE_MONTHLY = { free: 0, silver: 3.99, gold: 7.99 };
+const PLAN_PRICE_ANNUAL  = { free: 0, silver: 3.39, gold: 6.79 };
+let _revenueCharts = {};
+let _revenueUsers  = null;
+
+document.getElementById('btnRevenue').addEventListener('click', async () => {
+  document.getElementById('pathForm').classList.add('hidden');
+  document.getElementById('editForm').classList.add('hidden');
+  document.getElementById('messagesPanel').classList.add('hidden');
+  document.getElementById('membersPanel').classList.add('hidden');
+  const panel = document.getElementById('revenuePanel');
+  const wasHidden = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden');
+  if (wasHidden) { _revenueUsers = null; await loadRevenue(); }
+});
+
+document.getElementById('btnCloseRevenuePanel').addEventListener('click', () => {
+  document.getElementById('revenuePanel').classList.add('hidden');
+  _revenueUsers = null;
+});
+
+document.querySelectorAll('.rev-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.rev-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    if (_revenueUsers) renderTimedCharts(_revenueUsers, tab.dataset.period);
+  });
+});
+
+function buildSlots(period) {
+  const now  = Date.now();
+  const DAY  = 86400000;
+  const HOUR = 3600000;
+  const slots = [];
+  let getSlot;
+
+  if (period === 'day') {
+    const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+    const start = startOfDay.getTime();
+    for (let h = 0; h < 24; h++) slots.push({ label: `${h}h`, free: 0, silver: 0, gold: 0 });
+    getSlot = ts => {
+      if (ts < start) return -1;
+      const h = Math.floor((ts - start) / HOUR);
+      return h < 24 ? h : -1;
+    };
+  } else if (period === 'week') {
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now - i * DAY);
+      slots.push({ label: d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }), free: 0, silver: 0, gold: 0 });
+    }
+    const start = now - 6 * DAY;
+    getSlot = ts => {
+      if (ts < start) return -1;
+      const idx = Math.floor((ts - start) / DAY);
+      return idx < 7 ? idx : -1;
+    };
+  } else if (period === 'month') {
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now - i * DAY);
+      slots.push({ label: d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), free: 0, silver: 0, gold: 0 });
+    }
+    const start = now - 29 * DAY;
+    getSlot = ts => {
+      if (ts < start) return -1;
+      const idx = Math.floor((ts - start) / DAY);
+      return idx < 30 ? idx : -1;
+    };
+  } else {
+    const startDate = new Date(); startDate.setDate(1); startDate.setHours(0, 0, 0, 0);
+    startDate.setMonth(startDate.getMonth() - 11);
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(startDate); d.setMonth(d.getMonth() + i);
+      slots.push({ label: d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }), free: 0, silver: 0, gold: 0 });
+    }
+    const start = startDate.getTime();
+    getSlot = ts => {
+      if (ts < start) return -1;
+      const d = new Date(ts), s = new Date(start);
+      const idx = (d.getFullYear() - s.getFullYear()) * 12 + (d.getMonth() - s.getMonth());
+      return idx < 12 ? idx : -1;
+    };
+  }
+  return { slots, getSlot };
+}
+
+function renderTimedCharts(users, period) {
+  const { slots, getSlot } = buildSlots(period);
+
+  users.forEach(u => {
+    if (!u.createdAt || u.role === 'admin') return;
+    const ts  = new Date(u.createdAt).getTime();
+    const idx = getSlot(ts);
+    if (idx < 0) return;
+    const plan = u.plan || 'free';
+    if (slots[idx][plan] !== undefined) slots[idx][plan]++;
+  });
+
+  const labels  = slots.map(s => s.label);
+  const freeCnt = slots.map(s => s.free);
+  const silvCnt = slots.map(s => s.silver);
+  const goldCnt = slots.map(s => s.gold);
+  const revData = slots.map(s => +(s.silver * PLAN_PRICE_MONTHLY.silver + s.gold * PLAN_PRICE_MONTHLY.gold).toFixed(2));
+
+  const periodLabel = { day: "aujourd'hui par heure", week: 'sur 7 jours', month: 'sur 30 jours', year: 'sur 12 mois' }[period];
+  document.getElementById('revNewLabel').textContent  = `Nouveaux membres — ${periodLabel}`;
+  document.getElementById('revRevLabel').textContent  = `Revenus estimés (€) — ${periodLabel}`;
+
+  const isDark    = document.documentElement.getAttribute('data-theme') === 'dark';
+  const textColor = isDark ? '#d1d5db' : '#374151';
+  const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+
+  if (_revenueCharts.newMembers) _revenueCharts.newMembers.destroy();
+  if (_revenueCharts.revTime)    _revenueCharts.revTime.destroy();
+
+  // Stacked bar: new members per slot, coloured by plan
+  _revenueCharts.newMembers = new Chart(document.getElementById('chartNew'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Gratuit',  data: freeCnt, backgroundColor: 'rgba(229,231,235,0.85)', borderColor: '#9ca3af', borderWidth: 1, borderRadius: 4, stack: 'members' },
+        { label: 'Argent 🥈', data: silvCnt, backgroundColor: 'rgba(148,163,184,0.85)', borderColor: '#64748b', borderWidth: 1, borderRadius: 4, stack: 'members' },
+        { label: 'Or 🥇',    data: goldCnt, backgroundColor: 'rgba(251,191,36,0.85)',  borderColor: '#d97706', borderWidth: 1, borderRadius: 4, stack: 'members' },
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { stacked: true, ticks: { color: textColor, font: { size: 10 }, maxRotation: 45 }, grid: { color: gridColor } },
+        y: { stacked: true, beginAtZero: true, ticks: { color: textColor, precision: 0 }, grid: { color: gridColor } }
+      },
+      plugins: {
+        legend: { position: 'bottom', labels: { color: textColor, font: { size: 12 }, padding: 14 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label} : ${ctx.raw} nouveau${ctx.raw !== 1 ? 'x' : ''}` } }
+      }
+    }
+  });
+
+  // Line chart: estimated revenue from new members per slot
+  _revenueCharts.revTime = new Chart(document.getElementById('chartRevTime'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Revenus (€)',
+        data: revData,
+        borderColor: '#16a34a',
+        backgroundColor: 'rgba(34,197,94,0.12)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#16a34a',
+        fill: true,
+        tension: 0.35
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { ticks: { color: textColor, font: { size: 10 }, maxRotation: 45 }, grid: { color: gridColor } },
+        y: { beginAtZero: true, ticks: { color: textColor, callback: v => v + ' €' }, grid: { color: gridColor } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.raw.toFixed(2)} € de nouveaux abonnés` } }
+      }
+    }
+  });
+}
+
+async function loadRevenue() {
+  const kpis = document.getElementById('revenueKPIs');
+  kpis.innerHTML = '<p style="color:#6b7280;font-size:0.88rem;grid-column:1/-1">Chargement…</p>';
+
+  try {
+    const res = await fetch(`${API_URL}/api/users`, { headers: authHeader() });
+    const data = await res.json();
+    if (!res.ok) { kpis.innerHTML = `<p style="color:red;grid-column:1/-1">${data.error || 'Erreur'}</p>`; return; }
+    _revenueUsers = data;
+
+    const counts = { free: 0, silver: 0, gold: 0 };
+    _revenueUsers.forEach(u => { if (u.role !== 'admin') counts[u.plan] = (counts[u.plan] || 0) + 1; });
+
+    const mrr      = counts.silver * PLAN_PRICE_MONTHLY.silver + counts.gold * PLAN_PRICE_MONTHLY.gold;
+    const arrSilv  = counts.silver * PLAN_PRICE_ANNUAL.silver * 12;
+    const arrGold  = counts.gold   * PLAN_PRICE_ANNUAL.gold   * 12;
+    const arr      = arrSilv + arrGold;
+    const paying   = counts.silver + counts.gold;
+    const total    = counts.free + counts.silver + counts.gold;
+    const conv     = total ? Math.round(paying / total * 100) : 0;
+
+    kpis.innerHTML = `
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px">
+        <div style="font-size:0.72rem;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.06em">MRR estimé</div>
+        <div style="font-size:1.75rem;font-weight:800;color:#15803d;margin-top:4px;line-height:1">${mrr.toFixed(2)} €</div>
+        <div style="font-size:0.72rem;color:#6b7280;margin-top:4px">revenus mensuels récurrents</div>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px">
+        <div style="font-size:0.72rem;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.06em">ARR projeté</div>
+        <div style="font-size:1.75rem;font-weight:800;color:#d97706;margin-top:4px;line-height:1">${arr.toFixed(2)} €</div>
+        <div style="font-size:0.72rem;color:#6b7280;margin-top:4px">si tous passent en annuel</div>
+      </div>
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:14px">
+        <div style="font-size:0.72rem;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.06em">Abonnés payants</div>
+        <div style="font-size:1.75rem;font-weight:800;color:#0284c7;margin-top:4px;line-height:1">${paying}</div>
+        <div style="font-size:0.72rem;color:#6b7280;margin-top:4px">sur ${total} membre${total > 1 ? 's' : ''} au total</div>
+      </div>
+      <div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:12px;padding:14px">
+        <div style="font-size:0.72rem;font-weight:700;color:#7e22ce;text-transform:uppercase;letter-spacing:0.06em">Taux de conversion</div>
+        <div style="font-size:1.75rem;font-weight:800;color:#9333ea;margin-top:4px;line-height:1">${conv} %</div>
+        <div style="font-size:0.72rem;color:#6b7280;margin-top:4px">membres avec plan payant</div>
+      </div>
+    `;
+
+    // Destroy static charts before re-rendering
+    if (_revenueCharts.plans) _revenueCharts.plans.destroy();
+    if (_revenueCharts.mrr)   _revenueCharts.mrr.destroy();
+
+    const isDark    = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#d1d5db' : '#374151';
+    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+    const bgPanel   = isDark ? '#1f2937' : '#ffffff';
+
+    _revenueCharts.plans = new Chart(document.getElementById('chartPlans'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Gratuit', 'Argent 🥈', 'Or 🥇'],
+        datasets: [{ data: [counts.free, counts.silver, counts.gold], backgroundColor: ['#e5e7eb', '#94a3b8', '#fbbf24'], borderColor: bgPanel, borderWidth: 4, hoverOffset: 8 }]
+      },
+      options: {
+        responsive: true, cutout: '62%',
+        plugins: {
+          legend: { position: 'bottom', labels: { color: textColor, padding: 18, font: { size: 13, weight: '600' } } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label} : ${ctx.raw} membre${ctx.raw !== 1 ? 's' : ''} (${total ? Math.round(ctx.raw / total * 100) : 0} %)` } }
+        }
+      }
+    });
+
+    _revenueCharts.mrr = new Chart(document.getElementById('chartMRR'), {
+      type: 'bar',
+      data: {
+        labels: ['Argent (3,99 €/mois)', 'Or (7,99 €/mois)'],
+        datasets: [{ label: 'MRR (€)', data: [+(counts.silver * PLAN_PRICE_MONTHLY.silver).toFixed(2), +(counts.gold * PLAN_PRICE_MONTHLY.gold).toFixed(2)], backgroundColor: ['rgba(148,163,184,0.8)', 'rgba(251,191,36,0.8)'], borderColor: ['#64748b', '#d97706'], borderWidth: 2, borderRadius: 8, borderSkipped: false }]
+      },
+      options: {
+        responsive: true,
+        scales: { x: { ticks: { color: textColor }, grid: { color: gridColor } }, y: { beginAtZero: true, ticks: { color: textColor, callback: v => v + ' €' }, grid: { color: gridColor } } },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${(+ctx.raw).toFixed(2)} € / mois` } } }
+      }
+    });
+
+    // Render time charts for the active tab
+    const activePeriod = document.querySelector('.rev-tab.active')?.dataset.period || 'day';
+    renderTimedCharts(_revenueUsers, activePeriod);
+
+  } catch (e) {
+    kpis.innerHTML = `<p style="color:red;grid-column:1/-1">Erreur réseau : ${e.message}</p>`;
+  }
+}
+
+// ── AI Revenue Forecast (inside revenue panel) ────────────────────────────────
+(function initAIForecast() {
+  const QUALITY_CONV   = [0, 0.12, 0.25, 0.45, 0.72, 1.10, 1.62, 2.25, 2.95, 3.60, 4.25];
+  const QUALITY_LABELS = ['','Très basique','Basique','Moyen-','Moyen','Acceptable','Bon','Très bon','Excellent','Exceptionnel','Parfait'];
+  const ARPU = 0.65 * 3.99 + 0.35 * 7.99;
+  const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+  let aifChart = null;
+
+  function convRate(q) {
+    const lo = Math.floor(q), hi = Math.ceil(q), t = q - lo;
+    return (QUALITY_CONV[lo] || 0) * (1 - t) + (QUALITY_CONV[hi] || 0) * t;
+  }
+  function trendSlope(pts) {
+    const n = pts.length, xm = (n - 1) / 2;
+    const ym = pts.reduce((a, b) => a + b, 0) / n;
+    let num = 0, den = 0;
+    pts.forEach((y, x) => { num += (x - xm) * (y - ym); den += (x - xm) ** 2; });
+    return den === 0 ? 0 : num / den;
+  }
+  function fmtEur(v) { return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Math.round(v)) + ' €'; }
+  function fmtNum(v) { return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(v); }
+
+  function updateForecast() {
+    const visitors = parseInt(document.getElementById('aifVisitors').value, 10);
+    const quality  = parseFloat(document.getElementById('aifQuality').value);
+    const target   = parseInt(document.getElementById('aifTarget').value, 10);
+    const histRaw  = [0, 1, 2, 3].map(i => {
+      const v = parseInt(document.getElementById('aifH' + i).value, 10);
+      return isNaN(v) || v < 0 ? null : v;
+    });
+    const histValid = histRaw.filter(v => v !== null);
+    const slope = histValid.length >= 2 ? trendSlope(histValid) : 0;
+
+    const rate = convRate(quality);
+    const subs = visitors * (rate / 100);
+    const mrr  = subs * ARPU;
+    const prob = Math.max(1, Math.min(99, Math.round(100 / (1 + Math.exp(-7 * (mrr / (target || 1) - 0.85))))));
+
+    document.getElementById('aifVisVal').textContent    = fmtNum(visitors);
+    document.getElementById('aifQualVal').textContent   = fmtNum(quality) + ' / 10';
+    document.getElementById('aifTargetVal').textContent = fmtEur(target);
+    document.getElementById('aifQualHint').textContent  = (QUALITY_LABELS[Math.round(quality)] || 'Bon') + ' — conversion estimée : ' + fmtNum(rate) + ' %';
+    document.getElementById('aifMRR').textContent       = fmtEur(mrr);
+    document.getElementById('aifSubs').textContent      = fmtNum(subs);
+    document.getElementById('aifProb').textContent      = prob + ' %';
+
+    // 6-month forecast
+    const now = new Date();
+    const labels = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      return MONTHS[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
+    });
+    const data = Array.from({ length: 6 }, (_, i) =>
+      Math.max(0, visitors + slope * (i + 1)) * (rate / 100) * ARPU
+    );
+    const upper = data.map((v, i) => v * (1 + 0.12 + i * 0.03));
+    const lower = data.map((v, i) => Math.max(0, v * (1 - 0.12 - i * 0.03)));
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textC  = isDark ? '#d1d5db' : '#374151';
+    const gridC  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+
+    if (aifChart) { aifChart.destroy(); aifChart = null; }
+    aifChart = new Chart(document.getElementById('aifChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Max', data: upper, borderColor: 'transparent', backgroundColor: 'rgba(22,163,74,0.10)', fill: '+1', pointRadius: 0, tension: 0.4 },
+          { label: 'MRR', data, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.12)', borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#16a34a', fill: false, tension: 0.4 },
+          { label: 'Min', data: lower, borderColor: 'transparent', backgroundColor: 'rgba(22,163,74,0.10)', fill: '-1', pointRadius: 0, tension: 0.4 },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                if (ctx.dataset.label === 'MRR') return ' MRR : ' + fmtEur(ctx.raw);
+                if (ctx.dataset.label === 'Max') return ' Max : ' + fmtEur(ctx.raw);
+                if (ctx.dataset.label === 'Min') return ' Min : ' + fmtEur(ctx.raw);
+                return '';
+              }
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: gridC }, ticks: { color: textC, font: { size: 11 } } },
+          y: { beginAtZero: true, grid: { color: gridC }, ticks: { color: textC, font: { size: 11 }, callback: v => fmtEur(v) } }
+        }
+      }
+    });
+  }
+
+  // Wire sliders + history inputs
+  function wireInputs() {
+    ['aifVisitors','aifQuality','aifTarget'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', updateForecast);
+    });
+    [0, 1, 2, 3].forEach(i => {
+      const el = document.getElementById('aifH' + i);
+      if (el) el.addEventListener('input', updateForecast);
+    });
+
+    // Month labels
+    const now = new Date();
+    [0, 1, 2, 3].forEach(i => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (4 - i), 1);
+      const el = document.getElementById('aifHL' + i);
+      if (el) el.textContent = MONTHS[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
+    });
+
+    updateForecast();
+  }
+
+  // "Analyser avec l'IA" button
+  function wireAnalyseBtn() {
+    const btn = document.getElementById('aifAnalyseBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      const visitors = parseInt(document.getElementById('aifVisitors').value, 10);
+      const quality  = parseFloat(document.getElementById('aifQuality').value);
+      const target   = parseInt(document.getElementById('aifTarget').value, 10);
+      const histRaw  = [0, 1, 2, 3].map(i => {
+        const v = parseInt(document.getElementById('aifH' + i).value, 10);
+        return isNaN(v) || v < 0 ? null : v;
+      });
+      const histValid = histRaw.filter(v => v !== null);
+      const slope  = histValid.length >= 2 ? trendSlope(histValid) : 0;
+      const rate   = convRate(quality);
+      const subs   = visitors * (rate / 100);
+      const mrr    = subs * ARPU;
+      const arr    = mrr * 12;
+      const prob   = Math.max(1, Math.min(99, Math.round(100 / (1 + Math.exp(-7 * (mrr / (target || 1) - 0.85))))));
+
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Analyse en cours…';
+
+      try {
+        const res = await fetch(`${API_URL}/api/ai/revenue-forecast`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeader() },
+          body: JSON.stringify({ visitors, quality, rate, mrr, arr, subs, slope, target, prob, history: histRaw }),
+        });
+        const d = await res.json();
+        document.getElementById('aifInsightText').textContent =
+          res.ok ? (d.analysis || 'Aucune analyse retournée.') : (d.error || 'Erreur API.');
+      } catch {
+        document.getElementById('aifInsightText').textContent = 'Impossible de joindre le serveur.';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✨ Analyser avec l\'IA';
+      }
+    });
+  }
+
+  // Init when revenue panel first opens
+  const btnRevenue = document.getElementById('btnRevenue');
+  if (btnRevenue) {
+    let wired = false;
+    btnRevenue.addEventListener('click', () => {
+      if (!wired) { wireInputs(); wireAnalyseBtn(); wired = true; }
+    });
+  }
+})();
 
 // ── Status bar ────────────────────────────────────────────────────────────────
 function showStatus(msg, isError = false) {

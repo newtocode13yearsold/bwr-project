@@ -1,4 +1,4 @@
-import { listItems, putUser } from '../kv.js';
+import { listItems, listKeys, putUser } from '../kv.js';
 import { getUserFromToken, hashPassword } from '../auth-utils.js';
 
 /**
@@ -110,6 +110,111 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     const id = pathname.split('/')[3];
     await env.BWR_KV.delete(`contact:${id}`);
     return json({ success: true });
+  }
+
+  // ── Visit analytics ──────────────────────────────────────────────────────────
+  if (pathname === '/api/analytics/visit' && request.method === 'POST') {
+    // Public endpoint – no auth required (fire-and-forget from every page)
+    try {
+      const body = await request.json().catch(() => ({}));
+      const user = await getUserFromToken(env, request).catch(() => null);
+      // Never record admin visits
+      if (user && user.role === 'admin') return json({ ok: true });
+      const id   = crypto.randomUUID();
+      const ts   = Date.now();
+      const visit = {
+        id,
+        timestamp: new Date(ts).toISOString(),
+        page:      typeof body.page === 'string' ? body.page.slice(0, 200) : '/',
+        userId:    user ? user.id   : null,
+        userName:  user ? user.name : null,
+        userAgent: (request.headers.get('User-Agent') || '').slice(0, 300),
+        ip:        request.headers.get('CF-Connecting-IP') || null,
+      };
+      // Pad ms to 13 digits so keys sort chronologically
+      const key = `visit:${String(ts).padStart(13, '0')}:${id}`;
+      await env.BWR_KV.put(key, JSON.stringify(visit), { expirationTtl: 60 * 60 * 24 * 30 }); // 30 days
+      return json({ ok: true });
+    } catch {
+      return json({ ok: false });
+    }
+  }
+
+  /* ── AI Revenue Forecast — calls Claude with the forecast data ──────── */
+  if (pathname === '/api/ai/revenue-forecast' && request.method === 'POST') {
+
+    if (!env.ANTHROPIC_API_KEY) return fail('ANTHROPIC_API_KEY non configuré.', 503);
+
+    let body;
+    try { body = await request.json(); } catch { return fail('JSON invalide.'); }
+
+    const { visitors = 0, quality = 5, rate = 0, mrr = 0, arr = 0,
+            subs = 0, slope = 0, target = 200, prob = 0, history = [] } = body;
+
+    const histStr = history.filter(v => v !== null).length > 0
+      ? history.map((v, i) => v !== null ? `M-${4 - i}: ${v} vis.` : null).filter(Boolean).join(', ')
+      : 'Aucun historique fourni';
+
+    const trendStr = slope > 0 ? `+${Math.round(slope)} vis./mois (croissance)` :
+                     slope < 0 ? `${Math.round(slope)} vis./mois (déclin)` : 'Stable';
+
+    const prompt = `Tu es un expert en croissance SaaS et monétisation d'applications web françaises.
+
+Analyse ces données de prévision de revenus pour BWR — une application de randonnée en forêt de Compiègne (France) avec deux plans payants : Argent (3,99 €/mois) et Or (7,99 €/mois).
+
+Données actuelles :
+- Visiteurs ce mois : ${Math.round(visitors).toLocaleString('fr-FR')}
+- Qualité du produit : ${quality}/10
+- Taux de conversion estimé : ${Number(rate).toFixed(2)} %
+- Abonnés payants estimés : ${Number(subs).toFixed(1)}
+- MRR estimé : ${Math.round(mrr)} €/mois
+- ARR projeté : ${Math.round(arr)} €/an
+- Tendance trafic : ${trendStr}
+- Objectif MRR : ${target} €
+- Probabilité d'atteindre l'objectif : ${prob} %
+- Historique trafic : ${histStr}
+
+Donne une analyse directe en 3-4 phrases, en français, qui couvre :
+1. Un constat honnête sur la situation actuelle
+2. Le levier le plus impactant pour augmenter les revenus maintenant
+3. Un objectif réaliste et chiffré à 3 mois
+
+Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse".`;
+
+    try {
+      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 300,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      if (!aiRes.ok) return fail('Erreur API Claude.', 502);
+      const d = await aiRes.json();
+      const analysis = d.content?.[0]?.text?.trim() || '';
+      return json({ analysis });
+    } catch {
+      return fail('Erreur lors de l\'appel à l\'IA.', 502);
+    }
+  }
+
+  if (pathname === '/api/analytics/visits' && request.method === 'GET') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+    const allKeys = await listKeys(env, 'visit:');
+    // Most recent first – keys are already chronological, so reverse
+    const recentKeys = allKeys.slice(-500).reverse();
+    const values = await Promise.all(recentKeys.map(k => env.BWR_KV.get(k.name)));
+    // Filter out any visits recorded by admin users (userId matches admin)
+    const visits = values.filter(Boolean).map(v => JSON.parse(v))
+      .filter(v => v.userId !== admin.id);
+    return json(visits);
   }
 
   return null;

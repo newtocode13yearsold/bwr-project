@@ -990,3 +990,346 @@
   margin: 8px 0 0;
   min-height: 18px;
 }
+
+
+/* ── AI Revenue Forecast section ─────────────────────────────────────────── */
+.arf-section {
+  position: relative;
+  background: linear-gradient(160deg, #0a1f0d 0%, #0e2a10 40%, #0b1e12 100%);
+  border-radius: 28px;
+  margin: 0 auto 64px;
+  max-width: var(--container);
+  overflow: hidden;
+  color: #e8f5e9;
+}
+.arf-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 50% at 70% 30%, rgba(163,230,53,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.arf-inner {
+  position: relative;
+  padding: 64px 52px 56px;
+}
+.arf-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(163,230,53,0.12);
+  border: 1px solid rgba(163,230,53,0.25);
+  color: #a3e635;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.arf-ai-dot {
+  width: 7px; height: 7px;
+  background: #a3e635;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #a3e635;
+  animation: arf-pulse 2s ease-in-out infinite;
+}
+@keyframes arf-pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.7); }
+}
+.arf-title { color: #f0fdf4 !important; margin: 16px 0 8px; }
+.arf-sub   { color: #86efac; max-width: 560px; }
+
+.arf-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 32px;
+  margin-top: 40px;
+  align-items: start;
+}
+
+/* ── Inputs panel ── */
+.arf-inputs {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.arf-inputs-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4ade80;
+  margin: 0 0 4px;
+}
+.arf-field { display: flex; flex-direction: column; gap: 8px; }
+.arf-field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.arf-field label, .arf-hist-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #bbf7d0;
+}
+.arf-val {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #a3e635;
+  font-variant-numeric: tabular-nums;
+}
+.arf-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.arf-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #a3e635;
+  box-shadow: 0 0 0 3px rgba(163,230,53,0.25);
+  transition: transform 0.15s;
+}
+.arf-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+.arf-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.3);
+}
+.arf-quality-hint {
+  font-size: 0.75rem;
+  color: #4ade80;
+  font-style: italic;
+}
+
+/* History grid */
+.arf-field-history { gap: 10px; }
+.arf-history-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.arf-hist-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.arf-hist-month {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.arf-hist-input {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: #e8f5e9;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 7px 4px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.arf-hist-input:focus { border-color: #a3e635; }
+.arf-hist-input::placeholder { color: rgba(255,255,255,0.2); }
+.arf-hist-note {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.3);
+  margin: 0;
+}
+
+/* ── Output panel ── */
+.arf-output {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Probability ring card */
+.arf-prob-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.arf-prob-ring-wrap {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+}
+.arf-prob-ring { width: 120px; height: 120px; transform: rotate(-90deg); }
+.arf-ring-bg   { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 10; }
+.arf-ring-fill {
+  fill: none;
+  stroke: #a3e635;
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.4,0,0.2,1), stroke 0.4s;
+}
+.arf-prob-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.arf-prob-pct {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #f0fdf4;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.arf-prob-sublabel {
+  font-size: 0.58rem;
+  color: rgba(255,255,255,0.4);
+  max-width: 70px;
+  line-height: 1.3;
+  margin-top: 3px;
+}
+.arf-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.arf-trend-icon { font-size: 1rem; }
+.arf-trend-text { color: #bbf7d0; }
+.arf-trend.up   { background: rgba(163,230,53,0.1); border-color: rgba(163,230,53,0.3); }
+.arf-trend.down { background: rgba(239,68,68,0.1);  border-color: rgba(239,68,68,0.3); }
+
+/* KPIs */
+.arf-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.arf-kpi {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.arf-kpi-val {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f0fdf4;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.arf-kpi-label {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.4);
+  font-weight: 500;
+}
+
+/* Chart */
+.arf-chart-wrap {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 20px 20px 16px;
+}
+.arf-chart-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 12px;
+}
+
+/* AI insight */
+.arf-insight {
+  background: rgba(163,230,53,0.06);
+  border: 1px solid rgba(163,230,53,0.2);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.arf-insight-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+.arf-insight p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #86efac;
+  line-height: 1.55;
+}
+
+@media (max-width: 900px) {
+  .arf-layout { grid-template-columns: 1fr; }
+  .arf-inner  { padding: 36px 24px 32px; }
+  .arf-kpis   { grid-template-columns: repeat(2, 1fr); }
+  .arf-section { border-radius: 16px; margin-bottom: 40px; }
+}
+@media (max-width: 480px) {
+  .arf-prob-card { flex-direction: column; gap: 16px; }
+  .arf-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── AI analyse button ───────────────────────────────────────────────────── */
+.arf-ai-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  border: none;
+  border-radius: 12px;
+  color: #f0fdf4;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px rgba(22,163,74,0.35);
+}
+.arf-ai-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(22,163,74,0.5);
+}
+.arf-ai-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+.arf-ai-btn-icon { font-size: 1rem; }
+.arf-insight.loading p { opacity: 0.5; font-style: italic; }

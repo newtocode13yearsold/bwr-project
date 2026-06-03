@@ -7,6 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
   <title>BWR — Admin</title>
   <link rel="stylesheet" href="lib/leaflet.css" />
@@ -42,6 +43,7 @@
         <button class="btn-icon" id="btnDrawPath" title="Dessiner"><span class="btn-emoji">✏</span><span class="btn-label">Dessiner</span></button>
         <button class="btn-icon" id="btnMessages" title="Messages de contact" style="position:relative"><span class="btn-emoji">📬</span><span class="btn-label">Messages</span><span id="msgBadge" style="display:none;position:absolute;top:4px;right:4px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:700;border-radius:999px;padding:1px 5px;line-height:1.4"></span></button>
         <button class="btn-icon" id="btnMembers" title="Gérer les membres"><span class="btn-emoji">👥</span><span class="btn-label">Membres</span></button>
+        <button class="btn-icon" id="btnRevenue" title="Tableau de bord revenus"><span class="btn-emoji">💰</span><span class="btn-label">Revenus</span></button>
         <button class="btn-icon" id="btnSplitCancel" title="Annuler le découpage" style="display:none;background:rgba(239,68,68,0.4)"><span class="btn-emoji">✕</span><span class="btn-label">Annuler</span></button>
         <div class="user-menu" id="userMenu"></div>
       </div>
@@ -191,11 +193,22 @@
 
     <!-- Members management panel -->
     <div id="membersPanel" class="path-form hidden" style="max-height:80vh;overflow-y:auto">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3 style="margin:0">👥 Gestion des membres</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h3 style="margin:0" id="membersPanelTitle">👥 Gestion des membres</h3>
         <button class="btn-secondary" id="btnCloseMembersPanel" style="width:auto;padding:6px 14px">✕</button>
       </div>
-      <div id="membersList" style="display:flex;flex-direction:column;gap:10px"></div>
+      <!-- Panel tabs -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid #e5e7eb;padding-bottom:10px">
+        <button class="btn-secondary members-tab active" data-tab="members" style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">👥 Membres</button>
+        <button class="btn-secondary members-tab" data-tab="visits" style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">📊 Visites</button>
+      </div>
+      <!-- Members tab content -->
+      <div id="membersList" data-panel="members" style="display:flex;flex-direction:column;gap:10px"></div>
+      <!-- Visits tab content -->
+      <div id="visitsList" data-panel="visits" style="display:none;flex-direction:column;gap:0">
+        <div id="visitsStats" style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap"></div>
+        <div id="visitsItems" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
     </div>
 
     <!-- Member plan modal -->
@@ -229,6 +242,137 @@
       </div>
     </div>
 
+    <!-- Revenue dashboard panel -->
+    <div id="revenuePanel" class="path-form hidden" style="max-height:85vh;overflow-y:auto;width:min(660px,calc(100vw - 32px))">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0">💰 Tableau de bord revenus</h3>
+        <button class="btn-secondary" id="btnCloseRevenuePanel" style="width:auto;padding:6px 14px">✕</button>
+      </div>
+      <!-- KPI cards -->
+      <div id="revenueKPIs" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px"></div>
+      <!-- Plan distribution donut (always visible) -->
+      <div style="margin-bottom:24px">
+        <div style="font-weight:700;font-size:0.82rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Répartition des membres</div>
+        <canvas id="chartPlans" height="200"></canvas>
+      </div>
+      <!-- MRR breakdown bar (always visible) -->
+      <div style="margin-bottom:24px">
+        <div style="font-weight:700;font-size:0.82rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">MRR par plan (€/mois)</div>
+        <canvas id="chartMRR" height="150"></canvas>
+      </div>
+      <!-- Time period tabs -->
+      <div style="display:flex;gap:6px;margin-bottom:16px;border-top:1px solid #e5e7eb;padding-top:16px">
+        <button class="btn-secondary rev-tab active" data-period="day"   style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">Jour</button>
+        <button class="btn-secondary rev-tab"        data-period="week"  style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">Semaine</button>
+        <button class="btn-secondary rev-tab"        data-period="month" style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">Mois</button>
+        <button class="btn-secondary rev-tab"        data-period="year"  style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">Année</button>
+      </div>
+      <!-- Time-based charts (swap per tab) -->
+      <div style="display:flex;flex-direction:column;gap:24px">
+        <div>
+          <div id="revNewLabel" style="font-weight:700;font-size:0.82rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Nouveaux membres</div>
+          <canvas id="chartNew" height="180"></canvas>
+        </div>
+        <div>
+          <div id="revRevLabel" style="font-weight:700;font-size:0.82rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Revenus estimés (€)</div>
+          <canvas id="chartRevTime" height="160"></canvas>
+        </div>
+      </div>
+
+      <!-- ── AI Revenue Forecast ───────────────────────────────────────── -->
+      <div style="border-top:1px solid #e5e7eb;margin-top:28px;padding-top:24px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#0a1f0d;border-radius:8px;font-size:0.9rem">🤖</span>
+          <div>
+            <div style="font-weight:800;font-size:0.95rem;color:#111827">Prévisions IA</div>
+            <div style="font-size:0.72rem;color:#6b7280">Modèle prédictif · Propulsé par Claude</div>
+          </div>
+        </div>
+
+        <!-- Sliders -->
+        <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:20px">
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <label style="font-size:0.82rem;font-weight:600;color:#374151">Visiteurs ce mois</label>
+              <span style="font-size:0.82rem;font-weight:700;color:#15803d" id="aifVisVal">500</span>
+            </div>
+            <input type="range" id="aifVisitors" min="100" max="30000" step="100" value="500" style="width:100%;accent-color:#15803d">
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <label style="font-size:0.82rem;font-weight:600;color:#374151">Qualité du site</label>
+              <span style="font-size:0.82rem;font-weight:700;color:#15803d" id="aifQualVal">6 / 10</span>
+            </div>
+            <input type="range" id="aifQuality" min="1" max="10" step="0.5" value="6" style="width:100%;accent-color:#15803d">
+            <div style="font-size:0.72rem;color:#6b7280;margin-top:3px" id="aifQualHint">Bon — conversion estimée : 1,62 %</div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <label style="font-size:0.82rem;font-weight:600;color:#374151">Objectif MRR</label>
+              <span style="font-size:0.82rem;font-weight:700;color:#15803d" id="aifTargetVal">200 €</span>
+            </div>
+            <input type="range" id="aifTarget" min="50" max="5000" step="50" value="200" style="width:100%;accent-color:#15803d">
+          </div>
+        </div>
+
+        <!-- History -->
+        <div style="margin-bottom:20px">
+          <div style="font-size:0.78rem;font-weight:600;color:#374151;margin-bottom:8px">Historique visiteurs (4 derniers mois)</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="aifHistGrid">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+              <span style="font-size:0.68rem;font-weight:700;color:#9ca3af;text-transform:uppercase" id="aifHL0">M-4</span>
+              <input type="number" id="aifH0" min="0" placeholder="—" style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 4px;text-align:center;font-size:0.8rem;font-weight:600;font-family:inherit;outline:none">
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+              <span style="font-size:0.68rem;font-weight:700;color:#9ca3af;text-transform:uppercase" id="aifHL1">M-3</span>
+              <input type="number" id="aifH1" min="0" placeholder="—" style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 4px;text-align:center;font-size:0.8rem;font-weight:600;font-family:inherit;outline:none">
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+              <span style="font-size:0.68rem;font-weight:700;color:#9ca3af;text-transform:uppercase" id="aifHL2">M-2</span>
+              <input type="number" id="aifH2" min="0" placeholder="—" style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 4px;text-align:center;font-size:0.8rem;font-weight:600;font-family:inherit;outline:none">
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+              <span style="font-size:0.68rem;font-weight:700;color:#9ca3af;text-transform:uppercase" id="aifHL3">M-1</span>
+              <input type="number" id="aifH3" min="0" placeholder="—" style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 4px;text-align:center;font-size:0.8rem;font-weight:600;font-family:inherit;outline:none">
+            </div>
+          </div>
+          <div style="font-size:0.7rem;color:#9ca3af;margin-top:6px">Laissez vide pour ignorer. Utilisé pour calculer la tendance.</div>
+        </div>
+
+        <!-- KPI mini-row -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:1rem;font-weight:800;color:#15803d" id="aifMRR">—</div>
+            <div style="font-size:0.65rem;color:#6b7280;font-weight:500">MRR projeté</div>
+          </div>
+          <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:1rem;font-weight:800;color:#0284c7" id="aifSubs">—</div>
+            <div style="font-size:0.65rem;color:#6b7280;font-weight:500">Abonnés estimés</div>
+          </div>
+          <div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:1rem;font-weight:800;color:#9333ea" id="aifProb">—</div>
+            <div style="font-size:0.65rem;color:#6b7280;font-weight:500">Prob. objectif</div>
+          </div>
+        </div>
+
+        <!-- Forecast chart -->
+        <div style="margin-bottom:16px">
+          <div style="font-size:0.72rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Prévision MRR · 6 mois</div>
+          <canvas id="aifChart" height="160"></canvas>
+        </div>
+
+        <!-- AI insight box -->
+        <div id="aifInsight" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start">
+          <span style="font-size:1rem;flex-shrink:0">🤖</span>
+          <p id="aifInsightText" style="margin:0;font-size:0.8rem;color:#166534;line-height:1.55">Ajustez les paramètres puis cliquez sur Analyser.</p>
+        </div>
+
+        <button id="aifAnalyseBtn" style="width:100%;padding:13px;background:linear-gradient(135deg,#16a34a,#15803d);border:none;border-radius:10px;color:white;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(22,163,74,0.3);transition:opacity 0.2s">
+          <span>✨</span> Analyser avec l'IA
+        </button>
+      </div>
+    </div>
+
     <div id="map"></div>
 
     <div class="legend">
@@ -245,6 +389,7 @@
   </div>
 
 
+  <script src="lib/chart.umd.min.js"></script>
   <script src="lib/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
   <script src="js/config.js"></script>

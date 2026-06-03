@@ -7,6 +7,7 @@
   <title>BWR — Choisir votre plan</title>
   <meta name="description" content="Comparez les plans BWR : Gratuit, Argent et Or. Planification illimitée, cartes hors-ligne, export GPX, suggestions intelligentes — tout pour vivre la forêt de Compiègne autrement." />
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
 
   <!-- Fonts -->
@@ -394,6 +395,136 @@
       </div>
     </section>
 
+    <!-- ── AI Revenue Forecast (admin only) ──────────────────────────────── -->
+    <section class="arf-section" id="aiRevenueForecast">
+      <div class="arf-glow"></div>
+      <div class="arf-inner">
+        <div class="arf-head">
+          <span class="section-eyebrow arf-eyebrow">
+            <span class="arf-ai-dot"></span>
+            Moteur IA · Prévisions propriétaire
+          </span>
+          <h2 class="section-title display arf-title">Prévisions de revenus</h2>
+          <p class="section-sub arf-sub">Modèle prédictif combinant qualité produit, trafic et tendances historiques pour estimer vos revenus futurs avec intervalle de confiance.</p>
+        </div>
+
+        <div class="arf-layout">
+          <!-- INPUTS -->
+          <div class="arf-inputs">
+            <h3 class="arf-inputs-title">Paramètres du modèle</h3>
+
+            <div class="arf-field">
+              <div class="arf-field-header">
+                <label for="arfVisitors">Visiteurs ce mois</label>
+                <span class="arf-val" id="arfVisitorsVal">2 000</span>
+              </div>
+              <input type="range" class="arf-slider" id="arfVisitors" min="100" max="30000" step="100" value="2000">
+              <div class="arf-slider-labels"><span>100</span><span>30 000</span></div>
+            </div>
+
+            <div class="arf-field">
+              <div class="arf-field-header">
+                <label for="arfQuality">Qualité du site</label>
+                <span class="arf-val" id="arfQualityVal">6 / 10</span>
+              </div>
+              <input type="range" class="arf-slider" id="arfQuality" min="1" max="10" step="0.5" value="6">
+              <div class="arf-quality-hint" id="arfQualityHint">Bon — conversion estimée : 1,62 %</div>
+            </div>
+
+            <div class="arf-field">
+              <div class="arf-field-header">
+                <label for="arfTarget">Objectif MRR</label>
+                <span class="arf-val" id="arfTargetVal">200 €</span>
+              </div>
+              <input type="range" class="arf-slider" id="arfTarget" min="50" max="5000" step="50" value="200">
+              <div class="arf-slider-labels"><span>50 €</span><span>5 000 €</span></div>
+            </div>
+
+            <div class="arf-field arf-field-history">
+              <label class="arf-hist-label">Historique visiteurs (4 derniers mois)</label>
+              <div class="arf-history-grid">
+                <div class="arf-hist-cell">
+                  <span class="arf-hist-month" id="histLabel0">M-4</span>
+                  <input type="number" class="arf-hist-input" id="hist0" min="0" placeholder="—">
+                </div>
+                <div class="arf-hist-cell">
+                  <span class="arf-hist-month" id="histLabel1">M-3</span>
+                  <input type="number" class="arf-hist-input" id="hist1" min="0" placeholder="—">
+                </div>
+                <div class="arf-hist-cell">
+                  <span class="arf-hist-month" id="histLabel2">M-2</span>
+                  <input type="number" class="arf-hist-input" id="hist2" min="0" placeholder="—">
+                </div>
+                <div class="arf-hist-cell">
+                  <span class="arf-hist-month" id="histLabel3">M-1</span>
+                  <input type="number" class="arf-hist-input" id="hist3" min="0" placeholder="—">
+                </div>
+              </div>
+              <p class="arf-hist-note">Laissez vide pour les mois sans données. Utilisé pour calculer la tendance.</p>
+            </div>
+          </div>
+
+          <!-- OUTPUT -->
+          <div class="arf-output">
+            <!-- Probability ring -->
+            <div class="arf-prob-card">
+              <div class="arf-prob-ring-wrap">
+                <svg class="arf-prob-ring" viewBox="0 0 120 120" aria-hidden="true">
+                  <circle class="arf-ring-bg"   cx="60" cy="60" r="50"/>
+                  <circle class="arf-ring-fill" id="arfRingFill" cx="60" cy="60" r="50"
+                    stroke-dasharray="314.16" stroke-dashoffset="314.16"/>
+                </svg>
+                <div class="arf-prob-center">
+                  <span class="arf-prob-pct" id="arfProbPct">—</span>
+                  <span class="arf-prob-sublabel">de chance d'atteindre l'objectif</span>
+                </div>
+              </div>
+              <div class="arf-trend" id="arfTrend">
+                <span class="arf-trend-icon" id="arfTrendIcon">→</span>
+                <span class="arf-trend-text" id="arfTrendText">Tendance stable</span>
+              </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="arf-kpis">
+              <div class="arf-kpi">
+                <span class="arf-kpi-val" id="arfMRR">— €</span>
+                <span class="arf-kpi-label">MRR estimé</span>
+              </div>
+              <div class="arf-kpi">
+                <span class="arf-kpi-val" id="arfSubs">—</span>
+                <span class="arf-kpi-label">Abonnés estimés</span>
+              </div>
+              <div class="arf-kpi">
+                <span class="arf-kpi-val" id="arfARR">— €</span>
+                <span class="arf-kpi-label">ARR projeté</span>
+              </div>
+              <div class="arf-kpi">
+                <span class="arf-kpi-val" id="arfConvRate">— %</span>
+                <span class="arf-kpi-label">Taux de conversion</span>
+              </div>
+            </div>
+
+            <!-- Forecast chart -->
+            <div class="arf-chart-wrap">
+              <div class="arf-chart-title">Prévision MRR · 6 mois</div>
+              <canvas id="arfChart"></canvas>
+            </div>
+
+            <!-- AI insight -->
+            <div class="arf-insight" id="arfInsight">
+              <span class="arf-insight-icon">🤖</span>
+              <p id="arfInsightText">Ajustez les paramètres puis cliquez sur Analyser pour obtenir une analyse par l'IA.</p>
+            </div>
+            <button class="arf-ai-btn" id="arfAnalyseBtn">
+              <span class="arf-ai-btn-icon">✨</span>
+              Analyser avec l'IA
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ── Final CTA ────────────────────────────────────────────────────── -->
     <section class="final-cta">
       <div class="fc-bg"></div>
@@ -487,6 +618,7 @@
     </div>
   </div>
 
+  <script src="lib/chart.umd.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/features.js"></script>
