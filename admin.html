@@ -285,22 +285,18 @@
           <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#0a1f0d;border-radius:8px;font-size:0.9rem">🤖</span>
           <div>
             <div style="font-weight:800;font-size:0.95rem;color:#111827">Prévisions IA</div>
-            <div style="font-size:0.72rem;color:#6b7280">Modèle prédictif · Propulsé par Claude</div>
+            <div style="font-size:0.72rem;color:#6b7280">Données réelles · Propulsé par Llama 3.1</div>
           </div>
         </div>
 
-        <!-- Sliders -->
+        <!-- Auto-data status -->
+        <div id="aifDataStatus" style="font-size:0.75rem;color:#6b7280;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;margin-bottom:16px">⏳ En attente d'ouverture du panneau…</div>
+
+        <!-- Sliders (quality + target only — visitors/history auto-fetched) -->
         <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:20px">
           <div>
             <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-              <label style="font-size:0.82rem;font-weight:600;color:#374151">Visiteurs ce mois</label>
-              <span style="font-size:0.82rem;font-weight:700;color:#15803d" id="aifVisVal">500</span>
-            </div>
-            <input type="range" id="aifVisitors" min="100" max="30000" step="100" value="500" style="width:100%;accent-color:#15803d">
-          </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-              <label style="font-size:0.82rem;font-weight:600;color:#374151">Qualité du site</label>
+              <label style="font-size:0.82rem;font-weight:600;color:#374151">Qualité perçue du site</label>
               <span style="font-size:0.82rem;font-weight:700;color:#15803d" id="aifQualVal">6 / 10</span>
             </div>
             <input type="range" id="aifQuality" min="1" max="10" step="0.5" value="6" style="width:100%;accent-color:#15803d">
@@ -313,30 +309,6 @@
             </div>
             <input type="range" id="aifTarget" min="50" max="5000" step="50" value="200" style="width:100%;accent-color:#15803d">
           </div>
-        </div>
-
-        <!-- History -->
-        <div style="margin-bottom:20px">
-          <div style="font-size:0.78rem;font-weight:600;color:#374151;margin-bottom:8px">Historique visiteurs (4 derniers mois)</div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="aifHistGrid">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-              <span style="font-size:0.68rem;font-weight:700;color:#9ca3af;text-transform:uppercase" id="aifHL0">M-4</span>
-              <input type="number" id="aifH0" min="0" placeholder="—" style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 4px;text-align:center;font-size:0.8rem;font-weight:600;font-family:inherit;outline:none">
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-              <span style="font-size:0.68rem;font-weight:700;color:#9ca3af;text-transform:uppercase" id="aifHL1">M-3</span>
-              <input type="number" id="aifH1" min="0" placeholder="—" style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 4px;text-align:center;font-size:0.8rem;font-weight:600;font-family:inherit;outline:none">
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-              <span style="font-size:0.68rem;font-weight:700;color:#9ca3af;text-transform:uppercase" id="aifHL2">M-2</span>
-              <input type="number" id="aifH2" min="0" placeholder="—" style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 4px;text-align:center;font-size:0.8rem;font-weight:600;font-family:inherit;outline:none">
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-              <span style="font-size:0.68rem;font-weight:700;color:#9ca3af;text-transform:uppercase" id="aifHL3">M-1</span>
-              <input type="number" id="aifH3" min="0" placeholder="—" style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 4px;text-align:center;font-size:0.8rem;font-weight:600;font-family:inherit;outline:none">
-            </div>
-          </div>
-          <div style="font-size:0.7rem;color:#9ca3af;margin-top:6px">Laissez vide pour ignorer. Utilisé pour calculer la tendance.</div>
         </div>
 
         <!-- KPI mini-row -->
@@ -364,7 +336,7 @@
         <!-- AI insight box -->
         <div id="aifInsight" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start">
           <span style="font-size:1rem;flex-shrink:0">🤖</span>
-          <p id="aifInsightText" style="margin:0;font-size:0.8rem;color:#166534;line-height:1.55">Ajustez les paramètres puis cliquez sur Analyser.</p>
+          <p id="aifInsightText" style="margin:0;font-size:0.8rem;color:#166534;line-height:1.55">Les données réelles sont chargées automatiquement. Cliquez sur Analyser pour obtenir une analyse IA.</p>
         </div>
 
         <button id="aifAnalyseBtn" style="width:100%;padding:13px;background:linear-gradient(135deg,#16a34a,#15803d);border:none;border-radius:10px;color:white;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(22,163,74,0.3);transition:opacity 0.2s">

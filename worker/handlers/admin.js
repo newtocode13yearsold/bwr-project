@@ -147,7 +147,8 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     try { body = await request.json(); } catch { return fail('JSON invalide.'); }
 
     const { visitors = 0, quality = 5, rate = 0, mrr = 0, arr = 0,
-            subs = 0, slope = 0, target = 200, prob = 0, history = [] } = body;
+            subs = 0, slope = 0, target = 200, prob = 0, history = [],
+            silver = 0, gold = 0, totalUsers = 0, realConv = 0 } = body;
 
     const histStr = history.filter(v => v !== null).length > 0
       ? history.map((v, i) => v !== null ? `M-${4 - i}: ${v} vis.` : null).filter(Boolean).join(', ')
@@ -160,17 +161,17 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
 
 Analyse ces données de prévision de revenus pour BWR — une application de randonnée en forêt de Compiègne (France) avec deux plans payants : Argent (3,99 €/mois) et Or (7,99 €/mois).
 
-Données actuelles :
+Données réelles (tirées du tableau de bord admin) :
 - Visiteurs ce mois : ${Math.round(visitors)}
-- Qualité du produit : ${quality}/10
-- Taux de conversion estimé : ${Number(rate).toFixed(2)} %
-- Abonnés payants estimés : ${Number(subs).toFixed(1)}
-- MRR estimé : ${Math.round(mrr)} €/mois
-- ARR projeté : ${Math.round(arr)} €/an
-- Tendance trafic : ${trendStr}
-- Objectif MRR : ${target} €
-- Probabilité d'atteindre l'objectif : ${prob} %
 - Historique trafic : ${histStr}
+- Tendance trafic : ${trendStr}
+- Membres total : ${totalUsers} (dont ${Math.round(totalUsers - silver - gold)} gratuits, ${silver} Argent, ${gold} Or)
+- Abonnés payants réels : ${Math.round(subs)} (${Number(realConv > 0 ? realConv : rate).toFixed(1)} % de conversion)
+- MRR réel : ${Number(mrr).toFixed(2)} €/mois
+- ARR annualisé : ${Math.round(arr)} €/an
+- Qualité perçue du site : ${quality}/10
+- Objectif MRR visé : ${target} €
+- Probabilité d'atteindre l'objectif : ${prob} %
 
 Donne une analyse directe en 3-4 phrases, en français, qui couvre :
 1. Un constat honnête sur la situation actuelle

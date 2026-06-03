@@ -1504,10 +1504,11 @@ async function loadRevenue() {
 (function initAIForecast() {
   const QUALITY_CONV   = [0, 0.12, 0.25, 0.45, 0.72, 1.10, 1.62, 2.25, 2.95, 3.60, 4.25];
   const QUALITY_LABELS = ['','Très basique','Basique','Moyen-','Moyen','Acceptable','Bon','Très bon','Excellent','Exceptionnel','Parfait'];
-  const ARPU = 0.65 * 3.99 + 0.35 * 7.99;
+  const ARPU   = 0.65 * 3.99 + 0.35 * 7.99;
   const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
-  let aifChart = null;
+  let aifChart  = null;
+  let _realData = null; // populated from API calls
 
   function convRate(q) {
     const lo = Math.floor(q), hi = Math.ceil(q), t = q - lo;
@@ -1523,39 +1524,88 @@ async function loadRevenue() {
   function fmtEur(v) { return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Math.round(v)) + ' €'; }
   function fmtNum(v) { return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(v); }
 
+  async function loadRealData() {
+    const statusEl = document.getElementById('aifDataStatus');
+    statusEl.textContent = '⏳ Chargement des données réelles…';
+
+    try {
+      const [visitsRes, usersRes] = await Promise.all([
+        fetch(`${API_URL}/api/analytics/visits`, { headers: authHeader() }),
+        fetch(`${API_URL}/api/users`, { headers: authHeader() }),
+      ]);
+
+      const visits = visitsRes.ok ? await visitsRes.json() : [];
+      const users  = usersRes.ok  ? await usersRes.json()  : (_revenueUsers || []);
+
+      // Group visit counts per calendar month (last 5 months, index 4 = current)
+      const now = new Date();
+      const slots = Array.from({ length: 5 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - (4 - i), 1);
+        return { year: d.getFullYear(), month: d.getMonth(), count: 0 };
+      });
+      visits.forEach(v => {
+        const d   = new Date(v.timestamp);
+        const idx = slots.findIndex(s => s.year === d.getFullYear() && s.month === d.getMonth());
+        if (idx >= 0) slots[idx].count++;
+      });
+
+      const history       = slots.slice(0, 4).map(s => s.count); // M-4 … M-1
+      const visitsCurrent = slots[4].count;
+      const histValid     = history.filter(v => v > 0);
+      const slope         = histValid.length >= 2 ? trendSlope(history) : 0;
+
+      // Real subscriber counts from user list
+      const counts = { free: 0, silver: 0, gold: 0 };
+      users.forEach(u => { if (u.role !== 'admin') counts[u.plan || 'free']++; });
+      const totalUsers  = counts.free + counts.silver + counts.gold;
+      const payingUsers = counts.silver + counts.gold;
+      const realMRR     = counts.silver * 3.99 + counts.gold * 7.99;
+      const realConv    = totalUsers > 0 ? (payingUsers / totalUsers * 100) : 0;
+
+      _realData = { visitors: visitsCurrent, history, slope, silver: counts.silver, gold: counts.gold, totalUsers, payingUsers, realMRR, realConv };
+
+      const trendLabel = slope > 0 ? `+${Math.round(slope)} vis./mois` : slope < 0 ? `${Math.round(slope)} vis./mois` : 'Stable';
+      statusEl.textContent = `✅ ${visitsCurrent} visites ce mois · ${payingUsers} abonné${payingUsers !== 1 ? 's' : ''} payant${payingUsers !== 1 ? 's' : ''} · Tendance : ${trendLabel}`;
+      statusEl.style.color = '#15803d';
+
+      updateForecast();
+    } catch {
+      statusEl.textContent = '⚠️ Erreur de chargement — prévisions basées sur les sliders';
+      updateForecast();
+    }
+  }
+
   function updateForecast() {
-    const visitors = parseInt(document.getElementById('aifVisitors').value, 10);
-    const quality  = parseFloat(document.getElementById('aifQuality').value);
-    const target   = parseInt(document.getElementById('aifTarget').value, 10);
-    const histRaw  = [0, 1, 2, 3].map(i => {
-      const v = parseInt(document.getElementById('aifH' + i).value, 10);
-      return isNaN(v) || v < 0 ? null : v;
-    });
-    const histValid = histRaw.filter(v => v !== null);
-    const slope = histValid.length >= 2 ? trendSlope(histValid) : 0;
+    const quality = parseFloat(document.getElementById('aifQuality').value);
+    const target  = parseInt(document.getElementById('aifTarget').value, 10);
 
-    const rate = convRate(quality);
-    const subs = visitors * (rate / 100);
-    const mrr  = subs * ARPU;
-    const prob = Math.max(1, Math.min(99, Math.round(100 / (1 + Math.exp(-7 * (mrr / (target || 1) - 0.85))))));
+    const visitors = _realData ? _realData.visitors : 500;
+    const slope    = _realData ? _realData.slope    : 0;
+    const rate     = convRate(quality);
 
-    document.getElementById('aifVisVal').textContent    = fmtNum(visitors);
+    // Show real MRR when available, fall back to quality-based projection
+    const displayMRR  = _realData ? _realData.realMRR  : visitors * (rate / 100) * ARPU;
+    const displaySubs = _realData ? _realData.payingUsers : visitors * (rate / 100);
+    const prob = Math.max(1, Math.min(99, Math.round(100 / (1 + Math.exp(-7 * (displayMRR / (target || 1) - 0.85))))));
+
     document.getElementById('aifQualVal').textContent   = fmtNum(quality) + ' / 10';
     document.getElementById('aifTargetVal').textContent = fmtEur(target);
     document.getElementById('aifQualHint').textContent  = (QUALITY_LABELS[Math.round(quality)] || 'Bon') + ' — conversion estimée : ' + fmtNum(rate) + ' %';
-    document.getElementById('aifMRR').textContent       = fmtEur(mrr);
-    document.getElementById('aifSubs').textContent      = fmtNum(subs);
+    document.getElementById('aifMRR').textContent       = fmtEur(displayMRR);
+    document.getElementById('aifSubs').textContent      = _realData ? String(displaySubs) : fmtNum(displaySubs);
     document.getElementById('aifProb').textContent      = prob + ' %';
 
-    // 6-month forecast
+    // 6-month forecast chart
     const now = new Date();
     const labels = Array.from({ length: 6 }, (_, i) => {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
       return MONTHS[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
     });
-    const data = Array.from({ length: 6 }, (_, i) =>
-      Math.max(0, visitors + slope * (i + 1)) * (rate / 100) * ARPU
-    );
+    const data = Array.from({ length: 6 }, (_, i) => {
+      const v = Math.max(0, visitors + slope * (i + 1)) * (rate / 100) * ARPU;
+      // Anchor month-0 to real MRR when available
+      return i === 0 && _realData ? _realData.realMRR : v;
+    });
     const upper = data.map((v, i) => v * (1 + 0.12 + i * 0.03));
     const lower = data.map((v, i) => Math.max(0, v * (1 - 0.12 - i * 0.03)));
 
@@ -1598,47 +1648,34 @@ async function loadRevenue() {
     });
   }
 
-  // Wire sliders + history inputs
   function wireInputs() {
-    ['aifVisitors','aifQuality','aifTarget'].forEach(id => {
+    ['aifQuality', 'aifTarget'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('input', updateForecast);
     });
-    [0, 1, 2, 3].forEach(i => {
-      const el = document.getElementById('aifH' + i);
-      if (el) el.addEventListener('input', updateForecast);
-    });
-
-    // Month labels
-    const now = new Date();
-    [0, 1, 2, 3].forEach(i => {
-      const d = new Date(now.getFullYear(), now.getMonth() - (4 - i), 1);
-      const el = document.getElementById('aifHL' + i);
-      if (el) el.textContent = MONTHS[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
-    });
-
     updateForecast();
+    loadRealData();
   }
 
-  // "Analyser avec l'IA" button
   function wireAnalyseBtn() {
     const btn = document.getElementById('aifAnalyseBtn');
     if (!btn) return;
     btn.addEventListener('click', async () => {
-      const visitors = parseInt(document.getElementById('aifVisitors').value, 10);
-      const quality  = parseFloat(document.getElementById('aifQuality').value);
-      const target   = parseInt(document.getElementById('aifTarget').value, 10);
-      const histRaw  = [0, 1, 2, 3].map(i => {
-        const v = parseInt(document.getElementById('aifH' + i).value, 10);
-        return isNaN(v) || v < 0 ? null : v;
-      });
-      const histValid = histRaw.filter(v => v !== null);
-      const slope  = histValid.length >= 2 ? trendSlope(histValid) : 0;
-      const rate   = convRate(quality);
-      const subs   = visitors * (rate / 100);
-      const mrr    = subs * ARPU;
-      const arr    = mrr * 12;
-      const prob   = Math.max(1, Math.min(99, Math.round(100 / (1 + Math.exp(-7 * (mrr / (target || 1) - 0.85))))));
+      const quality = parseFloat(document.getElementById('aifQuality').value);
+      const target  = parseInt(document.getElementById('aifTarget').value, 10);
+      const rate    = convRate(quality);
+
+      const visitors   = _realData ? _realData.visitors   : 500;
+      const history    = _realData ? _realData.history     : [];
+      const slope      = _realData ? _realData.slope       : 0;
+      const subs       = _realData ? _realData.payingUsers : visitors * (rate / 100);
+      const mrr        = _realData ? _realData.realMRR     : subs * ARPU;
+      const arr        = mrr * 12;
+      const silver     = _realData ? _realData.silver      : 0;
+      const gold       = _realData ? _realData.gold        : 0;
+      const totalUsers = _realData ? _realData.totalUsers  : 0;
+      const realConv   = _realData ? _realData.realConv    : rate;
+      const prob       = Math.max(1, Math.min(99, Math.round(100 / (1 + Math.exp(-7 * (mrr / (target || 1) - 0.85))))));
 
       btn.disabled = true;
       btn.innerHTML = '⏳ Analyse en cours…';
@@ -1647,7 +1684,7 @@ async function loadRevenue() {
         const res = await fetch(`${API_URL}/api/ai/revenue-forecast`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...authHeader() },
-          body: JSON.stringify({ visitors, quality, rate, mrr, arr, subs, slope, target, prob, history: histRaw }),
+          body: JSON.stringify({ visitors, quality, rate, mrr, arr, subs, slope, target, prob, history, silver, gold, totalUsers, realConv }),
         });
         const d = await res.json();
         document.getElementById('aifInsightText').textContent =
@@ -1661,7 +1698,6 @@ async function loadRevenue() {
     });
   }
 
-  // Init when revenue panel first opens
   const btnRevenue = document.getElementById('btnRevenue');
   if (btnRevenue) {
     let wired = false;
