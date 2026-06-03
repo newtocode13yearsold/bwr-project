@@ -9,6 +9,9 @@
       "id": "da878110f87d4dc6975a6bf3e44cd7ed"
     }
   ],
+  "ai": {
+    "binding": "AI"
+  },
   "triggers": {
     "crons": ["0 2 * * *"]
   }

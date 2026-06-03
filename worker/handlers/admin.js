@@ -143,8 +143,6 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
   /* ── AI Revenue Forecast — calls Claude with the forecast data ──────── */
   if (pathname === '/api/ai/revenue-forecast' && request.method === 'POST') {
 
-    if (!env.ANTHROPIC_API_KEY) return fail('ANTHROPIC_API_KEY non configuré.', 503);
-
     let body;
     try { body = await request.json(); } catch { return fail('JSON invalide.'); }
 
@@ -163,7 +161,7 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
 Analyse ces données de prévision de revenus pour BWR — une application de randonnée en forêt de Compiègne (France) avec deux plans payants : Argent (3,99 €/mois) et Or (7,99 €/mois).
 
 Données actuelles :
-- Visiteurs ce mois : ${Math.round(visitors).toLocaleString('fr-FR')}
+- Visiteurs ce mois : ${Math.round(visitors)}
 - Qualité du produit : ${quality}/10
 - Taux de conversion estimé : ${Number(rate).toFixed(2)} %
 - Abonnés payants estimés : ${Number(subs).toFixed(1)}
@@ -181,26 +179,45 @@ Donne une analyse directe en 3-4 phrases, en français, qui couvre :
 
 Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse".`;
 
+    /* Try Cloudflare Workers AI first (free), fall back to Anthropic if key set */
     try {
-      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 300,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      });
-      if (!aiRes.ok) return fail('Erreur API Claude.', 502);
-      const d = await aiRes.json();
-      const analysis = d.content?.[0]?.text?.trim() || '';
+      let analysis = '';
+
+      if (env.AI) {
+        const cfRes = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+          messages: [
+            { role: 'system', content: 'Tu es un expert SaaS. Réponds uniquement en français, de façon concise et directe.' },
+            { role: 'user', content: prompt },
+          ],
+          max_tokens: 350,
+        });
+        analysis = cfRes.response?.trim() || '';
+      }
+
+      if (!analysis && env.ANTHROPIC_API_KEY) {
+        const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 300,
+            messages: [{ role: 'user', content: prompt }],
+          }),
+        });
+        if (aiRes.ok) {
+          const d = await aiRes.json();
+          analysis = d.content?.[0]?.text?.trim() || '';
+        }
+      }
+
+      if (!analysis) return fail('Aucun modèle IA disponible. Déployez le worker avec la liaison AI activée.', 503);
       return json({ analysis });
-    } catch {
-      return fail('Erreur lors de l\'appel à l\'IA.', 502);
+    } catch (e) {
+      return fail('Erreur lors de l\'appel à l\'IA : ' + (e?.message || e), 502);
     }
   }
 
