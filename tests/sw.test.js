@@ -19,7 +19,7 @@ const path = require('node:path');
 
 // ── Read sw.js source ─────────────────────────────────────────────────────────
 
-const swSource = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf-8');
+const swSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'sw.js'), 'utf-8');
 
 // ── Minimal Service Worker mock factory ───────────────────────────────────────
 // Each call returns a fresh, isolated context so tests don't share state.
@@ -313,7 +313,7 @@ describe('activate handler: old caches deleted', () => {
 
     // Seed old + current caches
     await mockCaches.open('bwr-v1');           // old → must be deleted
-    await mockCaches.open('bwr-v21');          // current CACHE → keep
+    await mockCaches.open('bwr-v23');          // current CACHE → keep
     await mockCaches.open('bwr-offline-tiles'); // TILE_CACHE → keep
 
     const event = { waitUntil: (p) => p };
@@ -321,7 +321,7 @@ describe('activate handler: old caches deleted', () => {
 
     const remaining = await mockCaches.keys();
     assert.ok(!remaining.includes('bwr-v1'), 'old cache bwr-v1 must be deleted');
-    assert.ok(remaining.includes('bwr-v21'), 'current CACHE must be kept');
+    assert.ok(remaining.includes('bwr-v23'), 'current CACHE must be kept');
     assert.ok(remaining.includes('bwr-offline-tiles'), 'TILE_CACHE must be kept');
   });
 });
