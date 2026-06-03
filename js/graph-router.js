@@ -1,6 +1,37 @@
 // Pure graph-routing functions — no DOM, no globals.
 // Loaded as a plain <script> in the browser; exported via CJS for Node tests.
 
+// Binary min-heap used by dijkstra — O(log n) push/pop vs O(n log n) sort.
+class MinHeap {
+  constructor() { this._h = []; }
+  get size() { return this._h.length; }
+  push(item) { this._h.push(item); this._up(this._h.length - 1); }
+  pop() {
+    const top = this._h[0];
+    const last = this._h.pop();
+    if (this._h.length) { this._h[0] = last; this._down(0); }
+    return top;
+  }
+  _up(i) {
+    const h = this._h;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (h[p][0] <= h[i][0]) break;
+      [h[p], h[i]] = [h[i], h[p]]; i = p;
+    }
+  }
+  _down(i) {
+    const h = this._h, n = h.length;
+    for (;;) {
+      let s = i, l = 2 * i + 1, r = l + 1;
+      if (l < n && h[l][0] < h[s][0]) s = l;
+      if (r < n && h[r][0] < h[s][0]) s = r;
+      if (s === i) break;
+      [h[s], h[i]] = [h[i], h[s]]; i = s;
+    }
+  }
+}
+
 function haversineM(lat1, lon1, lat2, lon2) {
   const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -151,11 +182,11 @@ function pruneDeadEnds(adjIn) {
 function dijkstra(adj, start, end = null) {
   const dist = new Map([[start, 0]]);
   const prev = new Map();
-  const queue = [[0, start]];
+  const queue = new MinHeap();
+  queue.push([0, start]);
 
-  while (queue.length) {
-    queue.sort((a, b) => a[0] - b[0]);
-    const [d, u] = queue.shift();
+  while (queue.size) {
+    const [d, u] = queue.pop();
     if (end && u === end) break;
     if (d > (dist.get(u) ?? Infinity)) continue;
     for (const { to, d: w } of (adj.get(u) || [])) {
