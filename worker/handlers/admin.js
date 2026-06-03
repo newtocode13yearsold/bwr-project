@@ -157,6 +157,11 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     const trendStr = slope > 0 ? `+${Math.round(slope)} vis./mois (croissance)` :
                      slope < 0 ? `${Math.round(slope)} vis./mois (déclin)` : 'Stable';
 
+    const ARPU = 0.65 * 3.99 + 0.35 * 7.99; // ~5.39€
+    const pot1 = Math.round(visitors * 0.01 * ARPU);
+    const pot2 = Math.round(visitors * 0.02 * ARPU);
+    const pot3 = Math.round(visitors * 0.03 * ARPU);
+
     const prompt = `Tu es un expert en croissance SaaS et monétisation d'applications web françaises.
 
 Analyse ces données de prévision de revenus pour BWR — une application de randonnée en forêt de Compiègne (France) avec deux plans payants : Argent (3,99 €/mois) et Or (7,99 €/mois).
@@ -165,17 +170,18 @@ Données réelles (tirées du tableau de bord admin) :
 - Visiteurs ce mois : ${Math.round(visitors)}
 - Historique trafic : ${histStr}
 - Tendance trafic : ${trendStr}
-- Membres total : ${totalUsers} (dont ${Math.round(totalUsers - silver - gold)} gratuits, ${silver} Argent 3,99€/mois, ${gold} Or 7,99€/mois)
-- Abonnés payants : ${Math.round(subs)} (${Number(realConv > 0 ? realConv : rate).toFixed(2)} % de conversion)
+- Membres total : ${totalUsers} (dont ${Math.round(totalUsers - silver - gold)} gratuits, ${silver} Argent, ${gold} Or)
+- Abonnés payants actuels : ${Math.round(subs)} (${Number(realConv > 0 ? realConv : rate).toFixed(2)} % de conversion)
 - MRR réel : ${Number(mrr).toFixed(2)} €/mois
 - ARR annualisé : ${Math.round(arr)} €/an
-- Objectif MRR visé par l'admin : ${target} €
+- Potentiel des visiteurs actuels : à 1 % de conversion → ${pot1} €/mois, à 2 % → ${pot2} €/mois, à 3 % → ${pot3} €/mois
+- Objectif MRR visé : ${target} €
 - Probabilité d'atteindre l'objectif : ${prob} %
 
 Donne une analyse directe en 3-4 phrases, en français, qui couvre :
-1. Un constat honnête sur la situation actuelle
-2. Le levier le plus impactant pour augmenter les revenus maintenant
-3. Un objectif réaliste et chiffré à 3 mois
+1. Ce que les ${Math.round(visitors)} visiteurs représentent comme potentiel de revenus réaliste
+2. Le levier le plus impactant pour convertir ces visiteurs en abonnés payants maintenant
+3. Un objectif chiffré atteignable à 3 mois compte tenu du trafic actuel
 
 Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse".`;
 
