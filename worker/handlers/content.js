@@ -91,6 +91,32 @@ export async function handleContent(request, env, { pathname, url, json, fail })
     return json({ deleted });
   }
 
+  // ── Elevation proxy (opentopodata.org has no CORS headers) ────────────────
+  if (pathname === '/api/elevation' && request.method === 'POST') {
+    const user = await getUserFromToken(env, request);
+    if (!user) return fail('Non authentifié.', 401);
+
+    let body;
+    try { body = await request.json(); } catch { return fail('Corps JSON invalide.'); }
+    if (!Array.isArray(body?.locations) || body.locations.length === 0)
+      return fail('locations requis.');
+
+    const locations = body.locations.slice(0, 100); // honour same 100-point cap as client
+
+    try {
+      const res = await fetch('https://api.opentopodata.org/v1/srtm30m', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locations }),
+      });
+      if (!res.ok) return fail('Elevation API error', 502);
+      const data = await res.json();
+      return json(data);
+    } catch {
+      return fail('Elevation API indisponible.', 502);
+    }
+  }
+
   // ── ORS routing proxy ──────────────────────────────────────────────────────
   if (pathname === '/api/route' && request.method === 'POST') {
     const user = await getUserFromToken(env, request);

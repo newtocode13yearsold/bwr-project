@@ -58,7 +58,11 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
     ]);
 
     const origin = new URL(request.url).origin;
-    await sendVerificationEmail(env, origin, emailKey, name, token);
+    try {
+      await sendVerificationEmail(env, origin, emailKey, name, token);
+    } catch {
+      return fail("Votre compte a été créé mais l'envoi de l'email de vérification a échoué. Utilisez le bouton « Renvoyer l'email » sur la page de connexion.", 500);
+    }
 
     return json({ message: "Un email de vérification a été envoyé. Cliquez sur le lien dans l'email pour activer votre compte." }, 201);
   }

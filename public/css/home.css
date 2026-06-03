@@ -599,12 +599,9 @@ body {
   line-height: 1.6;
 }
 
-/* Last item alone → span both columns and center */
+/* Last item alone → span both columns at full width */
 .feat-list .feat-row:last-child:nth-child(odd) {
   grid-column: 1 / -1;
-  max-width: 50%;
-  margin: 0 auto;
-  width: 50%;
 }
 
 .feature-card {

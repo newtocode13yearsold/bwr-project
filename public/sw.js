@@ -1,4 +1,4 @@
-const CACHE = 'bwr-v21';
+const CACHE = 'bwr-v23';
 const TILE_CACHE = 'bwr-offline-tiles';
 const TILE_MAX_ENTRIES = 500;
 const TILE_MAX_AGE_MS  = 7 * 24 * 60 * 60 * 1000; // 7 days

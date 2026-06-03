@@ -120,20 +120,31 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
       const user = await getUserFromToken(env, request).catch(() => null);
       // Never record admin visits
       if (user && user.role === 'admin') return json({ ok: true });
-      const id   = crypto.randomUUID();
+
+      const ip   = request.headers.get('CF-Connecting-IP') || 'unknown';
+      const page = typeof body.page === 'string' ? body.page.slice(0, 200) : '/';
       const ts   = Date.now();
+
+      // Rate-limit: max 5 visits per IP per page per hour (prevents bots & SW reload loops)
+      const hourSlot    = Math.floor(ts / 3600000);
+      const rateLimitKey = `ratelimit:visit:${ip}:${page.replace(/\W/g, '_')}:${hourSlot}`;
+      const countRaw    = await env.BWR_KV.get(rateLimitKey);
+      const count       = countRaw ? parseInt(countRaw, 10) : 0;
+      if (count >= 5) return json({ ok: true }); // silently drop excess
+      await env.BWR_KV.put(rateLimitKey, String(count + 1), { expirationTtl: 7200 }); // 2h TTL
+
+      const id    = crypto.randomUUID();
       const visit = {
         id,
         timestamp: new Date(ts).toISOString(),
-        page:      typeof body.page === 'string' ? body.page.slice(0, 200) : '/',
+        page,
         userId:    user ? user.id   : null,
         userName:  user ? user.name : null,
         userAgent: (request.headers.get('User-Agent') || '').slice(0, 300),
-        ip:        request.headers.get('CF-Connecting-IP') || null,
+        ip,
       };
-      // Pad ms to 13 digits so keys sort chronologically
       const key = `visit:${String(ts).padStart(13, '0')}:${id}`;
-      await env.BWR_KV.put(key, JSON.stringify(visit), { expirationTtl: 60 * 60 * 24 * 30 }); // 30 days
+      await env.BWR_KV.put(key, JSON.stringify(visit), { expirationTtl: 60 * 60 * 24 * 30 });
       return json({ ok: true });
     } catch {
       return json({ ok: false });
@@ -225,6 +236,85 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
     } catch (e) {
       return fail('Erreur lors de l\'appel à l\'IA : ' + (e?.message || e), 502);
     }
+  }
+
+  // ── Debug diagnostic (admin only) ───────────────────────────────────────────
+  if (pathname === '/api/debug' && request.method === 'GET') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+
+    const prefixes = ['user:', 'uemail:', 'session:', 'path:', 'report:', 'contact:',
+                      'visit:', 'savedroute:', 'routeshare:', 'osm:', 'pending:', 'pemail:',
+                      'photo:', 'aisugg:', 'walkedpath:', 'pathgrade:', 'leaderboard:'];
+
+    const counts = {};
+    let totalKeys = 0;
+    for (const prefix of prefixes) {
+      const keys = await listKeys(env, prefix);
+      counts[prefix] = keys.length;
+      totalKeys += keys.length;
+    }
+
+    // Sample last 3 visit keys for integrity check
+    const visitKeys = await listKeys(env, 'visit:');
+    const sampleVisits = [];
+    for (const k of visitKeys.slice(-3).reverse()) {
+      const raw = await env.BWR_KV.get(k.name);
+      if (raw) {
+        const v = JSON.parse(raw);
+        sampleVisits.push({ key: k.name, page: v.page, timestamp: v.timestamp, userId: v.userId ?? null });
+      }
+    }
+
+    // Detect duplicate visits (same timestamp minute + same page → likely test data)
+    const minuteBuckets = {};
+    for (const k of visitKeys) {
+      const raw = await env.BWR_KV.get(k.name).catch(() => null);
+      if (!raw) continue;
+      const v = JSON.parse(raw);
+      const bucket = v.timestamp?.slice(0, 16) + '|' + (v.page || '/');
+      minuteBuckets[bucket] = (minuteBuckets[bucket] || 0) + 1;
+    }
+    const suspiciousBuckets = Object.entries(minuteBuckets)
+      .filter(([, n]) => n > 10)
+      .map(([bucket, n]) => ({ bucket, count: n }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    return json({
+      ok: true,
+      totalKeys,
+      counts,
+      visitSample: sampleVisits,
+      suspiciousBuckets,
+      workerVersion: '2.0',
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // ── Cleanup duplicate visits (admin only) ───────────────────────────────────
+  if (pathname === '/api/debug/cleanup-visits' && request.method === 'POST') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+
+    const allKeys = await listKeys(env, 'visit:');
+    // Group keys by minute+page bucket
+    const buckets = {}; // bucket -> [{ key, ts }]
+    for (const k of allKeys) {
+      const raw = await env.BWR_KV.get(k.name).catch(() => null);
+      if (!raw) continue;
+      const v = JSON.parse(raw);
+      const bucket = (v.timestamp?.slice(0, 16) ?? '') + '|' + (v.page || '/');
+      if (!buckets[bucket]) buckets[bucket] = [];
+      buckets[bucket].push({ key: k.name, ts: v.timestamp });
+    }
+    // Delete all keys in buckets with more than 5 identical entries (keep 0 — all fake)
+    const keysToDelete = [];
+    for (const entries of Object.values(buckets)) {
+      if (entries.length > 5) keysToDelete.push(...entries.map(e => e.key));
+    }
+    await Promise.all(keysToDelete.map(k => env.BWR_KV.delete(k)));
+    return json({ ok: true, deleted: keysToDelete.length, totalBefore: allKeys.length });
   }
 
   if (pathname === '/api/analytics/visits' && request.method === 'GET') {

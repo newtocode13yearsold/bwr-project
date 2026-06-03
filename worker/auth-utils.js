@@ -101,7 +101,7 @@ export const RESEND_COOLDOWN = 300; // 5 minutes between resend requests
 export async function sendVerificationEmail(env, origin, email, name, token) {
   if (!env.RESEND_API_KEY) return; // skip in dev if key not set
   const verifyUrl = `${origin}/verify?token=${token}`;
-  await fetch('https://api.resend.com/emails', {
+  const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${env.RESEND_API_KEY}`,
@@ -117,4 +117,15 @@ export async function sendVerificationEmail(env, origin, email, name, token) {
 <p>Si vous n'avez pas créé de compte, ignorez cet email.</p>`,
     }),
   });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    // Notify admin via ntfy so email failures are visible in production
+    fetch('https://ntfy.sh/bwr-ciril8596', {
+      method: 'POST',
+      headers: { Title: 'BWR — email verification FAILED', Priority: 'high', Tags: 'email' },
+      body: `Resend rejected email to ${email}. Status: ${res.status}. Details: ${body}`,
+    }).catch(() => {});
+    throw new Error(`Resend error ${res.status}: ${body}`);
+  }
 }

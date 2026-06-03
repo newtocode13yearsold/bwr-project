@@ -9,10 +9,10 @@ async function fetchElevation(coords) {
     sampled.push(coords[coords.length - 1]);
 
   const locations = sampled.map(([lat, lon]) => ({ latitude: lat, longitude: lon }));
-  // opentopodata.org is already in the CSP connect-src allowlist; open-elevation.com is not
-  const res = await fetch('https://api.opentopodata.org/v1/srtm30m', {
+  const token = localStorage.getItem('bwr_token');
+  const res = await fetch(`${API_URL}/api/elevation`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json'},
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify({ locations }),
   });
   if (!res.ok) throw new Error('elevation API error');

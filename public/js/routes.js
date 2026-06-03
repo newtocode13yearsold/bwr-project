@@ -315,6 +315,11 @@ function restoreSavedAddress() {
   try {
     const saved = JSON.parse(localStorage.getItem('bwr_saved_address'));
     if (!saved) return;
+    const savedMode = localStorage.getItem('bwr_saved_mode');
+    if (savedMode) {
+      const card = document.querySelector(`.mode-card[data-mode="${savedMode}"]`);
+      if (card && !card.classList.contains('locked-feature')) card.click();
+    }
     document.getElementById('addressInput').value = saved.label;
     map.setView([saved.lat, saved.lng], 15);
   } catch (_) {}
@@ -341,6 +346,7 @@ document.querySelectorAll('.mode-card').forEach(card => {
     document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
     card.classList.add('active');
     mode = card.dataset.mode;
+    localStorage.setItem('bwr_saved_mode', mode);
 
     document.getElementById('distanceGroup').style.display = mode === 'loop' ? '' : 'none';
 
@@ -510,7 +516,11 @@ async function generateRoute() {
     }
   } catch (err) {
     console.error('Routing error:', err);
-    const msg = err.name === 'AbortError' ? 'Serveur trop lent, réessaie' : err.message;
+    const isNetworkErr = err.name === 'AbortError' || err.name === 'TypeError' || err.message === 'Failed to fetch';
+    if (isNetworkErr) {
+      showToast('Pas de connexion — vérifie ta connexion et réessaie.');
+    }
+    const msg = isNetworkErr ? 'Pas de connexion' : err.message;
     btn.textContent = 'Erreur: ' + msg;
     btn.classList.remove('loading');
     setTimeout(() => { btn.textContent = 'Calculer le trajet'; btn.disabled = false; }, 5000);
@@ -1150,20 +1160,12 @@ async function handleSharedRouteParam() {
   }
 }
 
-// Offline state: pill + routes-specific notice and sidebar class
+// Offline pill — lightweight non-blocking indicator only
 (function () {
-  var pill    = document.getElementById('offline-pill');
-  var notice  = document.getElementById('offline-routes-notice');
-  var sidebar = document.querySelector('.planner-sidebar');
+  var pill = document.getElementById('offline-pill');
   if (!pill) return;
-  function updatePill() { pill.classList.toggle('visible', !navigator.onLine); }
-  function updateOfflineState() {
-    var offline = !navigator.onLine;
-    if (notice) notice.hidden = !offline;
-    if (sidebar) sidebar.classList.toggle('offline', offline);
-  }
-  window.addEventListener('online',  function () { updatePill(); updateOfflineState(); });
-  window.addEventListener('offline', function () { updatePill(); updateOfflineState(); });
-  updatePill();
-  updateOfflineState();
+  function update() { pill.classList.toggle('visible', !navigator.onLine); }
+  window.addEventListener('online',  update);
+  window.addEventListener('offline', update);
+  update();
 })();

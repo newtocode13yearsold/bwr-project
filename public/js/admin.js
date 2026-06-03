@@ -1081,7 +1081,8 @@ async function loadVisits() {
       statCard('Cette semaine', week, '#fef3c7') +
       statCard('Total', visits.length, '#e0e7ff') +
       statCard('Connectés', logged.length, '#ede9fe') +
-      statCard('Anonymes', anon.length, '#fce7f3');
+      statCard('Anonymes', anon.length, '#fce7f3') +
+      `<button onclick="loadDebug()" style="margin-top:6px;width:100%;padding:7px 12px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;color:#374151">🔍 Diagnostic KV</button>`;
 
     if (visits.length === 0) {
       itemsEl.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Aucune visite enregistrée.</p>';
@@ -1137,6 +1138,56 @@ async function loadVisits() {
     itemsEl.innerHTML = html;
   } catch {
     itemsEl.innerHTML = '<p style="color:red">Erreur réseau</p>';
+  }
+}
+
+async function loadDebug() {
+  const itemsEl = document.getElementById('visitsItems');
+  itemsEl.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Chargement diagnostic…</p>';
+  try {
+    const res  = await fetch(`${API_URL}/api/debug`, { headers: authHeader() });
+    const data = await res.json();
+    if (!res.ok) { itemsEl.innerHTML = `<p style="color:red">${data.error}</p>`; return; }
+
+    const row = (label, val, highlight = false) =>
+      `<div style="display:flex;justify-content:space-between;padding:5px 10px;background:${highlight ? '#fef9c3' : '#f9fafb'};border:1px solid #e5e7eb;border-radius:6px;font-size:0.82rem">
+         <span style="color:#374151;font-weight:600">${label}</span>
+         <span style="color:#111827;font-weight:700">${val}</span>
+       </div>`;
+
+    let html = `<div style="font-weight:700;font-size:0.82rem;color:#374151;margin-bottom:8px">📦 Clés KV — total : ${data.totalKeys}</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:12px">`;
+    for (const [prefix, count] of Object.entries(data.counts)) {
+      if (count > 0) html += row(prefix, count, prefix === 'visit:' && count > 50);
+    }
+    html += `</div>`;
+
+    if (data.suspiciousBuckets?.length > 0) {
+      html += `<div style="font-weight:700;font-size:0.82rem;color:#dc2626;margin-bottom:6px">⚠️ Visites suspectes (même minute × page)</div>`;
+      html += `<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:12px">`;
+      for (const { bucket, count } of data.suspiciousBuckets) {
+        html += row(bucket, `${count} entrées`, true);
+      }
+      html += `</div>`;
+    } else {
+      html += `<div style="color:#16a34a;font-size:0.82rem;margin-bottom:12px">✅ Aucune visite suspecte détectée</div>`;
+    }
+
+    if (data.visitSample?.length > 0) {
+      html += `<div style="font-weight:700;font-size:0.82rem;color:#374151;margin-bottom:6px">🔬 Dernières visites (échantillon)</div>`;
+      html += `<div style="display:flex;flex-direction:column;gap:3px">`;
+      for (const v of data.visitSample) {
+        html += row(`${v.timestamp?.slice(0,16)} — ${v.page || '/'}`, v.userId ? '👤 connecté' : '🔓 anon');
+      }
+      html += `</div>`;
+    }
+
+    html += `<div style="margin-top:10px;font-size:0.72rem;color:#9ca3af">Généré le ${data.timestamp} · worker v${data.workerVersion}</div>`;
+    html += `<button onclick="loadVisits()" style="margin-top:8px;width:100%;padding:6px;background:#e0e7ff;border:1px solid #c7d2fe;border-radius:7px;font-size:0.8rem;cursor:pointer">← Retour aux visites</button>`;
+
+    itemsEl.innerHTML = html;
+  } catch {
+    itemsEl.innerHTML = '<p style="color:red">Erreur réseau lors du diagnostic</p>';
   }
 }
 

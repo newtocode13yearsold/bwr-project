@@ -7,6 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
   <title>BWR — Planifier un trajet</title>
   <link rel="stylesheet" href="lib/leaflet.css" />
@@ -92,13 +93,6 @@
     <aside class="planner-sidebar">
 
       <div class="sheet-handle" aria-hidden="true"></div>
-
-      <!-- Offline notice -->
-      <div id="offline-routes-notice" class="offline-notice" hidden>
-        <span class="offline-notice-icon">📵</span>
-        <p class="offline-notice-title">Pas de connexion</p>
-        <p class="offline-notice-body">Le calcul d'itinéraire nécessite internet. Reconnecte-toi pour planifier une balade.</p>
-      </div>
 
       <!-- Step 1: Mode -->
       <div class="step" id="step1">

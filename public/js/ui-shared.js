@@ -2,15 +2,6 @@
  * Loaded on every app page (all pages except index.html and verify.html). */
 (function () {
   if ('serviceWorker' in navigator) {
-    // Auto-update: when a new service worker takes control (it calls skipWaiting +
-    // clients.claim on install/activate), reload once so the page swaps to the fresh
-    // HTML/JS instead of being stuck on the previously cached version.
-    var refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', function () {
-      if (refreshing) return;
-      refreshing = true;
-      window.location.reload();
-    });
     navigator.serviceWorker.register('/sw.js').then(function (reg) {
       // Proactively check for a newer worker on every load.
       if (reg && reg.update) { try { reg.update(); } catch (e) {} }

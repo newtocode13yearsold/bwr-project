@@ -64,3 +64,22 @@ async function requireAuth(requiredRole = null) {
 function authHeader() {
   return { Authorization: `Bearer ${getToken()}` };
 }
+
+// ── Page-visit tracking (fire & forget, skipped for admins) ────────────────
+(function trackPageVisit() {
+  try {
+    if (getCachedUser()?.role === 'admin') return; // don't count admin visits
+    // Deduplicate: only ping once per page per browser session
+    const dedupKey = 'bwr_visited_' + location.pathname;
+    if (sessionStorage.getItem(dedupKey)) return;
+    sessionStorage.setItem(dedupKey, '1');
+    const token   = getToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    fetch(`${API_URL}/api/analytics/visit`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ page: location.pathname }),
+    }).catch(() => {});
+  } catch (_) {}
+})();

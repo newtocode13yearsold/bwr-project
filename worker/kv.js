@@ -17,6 +17,7 @@
 // walkedpath:{userId}:{pathId} → ISO timestamp string
 // aisugg:{userId}:{date}   → JSON AI suggestion  (48h TTL)
 // leaderboard:cache        → JSON sorted entries array  (5-min TTL)
+// visit:{ts}:{id}          → JSON visit record  (30-day TTL)
 
 /** Paginates KV list() to return all keys under a prefix (KV caps single calls at 1 000). */
 export async function listKeys(env, prefix) {
