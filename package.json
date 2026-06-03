@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "BWR — La carte qui simplifie ta vie",
   "scripts": {
-    "dev:worker": "wrangler dev",
+    "dev:worker": "wrangler dev --persist-to=../.wrangler-state",
     "deploy:worker": "wrangler deploy",
     "kv:create": "wrangler kv:namespace create BWR_KV",
-    "test": "node --test tests/graph-router.test.js tests/features.test.js tests/worker-auth.test.mjs tests/worker-admin.test.mjs tests/sw.test.js",
-    "test:watch": "node --test --watch tests/graph-router.test.js tests/features.test.js tests/worker-auth.test.mjs tests/worker-admin.test.mjs tests/sw.test.js",
+    "test": "node --test tests/graph-router.test.js tests/features.test.js tests/worker-auth.test.mjs tests/worker-admin.test.mjs tests/worker-paths.test.mjs tests/worker-savedroutes.test.mjs tests/sw.test.js",
+    "test:watch": "node --test --watch tests/graph-router.test.js tests/features.test.js tests/worker-auth.test.mjs tests/worker-admin.test.mjs tests/worker-paths.test.mjs tests/worker-savedroutes.test.mjs tests/sw.test.js",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
-    "wrangler": "^3.114.17"
+    "wrangler": "^4.96.0"
   },
   "dependencies": {
     "leaflet": "^1.9.4"

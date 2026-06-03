@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1e4d14" />
+  <title>Actualités — BWR · Forêt de Compiègne</title>
+  <meta name="description" content="Les dernières actualités de la forêt de Compiègne : informations, articles et liens sélectionnés par l'équipe BWR." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/login.css" />
+  <link rel="stylesheet" href="css/home.css" />
+  <script src="js/theme.js"></script>
+  <style>
+    /* ── Page-specific styles ── */
+    html, body { height: auto !important; overflow: auto !important; }
+    body { background: var(--surface-1, #fafbf7); }
+
+    .page-hero {
+      padding: 64px 24px 64px;
+      text-align: center;
+      background: linear-gradient(160deg, #0b2410 0%, #1e4d14 55%, #2d6b1f 100%);
+      color: #fff;
+    }
+    .page-hero-badge {
+      display: inline-block;
+      background: rgba(163, 230, 53, 0.18);
+      color: #a3e635;
+      border: 1px solid rgba(163, 230, 53, 0.35);
+      border-radius: 999px;
+      padding: 4px 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .page-hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      line-height: 1.15;
+    }
+    .page-hero p {
+      color: rgba(255,255,255,0.72);
+      font-size: 1.05rem;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* ── Feed ── */
+    .news-section {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 64px 24px 96px;
+    }
+
+    .news-card {
+      background: #fff;
+      border: 1px solid var(--border-soft, #ebeee5);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px -4px rgba(11,36,16,0.08);
+      transition: box-shadow 0.2s;
+    }
+    .news-card:hover { box-shadow: 0 8px 24px -8px rgba(11,36,16,0.14); }
+
+    .news-meta {
+      margin-bottom: 10px;
+    }
+    .news-date {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--forest-500, #4a8a32);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .news-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.2rem, 3vw, 1.6rem);
+      font-weight: 700;
+      color: var(--text-strong, #0b2410);
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      margin-bottom: 14px;
+    }
+    .news-content {
+      font-size: 0.97rem;
+      color: var(--text, #1f2937);
+      line-height: 1.7;
+      margin-bottom: 18px;
+      white-space: pre-line;
+    }
+    .news-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--forest-100, #f0f7ec);
+      color: var(--forest-700, #1e4d14);
+      border: 1px solid var(--forest-300, #b9d8a4);
+      border-radius: 999px;
+      padding: 7px 18px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .news-link:hover {
+      background: var(--forest-700, #1e4d14);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .news-link-locked {
+      background: var(--silver-grad-soft, linear-gradient(135deg,#f1f5f9,#e2e8f0));
+      color: var(--silver-600, #475569);
+      border-color: var(--silver-200, #e2e8f0);
+      cursor: not-allowed;
+      opacity: 0.82;
+    }
+    .news-link-locked:hover { background: var(--silver-grad-soft, linear-gradient(135deg,#f1f5f9,#e2e8f0)); color: var(--silver-600, #475569); transform: none; }
+
+    /* ── Reactions (like / dislike) ── */
+    .news-reactions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .news-react {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--surface-2, #f3f4f0);
+      border: 1.5px solid var(--border-soft, #ebeee5);
+      border-radius: 999px;
+      padding: 6px 15px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text, #1f2937);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      user-select: none;
+    }
+    .news-react:hover { transform: translateY(-1px); }
+    .news-react:active { transform: scale(0.96); }
+    .news-react-icon { font-size: 1.05rem; line-height: 1; }
+    .news-react-count {
+      font-variant-numeric: tabular-nums;
+      min-width: 12px;
+      text-align: center;
+    }
+    .news-like.active {
+      background: var(--forest-100, #f0f7ec);
+      border-color: var(--forest-300, #b9d8a4);
+      color: var(--forest-700, #1e4d14);
+    }
+    .news-dislike.active {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #b91c1c;
+    }
+
+    /* ── Admin controls ── */
+    .news-admin-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-soft, #ebeee5);
+    }
+    .news-btn-edit,
+    .news-btn-delete {
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .news-btn-edit   { background: #e0f2fe; color: #0369a1; }
+    .news-btn-delete { background: #fee2e2; color: #b91c1c; }
+    .news-btn-edit:hover, .news-btn-delete:hover { opacity: 0.75; }
+
+    /* ── Loading / empty ── */
+    .news-loading,
+    .news-empty {
+      text-align: center;
+      color: var(--text-muted, #6b7280);
+      padding: 64px 0;
+      font-size: 1rem;
+    }
+
+    /* ── FAB ── */
+    #fabAdd {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--forest-700, #1e4d14);
+      color: #a3e635;
+      border: none;
+      font-size: 1.6rem;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(11,36,16,0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s, box-shadow 0.15s;
+      z-index: 100;
+    }
+    #fabAdd:hover { transform: scale(1.08); box-shadow: 0 8px 28px rgba(11,36,16,0.4); }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 36, 16, 0.55);
+      backdrop-filter: blur(4px);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 20px;
+      padding: 36px;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 24px 60px -16px rgba(11,36,16,0.35);
+      animation: modalIn 0.22s cubic-bezier(0.16,1,0.30,1);
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .modal-header h2 {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-strong, #0b2410);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      color: var(--text-muted, #6b7280);
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+    }
+    .modal-close:hover { color: var(--text, #1f2937); }
+
+    .form-group { margin-bottom: 18px; }
+    .form-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-strong, #0b2410);
+      margin-bottom: 6px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .form-label span { color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .form-input,
+    .form-textarea {
+      width: 100%;
+      border: 1.5px solid var(--border, #e2e8da);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.97rem;
+      font-family: var(--font-sans);
+      color: var(--text, #1f2937);
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus,
+    .form-textarea:focus { border-color: var(--forest-600, #2d6b1f); }
+    .form-textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+
+    .modal-error {
+      color: #b91c1c;
+      font-size: 0.875rem;
+      margin-bottom: 12px;
+      min-height: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+    .btn-cancel {
+      background: var(--surface-2, #f3f4f0);
+      color: var(--text, #1f2937);
+      border: none;
+      border-radius: 10px;
+      padding: 10px 22px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-save {
+      background: var(--forest-700, #1e4d14);
+      color: #a3e635;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 28px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-save:hover:not(:disabled) { opacity: 0.88; }
+
+    /* ── News card image ── */
+    .news-img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: block;
+    }
+    .news-img-placeholder {
+      width: 100%;
+      height: 180px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #0b2410 0%, #1e4d14 50%, #2d6b1f 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      opacity: 0.82;
+    }
+
+    /* ── Image upload in modal ── */
+    .img-upload-area {
+      border: 2px dashed var(--border, #e2e8da);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      background: #fafbf7;
+      position: relative;
+    }
+    .img-upload-area:hover { border-color: var(--forest-600, #2d6b1f); background: #f0f7ec; }
+    .img-upload-area input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .img-upload-label {
+      font-size: 0.9rem;
+      color: var(--text-muted, #6b7280);
+      pointer-events: none;
+    }
+    .img-upload-label strong { color: var(--forest-700, #1e4d14); }
+    .img-preview-wrap { margin-top: 12px; position: relative; display: inline-block; }
+    .img-preview-wrap img { max-height: 140px; border-radius: 8px; display: block; }
+    .img-remove-btn {
+      position: absolute;
+      top: -8px; right: -8px;
+      background: #b91c1c; color: #fff;
+      border: none; border-radius: 50%;
+      width: 22px; height: 22px;
+      font-size: 0.75rem; font-weight: 700;
+      cursor: pointer; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Footer ── */
+    .news-footer {
+      background: #0b2410;
+      color: rgba(255,255,255,0.55);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 0.85rem;
+    }
+    .news-footer a { color: #a3e635; text-decoration: none; }
+    .news-footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .news-card { padding: 24px 20px; }
+      #fabAdd { bottom: 24px; right: 20px; }
+      .modal-box { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-left">
+      <a href="/" class="logo" style="text-decoration:none">BWR</a>
+      <nav class="header-nav-links">
+        <a href="map">Carte</a>
+        <a href="routes">Planifier</a>
+        <a href="news" class="active">Actualités</a>
+        <a href="plans">Plans</a>
+      </nav>
+    </div>
+    <div class="header-right">
+      <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
+      <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
+      <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji">⬇</span><span class="btn-label">Installer</span></button>
+      <div class="user-menu" id="userMenu"></div>
+    </div>
+  </header>
+
+  <!-- Nav drawer -->
+  <div class="nav-drawer-overlay hidden" id="navDrawerOverlay"></div>
+  <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
+    <div class="nav-drawer-header">
+      <span class="nav-drawer-logo">BWR</span>
+      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+    </div>
+    <nav class="nav-drawer-links">
+      <a href="map" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
+        <span>Carte</span>
+      </a>
+      <a href="routes" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
+        <span>Planifier un trajet</span>
+      </a>
+      <a href="profile" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+        <span>Mon profil</span>
+      </a>
+      <a href="leaderboard" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>
+        <span>Classement</span>
+      </a>
+      <a href="news" class="nav-drawer-item active">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg></span>
+        <span>Actualités</span>
+      </a>
+      <a href="plans" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+        <span>Plans &amp; abonnements</span>
+      </a>
+      <a href="changelog" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span>
+        <span>Changelog</span>
+      </a>
+      <a href="admin" class="nav-drawer-item nav-drawer-admin hidden" id="navDrawerAdmin">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        <span>Panneau admin</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- ── Hero ── -->
+  <div class="page-hero">
+    <div class="page-hero-badge">🌲 Forêt de Compiègne</div>
+    <h1>Actualités</h1>
+    <p>Informations, articles et nouveautés sélectionnés par l'équipe BWR.</p>
+  </div>
+
+  <!-- ── News feed ── -->
+  <section class="news-section">
+    <div id="newsFeed"></div>
+  </section>
+
+  <!-- ── FAB (admin only) ── -->
+  <button id="fabAdd" title="Ajouter une actualité">+</button>
+
+  <!-- ── Modal ── -->
+  <div class="modal-backdrop" id="newsModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modalTitle">Nouvelle actualité</h2>
+        <button class="modal-close" aria-label="Fermer">×</button>
+      </div>
+      <form id="newsForm">
+        <input type="hidden" id="modalEditId" />
+
+        <div class="form-group">
+          <label class="form-label" for="fieldTitle">Titre</label>
+          <input type="text" id="fieldTitle" class="form-input" placeholder="Titre de l'actualité" required maxlength="200" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="fieldContent">Texte <span>(optionnel)</span></label>
+          <textarea id="fieldContent" class="form-textarea" placeholder="Décrivez l'actualité…" maxlength="5000"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Image <span>(optionnel)</span></label>
+          <div class="img-upload-area" id="imgUploadArea">
+            <input type="file" id="fieldImage" accept="image/*" />
+            <p class="img-upload-label">📷 <strong>Choisir une image</strong> ou glisser-déposer<br><small>JPG, PNG, WebP · max ~450 Ko après compression</small></p>
+          </div>
+          <div id="imgPreviewWrap" style="display:none" class="img-preview-wrap">
+            <img id="imgPreview" src="" alt="Aperçu" />
+            <button type="button" class="img-remove-btn">✕</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="fieldUrl">Lien vers l'article <span>(optionnel)</span></label>
+          <input type="url" id="fieldUrl" class="form-input" placeholder="https://…" maxlength="500" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="fieldUrlLabel">Libellé du lien <span>(optionnel)</span></label>
+          <input type="text" id="fieldUrlLabel" class="form-input" placeholder="Lire l'article" maxlength="100" />
+        </div>
+
+        <p class="modal-error" id="modalError"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel">Annuler</button>
+          <button type="submit" class="btn-save" id="modalSave">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Footer ── -->
+  <footer class="news-footer">
+    <p>© 2026 <a href="/">BWR</a> · Balades en forêt de Compiègne ·
+       <a href="mailto:ciril8596@gmail.com">Contact</a></p>
+  </footer>
+
+  <nav class="bottom-nav" aria-label="Navigation principale">
+    <a href="map" class="bnav-item">
+      <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
+      <span class="bnav-label">Carte</span>
+    </a>
+    <a href="routes" class="bnav-item">
+      <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
+      <span class="bnav-label">Trajets</span>
+    </a>
+    <a href="profile" class="bnav-item">
+      <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+      <span class="bnav-label">Profil</span>
+    </a>
+  </nav>
+
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/news.js"></script>
+  <script src="js/install.js"></script>
+  <script src="js/ui-shared.js"></script>
+</body>
+</html>

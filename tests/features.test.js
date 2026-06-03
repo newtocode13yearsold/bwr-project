@@ -16,7 +16,7 @@ global.localStorage = {
   clear:      ()    => { for (const k in _ls) delete _ls[k]; },
 };
 
-require('../js/features.js');
+require('../public/js/features.js');
 // Destructure from the BWR namespace so test bodies can call functions directly.
 const { can, limitOf, requiredTier, normalisePlan, readWeekly, bumpWeekly, checkRouteQuota } = global.BWR;
 

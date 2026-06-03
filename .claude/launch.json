@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:worker"],
       "port": 8787
+    },
+    {
+      "name": "bwr-zip-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-p", "3333", "C:\\Users\\TOM\\Downloads\\BWR_preview\\changed-files"],
+      "port": 3333
     }
   ]
 }

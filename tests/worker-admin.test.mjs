@@ -621,6 +621,55 @@ describe('POST /api/news', () => {
   });
 });
 
+describe('POST /api/news/:id/react', () => {
+  test('unknown article → 404', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('POST', '/api/news/nope/react', { reaction: 'like' }), env);
+    assert.equal(res.status, 404);
+  });
+
+  test('invalid reaction → 400', async () => {
+    const { env, kv } = freshEnv();
+    kv.store.set('news:n1', JSON.stringify({ id: 'n1', title: 'T', createdAt: '2024-01-01T00:00:00Z' }));
+    const res = await worker.fetch(r('POST', '/api/news/n1/react', { reaction: 'love' }), env);
+    assert.equal(res.status, 400);
+  });
+
+  test('anonymous like increments count', async () => {
+    const { env, kv } = freshEnv();
+    kv.store.set('news:n1', JSON.stringify({ id: 'n1', title: 'T', createdAt: '2024-01-01T00:00:00Z' }));
+    const res = await worker.fetch(r('POST', '/api/news/n1/react', { reaction: 'like' }, { 'CF-Connecting-IP': '1.2.3.4' }), env);
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { likes: 1, dislikes: 0, reaction: 'like' });
+  });
+
+  test('same voter switching like → dislike moves the count', async () => {
+    const { env, kv } = freshEnv();
+    kv.store.set('news:n1', JSON.stringify({ id: 'n1', title: 'T', createdAt: '2024-01-01T00:00:00Z' }));
+    const ip = { 'CF-Connecting-IP': '1.2.3.4' };
+    await worker.fetch(r('POST', '/api/news/n1/react', { reaction: 'like' }, ip), env);
+    const res = await worker.fetch(r('POST', '/api/news/n1/react', { reaction: 'dislike' }, ip), env);
+    assert.deepEqual(await res.json(), { likes: 0, dislikes: 1, reaction: 'dislike' });
+  });
+
+  test('re-clicking the same reaction toggles it off (null)', async () => {
+    const { env, kv } = freshEnv();
+    kv.store.set('news:n1', JSON.stringify({ id: 'n1', title: 'T', createdAt: '2024-01-01T00:00:00Z' }));
+    const ip = { 'CF-Connecting-IP': '1.2.3.4' };
+    await worker.fetch(r('POST', '/api/news/n1/react', { reaction: 'like' }, ip), env);
+    const res = await worker.fetch(r('POST', '/api/news/n1/react', { reaction: null }, ip), env);
+    assert.deepEqual(await res.json(), { likes: 0, dislikes: 0, reaction: null });
+  });
+
+  test('two different IPs both count', async () => {
+    const { env, kv } = freshEnv();
+    kv.store.set('news:n1', JSON.stringify({ id: 'n1', title: 'T', createdAt: '2024-01-01T00:00:00Z' }));
+    await worker.fetch(r('POST', '/api/news/n1/react', { reaction: 'like' }, { 'CF-Connecting-IP': '1.1.1.1' }), env);
+    const res = await worker.fetch(r('POST', '/api/news/n1/react', { reaction: 'like' }, { 'CF-Connecting-IP': '2.2.2.2' }), env);
+    assert.deepEqual(await res.json(), { likes: 2, dislikes: 0, reaction: 'like' });
+  });
+});
+
 // ── DELETE /api/osm/cache — admin only ───────────────────────────────────────
 
 describe('DELETE /api/osm/cache', () => {

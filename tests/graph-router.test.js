@@ -5,7 +5,7 @@ const {
   haversineM, nodeKey, buildGraph, dijkstra,
   rebuildPath, nearestNode, graphToResult,
   graphAtob, graphLoop,
-} = require('../js/graph-router.js');
+} = require('../public/js/graph-router.js');
 
 // ─── Test network: a simple rectangle in the Compiegne forest ─────────────────
 //
