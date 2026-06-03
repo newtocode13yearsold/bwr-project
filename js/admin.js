@@ -1676,7 +1676,7 @@ async function loadRevenue() {
         const res = await fetch(`${API_URL}/api/ai/revenue-forecast`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...authHeader() },
-          body: JSON.stringify({ visitors, quality, rate, mrr, arr, subs, slope, target, prob, history, silver, gold, totalUsers, realConv }),
+          body: JSON.stringify({ visitors, rate, mrr, arr, subs, slope, target, prob, history, silver, gold, totalUsers, realConv }),
         });
         const d = await res.json();
         document.getElementById('aifInsightText').textContent =
