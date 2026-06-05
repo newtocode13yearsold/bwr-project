@@ -339,12 +339,32 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
         lastRouteDate = today;
       }
     }
+
+    // Per-day distance log powering the activity heatmap & records.
+    // Pruned to ~13 months so the stored object stays small.
+    const dailyLog = { ...(prev.dailyLog || {}) };
+    if (deltaKm > 0) {
+      dailyLog[today] = parseFloat(((dailyLog[today] || 0) + deltaKm).toFixed(2));
+      const cutoff = new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10);
+      for (const day of Object.keys(dailyLog)) {
+        if (day < cutoff) delete dailyLog[day];
+      }
+    }
+
+    // Longest single outing — only a single-route post represents one outing
+    // (multi-route syncs carry a summed distance, not one trip).
+    let longestRoute = prev.longestRoute || 0;
+    if (deltaRoutes === 1 && deltaKm > longestRoute) longestRoute = parseFloat(deltaKm.toFixed(2));
+
     const updatedStats = {
       ...prev,
       routes: (prev.routes || 0) + deltaRoutes,
       km: parseFloat(((prev.km || 0) + deltaKm).toFixed(2)),
       streak,
+      bestStreak: Math.max(prev.bestStreak || 0, streak),
       lastRouteDate,
+      dailyLog,
+      longestRoute,
     };
     await putUser(env, { ...user, stats: updatedStats });
     return json({ stats: updatedStats });

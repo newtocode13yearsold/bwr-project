@@ -1,4 +1,4 @@
-import { listItems, listKeys, putUser } from '../kv.js';
+import { listItems, listKeys, putUser, getUser } from '../kv.js';
 import { getUserFromToken, hashPassword } from '../auth-utils.js';
 
 /**
@@ -96,6 +96,26 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     return json(safe);
   }
 
+  if (pathname.startsWith('/api/users/') && request.method === 'DELETE') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+    const targetId = pathname.split('/')[3];
+    const target = await getUser(env, targetId);
+    if (!target) return fail('Utilisateur introuvable.', 404);
+    if (target.role === 'admin') return fail('Impossible de supprimer un compte admin.', 403);
+    const deletions = [
+      env.BWR_KV.delete(`user:${targetId}`),
+      env.BWR_KV.delete(`uemail:${target.email.toLowerCase()}`),
+    ];
+    const routeKeys  = await listKeys(env, `savedroute:${targetId}:`);
+    const walkedKeys = await listKeys(env, `walkedpath:${targetId}:`);
+    const aiKeys     = await listKeys(env, `aisugg:${targetId}:`);
+    [...routeKeys, ...walkedKeys, ...aiKeys].forEach(k => deletions.push(env.BWR_KV.delete(k.name)));
+    deletions.push(env.BWR_KV.delete('leaderboard:cache'));
+    await Promise.all(deletions);
+    return json({ success: true });
+  }
+
   if (pathname === '/api/contacts' && request.method === 'GET') {
     const admin = await getUserFromToken(env, request);
     if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
@@ -133,13 +153,35 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
       if (count >= 5) return json({ ok: true }); // silently drop excess
       await env.BWR_KV.put(rateLimitKey, String(count + 1), { expirationTtl: 7200 }); // 2h TTL
 
+      // Assign a sequential visitor number for anonymous devices (persists forever)
+      let visitorNum = null;
+      const rawVisitorId = typeof body.visitorId === 'string' ? body.visitorId.slice(0, 36) : null;
+      if (!user && rawVisitorId) {
+        const numKey = `visitor:num:${rawVisitorId}`;
+        const existing = await env.BWR_KV.get(numKey);
+        if (existing) {
+          visitorNum = parseInt(existing, 10);
+        } else {
+          const totalVisitorsRaw = await env.BWR_KV.get('analytics:visitor_count');
+          visitorNum = (totalVisitorsRaw ? parseInt(totalVisitorsRaw, 10) : 0) + 1;
+          await env.BWR_KV.put('analytics:visitor_count', String(visitorNum));
+          await env.BWR_KV.put(numKey, String(visitorNum)); // permanent — no TTL
+        }
+      }
+
+      // Increment permanent total-visit counter (never expires)
+      const totalRaw = await env.BWR_KV.get('analytics:total_visits');
+      await env.BWR_KV.put('analytics:total_visits', String((totalRaw ? parseInt(totalRaw, 10) : 0) + 1));
+
       const id    = crypto.randomUUID();
       const visit = {
         id,
         timestamp: new Date(ts).toISOString(),
         page,
-        userId:    user ? user.id   : null,
-        userName:  user ? user.name : null,
+        userId:     user ? user.id   : null,
+        userName:   user ? user.name : null,
+        visitorId:  rawVisitorId,
+        visitorNum,
         userAgent: (request.headers.get('User-Agent') || '').slice(0, 300),
         ip,
       };
@@ -320,14 +362,65 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
   if (pathname === '/api/analytics/visits' && request.method === 'GET') {
     const admin = await getUserFromToken(env, request);
     if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
-    const allKeys = await listKeys(env, 'visit:');
+    const [allKeys, totalRaw, visitorCountRaw] = await Promise.all([
+      listKeys(env, 'visit:'),
+      env.BWR_KV.get('analytics:total_visits'),
+      env.BWR_KV.get('analytics:visitor_count'),
+    ]);
     // Most recent first – keys are already chronological, so reverse
     const recentKeys = allKeys.slice(-500).reverse();
     const values = await Promise.all(recentKeys.map(k => env.BWR_KV.get(k.name)));
     // Filter out any visits recorded by admin users (userId matches admin)
     const visits = values.filter(Boolean).map(v => JSON.parse(v))
       .filter(v => v.userId !== admin.id);
-    return json(visits);
+    return json({
+      visits,
+      totalVisits: totalRaw ? parseInt(totalRaw, 10) : allKeys.length,
+      totalVisitors: visitorCountRaw ? parseInt(visitorCountRaw, 10) : 0,
+    });
+  }
+
+  // ── Monthly challenges (public read, admin write) ─────────────────────────────
+  if (pathname === '/api/challenge' && request.method === 'GET') {
+    const month = new Date().getUTCMonth();
+    const raw   = await env.BWR_KV.get(`challenge:${month}`);
+    return json(raw ? JSON.parse(raw) : null);
+  }
+
+  if (pathname === '/api/admin/challenges' && request.method === 'GET') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+    const challenges = {};
+    for (let m = 0; m < 12; m++) {
+      const raw = await env.BWR_KV.get(`challenge:${m}`);
+      if (raw) challenges[m] = JSON.parse(raw);
+    }
+    return json(challenges);
+  }
+
+  if (pathname === '/api/admin/challenge' && request.method === 'POST') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+    let body;
+    try { body = await request.json(); } catch { return fail('JSON invalide.'); }
+    const month = parseInt(body.month, 10);
+    if (isNaN(month) || month < 0 || month > 11) return fail('Mois invalide.');
+    const name   = String(body.name  || '').trim().slice(0, 80);
+    const icon   = String(body.icon  || '').trim().slice(0, 8);
+    const target = parseFloat(body.target);
+    if (!name || !icon)             return fail('Nom et icône requis.');
+    if (!target || target < 1 || target > 9999) return fail('Objectif invalide.');
+    await env.BWR_KV.put(`challenge:${month}`, JSON.stringify({ month, icon, name, target }));
+    return json({ ok: true });
+  }
+
+  if (pathname.startsWith('/api/admin/challenge/') && request.method === 'DELETE') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+    const month = parseInt(pathname.split('/')[4], 10);
+    if (isNaN(month) || month < 0 || month > 11) return fail('Mois invalide.', 400);
+    await env.BWR_KV.delete(`challenge:${month}`);
+    return json({ ok: true });
   }
 
   return null;

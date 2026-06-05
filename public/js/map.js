@@ -919,7 +919,10 @@ async function loadReports() {
     const res = await fetch(`${API_URL}/api/reports`);
     if (!res.ok) return;
     const reports = await res.json();
-    reports.filter(r => r.status === 'open').forEach(r => {
+    const open = reports.filter(r => r.status === 'open');
+    if (!open.length) return;
+    await _loadMapEdit();
+    open.forEach(r => {
       const path = allPaths.find(p => p.id === r.pathId);
       placeReportMarker(r, path?.coordinates);
     });

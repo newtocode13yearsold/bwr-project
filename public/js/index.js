@@ -140,7 +140,7 @@ try {
   render();
 })();
 
-/* ── Hero live map ───────────────────────────────────────────────────── */
+/* ── Hero live map + live stats ──────────────────────────────────────── */
 (function () {
   const heroMapEl = document.getElementById('heroMap');
   if (!heroMapEl) return;
@@ -162,10 +162,32 @@ try {
     maxZoom: 17,
   }).addTo(map);
 
+  function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function countUp(el, target, duration) {
+    const steps = 30;
+    const stepMs = duration / steps;
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      const t = Math.min(step / steps, 1);
+      el.textContent = Math.round(t * target);
+      if (step >= steps) clearInterval(timer);
+    }, stepMs);
+  }
+
   fetch(API_URL + '/api/paths')
     .then(r => r.ok ? r.json() : [])
     .then(paths => {
       if (!Array.isArray(paths)) return;
+
+      // Draw map paths
       paths.forEach(path => {
         if (!path.coordinates || path.coordinates.length < 2) return;
         const color = (STATUS_COLORS && STATUS_COLORS[path.status]) || '#22c55e';
@@ -176,6 +198,25 @@ try {
           lineJoin: 'round',
         }).addTo(map);
       });
+
+      // Compute deduplicated stats (skip exact-duplicate geometries)
+      const seen = new Set();
+      let totalKm = 0;
+      let uniqueCount = 0;
+      for (const p of paths) {
+        const c = p.coordinates;
+        if (!c || c.length < 2) continue;
+        const fp = `${c[0][0].toFixed(4)}|${c[0][1].toFixed(4)}|${c[c.length - 1][0].toFixed(4)}|${c[c.length - 1][1].toFixed(4)}|${c.length}`;
+        if (seen.has(fp)) continue;
+        seen.add(fp);
+        uniqueCount++;
+        for (let i = 1; i < c.length; i++) totalKm += haversine(c[i - 1][0], c[i - 1][1], c[i][0], c[i][1]);
+      }
+
+      const kmEl = document.getElementById('heroStatKm');
+      const pathsEl = document.getElementById('heroStatPaths');
+      if (kmEl) countUp(kmEl, Math.round(totalKm), 1200);
+      if (pathsEl) countUp(pathsEl, uniqueCount, 1200);
     })
     .catch(() => {});
 })();

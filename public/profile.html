@@ -108,6 +108,9 @@
     <!-- Free-tier weekly quota strip (hidden for Silver/Gold) -->
     <div class="profile-quota-strip" id="quotaStrip" style="display:none"></div>
 
+    <!-- Daily-streak banner (all tiers) -->
+    <div class="streak-banner" id="streakBanner" style="display:none"></div>
+
     <div class="profile-grid">
 
       <!-- ── Card: Informations personnelles ── -->
@@ -180,11 +183,61 @@
           </div>
           <div class="stat-block">
             <span class="stat-num skeleton" id="statKm"></span>
-            <span class="stat-lbl">Kilomètres générés</span>
+            <span class="stat-lbl">Badges débloqués</span>
           </div>
           <div class="stat-block">
             <span class="stat-num skeleton" id="statPaths"></span>
             <span class="stat-lbl">Chemins disponibles</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Card: Activité & records ── -->
+      <div class="profile-card card-activity">
+        <div class="card-header">
+          <span class="card-icon">📈</span>
+          <h2 class="card-title">Mon activité en forêt</h2>
+        </div>
+
+        <div class="heat-wrap">
+          <div class="heat-grid" id="heatGrid"></div>
+        </div>
+        <div class="heat-foot">
+          <span class="heat-caption" id="heatCaption"></span>
+          <span class="heat-legend">
+            Moins
+            <span class="heat-cell heat-l0"></span>
+            <span class="heat-cell heat-l1"></span>
+            <span class="heat-cell heat-l2"></span>
+            <span class="heat-cell heat-l3"></span>
+            <span class="heat-cell heat-l4"></span>
+            Plus
+          </span>
+        </div>
+        <p class="heat-empty" id="heatEmpty" style="display:none">
+          Ton activité s'affichera ici au fil de tes sorties — chaque trajet planifié colore une case 🌱
+        </p>
+
+        <div class="records-grid">
+          <div class="record-block">
+            <span class="record-icon">📅</span>
+            <span class="record-num" id="recBestDay">—</span>
+            <span class="record-lbl">Meilleur jour</span>
+          </div>
+          <div class="record-block">
+            <span class="record-icon">📆</span>
+            <span class="record-num" id="recBestWeek">—</span>
+            <span class="record-lbl">Meilleure semaine</span>
+          </div>
+          <div class="record-block">
+            <span class="record-icon">🥾</span>
+            <span class="record-num" id="recLongest">—</span>
+            <span class="record-lbl">Plus long trajet</span>
+          </div>
+          <div class="record-block">
+            <span class="record-icon">🔥</span>
+            <span class="record-num" id="recBestStreak">—</span>
+            <span class="record-lbl">Meilleure série</span>
           </div>
         </div>
       </div>
@@ -208,11 +261,26 @@
           <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
         </div>
 
+        <div class="challenge-block">
+          <h3 class="challenge-heading">🗓️ Défi du mois</h3>
+          <div id="monthlyChallenge"></div>
+        </div>
+
         <div class="badges-section">
           <h3 class="badges-title">🏅 Mes badges</h3>
           <div class="badges-grid" id="badgesGrid"></div>
           <p class="badges-locked-hint" id="badgesLockedHint" style="display:none"></p>
         </div>
+      </div>
+
+      <!-- ── Card: Mes derniers trajets (Silver+) ── -->
+      <div class="profile-card card-recent-routes" id="recentRoutesCard" style="display:none">
+        <div class="card-header">
+          <span class="card-icon">🧭</span>
+          <h2 class="card-title">Mes derniers trajets</h2>
+          <a href="routes" class="card-header-link">Tout voir →</a>
+        </div>
+        <div class="recent-routes-list" id="recentRoutesList"></div>
       </div>
 
       <!-- ── Premium features (Silver & Gold unified) ── -->
@@ -287,6 +355,17 @@
           </div>
         </div>
 
+        <!-- Forest trail health (Gold only) -->
+        <div class="feature-block" id="trailHealthBlock" style="display:none">
+          <h3 class="feature-title">🌲 État des chemins en forêt</h3>
+          <div class="th-stats">
+            <div class="th-stat"><strong id="thPaths">—</strong><span>chemins</span></div>
+            <div class="th-stat"><strong id="thOpen">—</strong><span>signalements actifs</span></div>
+            <div class="th-stat"><strong id="thWeek">—</strong><span>cette semaine</span></div>
+          </div>
+          <div class="th-list" id="thList"></div>
+        </div>
+
         <!-- Push alerts (Gold only) -->
         <div class="feature-block" id="pushAlertsBlock" style="display:none">
           <h3 class="feature-title">🔔 Alertes chemins en temps réel</h3>
@@ -351,7 +430,7 @@
         </div>
         <div class="upsell-cta-row">
           <a href="plans" class="upsell-cta">Voir les plans →</a>
-          <span class="upsell-price">À partir de <strong>3,99€</strong>/mois</span>
+          <span class="upsell-price">À partir de <strong>4,99€</strong>/mois</span>
         </div>
       </div>
 

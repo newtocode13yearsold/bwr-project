@@ -546,6 +546,43 @@ describe('stats endpoint', () => {
     const res = await worker.fetch(r('POST', '/api/auth/stats', { routes: 1, km: 1 }), env);
     assert.equal(res.status, 401);
   });
+
+  test('dailyLog accumulates same-day km across calls', async () => {
+    const { env, registerAndLogin } = freshEnv();
+    const { token } = await registerAndLogin('daily@bwr.fr', 'pass1234');
+    await worker.fetch(authed('POST', '/api/auth/stats', token, { routes: 1, km: 4.0 }), env);
+    const res = await worker.fetch(authed('POST', '/api/auth/stats', token, { routes: 1, km: 2.5 }), env);
+    const { stats } = await res.json();
+    const today = new Date().toISOString().slice(0, 10);
+    assert.ok(stats.dailyLog, 'dailyLog must exist');
+    assert.ok(Math.abs(stats.dailyLog[today] - 6.5) < 0.01, `expected ~6.5 km logged today, got ${stats.dailyLog[today]}`);
+  });
+
+  test('longestRoute tracks the max single-route distance only', async () => {
+    const { env, registerAndLogin } = freshEnv();
+    const { token } = await registerAndLogin('longest@bwr.fr', 'pass1234');
+    await worker.fetch(authed('POST', '/api/auth/stats', token, { routes: 1, km: 5 }), env);
+    await worker.fetch(authed('POST', '/api/auth/stats', token, { routes: 1, km: 8 }), env);
+    // A multi-route sync (routes > 1) carries a summed distance and must NOT bump longestRoute.
+    const res = await worker.fetch(authed('POST', '/api/auth/stats', token, { routes: 3, km: 30 }), env);
+    const { stats } = await res.json();
+    assert.equal(stats.longestRoute, 8, 'longestRoute must reflect the largest single outing, not a multi-route sum');
+  });
+
+  test('bestStreak records the highest streak reached', async () => {
+    const { env, kv, registerAndLogin, getAllUsers } = freshEnv();
+    const { token } = await registerAndLogin('beststreak@bwr.fr', 'pass1234');
+    // First outing → streak 1.
+    await worker.fetch(authed('POST', '/api/auth/stats', token, { routes: 1, km: 3 }), env);
+    // Backdate lastRouteDate to yesterday so the next outing extends the streak to 2.
+    const [u] = getAllUsers();
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    kv.store.set(`user:${u.id}`, JSON.stringify({ ...u, stats: { ...u.stats, lastRouteDate: yesterday } }));
+    const res = await worker.fetch(authed('POST', '/api/auth/stats', token, { routes: 1, km: 3 }), env);
+    const { stats } = await res.json();
+    assert.equal(stats.streak, 2, 'streak must extend to 2');
+    assert.equal(stats.bestStreak, 2, 'bestStreak must capture the peak streak');
+  });
 });
 
 // ── POST /api/auth/consume-route ─────────────────────────────────────────────

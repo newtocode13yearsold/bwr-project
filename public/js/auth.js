@@ -65,6 +65,16 @@ function authHeader() {
   return { Authorization: `Bearer ${getToken()}` };
 }
 
+// ── Persistent anonymous visitor ID (survives sessions, never changes per device) ──
+function getVisitorId() {
+  let id = localStorage.getItem('bwr_visitor_id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('bwr_visitor_id', id);
+  }
+  return id;
+}
+
 // ── Page-visit tracking (fire & forget, skipped for admins) ────────────────
 (function trackPageVisit() {
   try {
@@ -79,7 +89,7 @@ function authHeader() {
     fetch(`${API_URL}/api/analytics/visit`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ page: location.pathname }),
+      body: JSON.stringify({ page: location.pathname, visitorId: getVisitorId() }),
     }).catch(() => {});
   } catch (_) {}
 })();

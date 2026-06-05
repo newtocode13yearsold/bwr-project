@@ -964,6 +964,7 @@ document.getElementById('btnMessages').addEventListener('click', async () => {
   document.getElementById('pathForm').classList.add('hidden');
   document.getElementById('editForm').classList.add('hidden');
   document.getElementById('membersPanel').classList.add('hidden');
+  document.getElementById('challengePanel').classList.add('hidden');
   const panel = document.getElementById('messagesPanel');
   panel.classList.toggle('hidden');
   if (!panel.classList.contains('hidden')) await loadMessages();
@@ -1024,6 +1025,7 @@ async function loadMessages() {
 document.getElementById('btnMembers').addEventListener('click', async () => {
   document.getElementById('pathForm').classList.add('hidden');
   document.getElementById('editForm').classList.add('hidden');
+  document.getElementById('challengePanel').classList.add('hidden');
   const panel = document.getElementById('membersPanel');
   panel.classList.toggle('hidden');
   if (!panel.classList.contains('hidden')) {
@@ -1057,9 +1059,14 @@ async function loadVisits() {
   itemsEl.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Chargement…</p>';
   statsEl.innerHTML = '';
   try {
-    const res    = await fetch(`${API_URL}/api/analytics/visits`, { headers: authHeader() });
-    const visits = await res.json();
-    if (!res.ok) { itemsEl.innerHTML = `<p style="color:red">${visits.error}</p>`; return; }
+    const res  = await fetch(`${API_URL}/api/analytics/visits`, { headers: authHeader() });
+    const data = await res.json();
+    if (!res.ok) { itemsEl.innerHTML = `<p style="color:red">${data.error}</p>`; return; }
+
+    // API now returns { visits, totalVisits, totalVisitors }
+    const visits       = Array.isArray(data) ? data : (data.visits || []);
+    const totalVisits  = data.totalVisits   ?? visits.length;
+    const totalVisitors = data.totalVisitors ?? 0;
 
     const logged  = visits.filter(v => v.userId);
     const anon    = visits.filter(v => !v.userId);
@@ -1071,17 +1078,19 @@ async function loadVisits() {
     const today = visits.filter(v => now - new Date(v.timestamp).getTime() < DAY).length;
     const week  = visits.filter(v => now - new Date(v.timestamp).getTime() < WEEK).length;
 
-    const statCard = (label, val, color) =>
+    const statCard = (label, val, color, subtitle = '') =>
       `<div style="flex:1;min-width:70px;background:${color};border-radius:10px;padding:10px 12px;text-align:center">
          <div style="font-size:1.3rem;font-weight:800;color:#1e4d14">${val}</div>
          <div style="font-size:0.7rem;color:#374151;margin-top:2px;font-weight:600">${label}</div>
+         ${subtitle ? `<div style="font-size:0.65rem;color:#6b7280;margin-top:1px">${subtitle}</div>` : ''}
        </div>`;
     statsEl.innerHTML =
+      statCard('Depuis le début', totalVisits.toLocaleString('fr-FR'), '#dcfce7', 'visites totales') +
+      statCard('Appareils uniques', totalVisitors.toLocaleString('fr-FR'), '#fef9c3', 'visiteurs anonymes') +
       statCard("Aujourd'hui", today, '#d1fae5') +
       statCard('Cette semaine', week, '#fef3c7') +
-      statCard('Total', visits.length, '#e0e7ff') +
-      statCard('Connectés', logged.length, '#ede9fe') +
-      statCard('Anonymes', anon.length, '#fce7f3') +
+      statCard('Connectés', logged.length, '#ede9fe', '30 derniers jours') +
+      statCard('Anonymes', anon.length, '#fce7f3', '30 derniers jours') +
       `<button onclick="loadDebug()" style="margin-top:6px;width:100%;padding:7px 12px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;color:#374151">🔍 Diagnostic KV</button>`;
 
     if (visits.length === 0) {
@@ -1089,10 +1098,6 @@ async function loadVisits() {
       return;
     }
 
-    const pageName = p => {
-      const s = (p || '/').replace(/^\//, '') || 'accueil';
-      return s.charAt(0).toUpperCase() + s.slice(1);
-    };
     const deviceIcon = ua => {
       if (!ua) return '🖥️';
       const u = ua.toLowerCase();
@@ -1105,18 +1110,65 @@ async function loadVisits() {
       return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' })
            + ' ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
     };
-    const visitRow = v => `
+    const formatDuration = ms => {
+      if (ms < 60000) return '< 1 min';
+      const m = Math.round(ms / 60000);
+      if (m < 60) return `${m} min`;
+      const h = Math.floor(m / 60), rem = m % 60;
+      return rem > 0 ? `${h}h ${rem}min` : `${h}h`;
+    };
+
+    // Group visits into sessions (30-min inactivity = new session)
+    const SESSION_GAP = 30 * 60 * 1000;
+    const byVisitor = {};
+    for (const v of visits) {
+      const key = v.userId || v.visitorId || String(v.visitorNum) || 'unknown';
+      if (!byVisitor[key]) byVisitor[key] = [];
+      byVisitor[key].push(v);
+    }
+    const sessions = [];
+    for (const vList of Object.values(byVisitor)) {
+      vList.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      let start = vList[0], prev = vList[0];
+      for (let i = 1; i < vList.length; i++) {
+        const gap = new Date(vList[i].timestamp) - new Date(prev.timestamp);
+        if (gap > SESSION_GAP) {
+          sessions.push({ start, end: prev });
+          start = vList[i];
+        }
+        prev = vList[i];
+      }
+      sessions.push({ start, end: prev });
+    }
+    sessions.sort((a, b) => new Date(b.start.timestamp) - new Date(a.start.timestamp));
+
+    const sessionRow = s => {
+      const v = s.start;
+      const visitorTag = v.userId
+        ? `👤 ${v.userName}`
+        : v.visitorNum
+          ? `🔓 Visiteur #${v.visitorNum}`
+          : '🔓 Anonyme';
+      const dur = new Date(s.end.timestamp) - new Date(s.start.timestamp);
+      const timeRange = s.start.timestamp === s.end.timestamp
+        ? formatTime(s.start.timestamp)
+        : `${formatTime(s.start.timestamp)} → ${new Date(s.end.timestamp).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}`;
+      return `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px">
         <span style="font-size:1.1rem">${deviceIcon(v.userAgent)}</span>
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-            📄 ${pageName(v.page)}
+            🕐 ${timeRange}
           </div>
           <div style="font-size:0.75rem;color:#6b7280">
-            ${v.userName ? `👤 ${v.userName}` : '🔓 Anonyme'} — ${formatTime(v.timestamp)}
+            ${visitorTag} — ${formatDuration(dur)}
           </div>
         </div>
       </div>`;
+    };
+
+    const loggedSessions = sessions.filter(s => s.start.userId);
+    const anonSessions   = sessions.filter(s => !s.start.userId);
 
     const sectionTitle = (emoji, label, count) =>
       `<div style="font-weight:700;font-size:0.82rem;color:#374151;margin:14px 0 6px;display:flex;align-items:center;gap:6px">
@@ -1125,14 +1177,14 @@ async function loadVisits() {
 
     let html = '';
 
-    if (logged.length > 0) {
-      html += sectionTitle('👤', 'Utilisateurs connectés', logged.length);
-      html += logged.slice(0, 100).map(visitRow).join('');
+    if (loggedSessions.length > 0) {
+      html += sectionTitle('👤', 'Utilisateurs connectés', loggedSessions.length);
+      html += loggedSessions.slice(0, 100).map(sessionRow).join('');
     }
 
-    if (anon.length > 0) {
-      html += sectionTitle('🔓', 'Visiteurs anonymes (non connectés)', anon.length);
-      html += anon.slice(0, 100).map(visitRow).join('');
+    if (anonSessions.length > 0) {
+      html += sectionTitle('🔓', 'Visiteurs anonymes (non connectés)', anonSessions.length);
+      html += anonSessions.slice(0, 100).map(sessionRow).join('');
     }
 
     itemsEl.innerHTML = html;
@@ -1209,13 +1261,35 @@ async function loadMembers() {
           <div style="font-size:0.78rem;color:#6b7280">${u.email}</div>
           <div style="margin-top:3px">${planIcon[u.plan] || '🌿'} <strong>${u.plan}</strong> ${expiry}</div>
         </div>
-        ${u.role !== 'admin' ? `<button class="btn-secondary member-plan-btn" style="width:auto;padding:6px 12px;font-size:0.8rem"
-          data-id="${u.id}" data-name="${u.name.replace(/"/g,'&quot;')}" data-plan="${u.plan}" data-base="${u.planBase||'free'}">Modifier plan</button>` : ''}
+        ${u.role !== 'admin' ? `<div style="display:flex;gap:6px">
+          <button class="btn-secondary member-plan-btn" style="width:auto;padding:6px 12px;font-size:0.8rem"
+            data-id="${u.id}" data-name="${u.name.replace(/"/g,'&quot;')}" data-plan="${u.plan}" data-base="${u.planBase||'free'}">Modifier plan</button>
+          <button class="btn-secondary member-delete-btn" style="width:auto;padding:6px 12px;font-size:0.8rem;color:#dc2626;border-color:#fca5a5"
+            data-id="${u.id}" data-name="${u.name.replace(/"/g,'&quot;')}">Supprimer</button>
+        </div>` : ''}
       </div>`;
     }).join('');
     list.querySelectorAll('.member-plan-btn').forEach(btn => {
       btn.addEventListener('click', () =>
         openMemberPlan(btn.dataset.id, btn.dataset.name, btn.dataset.plan, btn.dataset.base, btn));
+    });
+    list.querySelectorAll('.member-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm(`Supprimer définitivement le compte de ${btn.dataset.name} ? Cette action est irréversible.`)) return;
+        btn.disabled = true;
+        btn.textContent = '…';
+        try {
+          const res = await fetch(`${API_URL}/api/users/${btn.dataset.id}`, { method: 'DELETE', headers: authHeader() });
+          const d = await res.json();
+          if (!res.ok) throw new Error(d.error);
+          showStatus(`Compte de ${btn.dataset.name} supprimé.`);
+          await loadMembers();
+        } catch (e) {
+          showStatus(e.message || 'Erreur', true);
+          btn.disabled = false;
+          btn.textContent = 'Supprimer';
+        }
+      });
     });
   } catch (e) {
     list.innerHTML = `<p style="color:red">Erreur réseau</p>`;
@@ -1302,6 +1376,7 @@ document.getElementById('btnRevenue').addEventListener('click', async () => {
   document.getElementById('editForm').classList.add('hidden');
   document.getElementById('messagesPanel').classList.add('hidden');
   document.getElementById('membersPanel').classList.add('hidden');
+  document.getElementById('challengePanel').classList.add('hidden');
   const panel = document.getElementById('revenuePanel');
   const wasHidden = panel.classList.contains('hidden');
   panel.classList.toggle('hidden');
@@ -1585,7 +1660,8 @@ async function loadRevenue() {
         fetch(`${API_URL}/api/users`, { headers: authHeader() }),
       ]);
 
-      const visits = visitsRes.ok ? await visitsRes.json() : [];
+      const visitsData = visitsRes.ok ? await visitsRes.json() : [];
+      const visits = Array.isArray(visitsData) ? visitsData : (visitsData.visits || []);
       const users  = usersRes.ok  ? await usersRes.json()  : (_revenueUsers || []);
 
       // Group visit counts per calendar month (last 5 months, index 4 = current)
@@ -1816,3 +1892,154 @@ function latToTileY(lat, z) {
     }
   });
 }());
+
+// ── Monthly challenges admin panel ────────────────────────────────────────────
+const MONTH_NAMES_FR = ['Janvier','Février','Mars','Avril','Mai','Juin',
+                        'Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+const CHALLENGE_DEFAULTS = [
+  { icon:'❄️',  name:'Défi hivernal',          target:20 },
+  { icon:'🌨️',  name:'Braver le froid',        target:20 },
+  { icon:'🌱',  name:'Renouveau printanier',   target:30 },
+  { icon:'🌸',  name:'Floraison',              target:35 },
+  { icon:'🌿',  name:'Forêt verdoyante',       target:40 },
+  { icon:'☀️',  name:'Longues journées',       target:50 },
+  { icon:'🌳',  name:'Plein été',              target:50 },
+  { icon:'🏞️',  name:'Évasion estivale',       target:45 },
+  { icon:'🍂',  name:"Couleurs d'automne",     target:40 },
+  { icon:'🍄',  name:'Saison des champignons', target:30 },
+  { icon:'🌫️',  name:'Brumes de novembre',     target:25 },
+  { icon:'🎄',  name:"Défi de fin d'année",    target:20 },
+];
+
+let _challengeData = {};
+
+function _populateChallengeForm(month) {
+  const ch = _challengeData[month] || CHALLENGE_DEFAULTS[month];
+  document.getElementById('chlIcon').value   = ch.icon;
+  document.getElementById('chlName').value   = ch.name;
+  document.getElementById('chlTarget').value = ch.target;
+  document.getElementById('chlMsg').textContent = '';
+  document.getElementById('chlMsg').style.color = '';
+}
+
+async function loadChallenges() {
+  const list = document.getElementById('chlList');
+  list.innerHTML = '<p style="color:#6b7280;font-size:0.85rem">Chargement…</p>';
+
+  const monthSel = document.getElementById('chlMonth');
+  if (!monthSel.options.length) {
+    MONTH_NAMES_FR.forEach((name, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = name;
+      monthSel.appendChild(opt);
+    });
+    monthSel.value = new Date().getUTCMonth();
+    monthSel.addEventListener('change', () => _populateChallengeForm(+monthSel.value));
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/api/admin/challenges`, { headers: authHeader() });
+    _challengeData = res.ok ? await res.json() : {};
+  } catch { _challengeData = {}; }
+
+  _populateChallengeForm(+monthSel.value);
+  _renderChallengeList();
+}
+
+function _renderChallengeList() {
+  const list = document.getElementById('chlList');
+  list.innerHTML = MONTH_NAMES_FR.map((name, i) => {
+    const custom  = _challengeData[i];
+    const ch      = custom || CHALLENGE_DEFAULTS[i];
+    const isCustom = !!custom;
+    const isCurrent = i === new Date().getUTCMonth();
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:${isCurrent ? '#f0fdf4' : '#f9fafb'};border:1px solid ${isCurrent ? '#86efac' : '#e5e7eb'}">
+        <span style="font-size:1.3rem;flex-shrink:0">${ch.icon}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:0.88rem;color:#1e293b">${name}${isCurrent ? ' <span style="font-size:0.7rem;color:#16a34a;font-weight:700">← CE MOIS</span>' : ''}</div>
+          <div style="font-size:0.8rem;color:#6b7280">${ch.name} · ${ch.target} km ${isCustom ? '<span style="color:#16a34a;font-weight:600">✓ Personnalisé</span>' : '<span style="color:#9ca3af">Défaut</span>'}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn-secondary" style="padding:4px 10px;font-size:0.78rem" data-edit="${i}">Modifier</button>
+          ${isCustom ? `<button class="btn-danger" style="padding:4px 10px;font-size:0.78rem" data-reset="${i}">Reset</button>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const m = +btn.dataset.edit;
+      document.getElementById('chlMonth').value = m;
+      _populateChallengeForm(m);
+      document.getElementById('chlName').focus();
+    });
+  });
+
+  list.querySelectorAll('[data-reset]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const m = +btn.dataset.reset;
+      if (!confirm(`Réinitialiser le défi de ${MONTH_NAMES_FR[m]} ?`)) return;
+      btn.disabled = true;
+      try {
+        const res = await fetch(`${API_URL}/api/admin/challenge/${m}`, { method: 'DELETE', headers: authHeader() });
+        if (!res.ok) throw new Error();
+        delete _challengeData[m];
+        _renderChallengeList();
+        _populateChallengeForm(+document.getElementById('chlMonth').value);
+      } catch { alert('Erreur lors de la réinitialisation.'); btn.disabled = false; }
+    });
+  });
+}
+
+document.getElementById('btnChallenge').addEventListener('click', async () => {
+  document.getElementById('pathForm').classList.add('hidden');
+  document.getElementById('editForm').classList.add('hidden');
+  document.getElementById('messagesPanel').classList.add('hidden');
+  document.getElementById('membersPanel').classList.add('hidden');
+  document.getElementById('revenuePanel').classList.add('hidden');
+  const panel = document.getElementById('challengePanel');
+  const wasHidden = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden');
+  if (wasHidden) await loadChallenges();
+});
+
+document.getElementById('btnCloseChallengePanel').addEventListener('click', () => {
+  document.getElementById('challengePanel').classList.add('hidden');
+});
+
+document.getElementById('challengeForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const month  = +document.getElementById('chlMonth').value;
+  const icon   = document.getElementById('chlIcon').value.trim();
+  const name   = document.getElementById('chlName').value.trim();
+  const target = parseFloat(document.getElementById('chlTarget').value);
+  const msgEl  = document.getElementById('chlMsg');
+
+  if (!icon || !name || !target) { msgEl.textContent = 'Tous les champs sont requis.'; msgEl.style.color = '#dc2626'; return; }
+
+  const btn = e.target.querySelector('[type=submit]');
+  btn.disabled = true;
+  btn.textContent = 'Enregistrement…';
+  try {
+    const res = await fetch(`${API_URL}/api/admin/challenge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ month, icon, name, target }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+    _challengeData[month] = { month, icon, name, target };
+    _renderChallengeList();
+    msgEl.textContent = `✓ Défi de ${MONTH_NAMES_FR[month]} enregistré`;
+    msgEl.style.color = '#16a34a';
+  } catch (err) {
+    msgEl.textContent = err.message;
+    msgEl.style.color = '#dc2626';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enregistrer ce mois';
+  }
+});

@@ -44,6 +44,7 @@
         <button class="btn-icon" id="btnMessages" title="Messages de contact" style="position:relative"><span class="btn-emoji">📬</span><span class="btn-label">Messages</span><span id="msgBadge" style="display:none;position:absolute;top:4px;right:4px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:700;border-radius:999px;padding:1px 5px;line-height:1.4"></span></button>
         <button class="btn-icon" id="btnMembers" title="Gérer les membres"><span class="btn-emoji">👥</span><span class="btn-label">Membres</span></button>
         <button class="btn-icon" id="btnRevenue" title="Tableau de bord revenus"><span class="btn-emoji">💰</span><span class="btn-label">Revenus</span></button>
+        <button class="btn-icon" id="btnChallenge" title="Défis mensuels"><span class="btn-emoji">🗓</span><span class="btn-label">Défis</span></button>
         <button class="btn-icon" id="btnSplitCancel" title="Annuler le découpage" style="display:none;background:rgba(239,68,68,0.4)"><span class="btn-emoji">✕</span><span class="btn-label">Annuler</span></button>
         <div class="user-menu" id="userMenu"></div>
       </div>
@@ -240,6 +241,27 @@
           <button class="btn-modal-confirm" id="btnSaveMemberPlan">Enregistrer</button>
         </div>
       </div>
+    </div>
+
+    <!-- Monthly challenges panel -->
+    <div id="challengePanel" class="path-form hidden" style="max-height:85vh;overflow-y:auto;width:min(520px,calc(100vw - 32px));min-height:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0">🗓 Défis mensuels</h3>
+        <button class="btn-secondary" id="btnCloseChallengePanel" style="width:auto;padding:6px 14px">✕</button>
+      </div>
+      <form id="challengeForm" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #e5e7eb">
+        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center">
+          <select id="chlMonth" class="input-field" style="width:140px"></select>
+          <input type="text" id="chlName" class="input-field" placeholder="Nom du défi" maxlength="60">
+          <input type="number" id="chlTarget" class="input-field" placeholder="km" min="1" max="9999" step="1" style="width:80px">
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="chlIcon" class="input-field" placeholder="Emoji" maxlength="4" style="width:80px;text-align:center;font-size:1.3rem">
+          <button type="submit" class="btn-primary" style="flex:1">Enregistrer ce mois</button>
+        </div>
+        <p id="chlMsg" style="margin:0;font-size:0.82rem;min-height:1em"></p>
+      </form>
+      <div id="chlList" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
 
     <!-- Revenue dashboard panel -->

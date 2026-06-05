@@ -2,7 +2,7 @@
 const existingToken = localStorage.getItem('bwr_token');
 if (existingToken) {
   fetch(`${API_URL}/api/auth/me`, { headers: { Authorization: `Bearer ${existingToken}` } })
-    .then(r => { if (r.ok) window.location.href = 'map'; })
+    .then(r => { if (r.ok) window.location.href = 'index'; })
     .catch(() => {});
 }
 
@@ -80,11 +80,65 @@ loginForm.addEventListener('submit', async (e) => {
     localStorage.setItem('bwr_user', JSON.stringify(data.user));
     const redirect = sessionStorage.getItem('bwr_redirect');
     sessionStorage.removeItem('bwr_redirect');
-    window.location.href = redirect || 'map';
+    window.location.href = redirect || 'index';
   } catch {
     errorEl.textContent = 'Impossible de contacter le serveur.';
     errorEl.classList.remove('hidden');
   }
+});
+
+// Resend verification panel
+const resendPanel    = document.getElementById('resendPanel');
+const showResendLink = document.getElementById('showResendLink');
+const hideResendLink = document.getElementById('hideResendLink');
+const resendBtn      = document.getElementById('resendBtn');
+const resendMsg      = document.getElementById('resendMsg');
+
+showResendLink.addEventListener('click', (e) => {
+  e.preventDefault();
+  loginForm.classList.add('hidden');
+  resendPanel.classList.remove('hidden');
+  resendMsg.classList.add('hidden');
+});
+
+hideResendLink.addEventListener('click', (e) => {
+  e.preventDefault();
+  resendPanel.classList.add('hidden');
+  loginForm.classList.remove('hidden');
+});
+
+resendBtn.addEventListener('click', async () => {
+  const email = document.getElementById('resendEmail').value.trim();
+  if (!email) return;
+  resendBtn.disabled = true;
+  resendBtn.textContent = 'Envoi…';
+  resendMsg.classList.add('hidden');
+  try {
+    const r = await fetch(`${API_URL}/api/auth/resend-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const d = await r.json();
+    resendMsg.textContent = d.error || d.message || 'Email envoyé.';
+    resendMsg.style.color = r.ok ? '#2d6b1f' : '';
+    resendMsg.classList.remove('hidden');
+  } catch {
+    resendMsg.textContent = 'Impossible de contacter le serveur.';
+    resendMsg.classList.remove('hidden');
+  }
+  resendBtn.disabled = false;
+  resendBtn.textContent = 'Renvoyer l\'email de vérification';
+});
+
+// Password visibility toggles
+document.querySelectorAll('.pw-eye').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.target);
+    const showing = btn.classList.toggle('visible');
+    input.type = showing ? 'text' : 'password';
+    btn.setAttribute('aria-label', showing ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+  });
 });
 
 // Sign up
