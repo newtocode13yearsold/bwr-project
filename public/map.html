@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#1e4d14" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>BWR — La carte qui simplifie ta vie</title>
+  <title>BWR — Forêts de Compiègne &amp; alentours</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
@@ -39,7 +39,9 @@
     <div class="header-right">
       <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
       <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
+      <button class="btn-icon hidden" id="btnEditPaths" title="Modifier les chemins"><span class="btn-emoji">✎</span><span class="btn-label">Modifier</span></button>
       <button class="btn-icon" id="toggleFilters" title="Filtres"><span class="btn-emoji">&#8942;</span><span class="btn-label">Filtres</span></button>
+      <div id="notifBell" class="notif-bell-wrap"></div>
       <div class="user-menu" id="userMenu">
         <!-- filled by map.js -->
       </div>
@@ -62,10 +64,6 @@
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
         <span>Planifier un trajet</span>
       </a>
-      <button class="nav-drawer-item hidden" id="btnEditPaths">
-        <span class="nav-drawer-icon btn-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></span>
-        <span class="btn-label">Modifier les chemins</span>
-      </button>
       <a href="profile" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
         <span>Mon profil</span>
@@ -160,6 +158,9 @@
     <div class="legend-item"><span class="dot hard"></span> Difficile</div>
     <div class="legend-item"><span class="dot not_passable"></span> Impraticable</div>
     <div class="legend-item"><span class="dot no_bike"></span> Vélo interdit</div>
+    <hr style="border:none;border-top:1px solid #d1d5db;margin:5px 0">
+    <div class="legend-item"><span class="legend-dash deployed-dash"></span> Section déployée</div>
+    <div class="legend-item"><span class="legend-dash nearby-dash"></span> Forêts voisines</div>
   </div>
 
 
@@ -186,8 +187,10 @@
   <script src="lib/leaflet.js"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/notif.js"></script>
   <script src="js/features.js"></script>
   <script src="js/carrefours.js"></script>
+  <script src="js/forests.js"></script>
   <script src="js/map.js"></script>
   <nav class="bottom-nav" aria-label="Navigation principale">
     <a href="map" class="bnav-item active">

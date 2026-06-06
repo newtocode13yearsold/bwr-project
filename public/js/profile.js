@@ -105,6 +105,23 @@ function showMsg(id, text, type = 'error') {
   currentUser = await requireAuth();
   if (!currentUser) return;
 
+  // One-time migration: km previously counted from route generation are invalid.
+  // Reset local and server km to 0 so only GPS-tracked km count going forward.
+  if (!localStorage.getItem('bwr_km_gps_only_v1')) {
+    localStorage.setItem('bwr_km_total', '0');
+    if (getToken()) {
+      await fetch(`${API_URL}/api/auth/stats`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ resetKm: true }),
+      }).catch(() => {});
+    }
+    localStorage.setItem('bwr_km_gps_only_v1', '1');
+    // Reload user data after reset so the page shows fresh stats
+    const res = await fetch(`${API_URL}/api/auth/me`, { headers: authHeader() });
+    if (res.ok) currentUser = await res.json();
+  }
+
   initUserMenu();
   populatePage(currentUser);
   buildColorSwatches(currentUser);
@@ -1215,10 +1232,10 @@ function buildRouteUrl(sugg) {
 
 function applySuggestionToUI(textEl, btnEl, sugg) {
   const html = `
-    <span style="font-size:1.6rem;flex-shrink:0">${sugg.icon}</span>
+    <span class="suggestion-icon">${sugg.icon}</span>
     <div>
-      <p style="margin:0 0 4px;font-size:0.88rem;color:#1e293b">${sugg.advice}</p>
-      <p style="margin:0;font-size:0.78rem;color:#6b7280">🌡 ${sugg.temp}°C · 💨 ${sugg.wind} km/h</p>
+      <p class="suggestion-text">${sugg.advice}</p>
+      <p class="suggestion-meta">🌡 ${sugg.temp}°C · 💨 ${sugg.wind} km/h</p>
     </div>`;
   textEl.innerHTML = html;
 

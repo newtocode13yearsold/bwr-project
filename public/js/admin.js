@@ -42,6 +42,7 @@ let selectModeActive = false;
 let offlineSelectMode = false;
 let splitModeActive = false;
 let splitTargetPath = null;
+let editModeActive = false;
 
 // ── Auth check ────────────────────────────────────────────────────────────────
 (async () => {
@@ -89,6 +90,7 @@ function initMap() {
   ignLayer.addTo(map);
 
   setTimeout(() => map.invalidateSize(), 100);
+  if (typeof addForestBoundaries === 'function') addForestBoundaries(map);
   initConditionTags('newConditions');
   initConditionTags('editConditions');
 
@@ -224,6 +226,37 @@ function exitSplitMode() {
   showStatus('');
 }
 
+// ── Edit mode — click any path (saved or OSM) to edit it ──────────────────────
+function enterEditMode() {
+  if (selectModeActive) exitSelectMode();
+  if (splitModeActive) exitSplitMode();
+  editModeActive = true;
+  const btn = document.getElementById('btnEditMode');
+  btn.querySelector('.btn-emoji').textContent = '✕';
+  btn.querySelector('.btn-label').textContent = 'Quitter';
+  btn.style.background = 'rgba(239,68,68,0.4)';
+  map.getContainer().style.cursor = 'crosshair';
+  showStatus('Mode modification — clique sur n\'importe quel chemin pour le modifier.');
+  loadOSMPaths();
+}
+
+function exitEditMode() {
+  editModeActive = false;
+  const btn = document.getElementById('btnEditMode');
+  btn.querySelector('.btn-emoji').textContent = '✎';
+  btn.querySelector('.btn-label').textContent = 'Modifier';
+  btn.style.background = '';
+  map.getContainer().style.cursor = '';
+  clearOSMLayer();
+  renderPaths();
+  showStatus('');
+}
+
+document.getElementById('btnEditMode').addEventListener('click', () => {
+  if (editModeActive) { exitEditMode(); return; }
+  enterEditMode();
+});
+
 async function handleSplitClick(path, latlng) {
   const coords = path.coordinates;
   const idx = nearestPointIndex(coords, latlng);
@@ -258,7 +291,8 @@ async function saveSplitPaths(path, part1, part2) {
 async function loadOSMPaths() {
   if (map.getZoom() < 12) {
     showStatus('Zoome plus près de la forêt (zoom minimum : 12).', true);
-    exitSelectMode();
+    if (editModeActive) exitEditMode();
+    else exitSelectMode();
     return;
   }
 
@@ -282,7 +316,10 @@ async function loadOSMPaths() {
     return;
   }
 
-  showStatus('Chargement des chemins…');
+  // Set loading text directly — bypasses showStatus's 4s auto-clear since Overpass can take up to 72s
+  const statusEl = document.getElementById('adminStatus');
+  statusEl.textContent = 'Chargement des chemins…';
+  statusEl.className = 'admin-status success';
 
   const b = map.getBounds();
   const bbox = `${b.getSouth().toFixed(4)},${b.getWest().toFixed(4)},${b.getNorth().toFixed(4)},${b.getEast().toFixed(4)}`;
@@ -439,7 +476,8 @@ function openNewPathPopup(coords, name, latlng, autoType = 'foot') {
       btn.addEventListener('click', async () => {
         map.closePopup();
         await saveNewPath(name, btn.dataset.status, coords, selectedType);
-        exitSelectMode();
+        if (editModeActive) exitEditMode();
+        else exitSelectMode();
       });
     });
   }, 50);
@@ -712,7 +750,8 @@ function renderPaths() {
       if (splitModeActive && splitTargetPath?.id === path.id) {
         handleSplitClick(path, e.latlng);
       } else if (!splitModeActive) {
-        openColorPopup(path, e.latlng);
+        if (editModeActive) openEditForm(path);
+        else openColorPopup(path, e.latlng);
       }
     };
 
@@ -1366,8 +1405,8 @@ document.getElementById('btnSaveMemberPlan').addEventListener('click', async () 
 });
 
 // ── Revenue dashboard ─────────────────────────────────────────────────────────
-const PLAN_PRICE_MONTHLY = { free: 0, silver: 3.99, gold: 7.99 };
-const PLAN_PRICE_ANNUAL  = { free: 0, silver: 3.39, gold: 6.79 };
+const PLAN_PRICE_MONTHLY = { free: 0, silver: 3.99, gold: 6.99 };
+const PLAN_PRICE_ANNUAL  = { free: 0, silver: 3.39, gold: 5.94 };
 let _revenueCharts = {};
 let _revenueUsers  = null;
 
@@ -1607,7 +1646,7 @@ async function loadRevenue() {
     _revenueCharts.mrr = new Chart(document.getElementById('chartMRR'), {
       type: 'bar',
       data: {
-        labels: ['Argent (3,99 €/mois)', 'Or (7,99 €/mois)'],
+        labels: ['Argent (3,99 €/mois)', 'Or (6,99 €/mois)'],
         datasets: [{ label: 'MRR (€)', data: [+(counts.silver * PLAN_PRICE_MONTHLY.silver).toFixed(2), +(counts.gold * PLAN_PRICE_MONTHLY.gold).toFixed(2)], backgroundColor: ['rgba(148,163,184,0.8)', 'rgba(251,191,36,0.8)'], borderColor: ['#64748b', '#d97706'], borderWidth: 2, borderRadius: 8, borderSkipped: false }]
       },
       options: {
@@ -1630,7 +1669,7 @@ async function loadRevenue() {
 (function initAIForecast() {
   const QUALITY_CONV   = [0, 0.12, 0.25, 0.45, 0.72, 1.10, 1.62, 2.25, 2.95, 3.60, 4.25];
   const QUALITY_LABELS = ['','Très basique','Basique','Moyen-','Moyen','Acceptable','Bon','Très bon','Excellent','Exceptionnel','Parfait'];
-  const ARPU   = 0.65 * 3.99 + 0.35 * 7.99;
+  const ARPU   = 0.65 * 3.99 + 0.35 * 6.99;
   const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
   let aifChart  = null;
@@ -1686,7 +1725,7 @@ async function loadRevenue() {
       users.forEach(u => { if (u.role !== 'admin') counts[u.plan || 'free']++; });
       const totalUsers  = counts.free + counts.silver + counts.gold;
       const payingUsers = counts.silver + counts.gold;
-      const realMRR     = counts.silver * 3.99 + counts.gold * 7.99;
+      const realMRR     = counts.silver * 3.99 + counts.gold * 6.99;
       const realConv    = totalUsers > 0 ? (payingUsers / totalUsers * 100) : 0;
 
       _realData = { visitors: visitsCurrent, history, slope, silver: counts.silver, gold: counts.gold, totalUsers, payingUsers, realMRR, realConv };
@@ -1913,20 +1952,45 @@ const CHALLENGE_DEFAULTS = [
 ];
 
 let _challengeData = {};
+let _activeMonth   = new Date().getUTCMonth();
 
-function _populateChallengeForm(month) {
-  const ch = _challengeData[month] || CHALLENGE_DEFAULTS[month];
-  document.getElementById('chlIcon').value   = ch.icon;
-  document.getElementById('chlName').value   = ch.name;
-  document.getElementById('chlTarget').value = ch.target;
+function _showChallengePreview(ch) {
+  const preview = document.getElementById('chlPreview');
+  if (!ch) { preview.style.display = 'none'; return; }
+  preview.style.display = '';
+  document.getElementById('chlPreviewIcon').textContent   = ch.icon || '';
+  document.getElementById('chlPreviewName').textContent   = ch.name || '';
+  document.getElementById('chlPreviewTarget').textContent = `Objectif : ${ch.target} km`;
+  const descEl = document.getElementById('chlPreviewDesc');
+  if (ch.description) {
+    descEl.textContent    = ch.description;
+    descEl.style.display  = '';
+  } else {
+    descEl.style.display  = 'none';
+  }
+}
+
+function _loadFormForMonth(month) {
+  _activeMonth = month;
+  const now       = new Date();
+  const year      = now.getUTCFullYear();
+  const monthName = new Date(Date.UTC(year, month, 1))
+    .toLocaleDateString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  document.getElementById('chlMonthLabel').textContent =
+    month === now.getUTCMonth() ? `${monthName} — mois en cours` : monthName;
+
+  const custom = _challengeData[month];
+  const def    = CHALLENGE_DEFAULTS[month];
+  document.getElementById('chlIcon').value   = custom ? custom.icon        : def.icon;
+  document.getElementById('chlName').value   = custom ? custom.name        : def.name;
+  document.getElementById('chlTarget').value = custom ? custom.target      : def.target;
+  document.getElementById('chlDesc').value   = custom ? (custom.description || '') : '';
   document.getElementById('chlMsg').textContent = '';
-  document.getElementById('chlMsg').style.color = '';
+  _showChallengePreview(custom || null);
 }
 
 async function loadChallenges() {
-  const list = document.getElementById('chlList');
-  list.innerHTML = '<p style="color:#6b7280;font-size:0.85rem">Chargement…</p>';
-
+  // Populate "other month" dropdown once
   const monthSel = document.getElementById('chlMonth');
   if (!monthSel.options.length) {
     MONTH_NAMES_FR.forEach((name, i) => {
@@ -1936,7 +2000,7 @@ async function loadChallenges() {
       monthSel.appendChild(opt);
     });
     monthSel.value = new Date().getUTCMonth();
-    monthSel.addEventListener('change', () => _populateChallengeForm(+monthSel.value));
+    monthSel.addEventListener('change', () => _loadFormForMonth(+monthSel.value));
   }
 
   try {
@@ -1944,54 +2008,7 @@ async function loadChallenges() {
     _challengeData = res.ok ? await res.json() : {};
   } catch { _challengeData = {}; }
 
-  _populateChallengeForm(+monthSel.value);
-  _renderChallengeList();
-}
-
-function _renderChallengeList() {
-  const list = document.getElementById('chlList');
-  list.innerHTML = MONTH_NAMES_FR.map((name, i) => {
-    const custom  = _challengeData[i];
-    const ch      = custom || CHALLENGE_DEFAULTS[i];
-    const isCustom = !!custom;
-    const isCurrent = i === new Date().getUTCMonth();
-    return `
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:${isCurrent ? '#f0fdf4' : '#f9fafb'};border:1px solid ${isCurrent ? '#86efac' : '#e5e7eb'}">
-        <span style="font-size:1.3rem;flex-shrink:0">${ch.icon}</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:0.88rem;color:#1e293b">${name}${isCurrent ? ' <span style="font-size:0.7rem;color:#16a34a;font-weight:700">← CE MOIS</span>' : ''}</div>
-          <div style="font-size:0.8rem;color:#6b7280">${ch.name} · ${ch.target} km ${isCustom ? '<span style="color:#16a34a;font-weight:600">✓ Personnalisé</span>' : '<span style="color:#9ca3af">Défaut</span>'}</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button class="btn-secondary" style="padding:4px 10px;font-size:0.78rem" data-edit="${i}">Modifier</button>
-          ${isCustom ? `<button class="btn-danger" style="padding:4px 10px;font-size:0.78rem" data-reset="${i}">Reset</button>` : ''}
-        </div>
-      </div>`;
-  }).join('');
-
-  list.querySelectorAll('[data-edit]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const m = +btn.dataset.edit;
-      document.getElementById('chlMonth').value = m;
-      _populateChallengeForm(m);
-      document.getElementById('chlName').focus();
-    });
-  });
-
-  list.querySelectorAll('[data-reset]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const m = +btn.dataset.reset;
-      if (!confirm(`Réinitialiser le défi de ${MONTH_NAMES_FR[m]} ?`)) return;
-      btn.disabled = true;
-      try {
-        const res = await fetch(`${API_URL}/api/admin/challenge/${m}`, { method: 'DELETE', headers: authHeader() });
-        if (!res.ok) throw new Error();
-        delete _challengeData[m];
-        _renderChallengeList();
-        _populateChallengeForm(+document.getElementById('chlMonth').value);
-      } catch { alert('Erreur lors de la réinitialisation.'); btn.disabled = false; }
-    });
-  });
+  _loadFormForMonth(new Date().getUTCMonth());
 }
 
 document.getElementById('btnChallenge').addEventListener('click', async () => {
@@ -2010,36 +2027,77 @@ document.getElementById('btnCloseChallengePanel').addEventListener('click', () =
   document.getElementById('challengePanel').classList.add('hidden');
 });
 
+document.getElementById('btnChlReset').addEventListener('click', async () => {
+  if (!_challengeData[_activeMonth]) return;
+  if (!confirm(`Réinitialiser le défi de ${MONTH_NAMES_FR[_activeMonth]} au défaut ?`)) return;
+  try {
+    const res = await fetch(`${API_URL}/api/admin/challenge/${_activeMonth}`, { method: 'DELETE', headers: authHeader() });
+    if (!res.ok) throw new Error();
+    delete _challengeData[_activeMonth];
+    _loadFormForMonth(_activeMonth);
+    const msgEl = document.getElementById('chlMsg');
+    msgEl.textContent = '✓ Réinitialisé au défi par défaut';
+    msgEl.style.color = '#6b7280';
+  } catch { alert('Erreur lors de la réinitialisation.'); }
+});
+
 document.getElementById('challengeForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const month  = +document.getElementById('chlMonth').value;
+  const month  = _activeMonth;
   const icon   = document.getElementById('chlIcon').value.trim();
   const name   = document.getElementById('chlName').value.trim();
   const target = parseFloat(document.getElementById('chlTarget').value);
+  const desc   = document.getElementById('chlDesc').value.trim();
   const msgEl  = document.getElementById('chlMsg');
 
-  if (!icon || !name || !target) { msgEl.textContent = 'Tous les champs sont requis.'; msgEl.style.color = '#dc2626'; return; }
+  if (!icon || !name || !target) {
+    msgEl.textContent = 'Emoji, titre et objectif km sont requis.';
+    msgEl.style.color = '#dc2626';
+    return;
+  }
 
   const btn = e.target.querySelector('[type=submit]');
   btn.disabled = true;
-  btn.textContent = 'Enregistrement…';
+  btn.textContent = 'Publication…';
   try {
     const res = await fetch(`${API_URL}/api/admin/challenge`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ month, icon, name, target }),
+      body: JSON.stringify({ month, icon, name, target, description: desc }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-    _challengeData[month] = { month, icon, name, target };
-    _renderChallengeList();
-    msgEl.textContent = `✓ Défi de ${MONTH_NAMES_FR[month]} enregistré`;
+    _challengeData[month] = { month, icon, name, target, description: desc };
+    _loadFormForMonth(month);
+    msgEl.textContent = `✓ Défi de ${MONTH_NAMES_FR[month]} publié — la cloche s'allume pour tous les utilisateurs`;
     msgEl.style.color = '#16a34a';
   } catch (err) {
     msgEl.textContent = err.message;
     msgEl.style.color = '#dc2626';
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Enregistrer ce mois';
+    btn.textContent = '📢 Publier le défi';
+  }
+});
+
+// ── Reset km all users ────────────────────────────────────────────────────────
+document.getElementById('btnResetKm')?.addEventListener('click', async () => {
+  if (!confirm('⚠️ Remettre les kilomètres de TOUS les membres à 0 ?\n\nCette action est irréversible.')) return;
+  const btn = document.getElementById('btnResetKm');
+  btn.disabled = true;
+  btn.querySelector('.btn-label').textContent = '…';
+  try {
+    const res = await fetch(`${API_URL}/api/migrate/reset-km`, {
+      method: 'POST',
+      headers: authHeader(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+    alert(`✅ Km remis à 0 pour ${data.usersReset} membre(s).`);
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.querySelector('.btn-label').textContent = 'Reset km';
   }
 });

@@ -321,8 +321,23 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
     const body = await request.json();
     const deltaRoutes = Math.max(0, parseInt(body.routes) || 0);
     const deltaKm     = Math.max(0, parseFloat(body.km) || 0);
+    const resetKm     = body.resetKm === true;
 
     const prev = user.stats || { routes: 0, km: 0 };
+
+    // resetKm: wipe all distance data (used when switching from generated-route
+    // km to GPS-only km so inflated historical values are cleared).
+    if (resetKm) {
+      const updatedStats = {
+        ...prev,
+        km: 0,
+        dailyLog: {},
+        longestRoute: 0,
+      };
+      await putUser(env, { ...user, stats: updatedStats });
+      return json({ stats: updatedStats });
+    }
+
     const today = new Date().toISOString().slice(0, 10);
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     const lastDate = prev.lastRouteDate;

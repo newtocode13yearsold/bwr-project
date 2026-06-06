@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
-  <title>BWR — Admin</title>
+  <title>BWR — Admin | Forêts de Compiègne &amp; alentours</title>
   <link rel="stylesheet" href="lib/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
   <link rel="preload" href="lib/leaflet.js" as="script" />
@@ -40,11 +40,13 @@
         <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
         <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
         <button class="btn-icon" id="btnSelectPath" title="Sélectionner un chemin"><span class="btn-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span><span class="btn-label">Sélectionner</span></button>
+        <button class="btn-icon" id="btnEditMode" title="Modifier les chemins — clique sur n'importe quel chemin pour le modifier"><span class="btn-emoji">✎</span><span class="btn-label">Modifier</span></button>
         <button class="btn-icon" id="btnDrawPath" title="Dessiner"><span class="btn-emoji">✏</span><span class="btn-label">Dessiner</span></button>
         <button class="btn-icon" id="btnMessages" title="Messages de contact" style="position:relative"><span class="btn-emoji">📬</span><span class="btn-label">Messages</span><span id="msgBadge" style="display:none;position:absolute;top:4px;right:4px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:700;border-radius:999px;padding:1px 5px;line-height:1.4"></span></button>
         <button class="btn-icon" id="btnMembers" title="Gérer les membres"><span class="btn-emoji">👥</span><span class="btn-label">Membres</span></button>
         <button class="btn-icon" id="btnRevenue" title="Tableau de bord revenus"><span class="btn-emoji">💰</span><span class="btn-label">Revenus</span></button>
         <button class="btn-icon" id="btnChallenge" title="Défis mensuels"><span class="btn-emoji">🗓</span><span class="btn-label">Défis</span></button>
+        <button class="btn-icon" id="btnResetKm" title="Remettre les km de tous les membres à 0" style="background:rgba(220,38,38,0.15)"><span class="btn-emoji">⚠️</span><span class="btn-label">Reset km</span></button>
         <button class="btn-icon" id="btnSplitCancel" title="Annuler le découpage" style="display:none;background:rgba(239,68,68,0.4)"><span class="btn-emoji">✕</span><span class="btn-label">Annuler</span></button>
         <div class="user-menu" id="userMenu"></div>
       </div>
@@ -244,24 +246,67 @@
     </div>
 
     <!-- Monthly challenges panel -->
-    <div id="challengePanel" class="path-form hidden" style="max-height:85vh;overflow-y:auto;width:min(520px,calc(100vw - 32px));min-height:0">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h3 style="margin:0">🗓 Défis mensuels</h3>
+    <div id="challengePanel" class="path-form hidden" style="max-height:85vh;overflow-y:auto;width:min(540px,calc(100vw - 32px));min-height:0">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div>
+          <h3 style="margin:0 0 2px">🗓 Défi du mois</h3>
+          <span style="font-size:0.82rem;color:#6b7280" id="chlMonthLabel"></span>
+        </div>
         <button class="btn-secondary" id="btnCloseChallengePanel" style="width:auto;padding:6px 14px">✕</button>
       </div>
-      <form id="challengeForm" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #e5e7eb">
-        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center">
-          <select id="chlMonth" class="input-field" style="width:140px"></select>
-          <input type="text" id="chlName" class="input-field" placeholder="Nom du défi" maxlength="60">
-          <input type="number" id="chlTarget" class="input-field" placeholder="km" min="1" max="9999" step="1" style="width:80px">
+
+      <!-- Current challenge preview -->
+      <div id="chlPreview" style="display:none;margin:14px 0;padding:14px;border-radius:12px;background:#f0fdf4;border:1.5px solid #86efac">
+        <div style="font-size:0.72rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Défi actuel</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span id="chlPreviewIcon" style="font-size:1.8rem"></span>
+          <div>
+            <div id="chlPreviewName" style="font-weight:700;color:#1e293b"></div>
+            <div id="chlPreviewTarget" style="font-size:0.8rem;color:#6b7280"></div>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="text" id="chlIcon" class="input-field" placeholder="Emoji" maxlength="4" style="width:80px;text-align:center;font-size:1.3rem">
-          <button type="submit" class="btn-primary" style="flex:1">Enregistrer ce mois</button>
+        <div id="chlPreviewDesc" style="margin-top:8px;font-size:0.85rem;color:#374151;white-space:pre-wrap;display:none"></div>
+      </div>
+
+      <form id="challengeForm" style="display:flex;flex-direction:column;gap:12px;margin-top:14px">
+
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:0.75rem;font-weight:600;color:#6b7280">Icône</label>
+            <input type="text" id="chlIcon" class="input-field" placeholder="🗓" maxlength="4"
+                   style="width:64px;text-align:center;font-size:1.5rem;padding:8px 4px">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;flex:1">
+            <label style="font-size:0.75rem;font-weight:600;color:#6b7280">Titre du défi</label>
+            <input type="text" id="chlName" class="input-field" placeholder="Ex : Longues journées" maxlength="60">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:0.75rem;font-weight:600;color:#6b7280">Objectif (km)</label>
+            <input type="number" id="chlTarget" class="input-field" placeholder="50" min="1" max="9999" step="1" style="width:96px">
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:0.8rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">
+            Message pour les utilisateurs
+          </label>
+          <textarea id="chlDesc" class="input-field" rows="5"
+            placeholder="Écris ici tout ce que tu veux dire aux randonneurs ce mois-ci — conseils, motivation, itinéraires conseillés, anecdotes sur la forêt…"
+            style="resize:vertical;font-size:0.88rem;line-height:1.5"></textarea>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button type="submit" class="btn-primary" style="flex:1">📢 Publier le défi</button>
+          <button type="button" class="btn-secondary" id="btnChlReset" style="width:auto;padding:8px 14px">Réinitialiser</button>
         </div>
         <p id="chlMsg" style="margin:0;font-size:0.82rem;min-height:1em"></p>
       </form>
-      <div id="chlList" style="display:flex;flex-direction:column;gap:6px"></div>
+
+      <details style="margin-top:18px">
+        <summary style="font-size:0.82rem;color:#6b7280;cursor:pointer;user-select:none">Modifier un autre mois</summary>
+        <select id="chlMonth" class="input-field" style="margin-top:8px;width:100%"></select>
+      </details>
     </div>
 
     <!-- Revenue dashboard panel -->
@@ -379,6 +424,7 @@
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/carrefours.js"></script>
+  <script src="js/forests.js"></script>
   <script src="js/admin.js"></script>
   <script defer src="js/ui-shared.js"></script>
 </body>

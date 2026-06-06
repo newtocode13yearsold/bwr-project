@@ -3,6 +3,7 @@ let map = null;
 let mode = null;
 let pathType = 'foot';
 let difficulty = 'easy';
+let transportMode = 'foot';
 
 // ── Lazy-loader helper ────────────────────────────────────────────────────────
 const _scriptCache = {};
@@ -225,6 +226,7 @@ function initMap() {
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', () => map.invalidateSize());
   }
+  if (typeof addForestBoundaries === 'function') addForestBoundaries(map);
 
   // Layer switcher
   document.querySelectorAll('.layer-btn').forEach(btn => {
@@ -382,6 +384,14 @@ document.querySelectorAll('.diff-btn[data-diff]').forEach(btn => {
   });
 });
 
+document.querySelectorAll('.diff-btn[data-transport]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.diff-btn[data-transport]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    transportMode = btn.dataset.transport;
+  });
+});
+
 document.querySelectorAll('.diff-btn[data-priority]').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.diff-btn[data-priority]').forEach(b => b.classList.remove('active'));
@@ -527,17 +537,14 @@ async function generateRoute() {
     return;
   }
 
-  // Track usage stats locally (cache) and persist to server
+  // Increment route count only — km are tracked via real GPS (see GpsTracker)
   const prevCount = parseInt(localStorage.getItem('bwr_route_count') || '0');
-  const prevKm    = parseFloat(localStorage.getItem('bwr_km_total')   || '0');
-  const deltaKm   = result.meters / 1000;
   localStorage.setItem('bwr_route_count', prevCount + 1);
-  localStorage.setItem('bwr_km_total', (prevKm + deltaKm).toFixed(2));
   if (getToken()) {
     fetch(`${API_URL}/api/auth/stats`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ routes: 1, km: deltaKm }),
+      body: JSON.stringify({ routes: 1, km: 0 }),
     }).catch(() => {});
   }
 
@@ -573,8 +580,7 @@ function fetchWithTimeout(url, opts = {}, ms = 10000) {
 
 // ── ORS fallback (via worker, needs ORS_KEY set in Cloudflare) ─────────────────
 function orsProfile() {
-  const map = { bike: 'cycling-mountain', champs: 'foot-walking', mix: 'foot-walking' };
-  return map[pathType] || 'foot-hiking';
+  return transportMode === 'bike' ? 'cycling-mountain' : 'foot-hiking';
 }
 async function callORS(body) {
   const res = await fetchWithTimeout(`${API_URL}/api/route`, {
@@ -594,7 +600,7 @@ async function callORS(body) {
 }
 
 // ── OSRM fallback (no key needed, always works) ────────────────────────────────
-function osrmProfile() { return pathType === 'bike' ? 'cycling' : 'foot'; }
+function osrmProfile() { return transportMode === 'bike' ? 'cycling' : 'foot'; }
 
 async function osrmRoute(wpList) {
   const p = osrmProfile();
@@ -703,7 +709,7 @@ async function routeAtob(sLat, sLng, eLat, eLng) {
         Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
       );
       if (osmPaths.length) {
-        const r = graphAtob(sLat, sLng, eLat, eLng, applyOsmSurfaceWeights(osmPaths));
+        const r = graphAtob(sLat, sLng, eLat, eLng, applyOsmSurfaceWeights(osmPaths), transportMode);
         console.info(`routing: OSM graph (${osmPaths.length} chemins, ${(r.meters/1000).toFixed(1)} km)`);
         return r;
       }
@@ -735,12 +741,12 @@ async function routeAtob(sLat, sLng, eLat, eLng) {
   if (weightedOsmPaths.length || admin.length) {
     let best = null;
     try {
-      const hybrid = graphAtobHybrid(sLat, sLng, eLat, eLng, admin, weightedOsmPaths);
+      const hybrid = graphAtobHybrid(sLat, sLng, eLat, eLng, admin, weightedOsmPaths, transportMode);
       if (hybrid.meters <= straightM * 4) best = hybrid;
     } catch (e) { console.warn('graph hybrid:', e.message); }
     if (weightedOsmPaths.length) {
       try {
-        const osmOnly = graphAtob(sLat, sLng, eLat, eLng, weightedOsmPaths);
+        const osmOnly = graphAtob(sLat, sLng, eLat, eLng, weightedOsmPaths, transportMode);
         if (osmOnly.meters <= straightM * 4 && (!best || osmOnly.meters < best.meters)) best = osmOnly;
       } catch (e) { console.warn('OSM graph:', e.message); }
     }
@@ -768,7 +774,7 @@ async function routeLoop(sLat, sLng, targetKm) {
       await fetchOsmPathsForBbox(sLat - padLat, sLng - padLng, sLat + padLat, sLng + padLng),
     );
     if (admin.length || osmPaths.length) {
-      return graphLoopHybrid(sLat, sLng, targetKm, admin, osmPaths, pathType);
+      return graphLoopHybrid(sLat, sLng, targetKm, admin, osmPaths, transportMode);
     }
   } catch (e) { console.warn('graph loop hybrid:', e.message); }
   // 2. ORS round_trip (needs ORS_KEY)
@@ -814,6 +820,8 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   const min = Math.round((seconds % 3600) / 60);
   document.getElementById('statDuration').textContent =
     h > 0 ? `${h}h${String(min).padStart(2, '0')}` : `${min} min`;
+  document.querySelector('#statDuration + small').textContent =
+    transportMode === 'bike' ? 'Durée estimée (vélo)' : 'Durée estimée (à pied)';
 
   // Badges
   const badgeDiff = { easy: 'Facile', medium: 'Moyen', hard: 'Difficile' }[difficulty];
@@ -1159,6 +1167,139 @@ async function handleSharedRouteParam() {
     showToast('Impossible de charger le trajet partagé.');
   }
 }
+
+// ── GPS Tracker — real distance counting ──────────────────────────────────────
+// km are counted only from actual GPS movement (watchPosition), not from
+// generated route length. Filters out GPS noise via accuracy, min-move,
+// and max-speed thresholds.
+const GpsTracker = (() => {
+  const MIN_ACCURACY_M = 25;   // discard fixes with accuracy worse than 25 m
+  const MIN_MOVE_KM    = 0.005; // 5 m minimum displacement — filters GPS jitter
+  const MAX_SPEED_KMH  = 22;   // max realistic walking/biking speed; discards jumps
+
+  let watchId    = null;
+  let lastPos    = null;
+  let sessionKm  = 0;
+  let active     = false;
+  let userMarker = null;
+
+  function haversine(lat1, lng1, lat2, lng2) {
+    const R    = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a    = Math.sin(dLat / 2) ** 2
+               + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
+               * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function onPosition(pos) {
+    const { latitude, longitude, accuracy } = pos.coords;
+    if (accuracy > MIN_ACCURACY_M) {
+      setAccuracyLabel(`GPS faible (±${Math.round(accuracy)} m) — en attente…`);
+      return;
+    }
+    setAccuracyLabel(`Précision GPS : ±${Math.round(accuracy)} m`);
+
+    // Update map marker
+    if (map) {
+      if (!userMarker) {
+        userMarker = L.circleMarker([latitude, longitude], {
+          radius: 7, color: '#2563eb', fillColor: '#3b82f6',
+          fillOpacity: 0.9, weight: 2,
+        }).addTo(map).bindTooltip('📍 Vous êtes ici', { permanent: false });
+      } else {
+        userMarker.setLatLng([latitude, longitude]);
+      }
+    }
+
+    if (!lastPos) {
+      lastPos = { lat: latitude, lng: longitude, t: pos.timestamp };
+      return;
+    }
+
+    const dtH  = (pos.timestamp - lastPos.t) / 3_600_000;
+    const dist = haversine(lastPos.lat, lastPos.lng, latitude, longitude);
+    const kmh  = dtH > 0 ? dist / dtH : 0;
+
+    if (dist >= MIN_MOVE_KM && kmh <= MAX_SPEED_KMH) {
+      sessionKm += dist;
+      const el = document.getElementById('trackerKm');
+      if (el) el.textContent = sessionKm.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' km';
+    }
+    lastPos = { lat: latitude, lng: longitude, t: pos.timestamp };
+  }
+
+  function setAccuracyLabel(text) {
+    const el = document.getElementById('trackerAccuracy');
+    if (el) el.textContent = text;
+  }
+
+  function start() {
+    if (!navigator.geolocation) {
+      showToast('La géolocalisation n\'est pas disponible sur cet appareil.');
+      return;
+    }
+    if (active) return;
+    sessionKm = 0;
+    lastPos   = null;
+    active    = true;
+
+    const liveEl = document.getElementById('gpsTrackerLive');
+    const btn    = document.getElementById('btnTracker');
+    const kmEl   = document.getElementById('trackerKm');
+    if (liveEl) liveEl.classList.remove('hidden');
+    if (btn)    { btn.textContent = '⏹ Terminer la balade'; btn.classList.add('tracking'); }
+    if (kmEl)   kmEl.textContent = '0,00 km';
+    setAccuracyLabel('Acquisition du signal GPS…');
+
+    watchId = navigator.geolocation.watchPosition(
+      onPosition,
+      err => {
+        const msgs = { 1: 'Permission refusée', 2: 'Signal GPS indisponible', 3: 'Délai dépassé' };
+        setAccuracyLabel(msgs[err.code] || 'Erreur GPS');
+      },
+      { enableHighAccuracy: true, maximumAge: 4000, timeout: 15000 }
+    );
+  }
+
+  function stop() {
+    if (!active) return;
+    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    active = false;
+
+    if (userMarker && map) { map.removeLayer(userMarker); userMarker = null; }
+
+    const liveEl = document.getElementById('gpsTrackerLive');
+    const btn    = document.getElementById('btnTracker');
+    if (liveEl) liveEl.classList.add('hidden');
+    if (btn)    { btn.textContent = '▶ Démarrer ma balade'; btn.classList.remove('tracking'); }
+    setAccuracyLabel('');
+
+    if (sessionKm >= 0.05) {
+      const prev = parseFloat(localStorage.getItem('bwr_km_total') || '0');
+      localStorage.setItem('bwr_km_total', (prev + sessionKm).toFixed(2));
+      if (getToken()) {
+        fetch(`${API_URL}/api/auth/stats`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeader() },
+          body: JSON.stringify({ routes: 0, km: parseFloat(sessionKm.toFixed(2)) }),
+        }).catch(() => {});
+      }
+      const kmFmt = sessionKm.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      showToast(`✅ ${kmFmt} km ajoutés à ton total !`);
+    } else {
+      showToast('Balade trop courte — moins de 50 m enregistrés.');
+    }
+  }
+
+  return { start, stop, isActive: () => active };
+})();
+
+document.getElementById('btnTracker')?.addEventListener('click', () => {
+  if (GpsTracker.isActive()) GpsTracker.stop();
+  else GpsTracker.start();
+});
 
 // Offline pill — lightweight non-blocking indicator only
 (function () {

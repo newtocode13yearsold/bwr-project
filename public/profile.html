@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
-  <title>BWR — Mon profil</title>
+  <title>BWR — Mon profil | Forêts de Compiègne &amp; alentours</title>
   <link rel="prefetch" href="js/graph-router.js" />
   <link rel="prefetch" href="js/exporters.js" />
   <link rel="prefetch" href="js/routes.js" />
@@ -39,6 +39,7 @@
       <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
       <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
       <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji">⬇</span><span class="btn-label">Installer</span></button>
+      <div id="notifBell" class="notif-bell-wrap"></div>
       <div class="user-menu" id="userMenu"></div>
     </div>
   </header>
@@ -481,6 +482,7 @@
 
   <script defer src="js/config.js"></script>
   <script defer src="js/auth.js"></script>
+  <script defer src="js/notif.js"></script>
   <script defer src="js/features.js"></script>
   <script defer src="js/profile.js"></script>
   <script defer src="js/install.js"></script>

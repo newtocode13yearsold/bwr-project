@@ -232,7 +232,7 @@ function graphToResult(nodes, keys, pathTyp) {
 
 // A → B routing on the graph.
 // paths: pre-filtered array of path objects (each with a .coordinates array of [lat,lon] pairs).
-function graphAtob(sLat, sLng, eLat, eLng, paths) {
+function graphAtob(sLat, sLng, eLat, eLng, paths, transportMode = 'foot') {
   if (!paths.length) throw new Error('Aucun chemin de ce type enregistré');
   const { nodes, adj } = buildGraph(paths);
   const sNode = nearestNode(nodes, sLat, sLng);
@@ -240,7 +240,7 @@ function graphAtob(sLat, sLng, eLat, eLng, paths) {
   const { prev } = dijkstra(adj, sNode.k, eNode.k);
   const keys = rebuildPath(prev, sNode.k, eNode.k);
   if (!keys) throw new Error('Aucun chemin entre ces deux points');
-  return graphToResult(nodes, keys, 'foot');
+  return graphToResult(nodes, keys, transportMode);
 }
 
 // Loop routing on the graph — routes out one way, removes those edges, routes back differently.
@@ -354,7 +354,7 @@ function tagOsmGapFill(osmPaths) {
 }
 
 // A→B routing with admin paths as primary network and OSM paths as weighted gap-fill.
-function graphAtobHybrid(sLat, sLng, eLat, eLng, adminPaths, osmPaths) {
+function graphAtobHybrid(sLat, sLng, eLat, eLng, adminPaths, osmPaths, transportMode = 'foot') {
   const all = [...adminPaths, ...tagOsmGapFill(osmPaths)];
   if (!all.length) throw new Error('Aucun chemin disponible');
   const { nodes, adj } = buildGraph(all);
@@ -363,7 +363,7 @@ function graphAtobHybrid(sLat, sLng, eLat, eLng, adminPaths, osmPaths) {
   const { prev } = dijkstra(adj, sNode.k, eNode.k);
   const keys = rebuildPath(prev, sNode.k, eNode.k);
   if (!keys) throw new Error('Aucun chemin entre ces deux points');
-  return graphToResult(nodes, keys, 'foot');
+  return graphToResult(nodes, keys, transportMode);
 }
 
 // Loop routing with admin paths as primary network and OSM paths as weighted

@@ -49,6 +49,27 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     return json({ success: true, migrated: results });
   }
 
+  if (pathname === '/api/migrate/reset-km' && request.method === 'POST') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+
+    const users = await listItems(env, 'user:');
+    await Promise.all(users.map(u => {
+      const updated = {
+        ...u,
+        stats: {
+          ...(u.stats || {}),
+          km: 0,
+          dailyLog: {},
+          longestRoute: 0,
+        },
+      };
+      return putUser(env, updated);
+    }));
+
+    return json({ success: true, usersReset: users.length });
+  }
+
   if (pathname === '/api/setup' && request.method === 'POST') {
     const existing = await env.BWR_KV.list({ prefix: 'user:', limit: 1 });
     if (!existing.list_complete || existing.keys.length > 0) return fail('Setup already completed.', 403);
@@ -410,7 +431,8 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
     const target = parseFloat(body.target);
     if (!name || !icon)             return fail('Nom et icône requis.');
     if (!target || target < 1 || target > 9999) return fail('Objectif invalide.');
-    await env.BWR_KV.put(`challenge:${month}`, JSON.stringify({ month, icon, name, target }));
+    const description = String(body.description || '').trim().slice(0, 2000);
+    await env.BWR_KV.put(`challenge:${month}`, JSON.stringify({ month, icon, name, target, description, setAt: new Date().toISOString() }));
     return json({ ok: true });
   }
 

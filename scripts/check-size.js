@@ -24,11 +24,13 @@ function scanDir(dir, ext) {
   }
 }
 
+const PUBLIC = join(ROOT, 'public');
+
 const files = [
-  ...scanDir(join(ROOT, 'js'), 'js'),
-  ...scanDir(join(ROOT, 'css'), 'css'),
+  ...scanDir(join(PUBLIC, 'js'), 'js'),
+  ...scanDir(join(PUBLIC, 'css'), 'css'),
   { file: '/worker.js', size: statSync(join(ROOT, 'worker.js')).size },
-  { file: '/sw.js',     size: statSync(join(ROOT, 'sw.js')).size },
+  { file: '/public/sw.js', size: statSync(join(PUBLIC, 'sw.js')).size },
 ];
 
 const kb = n => (n / 1024).toFixed(1).padStart(7) + ' KB';

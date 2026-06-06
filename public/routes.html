@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
-  <title>BWR — Planifier un trajet</title>
+  <title>BWR — Planifier un trajet | Forêts de Compiègne &amp; alentours</title>
   <link rel="stylesheet" href="lib/leaflet.css" />
   <link rel="preload" href="lib/leaflet.js" as="script" />
   <link rel="prefetch" href="js/profile.js" />
@@ -40,6 +40,7 @@
       <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
       <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
       <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji">⬇</span><span class="btn-label">Installer</span></button>
+      <div id="notifBell" class="notif-bell-wrap"></div>
       <div class="user-menu" id="userMenu"></div>
     </div>
   </header>
@@ -140,6 +141,14 @@
           </div>
         </div>
 
+        <div class="option-group">
+          <label class="option-label">Mode de déplacement</label>
+          <div class="difficulty-group">
+            <button class="diff-btn active" data-transport="foot">🚶 À pied</button>
+            <button class="diff-btn" data-transport="bike">🚴 Vélo</button>
+          </div>
+        </div>
+
         <hr class="option-sep">
 
         <div class="option-group" id="priorityGroup">
@@ -200,6 +209,26 @@
         <!-- Free-tier weekly quota strip (hidden for Silver/Gold) -->
         <div class="quota-strip hidden" id="quotaStrip"></div>
         <button class="btn-generate" id="btnGenerate" disabled>Calculer le trajet</button>
+      </div>
+
+      <!-- GPS Tracker -->
+      <div class="gps-tracker-card" id="gpsTrackerCard">
+        <div class="gps-tracker-header">
+          <span class="gps-tracker-icon">🏃</span>
+          <div>
+            <strong>Suivi GPS</strong>
+            <p class="gps-tracker-sub">Mesure ta vraie distance parcourue</p>
+          </div>
+        </div>
+        <div class="gps-tracker-live hidden" id="gpsTrackerLive">
+          <div class="gps-live-row">
+            <span class="gps-live-dot"></span>
+            <span>En cours</span>
+            <strong id="trackerKm">0,00 km</strong>
+          </div>
+          <div class="gps-live-accuracy" id="trackerAccuracy"></div>
+        </div>
+        <button class="btn-gps-track" id="btnTracker">▶ Démarrer ma balade</button>
       </div>
 
       <!-- Contact -->
@@ -289,8 +318,10 @@
   </nav>
 
   <script src="js/auth.js"></script>
+  <script src="js/notif.js"></script>
   <script src="js/features.js"></script>
   <script src="js/exporters.js"></script>
+  <script src="js/forests.js"></script>
   <script src="js/graph-router.js"></script>
   <script src="js/routes.js"></script>
   <script defer src="js/install.js"></script>

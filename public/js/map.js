@@ -109,6 +109,8 @@ const PathTileLayer = L.GridLayer.extend({
 const pathTileLayer = new PathTileLayer({ tileSize: 256, zIndex: 200 });
 pathTileLayer.addTo(map);
 
+if (typeof addForestBoundaries === 'function') addForestBoundaries(map);
+
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', () => map.invalidateSize());
 }

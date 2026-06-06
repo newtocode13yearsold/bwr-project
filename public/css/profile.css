@@ -785,9 +785,14 @@
 }
 .suggestion-icon { font-size: 1.6rem; }
 .suggestion-text {
-  margin: 0;
-  font-size: var(--fs-xs);
+  margin: 0 0 4px;
+  font-size: 0.88rem;
   color: var(--text);
+}
+.suggestion-meta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
 
 /* ── Feature descriptive text ── */

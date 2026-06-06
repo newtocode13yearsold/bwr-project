@@ -71,11 +71,6 @@ function renderOsmEditPaths(data) {
     if (el.type !== 'way') return;
     const coords = el.nodes.map(id => nodes[id]).filter(Boolean);
     if (coords.length < 2) return;
-    const alreadySaved = allPaths.some(p =>
-      p.coordinates && Math.abs(p.coordinates[0][0] - coords[0][0]) < 0.0001 &&
-      Math.abs(p.coordinates[0][1] - coords[0][1]) < 0.0001
-    );
-    if (alreadySaved) return;
     const name = el.tags?.name || el.tags?.ref || 'Chemin sans nom';
     const line = L.polyline(coords, { color: '#475569', weight: 3, opacity: 0.65, dashArray: '6, 6' });
     line.on('mouseover', () => { line.setStyle({ color: '#2563eb', opacity: 1, weight: 5, dashArray: null }); map.getContainer().style.cursor = 'pointer'; });
