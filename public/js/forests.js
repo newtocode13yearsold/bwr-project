@@ -1,18 +1,38 @@
-/* Forest boundary overlays — draws the "Section déployée" outline around
-   Forêt de Compiègne and shows neighbouring forests as context. */
+/* Forest boundary overlays — "Section déployée" outline with inline border labels */
 
 window.addForestBoundaries = function (map) {
 
-  // ── Forêt de Compiègne — deployed section ──────────────────────────────────
-  const compiegneCoords = [
-    [49.424, 2.779], [49.438, 2.834], [49.445, 2.900],
-    [49.441, 2.978], [49.422, 3.058], [49.390, 3.093],
-    [49.348, 3.092], [49.298, 3.047], [49.269, 2.958],
-    [49.268, 2.860], [49.290, 2.779], [49.358, 2.734],
-    [49.396, 2.738],
+  // Returns CSS rotation angle so text reads along the segment from `prev` to `next`
+  function labelAngle(prev, next) {
+    const dx = next[1] - prev[1];       // lon diff  → screen x
+    const dy = -(next[0] - prev[0]);    // lat diff  → screen y (inverted)
+    let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    // Flip if text would be upside-down
+    if (angle > 90)  angle -= 180;
+    if (angle < -90) angle += 180;
+    return angle;
+  }
+
+  // ── Section déployée — large operational boundary ────────────────────────────
+  // Clockwise from the north point, matches the hand-drawn circle
+  const deployedCoords = [
+    [49.610, 2.870],  // N  — Forêt de Laigue
+    [49.572, 3.042],  // NNE
+    [49.505, 3.188],  // NE — Tracy-le-Val area
+    [49.412, 3.275],  // E  — west of Attichy
+    [49.318, 3.268],  // ESE
+    [49.242, 3.162],  // SE — near Villers-Cotterêts
+    [49.198, 2.988],  // S  — Crépy-en-Valois area
+    [49.218, 2.752],  // SSW
+    [49.330, 2.598],  // SW — Verberie / Pont-Sainte-Maxence
+    [49.448, 2.528],  // W  — Éstrées-Saint-Denis
+    [49.552, 2.605],  // NW
+    [49.598, 2.752],  // NNW
   ];
 
-  L.polygon(compiegneCoords, {
+  const n = deployedCoords.length;
+
+  L.polygon(deployedCoords, {
     color: '#16a34a',
     weight: 2.5,
     dashArray: '10 6',
@@ -22,68 +42,32 @@ window.addForestBoundaries = function (map) {
     interactive: false,
   }).addTo(map);
 
-  L.marker([49.362, 2.912], {
-    icon: L.divIcon({
-      className: 'forest-deployed-label',
-      html: '<span>▶ Section déployée</span>',
-      iconSize: null,
-      iconAnchor: [0, 0],
-    }),
-    interactive: false,
-    zIndexOffset: 1000,
-  }).addTo(map);
+  // Small text labels placed at every other vertex, rotated to follow the border
+  for (let i = 0; i < n; i += 2) {
+    const prev  = deployedCoords[(i - 1 + n) % n];
+    const next  = deployedCoords[(i + 1) % n];
+    const angle = labelAngle(prev, next);
+    const pos   = deployedCoords[i];
 
-  // ── Forêt de Laigue ─────────────────────────────────────────────────────────
-  const laigueCoords = [
-    [49.572, 2.703], [49.578, 2.878], [49.564, 2.978],
-    [49.513, 2.993], [49.464, 2.942], [49.458, 2.820],
-    [49.465, 2.703],
-  ];
-
-  L.polygon(laigueCoords, {
-    color: '#78716c',
-    weight: 1.5,
-    dashArray: '5 5',
-    fillColor: '#6b7280',
-    fillOpacity: 0.05,
-    opacity: 0.55,
-    interactive: false,
-  }).addTo(map);
-
-  L.marker([49.518, 2.848], {
-    icon: L.divIcon({
-      className: 'forest-nearby-label',
-      html: '<span>Forêt de Laigue</span>',
-      iconSize: null,
-      iconAnchor: [55, 8],
-    }),
-    interactive: false,
-  }).addTo(map);
-
-  // ── Forêt de Retz (Villers-Cotterêts) ──────────────────────────────────────
-  const retzCoords = [
-    [49.274, 2.950], [49.272, 3.075], [49.278, 3.218],
-    [49.220, 3.245], [49.148, 3.215], [49.118, 3.080],
-    [49.130, 2.960], [49.198, 2.935],
-  ];
-
-  L.polygon(retzCoords, {
-    color: '#78716c',
-    weight: 1.5,
-    dashArray: '5 5',
-    fillColor: '#6b7280',
-    fillOpacity: 0.05,
-    opacity: 0.55,
-    interactive: false,
-  }).addTo(map);
-
-  L.marker([49.196, 3.088], {
-    icon: L.divIcon({
-      className: 'forest-nearby-label',
-      html: '<span>Forêt de Retz</span>',
-      iconSize: null,
-      iconAnchor: [48, 8],
-    }),
-    interactive: false,
-  }).addTo(map);
+    L.marker(pos, {
+      icon: L.divIcon({
+        className: '',
+        html: `<div style="
+          transform: rotate(${angle.toFixed(1)}deg);
+          transform-origin: center center;
+          font-size: 0.58rem;
+          font-weight: 700;
+          color: #15803d;
+          letter-spacing: 0.09em;
+          white-space: nowrap;
+          line-height: 1;
+          text-shadow: 0 0 4px rgba(255,255,255,0.98), 0 0 8px rgba(255,255,255,0.85);
+        ">section déployée</div>`,
+        iconSize:   [115, 12],
+        iconAnchor: [57, 6],
+      }),
+      interactive: false,
+      zIndexOffset: 500,
+    }).addTo(map);
+  }
 };

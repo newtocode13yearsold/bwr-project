@@ -5,7 +5,6 @@ import { handleReports }    from './worker/handlers/reports.js';
 import { handleContent }    from './worker/handlers/content.js';
 import { handleSavedRoutes } from './worker/handlers/savedroutes.js';
 import { handleSocial }     from './worker/handlers/social.js';
-import { generateDailySuggestions } from './worker/ai.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://bwr-worker.ciril8596.workers.dev',
@@ -18,7 +17,7 @@ const isAllowedOrigin = o => ALLOWED_ORIGINS.has(o) || /^https:\/\/[^.]+\.pages\
 /**
  * @typedef {{ BWR_KV: KVNamespace, ORS_KEY?: string, ANTHROPIC_API_KEY?: string,
  *             RESEND_API_KEY?: string, RESEND_FROM?: string,
- *             ADMIN_NAME?: string, ADMIN_EMAIL?: string }} Env
+ *             ADMIN_NAME?: string, ADMIN_EMAIL?: string, AI?: Ai }} Env
  */
 
 export default {
@@ -69,25 +68,6 @@ export default {
       await handleSavedRoutes(request, env, ctx) ??
       await handleSocial(request, env, ctx)      ??
       new Response('Not found', { status: 404, headers: cors })
-    );
-  },
-
-  /**
-   * Cron trigger — pre-generates AI hiking suggestions for all Silver/Gold users.
-   * Fires on a schedule configured in wrangler.jsonc.
-   * @param {ScheduledEvent} _event
-   * @param {Env} env
-   * @param {ExecutionContext} ctx
-   */
-  async scheduled(_event, env, ctx) {
-    ctx.waitUntil(
-      generateDailySuggestions(env).catch(err =>
-        fetch('https://ntfy.sh/bwr-ciril8596', {
-          method: 'POST',
-          headers: { Title: 'BWR cron FAILED', Priority: 'high', Tags: 'rotating_light' },
-          body: `generateDailySuggestions crash: ${err?.message ?? err}`,
-        }).catch(() => {})
-      )
     );
   },
 };

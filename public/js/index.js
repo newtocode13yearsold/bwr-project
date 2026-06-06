@@ -221,6 +221,117 @@ try {
     .catch(() => {});
 })();
 
+/* ── PWA install prompt ──────────────────────────────────────────────── */
+(function () {
+  var DISMISS_KEY = 'bwr_install_dismissed';
+  var banner = document.getElementById('installBanner');
+  var bannerBtn = document.getElementById('installBannerBtn');
+  var bannerDismiss = document.getElementById('installBannerDismiss');
+  var iosModal = document.getElementById('iosGuideModal');
+  var iosClose = document.getElementById('iosGuideClose');
+  if (!banner) return;
+
+  // Don't show if already installed or previously dismissed within 7 days
+  function isDismissed() {
+    try {
+      var ts = localStorage.getItem(DISMISS_KEY);
+      return ts && (Date.now() - +ts < 7 * 24 * 60 * 60 * 1000);
+    } catch { return false; }
+  }
+  function saveDismiss() {
+    try { localStorage.setItem(DISMISS_KEY, Date.now()); } catch {}
+  }
+
+  var isStandalone = window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+  if (isStandalone || isDismissed()) return;
+
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isAndroidChrome = /android/i.test(navigator.userAgent) && /chrome/i.test(navigator.userAgent);
+  var deferredPrompt = null;
+
+  function showBanner() {
+    banner.removeAttribute('hidden');
+  }
+
+  function hideBanner() {
+    banner.setAttribute('hidden', '');
+  }
+
+  function showIosModal() {
+    iosModal.removeAttribute('hidden');
+    iosModal.style.opacity = '0';
+    requestAnimationFrame(function () { iosModal.style.opacity = '1'; });
+    document.body.style.overflow = 'hidden';
+  }
+
+  function hideIosModal() {
+    iosModal.style.opacity = '0';
+    setTimeout(function () {
+      iosModal.setAttribute('hidden', '');
+      document.body.style.overflow = '';
+    }, 250);
+  }
+
+  // Android: capture deferred prompt
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    setTimeout(showBanner, 3000);
+  });
+
+  // iOS Safari: show banner with guide
+  if (isIOS && !isStandalone) {
+    var isSafari = /safari/i.test(navigator.userAgent) && !/crios|fxios|opios/i.test(navigator.userAgent);
+    if (isSafari) {
+      setTimeout(showBanner, 3000);
+      bannerBtn.textContent = 'Comment installer';
+    }
+  }
+
+  bannerBtn.addEventListener('click', function () {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function (result) {
+        deferredPrompt = null;
+        hideBanner();
+        saveDismiss();
+      });
+    } else if (isIOS) {
+      hideBanner();
+      showIosModal();
+    }
+  });
+
+  bannerDismiss.addEventListener('click', function () {
+    hideBanner();
+    saveDismiss();
+  });
+
+  if (iosClose) {
+    iosClose.addEventListener('click', function () {
+      hideIosModal();
+      saveDismiss();
+    });
+  }
+
+  // Close modal on backdrop click
+  if (iosModal) {
+    iosModal.addEventListener('click', function (e) {
+      if (e.target === iosModal) {
+        hideIosModal();
+        saveDismiss();
+      }
+    });
+  }
+
+  // Hide install prompt once installed
+  window.addEventListener('appinstalled', function () {
+    hideBanner();
+    deferredPrompt = null;
+  });
+})();
+
 /* ── Contact form submission ─────────────────────────────────────────── */
 const form = document.getElementById('contactForm');
 form?.addEventListener('submit', async e => {

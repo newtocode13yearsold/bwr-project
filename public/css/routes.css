@@ -792,30 +792,6 @@
 .sheet-handle { display: none; }
 
 
-/* ── AI suggestion pre-fill banner ─────────────────────────────────────────── */
-.ai-sugg-banner {
-  background: #f0fdf4;
-  border: 1px solid #86efac;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 0.82rem;
-  color: #166534;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.ai-sugg-banner button {
-  margin-left: auto;
-  background: none;
-  border: 1px solid #86efac;
-  border-radius: 6px;
-  color: #166534;
-  font-size: 0.78rem;
-  padding: 2px 8px;
-  cursor: pointer;
-}
-
 /* ── GPS Tracker card ─────────────────────────────────────────────────────── */
 .gps-tracker-card {
   padding: 16px 20px;

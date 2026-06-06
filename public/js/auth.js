@@ -79,10 +79,11 @@ function getVisitorId() {
 (function trackPageVisit() {
   try {
     if (getCachedUser()?.role === 'admin') return; // don't count admin visits
-    // Deduplicate: only ping once per page per browser session
+    // Deduplicate: only ping once per page per device per 30 min (across all tabs)
     const dedupKey = 'bwr_visited_' + location.pathname;
-    if (sessionStorage.getItem(dedupKey)) return;
-    sessionStorage.setItem(dedupKey, '1');
+    const last = parseInt(localStorage.getItem(dedupKey) || '0', 10);
+    if (Date.now() - last < 30 * 60 * 1000) return;
+    localStorage.setItem(dedupKey, String(Date.now()));
     const token   = getToken();
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;

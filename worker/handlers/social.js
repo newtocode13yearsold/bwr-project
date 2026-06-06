@@ -1,10 +1,10 @@
 import { listItems, listKeys, putUser, effectivePlan, patchLeaderboardCache } from '../kv.js';
 import { getUserFromToken, checkRateLimit } from '../auth-utils.js';
-import { CLAUDE_MODEL } from '../ai.js';
+const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
 
 /**
  * Social and gamification endpoints: walked paths, leaderboard, push alerts,
- * and AI suggestions/tips (lazy-imported on first call per request).
+ * and the daily-wheel AI tip.
  * @param {Request} request
  * @param {import('../kv.js').Env} env
  * @param {{ pathname: string, json: Function, fail: Function }} ctx
@@ -102,24 +102,7 @@ export async function handleSocial(request, env, { pathname, json, fail }) {
     return json({ success: true });
   }
 
-  // ── AI endpoints — module lazy-imported to avoid loading on every request ──
-  if (pathname === '/api/ai-suggestion' && request.method === 'GET') {
-    const user = await getUserFromToken(env, request);
-    if (!user) return fail('Non authentifié.', 401);
-    const plan = effectivePlan(user);
-    if (plan === 'free') return fail('Réservé aux membres Argent et Or.', 403);
-
-    const today = new Date().toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' });
-    const cacheKey = `aisugg:${user.id}:${today}`;
-    const cached = await env.BWR_KV.get(cacheKey);
-    if (cached) return json(JSON.parse(cached));
-
-    const { generateAISuggestionForUser } = await import('../ai.js');
-    const suggestion = await generateAISuggestionForUser(env, user, today);
-    await env.BWR_KV.put(cacheKey, JSON.stringify(suggestion), { expirationTtl: 172800 });
-    return json(suggestion);
-  }
-
+  // ── AI tip — used by the daily-wheel "Conseil sentier" prize ──
   if (pathname === '/api/ai-tip' && request.method === 'POST') {
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);

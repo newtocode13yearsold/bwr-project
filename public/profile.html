@@ -130,16 +130,6 @@
             <label for="inputEmail">Adresse e-mail</label>
             <input type="email" id="inputEmail" class="input-field" placeholder="ton@email.com" required />
           </div>
-          <div class="field">
-            <label for="inputHomeAddress">
-              Adresse de départ
-              <span class="field-why" title="Pourquoi cette adresse ?">?</span>
-            </label>
-            <input type="text" id="inputHomeAddress" class="input-field" placeholder="Ex : 12 rue de la Forêt, Compiègne" autocomplete="street-address" />
-            <span class="field-hint field-hint--address">
-              🤖 Utilisée uniquement par l'IA pour calculer le point de départ de ta <strong>suggestion du jour</strong> depuis chez toi. Non partagée.
-            </span>
-          </div>
           <div id="infoMsg"></div>
           <button type="submit" class="btn-save">Enregistrer les modifications</button>
         </form>
@@ -159,8 +149,8 @@
           </div>
           <div class="field">
             <label for="inputNewPw">Nouveau mot de passe</label>
-            <input type="password" id="inputNewPw" class="input-field" placeholder="••••••••" required />
-            <span class="field-hint">Au moins 6 caractères</span>
+            <input type="password" id="inputNewPw" class="input-field" placeholder="••••••••" minlength="8" required />
+            <span class="field-hint">Au moins 8 caractères</span>
           </div>
           <div class="field">
             <label for="inputConfirmPw">Confirmer le nouveau mot de passe</label>
@@ -319,16 +309,6 @@
             <input type="number" id="goalInput" class="input-field" min="1" placeholder="Objectif km">
             <button class="btn-save btn-save--compact" id="goalSave">Sauver</button>
           </div>
-        </div>
-
-        <!-- AI Suggestion (Silver weekly / Gold daily) -->
-        <div class="feature-block" id="suggestionBlock" style="display:none">
-          <h3 class="feature-title">🤖 Suggestion du jour</h3>
-          <div class="suggestion-box" id="suggestionText">
-            <span class="suggestion-icon">⏳</span>
-            <div><p class="suggestion-text">Analyse de la météo en cours…</p></div>
-          </div>
-          <a href="routes" class="btn-save btn-save--inline" id="suggestionBtn">Générer ce trajet →</a>
         </div>
 
         <!-- Weather (Gold only) -->

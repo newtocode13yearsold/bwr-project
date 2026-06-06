@@ -16,7 +16,6 @@
   'use strict';
 
   // Truthy values mean "available". For numeric quotas the value IS the limit.
-  // ai_suggestions uses 'weekly' | 'daily' to denote cadence.
   const FEATURES = {
     /* — Core routing — */
     routes_per_week:     { free: 3,     silver: Infinity, gold: Infinity },
@@ -48,7 +47,6 @@
     custom_goals:        { free: false, silver: false,    gold: true     },
     weather:             { free: false, silver: false,    gold: true     },
     custom_route_color:  { free: false, silver: false,    gold: true     },
-    ai_suggestions:      { free: false, silver: 'weekly', gold: 'daily'  },
 
     /* — Badges & progression — */
     badges_free:         { free: true,  silver: true,     gold: true     },

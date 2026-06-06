@@ -773,27 +773,6 @@
 }
 .goal-input-row .input-field { flex: 1; }
 
-/* ── AI suggestion box ── */
-.suggestion-box {
-  display: flex;
-  gap: var(--space-3);
-  align-items: flex-start;
-  background: #f0fdf4;
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  margin-bottom: 12px;
-}
-.suggestion-icon { font-size: 1.6rem; }
-.suggestion-text {
-  margin: 0 0 4px;
-  font-size: 0.88rem;
-  color: var(--text);
-}
-.suggestion-meta {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
 
 /* ── Feature descriptive text ── */
 .feature-desc {
@@ -920,8 +899,6 @@
 [data-theme="dark"] .push-setup-box              { background: #1c2a20; }
 [data-theme="dark"] .push-setup-label            { color: #c8dcc0; }
 [data-theme="dark"] .ntfy-channel                { background: #2a3a30; color: #c8dcc0; }
-
-[data-theme="dark"] .suggestion-box              { background: #1c3020; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Engagement gadgets: streak banner, activity heatmap, records,

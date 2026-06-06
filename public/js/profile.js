@@ -442,7 +442,6 @@ function populatePage(user) {
   document.getElementById('heroName').textContent  = user.name;
   document.getElementById('inputName').value       = user.name;
   document.getElementById('inputEmail').value      = user.email;
-  if (user.homeAddress) document.getElementById('inputHomeAddress').value = user.homeAddress;
 
   const roleMap = { admin: '👑 Administrateur', free: '🌲 Membre' };
   const roleEl  = document.getElementById('roleBadge');
@@ -616,14 +615,6 @@ function renderPlanAndProgress(user) {
 document.getElementById('supportBlock').style.display = show;
     document.getElementById('pushAlertsBlock').style.display = show;
     document.getElementById('trailHealthBlock').style.display = show;
-
-    // AI suggestions: Silver (weekly cadence) or Gold (daily)
-    const suggCadence = BWR.can('ai_suggestions', plan);
-    if (suggCadence) {
-      const suggBlock = document.getElementById('suggestionBlock');
-      if (suggBlock) suggBlock.style.display = '';
-      renderDailySuggestion(plan);
-    }
 
     if (BWR.can('custom_goals', plan)) renderGoals();
     if (BWR.can('weather', plan)) renderWeather();
@@ -1176,111 +1167,6 @@ async function renderWeather() {
   }
 }
 
-// ── Daily AI suggestion ───────────────────────────────────────────────────────
-async function renderDailySuggestion(plan) {
-  const textEl = document.getElementById('suggestionText');
-  const btnEl  = document.getElementById('suggestionBtn');
-  if (!textEl || !btnEl) return;
-
-  const isGold     = BWR.normalisePlan(plan) === 'gold';
-  const storageKey = isGold ? 'bwr_sugg_day' : 'bwr_sugg_week';
-  const todayKey   = isGold
-    ? new Date().toISOString().slice(0, 10)
-    : new Date().toISOString().slice(0, 7) + '-W' + Math.ceil(new Date().getDate() / 7);
-
-  // Show cached version immediately to avoid flash of loading state
-  const cachedHtml = localStorage.getItem('bwr_sugg_html');
-  const cacheDate  = localStorage.getItem(storageKey);
-  if (cacheDate === todayKey && cachedHtml) {
-    textEl.innerHTML = cachedHtml;
-    const cachedBtn = localStorage.getItem('bwr_sugg_btn');
-    if (cachedBtn) {
-      const b = JSON.parse(cachedBtn);
-      if (b.href) { btnEl.href = b.href; btnEl.style.opacity = ''; btnEl.textContent = 'Générer ce trajet →'; }
-      else        { btnEl.removeAttribute('href'); btnEl.style.opacity = '0.5'; btnEl.textContent = b.text || 'Pas de sortie conseillée'; }
-    }
-    return;
-  }
-
-  // Loading state
-  textEl.innerHTML = `<span class="suggestion-icon">⏳</span><div><p class="suggestion-text">L'IA analyse la météo et ton profil…</p></div>`;
-
-  try {
-    const res  = await fetch(`${API_URL}/api/ai-suggestion`, { headers: authHeader() });
-    if (!res.ok) throw new Error('API error');
-    const sugg = await res.json();
-
-    applySuggestionToUI(textEl, btnEl, sugg);
-    localStorage.setItem('bwr_sugg_html', textEl.innerHTML);
-    localStorage.setItem('bwr_sugg_btn', JSON.stringify(
-      sugg.dist > 0
-        ? { href: buildRouteUrl(sugg) }
-        : { text: 'Pas de sortie conseillée' }
-    ));
-    localStorage.setItem(storageKey, todayKey);
-  } catch {
-    // Fallback: client-side suggestion without address personalisation
-    renderSuggestionFallback(plan, textEl, btnEl, storageKey, todayKey);
-  }
-}
-
-function buildRouteUrl(sugg) {
-  let url = `routes?dist=${sugg.dist}&mode=${sugg.mode || 'loop'}`;
-  if (sugg.fromHome && sugg.startLat && sugg.startLng) url += `&startLat=${sugg.startLat}&startLng=${sugg.startLng}&fromHome=1`;
-  return url;
-}
-
-function applySuggestionToUI(textEl, btnEl, sugg) {
-  const html = `
-    <span class="suggestion-icon">${sugg.icon}</span>
-    <div>
-      <p class="suggestion-text">${sugg.advice}</p>
-      <p class="suggestion-meta">🌡 ${sugg.temp}°C · 💨 ${sugg.wind} km/h</p>
-    </div>`;
-  textEl.innerHTML = html;
-
-  if (sugg.dist > 0) {
-    btnEl.href = buildRouteUrl(sugg);
-    btnEl.style.opacity = '';
-    btnEl.textContent = 'Générer ce trajet →';
-  } else {
-    btnEl.removeAttribute('href');
-    btnEl.style.opacity = '0.5';
-    btnEl.textContent = 'Pas de sortie conseillée';
-  }
-}
-
-async function renderSuggestionFallback(plan, textEl, btnEl, storageKey, todayKey) {
-  let weatherCode = 0, temp = 15, wind = 10;
-  try {
-    const res  = await fetch('https://api.open-meteo.com/v1/forecast?latitude=49.35&longitude=2.90&current=temperature_2m,weather_code,wind_speed_10m&timezone=Europe/Paris');
-    const data = await res.json();
-    weatherCode = data.current.weather_code;
-    temp        = data.current.temperature_2m;
-    wind        = data.current.wind_speed_10m;
-  } catch {}
-
-  const km        = parseFloat(localStorage.getItem('bwr_km_total') || '0');
-  const typicalKm = km < 5 ? 4 : km < 25 ? 7 : km < 50 ? 12 : 15;
-  const isHot     = temp >= 25;
-  const isStormy  = weatherCode >= 95;
-  const isRainy   = weatherCode >= 61 && weatherCode <= 82;
-  const isWindy   = wind > 30;
-
-  let icon, advice, dist;
-  if (isStormy)     { icon = '⛈️'; dist = 0; advice = 'Orages signalés — restez en sécurité, ne sortez pas en forêt aujourd\'hui.'; }
-  else if (isRainy) { icon = '🌧️'; dist = Math.max(3, typicalKm - 3); advice = `Pluie prévue — sortie courte de ${dist} km avec imperméable.`; }
-  else if (isWindy) { icon = '💨'; dist = Math.max(4, typicalKm - 2); advice = `Vent fort (${Math.round(wind)} km/h) — boucle courte de ${dist} km recommandée.`; }
-  else if (isHot)   { icon = '🏖️'; dist = typicalKm; advice = `Chaleur ${Math.round(temp)}°C — privilégiez les sentiers ombragés au bord des étangs de la forêt.`; }
-  else              { icon = '✅'; dist = typicalKm; advice = `Conditions idéales pour une boucle de ${dist} km en forêt de Compiègne !`; }
-
-  const sugg = { icon, advice, dist, mode: 'loop', startLat: 49.35, startLng: 2.90, temp: Math.round(temp), wind: Math.round(wind) };
-  applySuggestionToUI(textEl, btnEl, sugg);
-  localStorage.setItem('bwr_sugg_html', textEl.innerHTML);
-  localStorage.setItem('bwr_sugg_btn', JSON.stringify(dist > 0 ? { href: buildRouteUrl(sugg) } : { text: 'Pas de sortie conseillée' }));
-  localStorage.setItem(storageKey, todayKey);
-}
-
 // ── Push alerts via ntfy.sh ───────────────────────────────────────────────────
 async function renderPushAlerts() {
   const block  = document.getElementById('pushAlertsBlock');
@@ -1359,60 +1245,34 @@ async function loadPathCount() {
   statKm.textContent     = earnedBadges > 0 ? `${earnedBadges} / ${BADGES.length}` : '—';
 }
 
-async function geocodeAddressClient(address) {
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=fr`;
-    const res  = await fetch(url, { headers: { 'Accept-Language': 'fr' } });
-    const data = await res.json();
-    if (data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-  } catch {}
-  return null;
-}
-
-// ── Form: update name / email / home address ──────────────────────────────────
+// ── Form: update name / email ─────────────────────────────────────────────────
 document.getElementById('formInfo').addEventListener('submit', async e => {
   e.preventDefault();
   const name        = document.getElementById('inputName').value.trim();
   const email       = document.getElementById('inputEmail').value.trim().toLowerCase();
-  const homeAddress = document.getElementById('inputHomeAddress').value.trim();
   if (!name || !email) return showMsg('infoMsg', 'Tous les champs sont obligatoires.');
 
   const btn = e.target.querySelector('button[type=submit]');
   btn.textContent = 'Enregistrement…';
   btn.disabled = true;
 
-  // Geocode address client-side so coords are ready for the worker
-  let homeCoords = null;
-  if (homeAddress) {
-    homeCoords = await geocodeAddressClient(homeAddress);
-  }
-
   try {
     const res = await fetch(`${API_URL}/api/auth/profile`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ name, email, homeAddress: homeAddress || null, homeCoords }),
+      body: JSON.stringify({ name, email }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erreur serveur');
 
     // Update cached user
     const cached = getCachedUser();
-    setSession(localStorage.getItem('bwr_token'), { ...cached, name, email, homeAddress: homeAddress || null, homeCoords });
+    setSession(localStorage.getItem('bwr_token'), { ...cached, name, email });
     currentUser.name        = name;
     currentUser.email       = email;
-    currentUser.homeAddress = homeAddress || null;
-    currentUser.homeCoords  = homeCoords;
     document.getElementById('heroName').textContent = name;
 
-    // Invalidate suggestion cache so it regenerates from new address
-    localStorage.removeItem('bwr_sugg_day');
-    localStorage.removeItem('bwr_sugg_week');
-    localStorage.removeItem('bwr_sugg_html');
-    localStorage.removeItem('bwr_sugg_btn');
-
-    const addrNote = homeAddress && homeCoords ? ' · Adresse de départ enregistrée ✓' : homeAddress && !homeCoords ? ' · Adresse introuvable, vérifiez l\'orthographe.' : '';
-    showMsg('infoMsg', `Profil mis à jour avec succès !${addrNote}`, homeAddress && !homeCoords ? 'error' : 'success');
+    showMsg('infoMsg', 'Profil mis à jour avec succès !', 'success');
   } catch (err) {
     showMsg('infoMsg', err.message);
   } finally {
@@ -1429,7 +1289,7 @@ document.getElementById('formPassword').addEventListener('submit', async e => {
   const confirmPw = document.getElementById('inputConfirmPw').value;
 
   if (!oldPw || !newPw || !confirmPw) return showMsg('pwMsg', 'Tous les champs sont obligatoires.');
-  if (newPw.length < 6)  return showMsg('pwMsg', 'Le nouveau mot de passe doit faire au moins 6 caractères.');
+  if (newPw.length < 8)  return showMsg('pwMsg', 'Le nouveau mot de passe doit faire au moins 8 caractères.');
   if (newPw !== confirmPw) return showMsg('pwMsg', 'Les mots de passe ne correspondent pas.');
 
   const btn = e.target.querySelector('button[type=submit]');

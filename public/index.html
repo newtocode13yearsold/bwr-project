@@ -42,6 +42,7 @@
         <a href="map">Carte</a>
         <a href="routes">Planifier</a>
         <a href="news">Actualités</a>
+        <a href="blog">Blog</a>
         <a href="plans">Plans</a>
       </div>
       <div class="nav-cta" id="navCta">
@@ -99,7 +100,7 @@
         <span class="hero-accent">conquérez la forêt.</span>
       </h1>
       <p class="hero-sub">
-        BWR transforme chaque sortie en aventure. Carte interactive vérifiée sur le terrain, planificateur intelligent, profils altimétriques, export GPX, suggestions IA et cartes hors-ligne — tout pour vivre la forêt de Compiègne autrement.
+        BWR transforme chaque sortie en aventure. Carte interactive vérifiée sur le terrain, planificateur intelligent, profils altimétriques, export GPX et cartes hors-ligne — tout pour vivre la forêt de Compiègne autrement.
       </p>
       <div class="hero-actions">
         <a href="login" class="btn-hero-primary">Commencer gratuitement →</a>
@@ -112,13 +113,18 @@
         </div>
         <div class="hero-stat-sep"></div>
         <div class="hero-stat">
-          <strong><span id="heroStatKm">—</span> km</strong>
+          <strong><span id="heroStatKm">8</span> km</strong>
           <span>de chemins vérifiés <span class="stat-live-dot" title="Données en temps réel"></span></span>
         </div>
         <div class="hero-stat-sep"></div>
         <div class="hero-stat">
-          <strong><span id="heroStatPaths">—</span> sentiers</strong>
+          <strong><span id="heroStatPaths">10</span> sentiers</strong>
           <span>cartographiés terrain</span>
+        </div>
+        <div class="hero-stat-sep"></div>
+        <div class="hero-stat">
+          <strong>mai 2026</strong>
+          <span>Dernière vérif. terrain ✓</span>
         </div>
       </div>
     </div>
@@ -229,14 +235,6 @@
           </div>
         </div>
 
-        <div class="feat-row">
-          <div class="feat-row-icon" style="background:#fde68a;color:#92400e">🤖</div>
-          <div class="feat-row-body">
-            <h3>Suggestions intelligentes <span class="feat-tier tier-tag gold">👑 Or</span></h3>
-            <p>Un nouveau trajet suggéré chaque jour, adapté à la météo, la saison et vos préférences personnelles.</p>
-          </div>
-        </div>
-
       </div>
 
       <div style="text-align:center;margin-top:48px">
@@ -294,14 +292,8 @@
         <div class="pc-cell pc-s" role="cell"><span class="pc-yes">✓</span></div>
         <div class="pc-cell" role="cell"><span class="pc-yes">✓</span></div>
 
-        <!-- Row: Météo -->
-        <div class="pc-feat" role="rowheader">Météo temps réel</div>
-        <div class="pc-cell" role="cell"><span class="pc-no">✕</span></div>
-        <div class="pc-cell pc-s" role="cell"><span class="pc-no">✕</span></div>
-        <div class="pc-cell" role="cell"><span class="pc-yes">✓</span></div>
-
-        <!-- Row: Suggestions IA — last row -->
-        <div class="pc-feat pc-feat-last" role="rowheader">Suggestions IA</div>
+        <!-- Row: Météo — last row -->
+        <div class="pc-feat pc-feat-last" role="rowheader">Météo temps réel</div>
         <div class="pc-cell pc-cell-last" role="cell"><span class="pc-no">✕</span></div>
         <div class="pc-cell pc-cell-last pc-s" role="cell"><span class="pc-no">✕</span></div>
         <div class="pc-cell pc-cell-last" role="cell"><span class="pc-yes">✓</span></div>
@@ -373,7 +365,6 @@
           </div>
           <ul class="pricing-features">
             <li class="pf-item yes"><strong>Tout le plan Argent</strong></li>
-            <li class="pf-item yes">Suggestions IA quotidiennes</li>
             <li class="pf-item yes">Météo forêt en temps réel</li>
             <li class="pf-item yes">Jusqu'à 20 trajets hors-ligne</li>
             <li class="pf-item yes">Export KML + Strava / Komoot</li>
@@ -427,7 +418,7 @@
 
         <details class="faq-item">
           <summary class="faq-q">Est-ce uniquement pour la forêt de Compiègne ?</summary>
-          <div class="faq-a">Oui — BWR est entièrement dédié à la forêt de Compiègne et ses 14 500 hectares. Chaque chemin est vérifié sur le terrain pour garantir des données fiables. D'autres forêts pourraient être ajoutées à l'avenir.</div>
+          <div class="faq-a">Oui — BWR commence par la forêt de Compiègne et ses 14 500 hectares, vérifiés sur le terrain sentier par sentier. D'autres forêts sont prévues à l'avenir : Fontainebleau et Rambouillet sont les candidates naturelles pour une prochaine étape. Compiègne d'abord, d'autres forêts à venir.</div>
         </details>
 
         <details class="faq-item">
@@ -442,12 +433,12 @@
 
         <details class="faq-item">
           <summary class="faq-q">Quelle différence entre les plans Gratuit, Argent et Or ?</summary>
-          <div class="faq-a">Le plan <strong>Gratuit</strong> donne accès à la carte et 3 trajets par semaine en mode A→B. Le plan <strong>Argent</strong> (4,99 €/mois) débloque les trajets illimités, les boucles, l'export GPX et le profil altimétrique. Le plan <strong>Or</strong> (6,99 €/mois) ajoute les suggestions IA quotidiennes, la météo en temps réel et les cartes hors-ligne.</div>
+          <div class="faq-a">Le plan <strong>Gratuit</strong> donne accès à la carte et 3 trajets par semaine en mode A→B. Le plan <strong>Argent</strong> (4,99 €/mois) débloque les trajets illimités, les boucles, l'export GPX et le profil altimétrique. Le plan <strong>Or</strong> (6,99 €/mois) ajoute la météo en temps réel et les cartes hors-ligne.</div>
         </details>
 
         <details class="faq-item">
           <summary class="faq-q">À quelle fréquence les chemins sont-ils mis à jour ?</summary>
-          <div class="faq-a">Les sentiers sont vérifiés manuellement sur le terrain chaque mois. Si vous repérez une erreur ou un obstacle, signalez-le depuis la carte — votre retour aide à maintenir des données à jour pour tout le monde.</div>
+          <div class="faq-a">Les sentiers sont vérifiés manuellement sur le terrain chaque mois. Dernière vérification terrain : <strong>mai 2026</strong>. Si vous repérez une erreur ou un obstacle, signalez-le depuis la carte — votre retour aide à maintenir des données à jour pour tout le monde.</div>
         </details>
 
         <details class="faq-item">
@@ -471,7 +462,7 @@
           <div class="team-info">
             <h3>Thomas Legros</h3>
             <span class="team-role">Développeur &amp; Vérificateur terrain</span>
-            <p>Thomas est à l'origine du projet. Il a conçu et développé la plateforme — la carte, le planificateur de trajets, le backend et tout l'écosystème BWR. Il pilote également la stratégie globale du projet et vérifie chaque chemin sur le terrain pour garantir des données fiables.</p>
+            <p>Thomas est à l'origine du projet. Il a conçu et développé la plateforme — la carte, le planificateur de trajets, le backend et tout l'écosystème BWR. Il pilote également la stratégie globale du projet et vérifie uniquement les chemins de la forêt de Compiègne sur le terrain pour garantir des données fiables.</p>
           </div>
         </div>
 
@@ -511,6 +502,7 @@
       <div class="footer-links">
         <a href="map">Carte</a>
         <a href="routes">Planifier</a>
+        <a href="blog">Blog</a>
         <a href="login">Connexion</a>
         <a href="mailto:ciril8596@gmail.com">Contact</a>
         <a href="legal">Mentions légales</a>
@@ -520,6 +512,57 @@
       </div>
     </div>
   </footer>
+
+  <!-- ── PWA install banner ── -->
+  <div id="installBanner" class="install-banner" hidden aria-live="polite">
+    <div class="install-banner-inner">
+      <div class="install-banner-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
+      </div>
+      <div class="install-banner-text">
+        <strong>BWR</strong>
+        <span>Installez l'app pour un accès rapide hors-ligne</span>
+      </div>
+      <button id="installBannerBtn" class="install-banner-cta">Installer</button>
+      <button id="installBannerDismiss" class="install-banner-close" aria-label="Fermer">✕</button>
+    </div>
+  </div>
+
+  <!-- ── iOS install guide modal ── -->
+  <div id="iosGuideModal" class="ios-modal" hidden role="dialog" aria-modal="true" aria-label="Installer BWR sur votre téléphone">
+    <div class="ios-modal-box">
+      <button class="ios-modal-close" id="iosGuideClose" aria-label="Fermer">✕</button>
+      <div class="ios-modal-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
+      </div>
+      <h3 class="ios-modal-title">Installer BWR sur votre iPhone</h3>
+      <p class="ios-modal-sub">En 3 secondes, accédez à BWR comme une vraie app — sans passer par l'App Store.</p>
+      <ol class="ios-steps">
+        <li class="ios-step">
+          <div class="ios-step-num">1</div>
+          <div class="ios-step-body">
+            <strong>Appuyez sur le bouton Partager</strong>
+            <span>L'icône <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg> en bas de Safari</span>
+          </div>
+        </li>
+        <li class="ios-step">
+          <div class="ios-step-num">2</div>
+          <div class="ios-step-body">
+            <strong>Faites défiler et appuyez sur</strong>
+            <span class="ios-step-highlight">« Sur l'écran d'accueil »</span>
+          </div>
+        </li>
+        <li class="ios-step">
+          <div class="ios-step-num">3</div>
+          <div class="ios-step-body">
+            <strong>Appuyez sur « Ajouter »</strong>
+            <span>BWR apparaîtra sur votre écran d'accueil</span>
+          </div>
+        </li>
+      </ol>
+      <div class="ios-modal-arrow">↓ Regardez en bas de votre écran</div>
+    </div>
+  </div>
 
   <script src="lib/leaflet.js"></script>
   <script src="js/config.js"></script>

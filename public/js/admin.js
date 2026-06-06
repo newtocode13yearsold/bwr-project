@@ -1405,8 +1405,8 @@ document.getElementById('btnSaveMemberPlan').addEventListener('click', async () 
 });
 
 // ── Revenue dashboard ─────────────────────────────────────────────────────────
-const PLAN_PRICE_MONTHLY = { free: 0, silver: 3.99, gold: 6.99 };
-const PLAN_PRICE_ANNUAL  = { free: 0, silver: 3.39, gold: 5.94 };
+const PLAN_PRICE_MONTHLY = { free: 0, silver: 4.99, gold: 6.99 };
+const PLAN_PRICE_ANNUAL  = { free: 0, silver: 3.74, gold: 5.24 };
 let _revenueCharts = {};
 let _revenueUsers  = null;
 
@@ -1646,7 +1646,7 @@ async function loadRevenue() {
     _revenueCharts.mrr = new Chart(document.getElementById('chartMRR'), {
       type: 'bar',
       data: {
-        labels: ['Argent (3,99 €/mois)', 'Or (6,99 €/mois)'],
+        labels: ['Argent (4,99 €/mois)', 'Or (6,99 €/mois)'],
         datasets: [{ label: 'MRR (€)', data: [+(counts.silver * PLAN_PRICE_MONTHLY.silver).toFixed(2), +(counts.gold * PLAN_PRICE_MONTHLY.gold).toFixed(2)], backgroundColor: ['rgba(148,163,184,0.8)', 'rgba(251,191,36,0.8)'], borderColor: ['#64748b', '#d97706'], borderWidth: 2, borderRadius: 8, borderSkipped: false }]
       },
       options: {
@@ -1669,7 +1669,7 @@ async function loadRevenue() {
 (function initAIForecast() {
   const QUALITY_CONV   = [0, 0.12, 0.25, 0.45, 0.72, 1.10, 1.62, 2.25, 2.95, 3.60, 4.25];
   const QUALITY_LABELS = ['','Très basique','Basique','Moyen-','Moyen','Acceptable','Bon','Très bon','Excellent','Exceptionnel','Parfait'];
-  const ARPU   = 0.65 * 3.99 + 0.35 * 6.99;
+  const ARPU   = 0.65 * 4.99 + 0.35 * 6.99;
   const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
   let aifChart  = null;
@@ -1725,7 +1725,7 @@ async function loadRevenue() {
       users.forEach(u => { if (u.role !== 'admin') counts[u.plan || 'free']++; });
       const totalUsers  = counts.free + counts.silver + counts.gold;
       const payingUsers = counts.silver + counts.gold;
-      const realMRR     = counts.silver * 3.99 + counts.gold * 6.99;
+      const realMRR     = counts.silver * 4.99 + counts.gold * 6.99;
       const realConv    = totalUsers > 0 ? (payingUsers / totalUsers * 100) : 0;
 
       _realData = { visitors: visitsCurrent, history, slope, silver: counts.silver, gold: counts.gold, totalUsers, payingUsers, realMRR, realConv };

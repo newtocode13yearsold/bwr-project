@@ -44,7 +44,6 @@ let lastRoute = null;      // most recent computed route — used by save/share
   initSaveShareButtons();
   initRouteHistory();
   await handleSharedRouteParam();
-  applyAISuggestionParams();
 })();
 
 // ── Plan-based UI gating ──────────────────────────────────────────────────────
@@ -482,28 +481,43 @@ async function generateRoute() {
     btn.textContent = 'Vérification…';
     btn.classList.add('loading');
     btn.disabled = true;
-    try {
-      const qRes = await fetchWithTimeout(`${API_URL}/api/auth/consume-route`, {
-        method: 'POST',
-        headers: { ...authHeader() },
-      }, 8000);
-      const qData = await qRes.json();
-      if (!qRes.ok || !qData.ok) {
-        showQuotaExceededModal({ used: qData.used ?? 3, limit: qData.limit ?? 3 });
-        btn.textContent = 'Calculer le trajet';
-        btn.classList.remove('loading');
-        btn.disabled = false;
-        return;
+    // One retry tolerates a genuine transient blip; after that we fail CLOSED.
+    // Failing open here is an easy bypass (block this request → unlimited routes),
+    // and only free-tier users ever reach this branch, so blocking is the safe default.
+    let qData = null;
+    for (let attempt = 0; attempt < 2 && !qData; attempt++) {
+      try {
+        const qRes = await fetchWithTimeout(`${API_URL}/api/auth/consume-route`, {
+          method: 'POST',
+          headers: { ...authHeader() },
+        }, 8000);
+        const body = await qRes.json().catch(() => ({}));
+        qData = { ...body, ok: qRes.ok && body.ok === true };
+      } catch {
+        qData = null; // retry once
       }
-      // Reflect the server's authoritative count locally so the strip is accurate
-      if (currentUser.stats) {
-        currentUser.stats.weeklyRoutes = qData.used;
-        currentUser.stats.weekStart = isoMonday();
-      }
-      updateQuotaStrip();
-    } catch {
-      // Network error — fail open to avoid blocking users on transient issues
     }
+
+    if (!qData) {
+      showToast('Impossible de vérifier ton quota hebdomadaire. Vérifie ta connexion et réessaie.');
+      btn.textContent = 'Calculer le trajet';
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      return;
+    }
+    if (!qData.ok) {
+      showQuotaExceededModal({ used: qData.used ?? 3, limit: qData.limit ?? 3 });
+      btn.textContent = 'Calculer le trajet';
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      return;
+    }
+    // Reflect the server's authoritative count locally so the strip is accurate
+    if (currentUser.stats) {
+      currentUser.stats.weeklyRoutes = qData.used;
+      currentUser.stats.weekStart = isoMonday();
+    }
+    updateQuotaStrip();
   }
 
   btn.textContent = 'Calcul en cours…';
@@ -982,10 +996,10 @@ function showQuotaExceededModal(quota) {
         <div class="qm-arrow">→</div>
         <div class="qm-tier qm-silver">
           <strong>🥈 Argent</strong>
-          <span>Illimité · 3,99€/mois</span>
+          <span>Illimité · 4,99€/mois</span>
         </div>
       </div>
-      <p class="qm-perks">+ Mode boucle, profil altimétrique, export GPX, suggestions, cartes hors-ligne…</p>
+      <p class="qm-perks">+ Mode boucle, profil altimétrique, export GPX, cartes hors-ligne…</p>
       <a href="plans" class="um-cta">Passer à Argent</a>
       <button class="um-secondary">Revenir lundi</button>
     </div>
@@ -1092,53 +1106,6 @@ function initRouteHistory() {
 
 function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-// ── AI suggestion URL params (?dist=X&mode=Y&startLat=Z&startLng=W) ──────────
-function applyAISuggestionParams() {
-  const p = new URLSearchParams(location.search);
-  const dist     = parseFloat(p.get('dist'));
-  const modeVal  = p.get('mode');
-  const startLat = parseFloat(p.get('startLat'));
-  const startLng = parseFloat(p.get('startLng'));
-
-  if (!dist && !modeVal) return;
-
-  // Pre-select mode card
-  if (modeVal === 'loop' || modeVal === 'atob') {
-    const modeCard = document.querySelector(`.mode-card[data-mode="${modeVal}"]`);
-    if (modeCard && !modeCard.classList.contains('locked-feature')) modeCard.click();
-  }
-
-  // Pre-fill distance slider / input if it exists
-  const distInput = document.getElementById('distInput') || document.getElementById('inputDist');
-  if (distInput && dist > 0) {
-    distInput.value = dist;
-    distInput.dispatchEvent(new Event('input', { bubbles: true }));
-  }
-  const distSlider = document.getElementById('distSlider') || document.getElementById('sliderDist');
-  if (distSlider && dist > 0) {
-    distSlider.value = dist;
-    distSlider.dispatchEvent(new Event('input', { bubbles: true }));
-  }
-
-  // Pre-place start marker only when actual home coords were provided
-  if (p.get('fromHome') === '1' && !isNaN(startLat) && !isNaN(startLng) && map) {
-    const latlng = L.latLng(startLat, startLng);
-    if (startMarker) map.removeLayer(startMarker);
-    startMarker = L.marker(latlng, { draggable: true }).addTo(map);
-    startMarker.on('dragend', () => { /* coords update on compute */ });
-    map.setView(latlng, 13);
-
-    const banner = document.createElement('div');
-    banner.className = 'ai-sugg-banner';
-    banner.innerHTML = `🤖 Départ préréglé depuis votre domicile · <button id="clearAiStart">Effacer</button>`;
-    document.querySelector('.routes-sidebar')?.prepend(banner);
-    document.getElementById('clearAiStart')?.addEventListener('click', () => {
-      if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
-      banner.remove();
-    });
-  }
 }
 
 // ── Shared route from URL (?share=token) ──────────────────────────────────────

@@ -166,17 +166,25 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
       const page = typeof body.page === 'string' ? body.page.slice(0, 200) : '/';
       const ts   = Date.now();
 
-      // Rate-limit: max 5 visits per IP per page per hour (prevents bots & SW reload loops)
+      // Rate-limit by visitorId: 1 visit per device per page per 30 min
+      const rawVisitorIdEarly = typeof body.visitorId === 'string' ? body.visitorId.slice(0, 36) : null;
+      if (rawVisitorIdEarly) {
+        const deviceKey = `ratelimit:device:${rawVisitorIdEarly}:${page.replace(/\W/g, '_')}`;
+        const lastTs = await env.BWR_KV.get(deviceKey);
+        if (lastTs && ts - parseInt(lastTs, 10) < 30 * 60 * 1000) return json({ ok: true });
+        await env.BWR_KV.put(deviceKey, String(ts), { expirationTtl: 3600 }); // 1h TTL
+      }
+      // Rate-limit by IP: max 1 visit per IP per page per hour (fallback for no-visitorId clients)
       const hourSlot    = Math.floor(ts / 3600000);
       const rateLimitKey = `ratelimit:visit:${ip}:${page.replace(/\W/g, '_')}:${hourSlot}`;
       const countRaw    = await env.BWR_KV.get(rateLimitKey);
       const count       = countRaw ? parseInt(countRaw, 10) : 0;
-      if (count >= 5) return json({ ok: true }); // silently drop excess
+      if (count >= 1) return json({ ok: true }); // silently drop excess
       await env.BWR_KV.put(rateLimitKey, String(count + 1), { expirationTtl: 7200 }); // 2h TTL
 
       // Assign a sequential visitor number for anonymous devices (persists forever)
       let visitorNum = null;
-      const rawVisitorId = typeof body.visitorId === 'string' ? body.visitorId.slice(0, 36) : null;
+      const rawVisitorId = rawVisitorIdEarly;
       if (!user && rawVisitorId) {
         const numKey = `visitor:num:${rawVisitorId}`;
         const existing = await env.BWR_KV.get(numKey);
@@ -216,6 +224,8 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
 
   /* ── AI Revenue Forecast — calls Claude with the forecast data ──────── */
   if (pathname === '/api/ai/revenue-forecast' && request.method === 'POST') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
 
     let body;
     try { body = await request.json(); } catch { return fail('JSON invalide.'); }
@@ -231,14 +241,14 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     const trendStr = slope > 0 ? `+${Math.round(slope)} vis./mois (croissance)` :
                      slope < 0 ? `${Math.round(slope)} vis./mois (déclin)` : 'Stable';
 
-    const ARPU = 0.65 * 3.99 + 0.35 * 7.99; // ~5.39€
+    const ARPU = 0.65 * 4.99 + 0.35 * 6.99; // ~5.69€
     const pot1 = Math.round(visitors * 0.01 * ARPU);
     const pot2 = Math.round(visitors * 0.02 * ARPU);
     const pot3 = Math.round(visitors * 0.03 * ARPU);
 
     const prompt = `Tu es un expert en croissance SaaS et monétisation d'applications web françaises.
 
-Analyse ces données de prévision de revenus pour BWR — une application de randonnée en forêt de Compiègne (France) avec deux plans payants : Argent (3,99 €/mois) et Or (7,99 €/mois).
+Analyse ces données de prévision de revenus pour BWR — une application de randonnée en forêt de Compiègne (France) avec deux plans payants : Argent (4,99 €/mois) et Or (6,99 €/mois).
 
 Données réelles (tirées du tableau de bord admin) :
 - Visiteurs ce mois : ${Math.round(visitors)}
@@ -378,6 +388,23 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
     }
     await Promise.all(keysToDelete.map(k => env.BWR_KV.delete(k)));
     return json({ ok: true, deleted: keysToDelete.length, totalBefore: allKeys.length });
+  }
+
+  // ── Reset all analytics data (admin only) ────────────────────────────────────
+  if (pathname === '/api/analytics/reset' && request.method === 'POST') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+
+    const prefixes = ['visit:', 'ratelimit:visit:', 'ratelimit:device:', 'visitor:num:'];
+    let deleted = 0;
+    for (const prefix of prefixes) {
+      const keys = await listKeys(env, prefix);
+      await Promise.all(keys.map(k => env.BWR_KV.delete(k.name)));
+      deleted += keys.length;
+    }
+    await env.BWR_KV.put('analytics:total_visits', '0');
+    await env.BWR_KV.put('analytics:visitor_count', '0');
+    return json({ ok: true, deleted });
   }
 
   if (pathname === '/api/analytics/visits' && request.method === 'GET') {

@@ -15,7 +15,7 @@
 // newsreact:{newsId}:{voter} → 'like' | 'dislike'  (voter = u:{userId} or ip:{addr})
 // pathgrade:{pathId}:{userId} → JSON { walkedWhenGraded: bool }
 // walkedpath:{userId}:{pathId} → ISO timestamp string
-// aisugg:{userId}:{date}   → JSON AI suggestion  (48h TTL)
+// aisugg:{userId}:{date}   → legacy AI-suggestion cache (feature removed; keys self-expire, 48h TTL)
 // leaderboard:cache        → JSON sorted entries array  (5-min TTL)
 // visit:{ts}:{id}          → JSON visit record  (30-day TTL)
 

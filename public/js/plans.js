@@ -91,8 +91,8 @@ document.getElementById('activationForm').addEventListener('submit', async e => 
   btn.textContent = 'Envoi…';
   btn.disabled = true;
 
-  const planLabel   = plan === 'gold' ? 'Or (6,99€/mois)' : 'Argent (3,99€/mois)';
-  const periodLabel = period === 'annual' ? 'annuel (-15 %)' : 'mensuel';
+  const planLabel   = plan === 'gold' ? 'Or (6,99€/mois)' : 'Argent (4,99€/mois)';
+  const periodLabel = period === 'annual' ? 'annuel (-25 %)' : 'mensuel';
   const formatted = `=== Demande d'activation BWR ===
 Plan : ${planLabel}
 Période : ${periodLabel}
@@ -115,7 +115,7 @@ Message : ${message || '(aucun)'}
     afStatus.style.color = 'var(--forest-700)';
     setTimeout(closeActivation, 3500);
   } catch {
-    afStatus.textContent = 'Erreur d\'envoi. Écrivez-moi directement à ${CONTACT_EMAIL}';
+    afStatus.textContent = `Erreur d'envoi. Écrivez-moi directement à ${CONTACT_EMAIL}`;
     afStatus.style.color = 'var(--danger)';
   } finally {
     btn.textContent = 'Envoyer la demande';
@@ -153,10 +153,15 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
   const section = document.getElementById('aiRevenueForecast');
   if (!section) return;
 
-  initForecast();
+  // Admin-only: internal business dashboard, never shown to visitors.
+  const _u = (typeof getCachedUser === 'function') ? getCachedUser() : null;
+  if (!_u || _u.role !== 'admin') { section.remove(); return; }
+  section.hidden = false;
 
   let chartInstance = null;
   let initialized = false;
+
+  initForecast();
 
   function initForecast() {
     if (initialized) return;
@@ -180,8 +185,8 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     const QUALITY_CONV   = [0, 0.12, 0.25, 0.45, 0.72, 1.10, 1.62, 2.25, 2.95, 3.60, 4.25];
     const QUALITY_LABELS = ['', 'Très basique', 'Basique', 'Moyen-', 'Moyen', 'Acceptable', 'Bon', 'Très bon', 'Excellent', 'Exceptionnel', 'Parfait'];
 
-    /* ARPU: 65 % Silver (3.99 €) + 35 % Gold (6.99 €) */
-    const ARPU = 0.65 * 3.99 + 0.35 * 6.99;
+    /* ARPU: 65 % Silver (4.99 €) + 35 % Gold (6.99 €) */
+    const ARPU = 0.65 * 4.99 + 0.35 * 6.99;
 
     function lerp(a, b, t) { return a + (b - a) * t; }
 
@@ -442,7 +447,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
         return (T[lo]||0)*(1-t)+(T[hi]||0)*t;
       })(quality);
 
-      const ARPU = 0.65*3.99+0.35*6.99;
+      const ARPU = 0.65*4.99+0.35*6.99;
       const subs = visitors*(rate/100);
       const mrr  = subs*ARPU;
       const arr  = mrr*12;

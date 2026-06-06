@@ -290,7 +290,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
 
-    const { name, email, homeAddress, homeCoords } = await request.json();
+    const { name, email } = await request.json();
     if (!name || !email) return fail('Nom et email obligatoires.');
 
     const newEmail = email.toLowerCase();
@@ -303,15 +303,9 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
       ]);
     }
 
-    const updated = {
-      ...user,
-      name,
-      email: newEmail,
-      homeAddress: homeAddress || user.homeAddress || null,
-      homeCoords: homeCoords || user.homeCoords || null,
-    };
+    const updated = { ...user, name, email: newEmail };
     await putUser(env, updated);
-    return json({ id: updated.id, name: updated.name, email: updated.email, role: updated.role, homeAddress: updated.homeAddress, homeCoords: updated.homeCoords });
+    return json({ id: updated.id, name: updated.name, email: updated.email, role: updated.role });
   }
 
   if (pathname === '/api/auth/stats' && request.method === 'POST') {
