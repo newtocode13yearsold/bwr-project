@@ -42,7 +42,6 @@
         <button class="btn-icon" id="btnSelectPath" title="Sélectionner un chemin"><span class="btn-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span><span class="btn-label">Sélectionner</span></button>
         <button class="btn-icon" id="btnEditMode" title="Modifier les chemins — clique sur n'importe quel chemin pour le modifier"><span class="btn-emoji">✎</span><span class="btn-label">Modifier</span></button>
         <button class="btn-icon" id="btnDrawPath" title="Dessiner"><span class="btn-emoji">✏</span><span class="btn-label">Dessiner</span></button>
-        <button class="btn-icon" id="btnOfflineAdmin" title="Télécharger la carte hors-ligne"><span class="btn-emoji">⬇</span><span class="btn-label">Hors-ligne</span></button>
         <button class="btn-icon" id="btnMessages" title="Messages de contact" style="position:relative"><span class="btn-emoji">📬</span><span class="btn-label">Messages</span><span id="msgBadge" style="display:none;position:absolute;top:4px;right:4px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:700;border-radius:999px;padding:1px 5px;line-height:1.4"></span></button>
         <button class="btn-icon" id="btnMembers" title="Gérer les membres"><span class="btn-emoji">👥</span><span class="btn-label">Membres</span></button>
         <button class="btn-icon" id="btnRevenue" title="Tableau de bord revenus"><span class="btn-emoji">💰</span><span class="btn-label">Revenus</span></button>
@@ -93,6 +92,10 @@
           <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
           <span>Panneau admin</span>
         </a>
+        <button id="btnOfflineAdmin" class="nav-drawer-item">
+          <span class="nav-drawer-icon"><span class="btn-emoji">⬇</span></span>
+          <span class="btn-label">Télécharger hors-ligne</span>
+        </button>
       </nav>
     </div>
 
