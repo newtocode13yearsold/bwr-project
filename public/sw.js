@@ -1,4 +1,4 @@
-const CACHE = 'bwr-v23';
+const CACHE = 'bwr-v26';
 const TILE_CACHE = 'bwr-offline-tiles';
 const TILE_MAX_ENTRIES = 500;
 const TILE_MAX_AGE_MS  = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -32,6 +32,18 @@ const APP_SHELL = [
   'js/exporters.js',
   'js/news.js',
   'js/install.js',
+  'js/theme.js',
+  'js/forests.js',
+  'js/notif.js',
+  'js/ui-shared.js',
+  'js/map-offline.js',
+  'js/elevation.js',
+  'js/map-edit.js',
+  'js/route-save.js',
+  'js/plans.js',
+  'js/leaderboard.js',
+  'js/verify.js',
+  'js/index.js',
   'css/tokens.css',
   'css/style.css',
   'css/login.css',
@@ -40,6 +52,10 @@ const APP_SHELL = [
   'css/routes.css',
   'css/home.css',
   'css/profile.css',
+  'css/changelog.css',
+  'css/leaderboard.css',
+  'css/legal.css',
+  'css/blog.css',
 ];
 
 // CDN resources still fetched from external CDN (leaflet-draw, admin only)
