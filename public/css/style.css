@@ -1,6 +1,8 @@
 /* ── Reset & base ── */ /* v2 */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html { overflow-x: hidden; }
+
 /* ── Leaflet protection — prevent global CSS from animating map layers ──────
  * SVG <path> elements inside Leaflet panes must NEVER get will-change:transform
  * (that promotes each path to its own GPU layer and breaks pan sync).
@@ -407,7 +409,7 @@ body {
 .admin-status.error   { background: #fee2e2; color: #991b1b; }
 
 /* ── Login screen ── */
-.admin-body { overflow: auto; }
+.admin-body { overflow-y: auto; overflow-x: hidden; }
 
 .login-screen {
   position: fixed;
@@ -530,19 +532,7 @@ body {
   z-index: 1;
 }
 .location-dot-pulse {
-  position: absolute;
-  width: 36px;
-  height: 36px;
-  background: rgba(59,130,246,0.22);
-  border-radius: 50%;
-  top: -10px;
-  left: -10px;
-  animation: location-pulse 2s ease-out infinite;
-  pointer-events: none;
-}
-@keyframes location-pulse {
-  0%   { transform: scale(0.4); opacity: 0.9; }
-  100% { transform: scale(1.8); opacity: 0; }
+  display: none;
 }
 
 /* ── Difficulty picker (silver+) ── */
@@ -1204,13 +1194,22 @@ body {
 .search-item-name { font-size: 0.87rem; font-weight: 600; color: #1a2e12; }
 .search-item-sub  { font-size: 0.75rem; color: var(--text-faint); margin-top: 1px; }
 
-/* ── Locate me button ── */
-.map-locate-btn {
+/* ── Bottom map buttons row ── */
+.map-bottom-btns {
   position: fixed;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1100;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+}
+.map-bottom-btns > * { pointer-events: all; }
+
+/* ── Locate me button ── */
+.map-locate-btn {
   height: 40px;
   padding: 0 18px;
   border-radius: 999px;
@@ -1228,8 +1227,29 @@ body {
   white-space: nowrap;
   transition: background 0.15s, transform 0.15s, box-shadow 0.2s;
 }
-.map-locate-btn:hover { background: var(--forest-100); transform: translateX(-50%) translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.22); }
-.map-locate-btn:disabled { opacity: 0.5; cursor: default; transform: translateX(-50%); }
+.map-locate-btn:hover { background: var(--forest-100); transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.22); }
+.map-locate-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+/* ── Select current path button ── */
+.map-select-path-btn {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: none;
+  background: white;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--forest-700);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.2s;
+}
+.map-select-path-btn:hover { background: var(--forest-100); transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.22); }
 
 .map-locate-btn.locate-following {
   background: #eff6ff;
@@ -1255,8 +1275,8 @@ body {
   50%       { box-shadow: 0 0 0 6px rgba(59,130,246,0.25), 0 2px 12px rgba(59,130,246,0.2); }
 }
 @keyframes locate-spin {
-  from { transform: translateX(-50%) rotate(0deg); }
-  to   { transform: translateX(-50%) rotate(360deg); }
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 /* Locate toast */
@@ -1358,7 +1378,8 @@ body {
 
   .header {
     padding: 0 10px;
-    height: 54px;
+    padding-top: env(safe-area-inset-top, 0px);
+    height: calc(54px + env(safe-area-inset-top, 0px));
     gap: 4px;
   }
 
@@ -1401,7 +1422,7 @@ body {
   .filter-panel {
     left: 8px;
     right: 8px;
-    top: calc(56px + env(safe-area-inset-top, 0px) + 4px);
+    top: calc(54px + env(safe-area-inset-top, 0px) + 4px);
     min-width: 0;
     border-radius: 14px;
     max-height: calc(80dvh - env(safe-area-inset-top, 0px));
@@ -1432,10 +1453,11 @@ body {
     font-size: 0.82rem;
   }
 
-  .map-locate-btn {
+  .map-bottom-btns {
     bottom: max(80px, calc(68px + env(safe-area-inset-bottom)));
-    left: 50%;
-    transform: translateX(-50%);
+  }
+  .map-locate-btn,
+  .map-select-path-btn {
     font-size: 0.82rem;
     padding: 0 14px;
   }
@@ -1501,15 +1523,7 @@ body {
     font-size: 0.8rem;
   }
 
-  /* Shrink map so Leaflet doesn't render paths behind the fixed bottom nav */
-  #map {
-    margin-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* Legend — push above bottom nav */
-  .legend {
-    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-  }
+  /* Legend — smaller on mobile */
 
   /* Carrefour labels — slightly smaller on mobile */
   .carrefour-name { font-size: 0.68rem; }
@@ -1609,12 +1623,23 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
 .bottom-nav { display: none; }
 
 @media (max-width: 768px) {
+  /* Shrink map so Leaflet doesn't render behind the fixed bottom nav */
+  #map {
+    margin-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Legend — push above bottom nav */
+  .legend {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
   .bottom-nav {
     display: flex;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
+    height: 56px;
     height: calc(56px + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
     background: white;
@@ -1665,7 +1690,7 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
 @media (max-width: 380px) {
   .btn-icon { padding: 7px 9px; min-width: 36px; }
   .logo { font-size: 1.2rem; }
-  .header { padding: 0 8px; gap: 3px; }
+  .header { padding: 0 8px; padding-top: env(safe-area-inset-top, 0px); gap: 3px; }
 }
 
 /* ── PWA iOS install modal ── */
@@ -2058,9 +2083,11 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
 [data-theme="dark"] .contact-chip        { background: rgba(22,32,26,0.92); color: var(--lime-500); }
 [data-theme="dark"] .contact-chip:hover  { background: #1c2a20; }
 
-/* ── Locate button ── */
-[data-theme="dark"] .map-locate-btn      { background: #16201a; color: var(--lime-500); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-[data-theme="dark"] .map-locate-btn:hover { background: #1c2a20; }
+/* ── Locate / select-path buttons ── */
+[data-theme="dark"] .map-locate-btn,
+[data-theme="dark"] .map-select-path-btn      { background: #16201a; color: var(--lime-500); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+[data-theme="dark"] .map-locate-btn:hover,
+[data-theme="dark"] .map-select-path-btn:hover { background: #1c2a20; }
 
 /* ── Report FAB ── */
 [data-theme="dark"] .report-fab          { background: #16201a; color: #fbbf24; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }

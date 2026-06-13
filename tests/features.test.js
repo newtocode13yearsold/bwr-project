@@ -34,7 +34,7 @@ describe('normalisePlan', () => {
 // ── can ───────────────────────────────────────────────────────────────────────
 
 describe('can', () => {
-  // Loop mode: all tiers (free capped at 3/week via routes_per_week quota)
+  // Loop mode: all tiers (free capped at 10/week via routes_per_week quota)
   test('loop_mode: free → true',    () => assert.equal(can('loop_mode', 'free'),   true));
   test('loop_mode: silver → true',  () => assert.equal(can('loop_mode', 'silver'), true));
   test('loop_mode: gold → true',    () => assert.equal(can('loop_mode', 'gold'),   true));
@@ -82,7 +82,7 @@ describe('can', () => {
 // ── limitOf ───────────────────────────────────────────────────────────────────
 
 describe('limitOf', () => {
-  test('routes_per_week: free = 3',          () => assert.equal(limitOf('routes_per_week', 'free'),   3));
+  test('routes_per_week: free = 10',         () => assert.equal(limitOf('routes_per_week', 'free'),   10));
   test('routes_per_week: silver = Infinity', () => assert.equal(limitOf('routes_per_week', 'silver'), Infinity));
   test('routes_per_week: gold = Infinity',   () => assert.equal(limitOf('routes_per_week', 'gold'),   Infinity));
 
@@ -165,24 +165,24 @@ describe('checkRouteQuota', () => {
     const result = checkRouteQuota('free');
     assert.ok(result.ok);
     assert.equal(result.used, 0);
-    assert.equal(result.limit, 3);
+    assert.equal(result.limit, 10);
   });
 
-  test('free at 2 routes → ok', () => {
-    bumpWeekly(); bumpWeekly();
+  test('free at 9 routes → ok', () => {
+    for (let i = 0; i < 9; i++) bumpWeekly();
     assert.ok(checkRouteQuota('free').ok);
   });
 
-  test('free at 3 routes → not ok', () => {
-    bumpWeekly(); bumpWeekly(); bumpWeekly();
+  test('free at 10 routes → not ok', () => {
+    for (let i = 0; i < 10; i++) bumpWeekly();
     const result = checkRouteQuota('free');
     assert.equal(result.ok, false);
-    assert.equal(result.used, 3);
-    assert.equal(result.limit, 3);
+    assert.equal(result.used, 10);
+    assert.equal(result.limit, 10);
   });
 
-  test('free at 4 routes → still not ok', () => {
-    bumpWeekly(); bumpWeekly(); bumpWeekly(); bumpWeekly();
+  test('free at 11 routes → still not ok', () => {
+    for (let i = 0; i < 11; i++) bumpWeekly();
     assert.equal(checkRouteQuota('free').ok, false);
   });
 
@@ -201,8 +201,8 @@ describe('checkRouteQuota', () => {
     assert.ok(checkRouteQuota('gold').ok);
   });
 
-  test('null plan treated as free → blocks at 3', () => {
-    bumpWeekly(); bumpWeekly(); bumpWeekly();
+  test('null plan treated as free → blocks at 10', () => {
+    for (let i = 0; i < 10; i++) bumpWeekly();
     assert.equal(checkRouteQuota(null).ok, false);
   });
 });

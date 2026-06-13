@@ -34,7 +34,7 @@ export async function handleContent(request, env, { pathname, url, json, fail })
     ];
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'BWR-Compiegne/1.0 (https://bwr-worker.ciril8596.workers.dev; ciril8596@gmail.com)',
+      'User-Agent': 'BWR-Oise/1.0 (https://bwr-worker.ciril8596.workers.dev; ciril8596@gmail.com)',
     };
 
     for (const endpoint of ATTEMPTS) {
@@ -253,6 +253,87 @@ export async function handleContent(request, env, { pathname, url, json, fail })
     else await env.BWR_KV.delete(reactKey);
 
     return json({ likes: item.likes, dislikes: item.dislikes, reaction: reaction || null });
+  }
+
+  // ── Best tours CRUD ───────────────────────────────────────────────────────
+  if (pathname === '/api/besttours' && request.method === 'GET') {
+    const items = await listItems(env, 'besttour:');
+    items.sort((a, b) => {
+      const ra = a.rank ?? 9999, rb = b.rank ?? 9999;
+      if (ra !== rb) return ra - rb;
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+    return json(items);
+  }
+
+  if (pathname === '/api/besttours' && request.method === 'POST') {
+    const user = await getUserFromToken(env, request);
+    if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
+
+    const body = await request.json();
+    if (!body.name?.trim()) return fail('Nom obligatoire.');
+
+    const id = crypto.randomUUID();
+    const imageDataUri = (body.imageDataUri || '').trim();
+    if (imageDataUri && imageDataUri.length > 600000) return fail('Image trop grande (max ~450 Ko).');
+    const item = {
+      id,
+      name: body.name.trim().slice(0, 200),
+      description: (body.description || '').trim().slice(0, 2000),
+      distance: parseFloat(body.distance) || null,
+      difficulty: ['easy', 'medium', 'hard'].includes(body.difficulty) ? body.difficulty : 'easy',
+      type: ['foot', 'bike', 'mix'].includes(body.type) ? body.type : 'foot',
+      startAddress: (body.startAddress || '').trim().slice(0, 300),
+      imageDataUri: imageDataUri || '',
+      imageUrl: /^https?:\/\//.test((body.imageUrl || '').trim()) ? body.imageUrl.trim().slice(0, 1000) : '',
+      externalUrl: /^https?:\/\//.test((body.externalUrl || '').trim()) ? body.externalUrl.trim().slice(0, 500) : '',
+      rank: Number.isFinite(parseInt(body.rank)) ? parseInt(body.rank) : 9999,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await env.BWR_KV.put(`besttour:${id}`, JSON.stringify(item));
+    return json(item, 201);
+  }
+
+  if (pathname.startsWith('/api/besttours/') && request.method === 'PUT') {
+    const user = await getUserFromToken(env, request);
+    if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
+
+    const id = pathname.split('/')[3];
+    const raw = await env.BWR_KV.get(`besttour:${id}`);
+    if (!raw) return fail('Balade introuvable.', 404);
+
+    const body = await request.json();
+    if (!body.name?.trim()) return fail('Nom obligatoire.');
+
+    const existing = JSON.parse(raw);
+    const imageDataUri = (body.imageDataUri || '').trim();
+    if (imageDataUri && imageDataUri.length > 600000) return fail('Image trop grande (max ~450 Ko).');
+    const updated = {
+      ...existing,
+      name: body.name.trim().slice(0, 200),
+      description: (body.description || '').trim().slice(0, 2000),
+      distance: parseFloat(body.distance) || null,
+      difficulty: ['easy', 'medium', 'hard'].includes(body.difficulty) ? body.difficulty : existing.difficulty,
+      type: ['foot', 'bike', 'mix'].includes(body.type) ? body.type : existing.type,
+      startAddress: (body.startAddress || '').trim().slice(0, 300),
+      imageDataUri: imageDataUri,
+      imageUrl: /^https?:\/\//.test((body.imageUrl || '').trim()) ? body.imageUrl.trim().slice(0, 1000) : '',
+      externalUrl: /^https?:\/\//.test((body.externalUrl || '').trim()) ? body.externalUrl.trim().slice(0, 500) : '',
+      rank: Number.isFinite(parseInt(body.rank)) ? parseInt(body.rank) : existing.rank,
+      updatedAt: new Date().toISOString(),
+    };
+    await env.BWR_KV.put(`besttour:${id}`, JSON.stringify(updated));
+    return json(updated);
+  }
+
+  if (pathname.startsWith('/api/besttours/') && request.method === 'DELETE') {
+    const user = await getUserFromToken(env, request);
+    if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
+
+    const id = pathname.split('/')[3];
+    await env.BWR_KV.delete(`besttour:${id}`);
+    return json({ success: true });
   }
 
   // ── Contact form ───────────────────────────────────────────────────────────

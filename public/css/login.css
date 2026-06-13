@@ -1,6 +1,7 @@
 /* ── Login page ── */
 .login-page {
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%);
   min-height: 100vh;
   display: flex;

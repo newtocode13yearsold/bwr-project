@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1e4d14" />
+  <title>Meilleures balades — BWR · Forêt de Compiègne</title>
+  <meta name="description" content="Découvrez les meilleures balades et circuits sélectionnés dans la forêt de Compiègne : randonnées pédestres, vélo, et mixtes." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/login.css" />
+  <link rel="stylesheet" href="css/home.css" />
+  <script src="js/theme.js"></script>
+  <style>
+    html, body { height: auto !important; overflow: auto !important; }
+    body { background: var(--surface-1, #fafbf7); }
+
+    /* ── Hero ── */
+    .page-hero {
+      padding: 64px 24px 56px;
+      text-align: center;
+      background: linear-gradient(160deg, #0b2410 0%, #1e4d14 55%, #2d6b1f 100%);
+      color: #fff;
+    }
+    .page-hero-badge {
+      display: inline-block;
+      background: rgba(163,230,53,0.18);
+      color: #a3e635;
+      border: 1px solid rgba(163,230,53,0.35);
+      border-radius: 999px;
+      padding: 4px 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .page-hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      line-height: 1.15;
+    }
+    .page-hero p {
+      color: rgba(255,255,255,0.72);
+      font-size: 1.05rem;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* ── Filters ── */
+    .filters-bar {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 24px 0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff;
+      border: 1.5px solid var(--border-soft, #ebeee5);
+      border-radius: 999px;
+      padding: 7px 16px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text, #1f2937);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .filter-btn:hover { border-color: var(--forest-400, #6fb356); }
+    .filter-btn.active {
+      background: var(--forest-700, #1e4d14);
+      border-color: var(--forest-700, #1e4d14);
+      color: #a3e635;
+    }
+    .filter-sep {
+      width: 1px;
+      height: 24px;
+      background: var(--border-soft, #ebeee5);
+      margin: 0 4px;
+    }
+
+    /* ── Tour list ── */
+    .tours-section {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 24px 96px;
+    }
+    .tours-count {
+      font-size: 0.85rem;
+      color: var(--text-muted, #6b7280);
+      margin-bottom: 24px;
+      font-weight: 500;
+    }
+
+    /* ── Tour card ── */
+    .tour-card {
+      background: #fff;
+      border: 1px solid var(--border-soft, #ebeee5);
+      border-radius: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px -4px rgba(11,36,16,0.08);
+      overflow: hidden;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .tour-card:hover { box-shadow: 0 10px 28px -8px rgba(11,36,16,0.16); transform: translateY(-2px); }
+
+    .tour-card-img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .tour-card-img-placeholder {
+      width: 100%;
+      height: 160px;
+      background: linear-gradient(135deg, #0b2410 0%, #1e4d14 60%, #2d6b1f 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+
+    .tour-card-body { padding: 28px 28px 24px; }
+
+    /* rank badge */
+    .tour-rank {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--forest-700, #1e4d14);
+      color: #a3e635;
+      font-size: 0.85rem;
+      font-weight: 800;
+      float: right;
+      margin: 0 0 8px 12px;
+    }
+
+    .tour-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .tour-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .tour-badge-easy    { background: #dcfce7; color: #15803d; }
+    .tour-badge-medium  { background: #ffedd5; color: #c2410c; }
+    .tour-badge-hard    { background: #fee2e2; color: #b91c1c; }
+    .tour-badge-type    { background: var(--forest-100, #f0f7ec); color: var(--forest-700, #1e4d14); border: 1px solid var(--forest-200, #d4edbc); }
+    .tour-badge-dist    { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+
+    .tour-name {
+      font-family: var(--font-display);
+      font-size: clamp(1.15rem, 3vw, 1.5rem);
+      font-weight: 700;
+      color: var(--text-strong, #0b2410);
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      margin-bottom: 10px;
+    }
+    .tour-start {
+      font-size: 0.85rem;
+      color: var(--text-muted, #6b7280);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tour-description {
+      font-size: 0.97rem;
+      color: var(--text, #1f2937);
+      line-height: 1.7;
+      margin-bottom: 20px;
+      white-space: pre-line;
+    }
+
+    .tour-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .btn-plan {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--forest-700, #1e4d14);
+      color: #a3e635;
+      border: none;
+      border-radius: 999px;
+      padding: 9px 22px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .btn-plan:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-external {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--forest-100, #f0f7ec);
+      color: var(--forest-700, #1e4d14);
+      border: 1px solid var(--forest-300, #b9d8a4);
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .btn-external:hover { background: var(--forest-200, #d4edbc); transform: translateY(-1px); }
+
+    /* admin controls */
+    .tour-admin-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-soft, #ebeee5);
+    }
+    .tour-btn-edit, .tour-btn-delete {
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .tour-btn-edit   { background: #e0f2fe; color: #0369a1; }
+    .tour-btn-delete { background: #fee2e2; color: #b91c1c; }
+    .tour-btn-edit:hover, .tour-btn-delete:hover { opacity: 0.75; }
+
+    /* ── Empty / loading ── */
+    .tours-loading, .tours-empty {
+      text-align: center;
+      color: var(--text-muted, #6b7280);
+      padding: 64px 0;
+      font-size: 1rem;
+    }
+    .tours-empty-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
+
+    /* ── FAB ── */
+    #fabAdd {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--forest-700, #1e4d14);
+      color: #a3e635;
+      border: none;
+      font-size: 1.6rem;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(11,36,16,0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s, box-shadow 0.15s;
+      z-index: 100;
+    }
+    #fabAdd:hover { transform: scale(1.08); box-shadow: 0 8px 28px rgba(11,36,16,0.4); }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(11,36,16,0.55);
+      backdrop-filter: blur(4px);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-box {
+      background: #fff;
+      border-radius: 20px;
+      padding: 36px;
+      width: 100%;
+      max-width: 580px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 60px -16px rgba(11,36,16,0.35);
+      animation: modalIn 0.22s cubic-bezier(0.16,1,0.30,1);
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to   { opacity: 1; transform: none; }
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .modal-header h2 {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-strong, #0b2410);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      color: var(--text-muted, #6b7280);
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+    }
+    .modal-close:hover { color: var(--text, #1f2937); }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+    .form-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-strong, #0b2410);
+      margin-bottom: 6px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .form-label span { color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      border: 1.5px solid var(--border, #e2e8da);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.97rem;
+      font-family: var(--font-sans);
+      color: var(--text, #1f2937);
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s;
+      appearance: none;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--forest-600, #2d6b1f); }
+    .form-textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+
+    .img-upload-area {
+      border: 2px dashed var(--border, #e2e8da);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      background: #fafbf7;
+      position: relative;
+    }
+    .img-upload-area:hover { border-color: var(--forest-600, #2d6b1f); background: #f0f7ec; }
+    .img-upload-area input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .img-upload-label { font-size: 0.9rem; color: var(--text-muted, #6b7280); pointer-events: none; }
+    .img-upload-label strong { color: var(--forest-700, #1e4d14); }
+    .img-preview-wrap { margin-top: 12px; position: relative; display: inline-block; }
+    .img-preview-wrap img { max-height: 140px; border-radius: 8px; display: block; }
+    .img-remove-btn {
+      position: absolute; top: -8px; right: -8px;
+      background: #b91c1c; color: #fff;
+      border: none; border-radius: 50%;
+      width: 22px; height: 22px;
+      font-size: 0.75rem; font-weight: 700;
+      cursor: pointer; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .modal-error { color: #b91c1c; font-size: 0.875rem; margin-bottom: 12px; min-height: 20px; }
+    .modal-actions {
+      display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px;
+    }
+    .btn-cancel {
+      background: var(--surface-2, #f3f4f0); color: var(--text, #1f2937);
+      border: none; border-radius: 10px; padding: 10px 22px;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    }
+    .btn-save {
+      background: var(--forest-700, #1e4d14); color: #a3e635;
+      border: none; border-radius: 10px; padding: 10px 28px;
+      font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-save:hover:not(:disabled) { opacity: 0.88; }
+
+    /* ── Footer ── */
+    .page-footer {
+      background: #0b2410;
+      color: rgba(255,255,255,0.55);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 0.85rem;
+    }
+    .page-footer a { color: #a3e635; text-decoration: none; }
+    .page-footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .tour-card-body { padding: 20px 18px 18px; }
+      .modal-box { padding: 28px 20px; }
+      .form-group-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      body { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+      #fabAdd { bottom: max(80px, calc(66px + env(safe-area-inset-bottom, 0px))); right: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-left">
+      <a href="/" class="logo" style="text-decoration:none">BWR</a>
+      <nav class="header-nav-links">
+        <a href="map">Carte</a>
+        <a href="routes">Planifier</a>
+        <a href="best-tours" class="active">Balades</a>
+        <a href="plans">Plans</a>
+      </nav>
+    </div>
+    <div class="header-right">
+      <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
+      <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
+      <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji">⬇</span><span class="btn-label">Installer</span></button>
+      <div class="user-menu" id="userMenu"></div>
+    </div>
+  </header>
+
+  <!-- Nav drawer -->
+  <div class="nav-drawer-overlay hidden" id="navDrawerOverlay"></div>
+  <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
+    <div class="nav-drawer-header">
+      <span class="nav-drawer-logo">BWR</span>
+      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+    </div>
+    <nav class="nav-drawer-links">
+      <a href="map" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
+        <span>Carte</span>
+      </a>
+      <a href="routes" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
+        <span>Planifier un trajet</span>
+      </a>
+      <a href="best-tours" class="nav-drawer-item active">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></span>
+        <span>Meilleures balades</span>
+      </a>
+      <a href="profile" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+        <span>Mon profil</span>
+      </a>
+      <a href="leaderboard" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>
+        <span>Classement</span>
+      </a>
+      <a href="news" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg></span>
+        <span>Actualités</span>
+      </a>
+      <a href="plans" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+        <span>Plans &amp; abonnements</span>
+      </a>
+      <a href="changelog" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span>
+        <span>Changelog</span>
+      </a>
+      <a href="admin" class="nav-drawer-item nav-drawer-admin hidden" id="navDrawerAdmin">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        <span>Panneau admin</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Hero -->
+  <section class="page-hero">
+    <div class="page-hero-badge">Forêt de Compiègne</div>
+    <h1>Meilleures balades</h1>
+    <p>Les circuits incontournables de la forêt, sélectionnés et classés par l'équipe BWR.</p>
+  </section>
+
+  <!-- Filters -->
+  <div class="filters-bar" id="filtersBar">
+    <button class="filter-btn active" data-filter="all">Toutes</button>
+    <div class="filter-sep"></div>
+    <button class="filter-btn" data-filter="diff:easy">🟢 Facile</button>
+    <button class="filter-btn" data-filter="diff:medium">🟠 Moyen</button>
+    <button class="filter-btn" data-filter="diff:hard">🔴 Difficile</button>
+    <div class="filter-sep"></div>
+    <button class="filter-btn" data-filter="type:foot">🌲 Pédestre</button>
+    <button class="filter-btn" data-filter="type:bike">🚴 Vélo</button>
+    <button class="filter-btn" data-filter="type:mix">🗺️ Mix</button>
+  </div>
+
+  <!-- Tours list -->
+  <section class="tours-section">
+    <div class="tours-count" id="toursCount"></div>
+    <div id="toursList"><div class="tours-loading">Chargement…</div></div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <p>© 2025 BWR · <a href="legal">Mentions légales</a> · <a href="/">Accueil</a></p>
+  </footer>
+
+  <!-- FAB (admin only) -->
+  <button id="fabAdd" title="Ajouter une balade" aria-label="Ajouter une balade">+</button>
+
+  <!-- Modal create / edit -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h2 id="modalTitle">Ajouter une balade</h2>
+        <button class="modal-close" id="modalClose" aria-label="Fermer">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="fName">Titre <span>*</span></label>
+        <input class="form-input" id="fName" type="text" placeholder="Ex : Boucle des Beaux-Monts" maxlength="200" />
+      </div>
+
+      <div class="form-group-row">
+        <div>
+          <label class="form-label" for="fDifficulty">Difficulté</label>
+          <select class="form-select" id="fDifficulty">
+            <option value="easy">🟢 Facile</option>
+            <option value="medium">🟠 Moyen</option>
+            <option value="hard">🔴 Difficile</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="fType">Type</label>
+          <select class="form-select" id="fType">
+            <option value="foot">🌲 Pédestre</option>
+            <option value="bike">🚴 Vélo</option>
+            <option value="mix">🗺️ Mix</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group-row">
+        <div>
+          <label class="form-label" for="fDistance">Distance <span>(km)</span></label>
+          <input class="form-input" id="fDistance" type="number" min="0" step="0.1" placeholder="Ex : 12.5" />
+        </div>
+        <div>
+          <label class="form-label" for="fRank">Rang <span>(ordre d'affichage)</span></label>
+          <input class="form-input" id="fRank" type="number" min="1" step="1" placeholder="1, 2, 3…" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="fStart">Point de départ <span>(facultatif)</span></label>
+        <input class="form-input" id="fStart" type="text" placeholder="Ex : Parking des Beaux-Monts, Compiègne" maxlength="300" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="fDesc">Description <span>(facultatif)</span></label>
+        <textarea class="form-textarea" id="fDesc" placeholder="Décrivez le circuit, les points d'intérêt…" maxlength="2000"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Image <span>(facultatif)</span></label>
+        <div class="img-upload-area" id="imgUploadArea">
+          <input type="file" id="imgFileInput" accept="image/*" />
+          <div class="img-upload-label"><strong>Cliquer pour choisir</strong> ou glisser une image</div>
+          <div class="img-preview-wrap" id="imgPreviewWrap" style="display:none">
+            <img id="imgPreview" src="" alt="Aperçu" />
+            <button class="img-remove-btn" id="imgRemoveBtn" type="button">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="fExtUrl">Lien externe <span>(facultatif)</span></label>
+        <input class="form-input" id="fExtUrl" type="url" placeholder="https://..." />
+      </div>
+
+      <div class="modal-error" id="modalError"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="modalCancel">Annuler</button>
+        <button class="btn-save" id="modalSave">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui-shared.js"></script>
+  <script src="js/install.js"></script>
+  <script>
+  (() => {
+    'use strict';
+
+    const API = window.API_URL || '';
+    let allTours = [];
+    let activeFilter = 'all';
+    let editingId = null;
+    let currentImageDataUri = '';
+    let isAdmin = false;
+
+    // ── Auth: detect admin, then load tours ──────────────────────────────────
+    (async () => {
+      const token = localStorage.getItem('bwr_token');
+      if (token) {
+        try {
+          const res = await fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+          if (res.ok) {
+            const user = await res.json();
+            if (user?.role === 'admin') {
+              isAdmin = true;
+              document.getElementById('fabAdd').style.display = 'flex';
+              document.getElementById('navDrawerAdmin')?.classList.remove('hidden');
+            }
+          }
+        } catch {}
+      }
+      await loadTours();
+    })();
+
+    // ── Load tours ────────────────────────────────────────────────────────────
+    async function loadTours() {
+      try {
+        const res = await fetch(`${API}/api/besttours`);
+        allTours = res.ok ? await res.json() : [];
+      } catch { allTours = []; }
+      renderTours();
+    }
+
+    // ── Filters ───────────────────────────────────────────────────────────────
+    document.getElementById('filtersBar').addEventListener('click', e => {
+      const btn = e.target.closest('.filter-btn');
+      if (!btn) return;
+      activeFilter = btn.dataset.filter;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTours();
+    });
+
+    function filteredTours() {
+      if (activeFilter === 'all') return allTours;
+      if (activeFilter.startsWith('diff:')) {
+        const d = activeFilter.split(':')[1];
+        return allTours.filter(t => t.difficulty === d);
+      }
+      if (activeFilter.startsWith('type:')) {
+        const ty = activeFilter.split(':')[1];
+        return allTours.filter(t => t.type === ty);
+      }
+      return allTours;
+    }
+
+    // ── Render ────────────────────────────────────────────────────────────────
+    const DIFF_LABEL = { easy: 'Facile', medium: 'Moyen', hard: 'Difficile' };
+    const DIFF_CLASS = { easy: 'tour-badge-easy', medium: 'tour-badge-medium', hard: 'tour-badge-hard' };
+    const TYPE_LABEL = { foot: '🌲 Pédestre', bike: '🚴 Vélo', mix: '🗺️ Mix' };
+
+    function renderTours() {
+      const list = filteredTours();
+      const el = document.getElementById('toursList');
+      const countEl = document.getElementById('toursCount');
+
+      countEl.textContent = list.length
+        ? `${list.length} balade${list.length > 1 ? 's' : ''}`
+        : '';
+
+      if (!list.length) {
+        el.innerHTML = `<div class="tours-empty"><div class="tours-empty-icon">🌲</div><p>Aucune balade pour ce filtre.</p></div>`;
+        return;
+      }
+
+      el.innerHTML = list.map((t, i) => {
+        const imgSrc = t.imageDataUri || t.imageUrl;
+        const imgHtml = imgSrc
+          ? `<img class="tour-card-img" src="${escHtml(imgSrc)}" alt="${escHtml(t.name)}" loading="lazy" />`
+          : `<div class="tour-card-img-placeholder">🌲</div>`;
+
+        const rankBadge = (t.rank && t.rank < 9999)
+          ? `<span class="tour-rank">#${t.rank}</span>` : '';
+
+        const distBadge = t.distance
+          ? `<span class="tour-badge tour-badge-dist">📏 ${t.distance} km</span>` : '';
+
+        const startHtml = t.startAddress
+          ? `<div class="tour-start"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>${escHtml(t.startAddress)}</div>` : '';
+
+        const planUrl = (t.startLat && t.startLng)
+          ? `routes?lat=${t.startLat}&lng=${t.startLng}&distance=${t.distance || 10}&mode=loop&type=${t.type || 'foot'}&diff=${t.difficulty || 'easy'}`
+          : `routes${t.startAddress ? `?start=${encodeURIComponent(t.startAddress)}` : ''}`;
+        const extBtn = t.externalUrl
+          ? `<a class="btn-external" href="${escHtml(t.externalUrl)}" target="_blank" rel="noopener">Voir le tracé <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg></a>` : '';
+
+        const adminRow = isAdmin
+          ? `<div class="tour-admin-row">
+               <button class="tour-btn-edit" data-id="${t.id}">Modifier</button>
+               <button class="tour-btn-delete" data-id="${t.id}">Supprimer</button>
+             </div>` : '';
+
+        return `<article class="tour-card" data-id="${t.id}">
+          ${imgHtml}
+          <div class="tour-card-body">
+            ${rankBadge}
+            <div class="tour-badges">
+              <span class="tour-badge ${DIFF_CLASS[t.difficulty] || ''}">${DIFF_LABEL[t.difficulty] || t.difficulty}</span>
+              <span class="tour-badge tour-badge-type">${TYPE_LABEL[t.type] || t.type}</span>
+              ${distBadge}
+            </div>
+            <h2 class="tour-name">${escHtml(t.name)}</h2>
+            ${startHtml}
+            ${t.description ? `<p class="tour-description">${escHtml(t.description)}</p>` : ''}
+            <div class="tour-actions">
+              <a class="btn-plan" href="${planUrl}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+                Planifier ce trajet
+              </a>
+              ${extBtn}
+            </div>
+            ${adminRow}
+          </div>
+        </article>`;
+      }).join('');
+
+      // Admin event listeners
+      if (isAdmin) {
+        el.querySelectorAll('.tour-btn-edit').forEach(btn => {
+          btn.addEventListener('click', () => openEditModal(btn.dataset.id));
+        });
+        el.querySelectorAll('.tour-btn-delete').forEach(btn => {
+          btn.addEventListener('click', () => deleteTour(btn.dataset.id));
+        });
+      }
+    }
+
+    function escHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Delete ─────────────────────────────────────────────────────────────────
+    async function deleteTour(id) {
+      if (!confirm('Supprimer cette balade ?')) return;
+      const token = typeof getToken === 'function' ? getToken() : localStorage.getItem('bwr_token');
+      const res = await fetch(`${API}/api/besttours/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (res.ok) {
+        allTours = allTours.filter(t => t.id !== id);
+        renderTours();
+      } else {
+        alert('Erreur lors de la suppression.');
+      }
+    }
+
+    // ── Modal ─────────────────────────────────────────────────────────────────
+    const modal = document.getElementById('modalBackdrop');
+    const modalTitle = document.getElementById('modalTitle');
+    const fName = document.getElementById('fName');
+    const fDiff = document.getElementById('fDifficulty');
+    const fType = document.getElementById('fType');
+    const fDist = document.getElementById('fDistance');
+    const fRank = document.getElementById('fRank');
+    const fStart = document.getElementById('fStart');
+    const fDesc = document.getElementById('fDesc');
+    const fExtUrl = document.getElementById('fExtUrl');
+    const modalError = document.getElementById('modalError');
+    const imgFileInput = document.getElementById('imgFileInput');
+    const imgPreviewWrap = document.getElementById('imgPreviewWrap');
+    const imgPreview = document.getElementById('imgPreview');
+    const imgRemoveBtn = document.getElementById('imgRemoveBtn');
+
+    function openAddModal() {
+      editingId = null;
+      currentImageDataUri = '';
+      modalTitle.textContent = 'Ajouter une balade';
+      fName.value = '';
+      fDiff.value = 'easy';
+      fType.value = 'foot';
+      fDist.value = '';
+      fRank.value = '';
+      fStart.value = '';
+      fDesc.value = '';
+      fExtUrl.value = '';
+      imgPreviewWrap.style.display = 'none';
+      imgPreview.src = '';
+      modalError.textContent = '';
+      modal.classList.add('open');
+      fName.focus();
+    }
+
+    function openEditModal(id) {
+      const t = allTours.find(x => x.id === id);
+      if (!t) return;
+      editingId = id;
+      currentImageDataUri = t.imageDataUri || '';
+      modalTitle.textContent = 'Modifier la balade';
+      fName.value = t.name || '';
+      fDiff.value = t.difficulty || 'easy';
+      fType.value = t.type || 'foot';
+      fDist.value = t.distance ?? '';
+      fRank.value = (t.rank && t.rank < 9999) ? t.rank : '';
+      fStart.value = t.startAddress || '';
+      fDesc.value = t.description || '';
+      fExtUrl.value = t.externalUrl || '';
+      if (currentImageDataUri || t.imageUrl) {
+        imgPreview.src = currentImageDataUri || t.imageUrl;
+        imgPreviewWrap.style.display = 'block';
+      } else {
+        imgPreviewWrap.style.display = 'none';
+        imgPreview.src = '';
+      }
+      modalError.textContent = '';
+      modal.classList.add('open');
+      fName.focus();
+    }
+
+    function closeModal() {
+      modal.classList.remove('open');
+    }
+
+    document.getElementById('fabAdd').addEventListener('click', openAddModal);
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('modalCancel').addEventListener('click', closeModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+    // Image upload
+    imgFileInput.addEventListener('change', () => {
+      const file = imgFileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 900;
+          const canvas = document.createElement('canvas');
+          const ratio = Math.min(1, MAX / Math.max(img.width, img.height));
+          canvas.width = Math.round(img.width * ratio);
+          canvas.height = Math.round(img.height * ratio);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          currentImageDataUri = canvas.toDataURL('image/jpeg', 0.82);
+          imgPreview.src = currentImageDataUri;
+          imgPreviewWrap.style.display = 'block';
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    imgRemoveBtn.addEventListener('click', () => {
+      currentImageDataUri = '';
+      imgPreview.src = '';
+      imgPreviewWrap.style.display = 'none';
+      imgFileInput.value = '';
+    });
+
+    // Save
+    document.getElementById('modalSave').addEventListener('click', async () => {
+      const name = fName.value.trim();
+      if (!name) { modalError.textContent = 'Le titre est obligatoire.'; return; }
+      modalError.textContent = '';
+
+      const saveBtn = document.getElementById('modalSave');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Enregistrement…';
+
+      const token = typeof getToken === 'function' ? getToken() : localStorage.getItem('bwr_token');
+      const body = {
+        name,
+        difficulty: fDiff.value,
+        type: fType.value,
+        distance: fDist.value ? parseFloat(fDist.value) : null,
+        rank: fRank.value ? parseInt(fRank.value) : 9999,
+        startAddress: fStart.value.trim(),
+        description: fDesc.value.trim(),
+        externalUrl: fExtUrl.value.trim(),
+        imageDataUri: currentImageDataUri,
+      };
+
+      const url = editingId ? `${API}/api/besttours/${editingId}` : `${API}/api/besttours`;
+      const method = editingId ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) { modalError.textContent = data.error || 'Erreur serveur.'; return; }
+
+        if (editingId) {
+          allTours = allTours.map(t => t.id === editingId ? data : t);
+        } else {
+          allTours.push(data);
+          allTours.sort((a, b) => {
+            const ra = a.rank ?? 9999, rb = b.rank ?? 9999;
+            if (ra !== rb) return ra - rb;
+            return (b.createdAt || '').localeCompare(a.createdAt || '');
+          });
+        }
+        renderTours();
+        closeModal();
+      } catch {
+        modalError.textContent = 'Erreur réseau.';
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Enregistrer';
+      }
+    });
+
+    // ── Init: auth check above triggers loadTours() ───────────────────────────
+  })();
+  </script>
+</body>
+</html>

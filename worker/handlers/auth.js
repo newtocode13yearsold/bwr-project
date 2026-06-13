@@ -223,6 +223,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
       plan: updated.plan || 'free',
       planExpiresAt: updated.planExpiresAt || null,
       planBase: updated.planBase || null,
+      visitorPlanCount: updated.visitorPlanCount || 0,
       stats: updated.stats || { routes: 0, km: 0, weeklyRoutes: 0, weekStart: isoMonday() },
     });
   }
@@ -233,17 +234,23 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
 
     const targetId = pathname.split('/')[4];
     const { plan, planExpiresAt, planBase } = await request.json();
-    if (!['free', 'silver', 'gold'].includes(plan)) return fail('Plan invalide.');
+    if (!['free', 'silver', 'gold', 'visitor'].includes(plan)) return fail('Plan invalide.');
 
     const target = await getUser(env, targetId);
     if (!target) return fail('Utilisateur introuvable.', 404);
 
+    if (plan === 'visitor') {
+      const usedCount = target.visitorPlanCount || 0;
+      if (usedCount >= 2) return fail('Cet utilisateur a déjà utilisé le passe Visiteur 2 fois (limite atteinte).', 400);
+    }
+
     const updated = { ...target, plan };
+    if (plan === 'visitor') updated.visitorPlanCount = (target.visitorPlanCount || 0) + 1;
     if (planExpiresAt !== undefined) updated.planExpiresAt = planExpiresAt || null;
     if (planBase !== undefined) updated.planBase = planBase || null;
     await putUser(env, updated);
 
-    return json({ success: true, plan, planExpiresAt: updated.planExpiresAt || null });
+    return json({ success: true, plan, planExpiresAt: updated.planExpiresAt || null, visitorPlanCount: updated.visitorPlanCount });
   }
 
   if (pathname === '/api/auth/wheel-prize' && request.method === 'POST') {
@@ -390,7 +397,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
     const stats = user.stats || { routes: 0, km: 0 };
     const weeklyRoutes = stats.weekStart === weekStart ? (stats.weeklyRoutes || 0) : 0;
 
-    const LIMIT = 3;
+    const LIMIT = 10;
     if (weeklyRoutes >= LIMIT) {
       return json({ ok: false, used: weeklyRoutes, limit: LIMIT }, 429);
     }

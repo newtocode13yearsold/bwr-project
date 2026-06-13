@@ -594,7 +594,7 @@ describe('consume-route (weekly quota)', () => {
     assert.equal(res.status, 401);
   });
 
-  test('free user first route → ok, used=1, limit=3', async () => {
+  test('free user first route → ok, used=1, limit=10', async () => {
     const { env, registerAndLogin } = freshEnv();
     const { token } = await registerAndLogin();
     const res  = await worker.fetch(authed('POST', '/api/auth/consume-route', token), env);
@@ -602,31 +602,31 @@ describe('consume-route (weekly quota)', () => {
     const data = await res.json();
     assert.equal(data.ok,    true);
     assert.equal(data.used,  1);
-    assert.equal(data.limit, 3);
+    assert.equal(data.limit, 10);
   });
 
-  test('free user three consecutive calls → all ok', async () => {
+  test('free user ten consecutive calls → all ok', async () => {
     const { env, registerAndLogin } = freshEnv();
     const { token } = await registerAndLogin();
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 10; i++) {
       const res = await worker.fetch(authed('POST', '/api/auth/consume-route', token), env);
       assert.equal(res.status, 200);
       assert.equal((await res.json()).used, i);
     }
   });
 
-  test('free user fourth call → 429 with ok=false', async () => {
+  test('free user eleventh call → 429 with ok=false', async () => {
     const { env, registerAndLogin } = freshEnv();
     const { token } = await registerAndLogin();
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 10; i++) {
       await worker.fetch(authed('POST', '/api/auth/consume-route', token), env);
     }
     const res  = await worker.fetch(authed('POST', '/api/auth/consume-route', token), env);
     assert.equal(res.status, 429);
     const data = await res.json();
     assert.equal(data.ok,    false);
-    assert.equal(data.used,  3);
-    assert.equal(data.limit, 3);
+    assert.equal(data.used,  10);
+    assert.equal(data.limit, 10);
   });
 
   test('silver user → always ok regardless of count (unlimited)', async () => {

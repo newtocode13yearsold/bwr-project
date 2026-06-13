@@ -93,8 +93,18 @@ export async function patchLeaderboardCache(env, updatedUser) {
   await env.BWR_KV.put('leaderboard:cache', JSON.stringify(entries), { expirationTtl: 300 });
 }
 
-/** Returns the user's active plan, forcing 'gold' for admin accounts regardless of stored value. */
+/**
+ * Returns the user's active plan.
+ * - Admin accounts always resolve to 'gold'.
+ * - 'visitor' is a time-limited Silver alias: resolves to 'silver' while
+ *   planExpiresAt is in the future, or 'free' once it has elapsed.
+ */
 export function effectivePlan(user) {
   if (user.role === 'admin') return 'gold';
-  return user.plan || 'free';
+  const plan = user.plan || 'free';
+  if (plan === 'visitor') {
+    if (user.planExpiresAt && new Date(user.planExpiresAt) < new Date()) return 'free';
+    return 'silver';
+  }
+  return plan;
 }

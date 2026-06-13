@@ -37,7 +37,11 @@ let lastRoute = null;      // most recent computed route — used by save/share
   if (!currentUser) return;
   initUserMenu();
   initMap();
-  restoreSavedAddress();
+  if (new URLSearchParams(location.search).has('lat')) {
+    handleBestTourParam();
+  } else {
+    restoreSavedAddress();
+  }
   loadSavedPaths();
   applyPlanGates();
   updateQuotaStrip();
@@ -174,7 +178,7 @@ function initUserMenu() {
   menuEl.innerHTML = `
     <button class="user-btn" id="userBtn">
       <div class="user-avatar">${initials}</div>
-      ${currentUser.name.split(' ')[0]}
+      <span class="btn-label">${currentUser.name.split(' ')[0]}</span>
     </button>
     <div class="user-dropdown hidden" id="userDropdown">
       <span class="dropdown-name">${currentUser.name}</span>
@@ -329,7 +333,9 @@ function restoreSavedAddress() {
 async function loadSavedPaths() {
   try {
     const res = await fetch(`${API_URL}/api/paths`);
-    savedPaths = await res.json();
+    const data = await res.json();
+    // Offline with nothing cached yet returns {error:"offline"}, not an array.
+    savedPaths = Array.isArray(data) ? data : [];
     savedPathsLayer = L.layerGroup();
     savedPaths.forEach(p => {
       L.polyline(p.coordinates, {
@@ -697,16 +703,25 @@ function applyOsmSurfaceWeights(paths) {
   });
 }
 
+// Client-side OSM bbox cache — avoids re-fetching the same area within a session.
+// Server already caches 7 days in KV; this cuts even that round-trip for repeated calls.
+const _osmPathCache = new Map();
+
 async function fetchOsmPathsForBbox(minLat, minLng, maxLat, maxLng) {
+  const bbox = `${minLat.toFixed(4)},${minLng.toFixed(4)},${maxLat.toFixed(4)},${maxLng.toFixed(4)}`;
+  if (_osmPathCache.has(bbox)) return _osmPathCache.get(bbox);
   try {
-    const bbox = `${minLat.toFixed(4)},${minLng.toFixed(4)},${maxLat.toFixed(4)},${maxLng.toFixed(4)}`;
     // Generous timeout: the worker may retry a flaky Overpass instance. A late
     // success is still cached server-side, making the user's next attempt instant.
     const res = await fetchWithTimeout(`${API_URL}/api/osm?bbox=${bbox}`, {}, 35000);
     if (!res.ok) { console.warn('OSM bbox fetch failed:', res.status); return []; }
     const data = await res.json();
     if (!Array.isArray(data?.elements)) { console.warn('OSM response malformed'); return []; }
-    return osmDataToCoordPaths(data);
+    const paths = osmDataToCoordPaths(data);
+    // Evict oldest entry to bound memory usage
+    if (_osmPathCache.size >= 5) _osmPathCache.delete(_osmPathCache.keys().next().value);
+    _osmPathCache.set(bbox, paths);
+    return paths;
   } catch (e) { console.warn('fetchOsmPathsForBbox:', e.message); return []; }
 }
 
@@ -1106,6 +1121,55 @@ function initRouteHistory() {
 
 function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ── Best tour deep-link (?lat=&lng=&distance=&mode=&type=&diff=) ──────────────
+function handleBestTourParam() {
+  const params = new URLSearchParams(location.search);
+  const lat = parseFloat(params.get('lat'));
+  const lng = parseFloat(params.get('lng'));
+  if (!lat || !lng) return;
+
+  const targetMode = params.get('mode') || 'loop';
+  const targetType = params.get('type') || 'foot';
+  const targetDiff = params.get('diff') || 'easy';
+  const targetDist = parseFloat(params.get('distance')) || 10;
+
+  // Select mode
+  const modeCard = document.querySelector(`.mode-card[data-mode="${targetMode}"]`);
+  if (modeCard && !modeCard.classList.contains('locked-feature')) modeCard.click();
+
+  // Select path type
+  const typeBtn = document.querySelector(`.pathtype-btn[data-type="${targetType}"]`);
+  if (typeBtn) {
+    document.querySelectorAll('.pathtype-btn').forEach(b => b.classList.remove('active'));
+    typeBtn.classList.add('active');
+    pathType = targetType;
+  }
+
+  // Select difficulty
+  const diffBtn = document.querySelector(`.diff-btn[data-diff="${targetDiff}"]`);
+  if (diffBtn) {
+    document.querySelectorAll('.diff-btn[data-diff]').forEach(b => b.classList.remove('active'));
+    diffBtn.classList.add('active');
+    difficulty = targetDiff;
+  }
+
+  // Set distance
+  if (targetMode === 'loop') {
+    const distInput = document.getElementById('distanceInput');
+    if (distInput) distInput.value = targetDist;
+  }
+
+  // Pan map, place start marker, then auto-generate
+  map.setView([lat, lng], 14);
+  setTimeout(() => {
+    onMapClick({ latlng: { lat, lng } });
+    setTimeout(() => {
+      const btnGen = document.getElementById('btnGenerate');
+      if (btnGen && !btnGen.disabled) btnGen.click();
+    }, 500);
+  }, 400);
 }
 
 // ── Shared route from URL (?share=token) ──────────────────────────────────────

@@ -17,103 +17,46 @@ const _loadMapOffline = () => loadScript('js/map-offline.js');
 const LAYER_MAX_ZOOM = { osm: 19, ign: 17, satellite: 20 };
 const TILE_LAYERS = {
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxNativeZoom: 19, maxZoom: 19, detectRetina: true }
+    { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxNativeZoom: 19, maxZoom: 19, detectRetina: true, updateWhenIdle: false, keepBuffer: 4 }
   ),
   ign: L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxNativeZoom: 17, maxZoom: 17, subdomains: ['a','b','c'] }
+    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxNativeZoom: 17, maxZoom: 17, subdomains: ['a','b','c'], updateWhenIdle: false, keepBuffer: 4 }
   ),
   satellite: L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
-    { attribution: '&copy; <a href="https://www.geoportail.gouv.fr/">IGN</a>', maxNativeZoom: 20, maxZoom: 20, detectRetina: true }
+    { attribution: '&copy; <a href="https://www.geoportail.gouv.fr/">IGN</a>', maxNativeZoom: 20, maxZoom: 20, detectRetina: true, updateWhenIdle: false, keepBuffer: 4 }
   ),
 };
 
 const _cachedUser = (typeof getCachedUser === 'function') ? getCachedUser() : null;
 const _userPlan   = (typeof BWR !== 'undefined') ? BWR.normalisePlan(_cachedUser?.plan) : (_cachedUser?.plan || 'free');
 
-const map = L.map('map', { zoomControl: true, minZoom: 10, maxZoom: LAYER_MAX_ZOOM.ign }).setView(MAP_CENTER, MAP_ZOOM);
+const map = L.map('map', { zoomControl: true, minZoom: 8, maxZoom: LAYER_MAX_ZOOM.ign }).setView(MAP_CENTER, MAP_ZOOM);
 TILE_LAYERS.ign.addTo(map);
 
 let currentLayer = 'ign';
 let allPaths = [];
 let activeFilters = new Set(['easy', 'medium', 'hard', 'not_passable', 'no_bike']);
 
-// ── Path tile layer ────────────────────────────────────────────────────────────
-// Paths are drawn directly onto map tiles so they scale at exactly the same rate
-// as the basemap — no polyline overlays, no weight-update lag.
-const PathTileLayer = L.GridLayer.extend({
-  initialize(options) {
-    L.GridLayer.prototype.initialize.call(this, options);
-    this._paths = [];
-    this._filters = new Set();
-  },
-  setPaths(paths, filters) {
-    this._paths = paths;
-    if (filters) this._filters = new Set(filters);
-    this.redraw();
-  },
-  createTile(coords) {
-    const size   = this.getTileSize();
-    const canvas = document.createElement('canvas');
-    canvas.width = size.x;
-    canvas.height = size.y;
-    const ctx = canvas.getContext('2d');
-    const map = this._map;
-    if (!map || !this._paths.length) return canvas;
+// ── Path layer ─────────────────────────────────────────────────────────────────
+const pathLayer = L.layerGroup().addTo(map);
 
-    const z   = coords.z;
-    const ox  = coords.x * size.x;
-    const oy  = coords.y * size.y;
-    // Real-world trail width (20 m) converted to pixels at this zoom level
-    const mpp = 40075016 * Math.cos(49.35 * Math.PI / 180) / (256 * Math.pow(2, z));
-    const sw  = Math.max(1.5, Math.min(12, 20 / mpp));
-
-    ctx.lineCap     = 'round';
-    ctx.lineJoin    = 'round';
-    ctx.globalAlpha = 0.85;
-    ctx.lineWidth   = sw;
-
-    this._paths.forEach(path => {
-      if (!this._filters.has(path.status)) return;
-      if (!path.coordinates || path.coordinates.length < 2) return;
-      const pts = path.coordinates.map(([lat, lng]) => {
-        const pt = map.project(L.latLng(lat, lng), z);
-        return { x: pt.x - ox, y: pt.y - oy };
-      });
-
-      ctx.strokeStyle = STATUS_COLORS[path.status] || '#9ca3af';
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-      ctx.stroke();
-
-      if (path.pathType === 'bike') {
-        // Dot spacing ~18 m in pixels at this zoom
-        const dotGap = Math.max(6, Math.min(28, 18 / mpp));
-        ctx.save();
-        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-        ctx.lineWidth = sw * 0.38;
-        ctx.lineCap = 'round';
-        ctx.setLineDash([0.1, dotGap]);
-        ctx.beginPath();
-        pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-        ctx.stroke();
-        ctx.restore();
-      }
-    });
-    return canvas;
-  },
-});
-
-const pathTileLayer = new PathTileLayer({ tileSize: 256, zIndex: 200 });
-pathTileLayer.addTo(map);
+function pathWeight() {
+  return Math.max(2, Math.min(8, map.getZoom() - 10));
+}
 
 if (typeof addForestBoundaries === 'function') addForestBoundaries(map);
 
+// Recalculate map size whenever the browser chrome resizes or scrolls
+// (address bar show/hide, keyboard appearing, iOS Safari toolbar, etc.)
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => map.invalidateSize());
+  const _onVVChange = () => map.invalidateSize({ animate: false });
+  window.visualViewport.addEventListener('resize', _onVVChange);
+  window.visualViewport.addEventListener('scroll', _onVVChange);
 }
+// Also catch any late layout settle after all resources load
+window.addEventListener('load', () => requestAnimationFrame(() => map.invalidateSize({ animate: false })));
 
 // ── User menu ─────────────────────────────────────────────────────────────────
 async function initUserMenu() {
@@ -138,7 +81,7 @@ async function initUserMenu() {
   menuEl.innerHTML = `
     <button class="user-btn" id="userBtn">
       <div class="user-avatar">${initials}</div>
-      ${user.name.split(' ')[0]}
+      <span class="btn-label">${user.name.split(' ')[0]}</span>
     </button>
     <div class="user-dropdown hidden" id="userDropdown">
       <span class="dropdown-name">${user.name}</span>
@@ -265,15 +208,38 @@ let walkedPathLayer = null;
 async function loadPaths() {
   try {
     const res = await fetch(`${API_URL}/api/paths`);
-    allPaths = await res.json();
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!Array.isArray(data)) return;
+    allPaths = data;
     renderPaths();
     showPathHintIfNeeded();
     if (_userPlan === 'gold') loadWalkedOverlay();
-  } catch {}
+  } catch (e) {
+    console.error('loadPaths:', e);
+  }
 }
 
 function renderPaths() {
-  pathTileLayer.setPaths(allPaths, activeFilters);
+  pathLayer.clearLayers();
+  if (!Array.isArray(allPaths)) return;
+  const w = pathWeight();
+  allPaths.forEach(path => {
+    if (!activeFilters.has(path.status)) return;
+    if (!path.coordinates || path.coordinates.length < 2) return;
+    const color = STATUS_COLORS[path.status] || '#9ca3af';
+    L.polyline(path.coordinates, {
+      color, weight: w, opacity: 0.85, lineCap: 'round', lineJoin: 'round',
+    }).addTo(pathLayer);
+    if (path.pathType === 'bike') {
+      L.polyline(path.coordinates, {
+        color: 'rgba(255,255,255,0.85)',
+        weight: Math.max(1, w * 0.38),
+        opacity: 1, lineCap: 'round', lineJoin: 'round',
+        dashArray: `1 ${Math.max(6, w * 2)}`,
+      }).addTo(pathLayer);
+    }
+  });
 }
 
 // ── Passive walked-path tracking ─────────────────────────────────────────────
@@ -395,14 +361,14 @@ function _pathAtClick(latlng) {
   return best;
 }
 
-// Bounding box of the Forêt de Compiègne deployment zone
-const FOREST_BOUNDS = L.latLngBounds(
-  L.latLng(49.20, 2.65),
-  L.latLng(49.50, 3.15)
+// Bounding box of the Oise (60) deployment zone — whole department + margin
+const OISE_BOUNDS = L.latLngBounds(
+  L.latLng(49.00, 1.60),
+  L.latLng(49.80, 3.25)
 );
 
 map.on('click', e => {
-  if (!FOREST_BOUNDS.contains(e.latlng)) {
+  if (!OISE_BOUNDS.contains(e.latlng)) {
     showToast('Désolé, nous n\'avons pas encore déployé à cet endroit.');
     return;
   }
@@ -679,6 +645,7 @@ document.getElementById('toggleFilters').addEventListener('click', () => {
 let locationMarker = null;
 let locationCircle = null;
 let locationWatchId = null;
+let _currentPosition = null;
 // states: 'idle' | 'searching' | 'following' | 'watching'
 // 'following' = map re-centers on every GPS update (like Google Maps navigation)
 // 'watching'  = dot visible but map no longer auto-pans (user dragged away)
@@ -731,9 +698,42 @@ function stopLocating() {
   }
   if (locationMarker) { map.removeLayer(locationMarker); locationMarker = null; }
   if (locationCircle) { map.removeLayer(locationCircle); locationCircle = null; }
+  _currentPosition = null;
   locateState = 'idle';
   _updateLocateBtn();
 }
+
+function _findNearestPath(lat, lng) {
+  let best = null, bestDist = Infinity, bestLatLng = null;
+  for (const path of allPaths) {
+    if (!activeFilters.has(path.status)) continue;
+    if (!path.coordinates || path.coordinates.length < 2) continue;
+    for (let i = 0; i < path.coordinates.length - 1; i++) {
+      const [lat1, lng1] = path.coordinates[i];
+      const [lat2, lng2] = path.coordinates[i + 1];
+      const dx = lat2 - lat1, dy = lng2 - lng1;
+      const len2 = dx * dx + dy * dy;
+      const t = len2 ? Math.max(0, Math.min(1, ((lat - lat1) * dx + (lng - lng1) * dy) / len2)) : 0;
+      const nearLat = lat1 + t * dx, nearLng = lng1 + t * dy;
+      const d = _mapHaversineM(lat, lng, nearLat, nearLng);
+      if (d < bestDist) { bestDist = d; best = path; bestLatLng = [nearLat, nearLng]; }
+    }
+  }
+  return bestDist <= 60 ? { path: best, dist: Math.round(bestDist), latlng: bestLatLng } : null;
+}
+
+document.getElementById('btnSelectPath').addEventListener('click', () => {
+  if (!_currentPosition) {
+    showLocateToast('Activez d\'abord la géolocalisation', true);
+    return;
+  }
+  const result = _findNearestPath(_currentPosition.lat, _currentPosition.lng);
+  if (!result) {
+    showLocateToast('Aucun chemin trouvé à moins de 60 m', true);
+    return;
+  }
+  openPathPopup(result.path, L.latLng(result.latlng[0], result.latlng[1]));
+});
 
 function updateLocationLayers(lat, lng, accuracy) {
   if (locationCircle) locationCircle.setLatLng([lat, lng]).setRadius(accuracy);
@@ -748,7 +748,7 @@ function updateLocationLayers(lat, lng, accuracy) {
   else locationMarker = L.marker([lat, lng], {
     icon: L.divIcon({
       className: 'location-dot-icon',
-      html: '<div class="location-dot-inner"><div class="location-dot-pulse"></div></div>',
+      html: '<div class="location-dot-inner"></div>',
       iconAnchor: [8, 8],
       iconSize: [16, 16],
     }),
@@ -800,6 +800,7 @@ document.getElementById('btnLocate').addEventListener('click', () => {
         showLocateToast('Position trouvée' + (accuracy > 50 ? ` (±${Math.round(accuracy)} m)` : ''));
       }
 
+      _currentPosition = { lat, lng };
       updateLocationLayers(lat, lng, accuracy);
       trackWalkedPaths(lat, lng);
 
@@ -913,7 +914,7 @@ function updateCarrefourVisibility() {
   }
 }
 
-map.on('zoomend', updateCarrefourVisibility);
+map.on('zoomend', () => { renderPaths(); updateCarrefourVisibility(); });
 updateCarrefourVisibility();
 
 async function loadReports() {
@@ -993,21 +994,20 @@ document.getElementById('mapContactForm').addEventListener('submit', async e => 
   finally { btn.textContent = 'Envoyer'; btn.disabled = false; }
 });
 
-// ── Offline tile download → js/map-offline.js (lazy-loaded) ──────────────────
+// ── Offline tile download (preset Oise zones) → js/map-offline.js (lazy-loaded) ──
 (function initOfflineBtn() {
-  const btn = document.getElementById('btnOffline');
+  const btn = document.getElementById('btnOfflineMaps');
   if (!btn) return;
-  if (BWR.can('offline_cache', _userPlan)) {
-    btn.style.display = '';
-    if (localStorage.getItem('bwr_forest_cached') === '1') {
-      btn.querySelector('.btn-emoji').textContent = '✅';
-      btn.querySelector('.btn-label').textContent = 'Téléchargée';
+  btn.addEventListener('click', async () => {
+    if (!BWR.can('offline_cache', _userPlan)) {
+      showToast('🔒 Cartes hors-ligne disponibles avec Argent — voir plans');
+      return;
     }
-    btn.addEventListener('click', async () => {
-      await _loadMapOffline();
-      downloadOfflineTiles();
-    });
-  }
+    document.getElementById('navDrawer')?.classList.add('hidden');
+    document.getElementById('navDrawerOverlay')?.classList.add('hidden');
+    await _loadMapOffline();
+    openOfflineZonePicker();
+  });
 })();
 
 initUserMenu();

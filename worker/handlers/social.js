@@ -127,9 +127,9 @@ export async function handleSocial(request, env, { pathname, json, fail }) {
     const plan = effectivePlan(user);
     const level = plan === 'gold' ? 'expert' : plan === 'silver' ? 'intermédiaire' : 'débutant';
 
-    const prompt = `Tu es un guide de randonnée expert de la Forêt de Compiègne en France.
+    const prompt = `Tu es un guide de randonnée expert des forêts de l'Oise en France.
 Génère UN conseil de randonnée personnalisé et motivant en français (1-2 phrases, 20-35 mots max).
-Le conseil doit être concret, spécifique à la forêt de Compiègne, et adapté à ce profil :
+Le conseil doit être concret, spécifique aux forêts de l'Oise (Compiègne, Chantilly, Halatte, Laigue…), et adapté à ce profil :
 - Kilomètres parcourus au total : ${km} km
 - Nombre de sorties effectuées : ${routes}
 - Saison actuelle : ${season}

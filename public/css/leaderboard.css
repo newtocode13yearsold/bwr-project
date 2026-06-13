@@ -1,6 +1,7 @@
 /* ── Leaderboard page ── */
 .lb-body {
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: #f0f4ec;
   min-height: 100vh;
 }

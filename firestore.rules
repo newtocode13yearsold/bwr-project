@@ -1,0 +1,15 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // BWR's backend runs on Cloudflare Workers and reaches Firestore with a
+    // service-account / Admin credential, which BYPASSES these rules entirely.
+    // No part of the app talks to Firestore directly from the browser, so the
+    // safe default is to deny all client access. If you ever add direct
+    // client-side reads/writes (e.g. via the Firebase Web SDK), replace this
+    // block with per-collection rules instead of opening it up wholesale.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

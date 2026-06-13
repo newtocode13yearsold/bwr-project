@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0b2410" />
   <title>BWR — Choisir votre plan</title>
-  <meta name="description" content="Comparez les plans BWR : Gratuit, Argent et Or. Planification illimitée, cartes hors-ligne, export GPX, profil altimétrique — tout pour vivre la forêt de Compiègne autrement." />
+  <meta name="description" content="Comparez les plans BWR : Gratuit, Argent et Or. Planification illimitée, cartes hors-ligne, export GPX, profil altimétrique — tout pour explorer l'Oise autrement." />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
@@ -57,6 +57,10 @@
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
         <span>Planifier un trajet</span>
       </a>
+      <a href="best-tours" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></span>
+        <span>Meilleures balades</span>
+      </a>
       <a href="profile" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
         <span>Mon profil</span>
@@ -90,7 +94,7 @@
     <section class="plans-hero">
       <div class="hero-eyebrow">
         <span class="eyebrow-dot"></span>
-        <span>Pour les amoureux de la forêt de Compiègne</span>
+        <span>Pour les amoureux des forêts de l'Oise</span>
       </div>
       <h1 class="hero-headline display">
         Choisissez jusqu'où<br />
@@ -139,6 +143,35 @@
         <p class="pc-footnote">Aucune carte bancaire requise.</p>
       </article>
 
+      <!-- VISITOR (7-day pass) -->
+      <article class="plan-card plan-visitor">
+        <div class="visitor-flag">🎫 Passe 7 jours</div>
+        <header class="pc-head">
+          <div class="pc-icon icon-visitor">🎫</div>
+          <h2 class="pc-name">Visiteur</h2>
+          <p class="pc-tag">Pour découvrir sans s'engager</p>
+        </header>
+        <div class="pc-price">
+          <span class="pc-amount">1,10€</span>
+          <span class="pc-period">/ 7 jours</span>
+        </div>
+        <ul class="pc-features">
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Trajets illimités pendant 7 j</strong></li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Mode boucle + A → B</strong></li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Toutes les difficultés</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Carte IGN topographique</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Carrefours nommés</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Export GPX</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Profil altimétrique</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> 1 trajet hors-ligne</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Roue quotidienne</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Signalement d'obstacles</li>
+          <li class="pf no"><span class="pf-icon">×</span> Pas d'abonnement reconduit</li>
+        </ul>
+        <button class="pc-cta cta-visitor" data-plan="visitor">Obtenir le passe 7 jours</button>
+        <p class="pc-footnote">Accès immédiat · Paiement unique · Sans engagement</p>
+      </article>
+
       <!-- SILVER (popular) -->
       <article class="plan-card plan-silver popular">
         <div class="popular-flag"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Le plus populaire</div>
@@ -173,9 +206,14 @@
         <p class="pc-footnote">Sans engagement · Annulable en 1 clic</p>
       </article>
 
-      <!-- GOLD (featured) -->
-      <article class="plan-card plan-gold featured">
+      <!-- GOLD (featured) — temporarily not purchasable: "coming soon" -->
+      <article class="plan-card plan-gold featured is-coming-soon">
         <div class="featured-flag">👑 Premium</div>
+        <div class="cs-overlay" aria-hidden="true">
+          <span class="cs-overlay-icon">🔒</span>
+          <span class="cs-overlay-text">Bientôt disponible</span>
+          <span class="cs-overlay-sub">Ce plan arrive très bientôt</span>
+        </div>
         <header class="pc-head">
           <div class="pc-icon icon-gold">🥇</div>
           <h2 class="pc-name">Or</h2>
@@ -205,8 +243,8 @@
           <li class="pf yes"><span class="pf-icon">✓</span> Support prioritaire sous 24h</li>
           <li class="pf yes"><span class="pf-icon">✓</span> Accès anticipé aux nouveautés</li>
         </ul>
-        <button class="pc-cta cta-gold" data-plan="gold">Passer à Or</button>
-        <p class="pc-footnote">Tout débloquer · Sans engagement</p>
+        <button class="pc-cta cta-gold-soon" disabled aria-disabled="true">Bientôt disponible</button>
+        <p class="pc-footnote">Le plan Or arrive très bientôt — restez à l'écoute.</p>
       </article>
 
     </section>
@@ -231,7 +269,7 @@
         <span class="trust-icon">🇫🇷</span>
         <div>
           <strong>Projet français</strong>
-          <span>Forêt de Compiègne</span>
+          <span>Oise (60)</span>
         </div>
       </div>
       <div class="trust-item">
@@ -333,7 +371,7 @@
             <span class="t-avatar" style="background:linear-gradient(135deg,#1e4d14,#2d6b1f);color:#a3e635">JM</span>
             <div>
               <strong>Jean-Marc</strong>
-              <span>Membre Argent · Compiègne</span>
+              <span>Membre Argent · Oise</span>
             </div>
           </figcaption>
         </figure>
@@ -531,7 +569,7 @@
         <p>Trois plans, une seule forêt. À vous de choisir l'aventure.</p>
         <div class="fc-actions">
           <button class="btn-cta-primary" data-plan="silver">Commencer avec Argent</button>
-          <button class="btn-cta-secondary" data-plan="gold">Voir Or →</button>
+          <button class="btn-cta-secondary" disabled aria-disabled="true">Or — bientôt disponible</button>
         </div>
         <p class="fc-microcopy">Activation manuelle sous 24h · Sans engagement · Annulable en 1 clic</p>
       </div>
@@ -542,7 +580,7 @@
   <footer class="plans-footer">
     <div class="pf-inner">
       <span class="pf-logo">BWR</span>
-      <span class="pf-tag">Balades en forêt de Compiègne</span>
+      <span class="pf-tag">Carte interactive de l'Oise</span>
       <div class="pf-links">
         <a href="/">Accueil</a>
         <a href="map">Carte</a>
@@ -592,11 +630,12 @@
         <label>
           <span class="af-label">Plan choisi</span>
           <select id="afPlan" required>
+            <option value="visitor">🎫 Visiteur · 1,10€ / 7 jours</option>
             <option value="silver">🥈 Argent · 4,99€/mois</option>
-            <option value="gold">🥇 Or · 6,99€/mois</option>
+            <option value="gold" disabled>🥇 Or · 6,99€/mois (bientôt disponible)</option>
           </select>
         </label>
-        <label>
+        <label id="afPeriodRow">
           <span class="af-label">Période (optionnel)</span>
           <select id="afPeriod">
             <option value="monthly">Mensuel</option>

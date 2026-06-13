@@ -1,7 +1,7 @@
 {
-  "name": "BWR — Forêt de Compiègne",
+  "name": "BWR — Carte interactive de l'Oise",
   "short_name": "BWR",
-  "description": "Carte interactive des chemins de la forêt de Compiègne. Planifiez vos balades à pied ou à vélo.",
+  "description": "Carte interactive des chemins et forêts de l'Oise. Planifiez vos balades à pied ou à vélo.",
   "lang": "fr",
   "start_url": "/map",
   "scope": "/",
@@ -13,28 +13,10 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
       "src": "icons/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }

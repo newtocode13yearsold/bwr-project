@@ -502,9 +502,15 @@ body {
   border-right: 2px solid var(--green);
 }
 .pc-th-gold {
-  background: #fffbeb;
-  border-left: 1.5px solid #fde68a;
+  background: #f9fafb;
+  border-left: 1.5px solid #d1d5db;
 }
+
+.pc-g {
+  background: #f9fafb;
+  border-left: 1.5px solid #d1d5db;
+}
+.pc-g .pc-yes { color: #9ca3af; }
 
 .pc-pop-pill {
   position: absolute;
@@ -558,6 +564,17 @@ body {
 
 .pc-yes { color: #16a34a; font-size: 0.9rem; }
 .pc-no  { color: #9ca3af; font-size: 0.9rem; }
+
+.pc-soon-pill {
+  background: #e5e7eb;
+  color: #6b7280;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
 
 .pc-ctas {
   display: flex;
@@ -850,6 +867,43 @@ body {
   box-shadow: 0 8px 32px rgba(245,158,11,0.1);
 }
 
+.pricing-coming-soon {
+  filter: grayscale(0.5);
+  opacity: 0.8;
+}
+.pricing-coming-soon:hover {
+  transform: none;
+}
+
+.pricing-cs-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 5;
+  pointer-events: none;
+}
+.pricing-cs-icon { font-size: 2.2rem; filter: grayscale(1); }
+.pricing-cs-text {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #374151;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+.pricing-cs-sub {
+  font-size: 0.78rem;
+  color: #6b7280;
+  text-align: center;
+}
+
 .pricing-badge {
   position: absolute;
   top: -13px;
@@ -964,6 +1018,14 @@ body {
 .cta-gold:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(245,158,11,0.4);
+}
+
+/* Gold "coming soon" — plan shown but not yet purchasable */
+.cta-soon {
+  background: linear-gradient(135deg, #fffbeb, #fde68a);
+  color: #4a2c00;
+  border: 1.5px solid #fbbf24;
+  cursor: not-allowed;
 }
 
 .pricing-footnote {

@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#1e4d14" />
-  <title>Actualités — BWR · Forêt de Compiègne</title>
-  <meta name="description" content="Les dernières actualités de la forêt de Compiègne : informations, articles et liens sélectionnés par l'équipe BWR." />
+  <title>Actualités — BWR · Oise</title>
+  <meta name="description" content="Les dernières actualités des forêts de l'Oise : informations, articles et liens sélectionnés par l'équipe BWR." />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
@@ -407,8 +407,14 @@
 
     @media (max-width: 600px) {
       .news-card { padding: 24px 20px; }
-      #fabAdd { bottom: 24px; right: 20px; }
       .modal-box { padding: 28px 20px; }
+    }
+
+    @media (max-width: 768px) {
+      /* Push page content above the fixed bottom nav */
+      body { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+      /* FAB above the nav */
+      #fabAdd { bottom: max(80px, calc(66px + env(safe-area-inset-bottom, 0px))); right: 20px; }
     }
   </style>
 </head>
@@ -448,6 +454,10 @@
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
         <span>Planifier un trajet</span>
       </a>
+      <a href="best-tours" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></span>
+        <span>Meilleures balades</span>
+      </a>
       <a href="profile" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
         <span>Mon profil</span>
@@ -477,7 +487,7 @@
 
   <!-- ── Hero ── -->
   <div class="page-hero">
-    <div class="page-hero-badge">🌲 Forêt de Compiègne</div>
+    <div class="page-hero-badge">🌲 Oise</div>
     <h1>Actualités</h1>
     <p>Informations, articles et nouveautés sélectionnés par l'équipe BWR.</p>
   </div>
@@ -543,7 +553,7 @@
 
   <!-- ── Footer ── -->
   <footer class="news-footer">
-    <p>© 2026 <a href="/">BWR</a> · Balades en forêt de Compiègne ·
+    <p>© 2026 <a href="/">BWR</a> · Carte interactive de l'Oise ·
        <a href="mailto:ciril8596@gmail.com">Contact</a></p>
   </footer>
 

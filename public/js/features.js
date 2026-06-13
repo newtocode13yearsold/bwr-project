@@ -18,48 +18,48 @@
   // Truthy values mean "available". For numeric quotas the value IS the limit.
   const FEATURES = {
     /* — Core routing — */
-    routes_per_week:     { free: 3,     silver: Infinity, gold: Infinity },
-    loop_mode:           { free: true,  silver: true,     gold: true     },
-    difficulty_hard:     { free: false, silver: true,     gold: true     },
+    routes_per_week:     { free: 10,    visitor: Infinity, silver: Infinity, gold: Infinity },
+    loop_mode:           { free: true,  visitor: true,     silver: true,     gold: true     },
+    difficulty_hard:     { free: false, visitor: true,     silver: true,     gold: true     },
 
     /* — Map & layers — */
-    satellite_tiles:     { free: false, silver: false,    gold: true     },
-    ign_topo_tiles:      { free: true,  silver: true,     gold: true     },
-    carrefours:          { free: true,  silver: true,     gold: true     },
+    satellite_tiles:     { free: false, visitor: false,    silver: false,    gold: true     },
+    ign_topo_tiles:      { free: true,  visitor: true,     silver: true,     gold: true     },
+    carrefours:          { free: true,  visitor: true,     silver: true,     gold: true     },
 
     /* — Trip analysis & export — */
-    elevation_profile:   { free: false, silver: true,     gold: true     },
-    gpx_export:          { free: false, silver: true,     gold: true     },
-    kml_export:          { free: false, silver: false,    gold: true     },
-    strava_komoot_push:  { free: false, silver: false,    gold: true     },
-    offline_cache:       { free: 0,     silver: 1,        gold: 20       },
+    elevation_profile:   { free: false, visitor: true,     silver: true,     gold: true     },
+    gpx_export:          { free: false, visitor: true,     silver: true,     gold: true     },
+    kml_export:          { free: false, visitor: false,    silver: false,    gold: true     },
+    strava_komoot_push:  { free: false, visitor: false,    silver: false,    gold: true     },
+    offline_cache:       { free: 0,     visitor: 1,        silver: 1,        gold: 20       },
 
     /* — Reports & alerts — */
-    reports_create:      { free: false, silver: true,     gold: true     },
-    path_alerts:         { free: false, silver: false,    gold: true     },
+    reports_create:      { free: false, visitor: true,     silver: true,     gold: true     },
+    path_alerts:         { free: false, visitor: false,    silver: false,    gold: true     },
 
     /* — Path editing — */
-    path_difficulty_edit: { free: true,  silver: true,    gold: true     },
-    path_select:          { free: true,  silver: true,    gold: true     },
+    path_difficulty_edit: { free: true,  visitor: true,   silver: true,     gold: true     },
+    path_select:          { free: true,  visitor: true,   silver: true,     gold: true     },
 
     /* — Personalisation & gamification — */
-    daily_wheel:         { free: false, silver: true,     gold: true     },
-    custom_goals:        { free: false, silver: false,    gold: true     },
-    weather:             { free: false, silver: false,    gold: true     },
-    custom_route_color:  { free: false, silver: false,    gold: true     },
+    daily_wheel:         { free: false, visitor: true,     silver: true,     gold: true     },
+    custom_goals:        { free: false, visitor: false,    silver: false,    gold: true     },
+    weather:             { free: false, visitor: false,    silver: false,    gold: true     },
+    custom_route_color:  { free: false, visitor: false,    silver: false,    gold: true     },
 
     /* — Badges & progression — */
-    badges_free:         { free: true,  silver: true,     gold: true     },
-    badges_silver:       { free: false, silver: true,     gold: true     },
-    badges_gold:         { free: false, silver: false,    gold: true     },
+    badges_free:         { free: true,  visitor: true,     silver: true,     gold: true     },
+    badges_silver:       { free: false, visitor: true,     silver: true,     gold: true     },
+    badges_gold:         { free: false, visitor: false,    silver: false,    gold: true     },
 
     /* — Route history & sharing — */
-    route_history:       { free: false, silver: true,     gold: true     },
-    route_sharing:       { free: false, silver: true,     gold: true     },
+    route_history:       { free: false, visitor: true,     silver: true,     gold: true     },
+    route_sharing:       { free: false, visitor: true,     silver: true,     gold: true     },
 
     /* — Support / perks — */
-    priority_support:    { free: false, silver: false,    gold: true     },
-    early_access:        { free: false, silver: false,    gold: true     },
+    priority_support:    { free: false, visitor: false,    silver: false,    gold: true     },
+    early_access:        { free: false, visitor: false,    silver: false,    gold: true     },
 
   };
 
@@ -100,8 +100,8 @@
   }
 
   /** Human-readable tier label for upsell prompts. */
-  const TIER_LABEL = { free: 'Gratuit', silver: 'Argent', gold: 'Or' };
-  const TIER_ICON  = { free: '🌿',      silver: '🥈',     gold: '🥇' };
+  const TIER_LABEL = { free: 'Gratuit', visitor: 'Visiteur', silver: 'Argent', gold: 'Or' };
+  const TIER_ICON  = { free: '🌿',      visitor: '🎫',       silver: '🥈',     gold: '🥇' };
 
   /* ── Weekly route quota helpers ─────────────────────────────────────────── */
 

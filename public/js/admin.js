@@ -60,7 +60,7 @@ function initUserMenu() {
   menuEl.innerHTML = `
     <button class="user-btn" id="userBtn">
       <div class="user-avatar">${initials}</div>
-      ${currentUser.name.split(' ')[0]}
+      <span class="btn-label">${currentUser.name.split(' ')[0]}</span>
     </button>
     <div class="user-dropdown hidden" id="userDropdown">
       <span class="dropdown-name">${currentUser.name}</span>
@@ -81,7 +81,7 @@ function initUserMenu() {
 
 // ── Map init ──────────────────────────────────────────────────────────────────
 function initMap() {
-  map = L.map('map', { minZoom: 10, maxZoom: 17 }).setView(MAP_CENTER, MAP_ZOOM);
+  map = L.map('map', { minZoom: 8, maxZoom: 17 }).setView(MAP_CENTER, MAP_ZOOM);
 
   ignLayer = L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
@@ -332,7 +332,7 @@ async function loadOSMPaths() {
     renderOSMPaths(data);
     const count = osmLayers.length;
     if (count === 0) {
-      showStatus('Aucun chemin trouvé ici — zoome sur la forêt de Compiègne.');
+      showStatus('Aucun chemin trouvé ici — zoome sur une forêt de l\'Oise.');
     } else {
       showStatus(`${count} chemins disponibles — clique sur un chemin en pointillés.`);
     }
@@ -1188,7 +1188,7 @@ async function loadVisits() {
         : v.visitorNum
           ? `🔓 Visiteur #${v.visitorNum}`
           : '🔓 Anonyme';
-      const dur = new Date(s.end.timestamp) - new Date(s.start.timestamp);
+      const dur = s.start.duration != null ? s.start.duration : new Date(s.end.timestamp) - new Date(s.start.timestamp);
       const timeRange = s.start.timestamp === s.end.timestamp
         ? formatTime(s.start.timestamp)
         : `${formatTime(s.start.timestamp)} → ${new Date(s.end.timestamp).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}`;
@@ -1289,7 +1289,7 @@ async function loadMembers() {
     const res = await fetch(`${API_URL}/api/users`, { headers: authHeader() });
     const users = await res.json();
     if (!res.ok) { list.innerHTML = `<p style="color:red">${users.error}</p>`; return; }
-    const planIcon = { free: '🌿', silver: '🥈', gold: '🥇' };
+    const planIcon = { free: '🌿', visitor: '🎫', silver: '🥈', gold: '🥇' };
     list.innerHTML = users.map(u => {
       const expiry = u.planExpiresAt
         ? `<span style="font-size:0.75rem;color:#f97316">⏳ expire le ${new Date(u.planExpiresAt).toLocaleDateString('fr-FR')}</span>`
@@ -1378,14 +1378,21 @@ document.getElementById('memberPlanModal').addEventListener('keydown', e => { if
 document.getElementById('btnSaveMemberPlan').addEventListener('click', async () => {
   const userId  = document.getElementById('memberPlanUserId').value;
   const plan    = document.getElementById('memberPlanSelect').value;
-  const expiry  = document.getElementById('memberPlanExpiry').value;
+  let   expiry  = document.getElementById('memberPlanExpiry').value;
   const base    = document.getElementById('memberPlanBase').value;
-  const btn     = document.getElementById('btnSaveMemberPlan');
+
+  // Visitor plan defaults to 7-day expiry if the admin didn't set one manually.
+  if (plan === 'visitor' && !expiry) {
+    const d = new Date(); d.setDate(d.getDate() + 7);
+    expiry = d.toISOString().slice(0, 10);
+  }
+
+  const btn = document.getElementById('btnSaveMemberPlan');
   btn.textContent = 'Enregistrement…';
   btn.disabled = true;
   try {
     const body = { plan };
-    if (expiry) { body.planExpiresAt = new Date(expiry + 'T23:59:59').toISOString(); body.planBase = base; }
+    if (expiry) { body.planExpiresAt = new Date(expiry + 'T23:59:59').toISOString(); body.planBase = base || 'free'; }
     else        { body.planExpiresAt = null; body.planBase = null; }
     const res = await fetch(`${API_URL}/api/auth/plan/${userId}`, {
       method: 'PUT',
@@ -1880,7 +1887,7 @@ if (navigator.onLine) { replayOfflineQueue(); replayOfflineNewPaths(); }
 const btnAdminSync = document.getElementById('btnAdminSync');
 if (btnAdminSync) btnAdminSync.addEventListener('click', function () { replayOfflineQueue(); replayOfflineNewPaths(); });
 
-// ── Offline tile download (full Forêt de Compiègne) ───────────────────────
+// ── Offline tile download (zone Forêt de Compiègne) ───────────────────────
 const FOREST_BBOX = { north: 49.47, south: 49.27, west: 2.65, east: 3.10 };
 function lonToTileX(lon, z) { return Math.floor((lon + 180) / 360 * Math.pow(2, z)); }
 function latToTileY(lat, z) {

@@ -48,9 +48,22 @@ let _activationTrigger = null;
 let _activationTrapRelease = null;
 
 function openActivation(plan, triggerEl) {
-  activationIcon.textContent  = plan === 'gold' ? '🥇' : '🥈';
-  activationTitle.textContent = plan === 'gold' ? 'Activation du plan Or' : 'Activation du plan Argent';
-  afPlan.value   = plan;
+  if (plan === 'gold') return;
+  if (plan === 'visitor') {
+    const u = (typeof getCachedUser === 'function') ? getCachedUser() : null;
+    if (u && (u.visitorPlanCount || 0) >= 2) return;
+  }
+  const META = {
+    visitor: { icon: '🎫', title: 'Passe Visiteur 7 jours' },
+    silver:  { icon: '🥈', title: 'Activation du plan Argent' },
+  };
+  const m = META[plan] || META.silver;
+  activationIcon.textContent  = m.icon;
+  activationTitle.textContent = m.title;
+  afPlan.value = plan;
+  // Visitor is a one-time 7-day pass — hide the monthly/annual period selector.
+  const periodRow = document.getElementById('afPeriodRow');
+  if (periodRow) periodRow.style.display = plan === 'visitor' ? 'none' : '';
   afPeriod.value = currentPeriod;
   activationModal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -91,8 +104,8 @@ document.getElementById('activationForm').addEventListener('submit', async e => 
   btn.textContent = 'Envoi…';
   btn.disabled = true;
 
-  const planLabel   = plan === 'gold' ? 'Or (6,99€/mois)' : 'Argent (4,99€/mois)';
-  const periodLabel = period === 'annual' ? 'annuel (-25 %)' : 'mensuel';
+  const planLabel   = plan === 'visitor' ? 'Visiteur (1,10€ / 7 jours)' : plan === 'gold' ? 'Or (6,99€/mois)' : 'Argent (4,99€/mois)';
+  const periodLabel = plan === 'visitor' ? 'paiement unique' : period === 'annual' ? 'annuel (-25 %)' : 'mensuel';
   const formatted = `=== Demande d'activation BWR ===
 Plan : ${planLabel}
 Période : ${periodLabel}
@@ -107,7 +120,7 @@ Message : ${message || '(aucun)'}
     const res = await fetch(`${API_URL}/api/contact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, message: formatted, subject: `[ACTIVATION ${plan.toUpperCase()}]` }),
+      body: JSON.stringify({ name, email, message: formatted, subject: `[ACTIVATION ${plan === 'visitor' ? 'VISITEUR 7J' : plan.toUpperCase()}]` }),
     });
     if (!res.ok) throw new Error();
     document.getElementById('activationForm').reset();
@@ -122,6 +135,32 @@ Message : ${message || '(aucun)'}
     btn.disabled = false;
   }
 });
+
+/* ── Visitor plan limit gate ─────────────────────────────────────────── */
+// Once the user data is available, disable the visitor CTA if they've used
+// the pass twice (max lifetime limit).
+(function applyVisitorLimit() {
+  const btn = document.querySelector('.cta-visitor');
+  if (!btn) return;
+
+  function check() {
+    const u = (typeof getCachedUser === 'function') ? getCachedUser() : null;
+    if (!u) return;
+    if ((u.visitorPlanCount || 0) >= 2) {
+      btn.disabled = true;
+      btn.textContent = 'Limite atteinte (2/2)';
+      btn.style.opacity = '0.5';
+      btn.style.cursor  = 'not-allowed';
+      const footnote = btn.nextElementSibling;
+      if (footnote) footnote.textContent = 'Vous avez déjà utilisé ce passe 2 fois. Passez à Argent pour continuer.';
+    }
+  }
+
+  // getCachedUser may not be populated yet — retry briefly after page load.
+  check();
+  window.addEventListener('bwr:auth-ready', check);
+  setTimeout(check, 1500);
+})();
 
 /* ── Sticky nav shadow on scroll ─────────────────────────────────────── */
 const plansNav = document.getElementById('plansNav');

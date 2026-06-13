@@ -26,7 +26,8 @@
 
 /* ── Page layout ── */
 .profile-body {
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: #f0f4ec;
   min-height: 100vh;
 }
@@ -41,25 +42,41 @@
 
 .profile-main {
   max-width: 900px;
+  width: 100%;
   margin: 0 auto;
   padding: 32px 20px 60px;
   display: flex;
   flex-direction: column;
   gap: 28px;
+  overflow-x: hidden;
 }
 
 /* ── Hero section ── */
+/* Colonne centrée par défaut (mobile). Ligne sur desktop via min-width */
 .profile-hero {
   background: linear-gradient(135deg, #1e4d14 0%, #2d6b1f 100%);
   border-radius: 20px;
-  padding: 36px 32px;
+  padding: 28px 20px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 28px;
-  flex-wrap: wrap;
+  text-align: center;
+  gap: 14px;
   box-shadow: 0 8px 32px rgba(30,77,20,0.25);
   position: relative;
   overflow: hidden;
+}
+
+@media (min-width: 769px) {
+  .profile-hero {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    text-align: left;
+    padding: 48px;
+    min-height: 220px;
+    gap: 32px;
+  }
 }
 
 .profile-hero::before {
@@ -71,8 +88,8 @@
 }
 
 .avatar-ring {
-  width: 90px;
-  height: 90px;
+  width: 130px;
+  height: 130px;
   border-radius: 50%;
   border: 4px solid #a3e635;
   padding: 4px;
@@ -87,25 +104,37 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
+  font-size: 2.2rem;
   font-weight: 900;
   letter-spacing: 1px;
   transition: background 0.3s, color 0.3s;
 }
 
 .hero-info {
-  flex: 1;
-  min-width: 160px;
+  min-width: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 6px;
 }
 
+@media (min-width: 769px) {
+  .hero-info { flex: 1; align-items: flex-start; min-width: 160px; width: auto; }
+}
+
 .hero-name {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: white;
   margin: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+@media (min-width: 769px) {
+  .hero-name { font-size: 2.2rem; }
 }
 
 .role-badge {
@@ -129,8 +158,13 @@
 .color-picker-row {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
-  margin-left: auto;
+  width: 100%;
+}
+
+@media (min-width: 769px) {
+  .color-picker-row { margin-left: auto; align-items: flex-start; width: auto; }
 }
 
 .color-label {
@@ -164,6 +198,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+  min-width: 0;
 }
 
 /* ── Card ── */
@@ -175,6 +210,8 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .card-header {
@@ -386,20 +423,15 @@
 
 /* ── Mobile ── */
 @media (max-width: 640px) {
-  .profile-hero {
-    flex-direction: column;
-    text-align: center;
-    padding: 28px 20px;
-  }
-  .hero-info { align-items: center; }
-  .color-picker-row { margin-left: 0; align-items: center; }
-  .color-swatches { justify-content: center; max-width: none; }
-
   .profile-grid { grid-template-columns: 1fr; }
   .card-stats { grid-column: 1; }
   .card-progress { grid-column: 1; }
   .stats-grid { grid-template-columns: 1fr 1fr 1fr; }
   .stat-num { font-size: 1.5rem; }
+}
+
+@media (max-width: 768px) {
+  .color-swatches { justify-content: center; max-width: 100%; }
 }
 
 /* ── Card: Plan & Progression ── */
@@ -512,7 +544,8 @@
 
 @media (max-width: 768px) {
   .profile-main {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom) + 20px);
+    padding-top: 16px;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -937,6 +970,8 @@
   overflow-x: auto;
   padding-bottom: 6px;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
+  min-width: 0;
 }
 .heat-grid {
   display: flex;

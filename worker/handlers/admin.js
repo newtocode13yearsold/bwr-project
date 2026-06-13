@@ -159,8 +159,6 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     try {
       const body = await request.json().catch(() => ({}));
       const user = await getUserFromToken(env, request).catch(() => null);
-      // Never record admin visits
-      if (user && user.role === 'admin') return json({ ok: true });
 
       const ip   = request.headers.get('CF-Connecting-IP') || 'unknown';
       const page = typeof body.page === 'string' ? body.page.slice(0, 200) : '/';
@@ -216,6 +214,24 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
       };
       const key = `visit:${String(ts).padStart(13, '0')}:${id}`;
       await env.BWR_KV.put(key, JSON.stringify(visit), { expirationTtl: 60 * 60 * 24 * 30 });
+      return json({ ok: true, visitKey: key });
+    } catch {
+      return json({ ok: false });
+    }
+  }
+
+  // ── Visit duration update (sendBeacon on pagehide) ───────────────────────
+  if (pathname === '/api/analytics/visit/duration' && request.method === 'POST') {
+    try {
+      const body = await request.json().catch(() => ({}));
+      const { visitKey, duration } = body;
+      if (typeof visitKey !== 'string' || !visitKey.startsWith('visit:')) return json({ ok: false });
+      if (typeof duration !== 'number' || duration < 0 || duration > 86400000) return json({ ok: false });
+      const raw = await env.BWR_KV.get(visitKey);
+      if (!raw) return json({ ok: false });
+      const visit = JSON.parse(raw);
+      visit.duration = Math.round(duration);
+      await env.BWR_KV.put(visitKey, JSON.stringify(visit), { expirationTtl: 60 * 60 * 24 * 30 });
       return json({ ok: true });
     } catch {
       return json({ ok: false });
@@ -248,7 +264,7 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
 
     const prompt = `Tu es un expert en croissance SaaS et monétisation d'applications web françaises.
 
-Analyse ces données de prévision de revenus pour BWR — une application de randonnée en forêt de Compiègne (France) avec deux plans payants : Argent (4,99 €/mois) et Or (6,99 €/mois).
+Analyse ces données de prévision de revenus pour BWR — une application de randonnée dans les forêts de l'Oise (France) avec deux plans payants : Argent (4,99 €/mois) et Or (6,99 €/mois).
 
 Données réelles (tirées du tableau de bord admin) :
 - Visiteurs ce mois : ${Math.round(visitors)}

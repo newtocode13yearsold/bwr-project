@@ -274,6 +274,12 @@
   z-index: 2;
 }
 
+@media (max-width: 768px) {
+  .step-cta {
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 .step-cta .step-number {
   background: #22c55e;
   width: 22px;
@@ -618,7 +624,7 @@
 /* ── Toast notification ── */
 .bwr-toast {
   position: fixed;
-  bottom: 80px;
+  bottom: max(80px, calc(70px + env(safe-area-inset-bottom, 0px)));
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   background: #111827;
@@ -692,6 +698,7 @@
     flex: 1;
     min-height: 0;
     height: auto;
+    overflow: visible; /* allow position:sticky inside .planner-sidebar to work on iOS Safari */
   }
 
   /* Map takes top portion, with a minimum so it stays usable */
@@ -713,6 +720,7 @@
     border-right: none;
     border-top: 2px solid #e2e8da;
     -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 
   /* Steps side by side on mobile — horizontal scroll */

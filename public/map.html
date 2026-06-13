@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#1e4d14" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>BWR — Forêts de Compiègne &amp; alentours</title>
+  <title>BWR — Carte interactive de l'Oise</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon.svg" />
@@ -25,6 +25,8 @@
   <script src="js/theme.js"></script>
 </head>
 <body>
+
+  <div id="offline-pill">📶 Hors-ligne — données en cache</div>
 
   <header class="header">
     <div class="header-left">
@@ -64,6 +66,10 @@
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
         <span>Planifier un trajet</span>
       </a>
+      <a href="best-tours" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></span>
+        <span>Meilleures balades</span>
+      </a>
       <a href="profile" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
         <span>Mon profil</span>
@@ -84,6 +90,10 @@
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span>
         <span>Changelog</span>
       </a>
+      <button class="nav-drawer-item" id="btnOfflineMaps">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="3" y2="15"/></svg></span>
+        <span>Cartes hors-ligne</span>
+      </button>
       <button class="nav-drawer-item" id="btnInstallApp" style="display:none">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="3" y2="15"/></svg></span>
         <span>Installer l'application</span>
@@ -181,7 +191,10 @@
     </div>
   </div>
 
-  <button class="map-locate-btn" id="btnLocate" title="Ma position">📍 Ma position</button>
+  <div class="map-bottom-btns">
+    <button class="map-locate-btn" id="btnLocate" title="Ma position">📍 Ma position</button>
+    <button class="map-select-path-btn" id="btnSelectPath" title="Voir le chemin sous ma position">🗺 Mon chemin</button>
+  </div>
 
   <script src="lib/leaflet.js"></script>
   <script src="js/config.js"></script>

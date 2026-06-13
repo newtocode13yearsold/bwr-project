@@ -136,7 +136,7 @@ function initUserMenu() {
   menuEl.innerHTML = `
     <button class="user-btn" id="userBtn">
       <div class="user-avatar" style="background:${color.bg};color:${color.fg}">${ini}</div>
-      ${currentUser.name.split(' ')[0]}
+      <span class="btn-label">${currentUser.name.split(' ')[0]}</span>
     </button>
     <div class="user-dropdown hidden" id="userDropdown">
       <span class="dropdown-name">${currentUser.name}</span>

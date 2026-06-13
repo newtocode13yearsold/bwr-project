@@ -178,6 +178,74 @@ describe('fetch handler: API requests → always network', () => {
   });
 });
 
+describe('fetch handler: offline-data API (paths/reports) → network-first, cache fallback', () => {
+  test('GET /api/paths offline with cached copy → served from cache (map still shows trails)', async () => {
+    const { handlers, mockCaches, ctx, makeFetchEvent } = makeSWContext();
+
+    const url = 'https://bwr-worker.ciril8596.workers.dev/api/paths';
+    const cached = new Response(JSON.stringify([{ id: 'p1' }]), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const appCache = await mockCaches.open('bwr-v32');
+    await appCache.put(url, cached);
+
+    // Offline: network rejects → must fall back to the cached paths.
+    ctx.fetch = () => Promise.reject(new Error('offline'));
+
+    const { event, getResponse } = makeFetchEvent(url);
+    handlers.fetch(event);
+    const res = await getResponse();
+    assert.equal(res.status, 200, 'cached paths must be served when offline');
+    const body = await res.json();
+    assert.ok(Array.isArray(body) && body[0].id === 'p1', 'cached paths array must be returned');
+  });
+
+  test('GET /api/paths online → fetched from network and written to cache for later offline use', async () => {
+    const { handlers, mockCaches, ctx, makeFetchEvent } = makeSWContext();
+
+    const url = 'https://bwr-worker.ciril8596.workers.dev/api/paths';
+    let networkCalled = false;
+    ctx.fetch = () => {
+      networkCalled = true;
+      return Promise.resolve(new Response(JSON.stringify([{ id: 'fresh' }]), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    };
+
+    const { event, getResponse } = makeFetchEvent(url);
+    handlers.fetch(event);
+    const res = await getResponse();
+    assert.equal(networkCalled, true, 'online request must hit the network');
+    assert.equal(res.status, 200);
+
+    // Let the async cache.put settle, then confirm the fresh copy was stored.
+    await new Promise(r => setTimeout(r, 0));
+    const stored = await mockCaches.match(url);
+    assert.ok(stored, 'fresh paths must be cached for offline use');
+  });
+
+  test('GET /api/reports offline with no cache → 503 JSON (graceful, no crash)', async () => {
+    const { handlers, makeFetchEvent } = makeSWContext();
+    const { event, getResponse } = makeFetchEvent('https://bwr-worker.ciril8596.workers.dev/api/reports');
+    handlers.fetch(event);
+    const res = await getResponse();
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.ok(body.error, 'offline-with-no-cache must yield error JSON, not throw');
+  });
+
+  test('POST /api/reports → NOT served from cache (writes always go to network)', async () => {
+    const { handlers, mockCaches, ctx, makeFetchEvent } = makeSWContext();
+
+    // Even if a GET copy is cached, a POST must never be answered from cache.
+    const url = 'https://bwr-worker.ciril8596.workers.dev/api/reports';
+    const appCache = await mockCaches.open('bwr-v32');
+    await appCache.put(url, new Response('[]', { status: 200 }));
+
+    ctx.fetch = () => Promise.reject(new Error('offline'));
+    const { event, getResponse } = makeFetchEvent(url, 'POST');
+    handlers.fetch(event);
+    const res = await getResponse();
+    assert.equal(res.status, 503, 'offline POST must return 503, not a cached body');
+  });
+});
+
 describe('fetch handler: tile requests → cache-first', () => {
   test('tile URL with cached entry → served from cache without network', async () => {
     const { handlers, mockCaches, ctx, makeFetchEvent } = makeSWContext();
@@ -313,15 +381,17 @@ describe('activate handler: old caches deleted', () => {
 
     // Seed old + current caches
     await mockCaches.open('bwr-v1');           // old → must be deleted
-    await mockCaches.open('bwr-v23');          // current CACHE → keep
+    await mockCaches.open('bwr-v32');          // current CACHE → keep
     await mockCaches.open('bwr-offline-tiles'); // TILE_CACHE → keep
 
-    const event = { waitUntil: (p) => p };
-    await handlers.activate(event);
+    let waitUntilPromise;
+    const event = { waitUntil: (p) => { waitUntilPromise = p; } };
+    handlers.activate(event);
+    await waitUntilPromise;
 
     const remaining = await mockCaches.keys();
     assert.ok(!remaining.includes('bwr-v1'), 'old cache bwr-v1 must be deleted');
-    assert.ok(remaining.includes('bwr-v23'), 'current CACHE must be kept');
+    assert.ok(remaining.includes('bwr-v32'), 'current CACHE must be kept');
     assert.ok(remaining.includes('bwr-offline-tiles'), 'TILE_CACHE must be kept');
   });
 });

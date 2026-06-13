@@ -1,7 +1,13 @@
-const CACHE = 'bwr-v26';
+const CACHE = 'bwr-v32';
 const TILE_CACHE = 'bwr-offline-tiles';
 const TILE_MAX_ENTRIES = 500;
 const TILE_MAX_AGE_MS  = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+// Public, read-only API data worth keeping for offline use: forest paths and
+// hazard reports. These are global (not per-user), so caching them in the shared
+// app cache is safe. Strategy: network-first (fresh when online) with a cache
+// fallback, so the map still shows trails and reports with no signal.
+const CACHEABLE_API = ['/api/paths', '/api/reports'];
 
 const APP_SHELL = [
   '/',
@@ -92,6 +98,25 @@ self.addEventListener('activate', e => {
 // Fetch — network first for HTML/JS/CSS, cache fallback when offline
 self.addEventListener('fetch', e => {
   const url = e.request.url;
+
+  // Offline-first data: forest paths & hazard reports. Network-first so the data
+  // is fresh online, but fall back to the last cached copy when offline so the
+  // map keeps showing trails and reports with no signal. Must come before the
+  // generic /api/ branch below (which always returns 503 offline).
+  if (e.request.method === 'GET' && CACHEABLE_API.includes(new URL(url).pathname)) {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res && res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => caches.match(e.request, { ignoreVary: true }).then(cached =>
+        cached || new Response('{"error":"offline"}', { status: 503, headers: { 'Content-Type': 'application/json' } })
+      ))
+    );
+    return;
+  }
 
   // Always network for API
   if (url.includes('/api/') || url.includes('overpass')) {

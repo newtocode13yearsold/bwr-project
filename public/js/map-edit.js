@@ -310,7 +310,9 @@ async function submitReport(path, type, note, photo = null, latlng = null) {
     if (res.ok) {
       const report = await res.json();
       if (latlng) { report.lat = latlng.lat; report.lon = latlng.lng; }
-      placeReportMarker(report, path.coordinates);
+      if (photo) report.photo = photo;
+      const marker = placeReportMarker(report, path.coordinates);
+      if (marker) marker.openPopup();
       showToast('✅ Signalement envoyé — merci !');
     } else if (res.status === 503) {
       queueMapReport(payload);
@@ -328,16 +330,17 @@ function placeReportMarker(report, coords) {
   const mid = (report.lat && report.lon)
     ? [report.lat, report.lon]
     : coords ? coords[Math.floor(coords.length / 2)] : null;
-  if (!mid) return;
+  if (!mid) return null;
   const icon  = REPORT_ICONS[report.type]  || '⚠️';
   const label = REPORT_LABELS[report.type] || report.type;
-  L.marker(mid, {
+  const photoSrc = report.photo || (report.hasPhoto ? `${API_URL}/api/photos/${report.id}` : null);
+  return L.marker(mid, {
     icon: L.divIcon({ className: 'report-marker', html: `<div class="report-dot">${icon}</div>`, iconAnchor: [16, 16], iconSize: [32, 32] }),
   }).bindPopup(`
     <div class="popup">
       <strong>${icon} ${label}</strong>
       ${report.note ? `<p class="popup-notes">${report.note}</p>` : ''}
-      ${(report.hasPhoto || report.photo) ? `<img src="${report.hasPhoto ? `${API_URL}/api/photos/${report.id}` : report.photo}" class="report-popup-photo" alt="photo">` : ''}
+      ${photoSrc ? `<img src="${photoSrc}" class="report-popup-photo" alt="photo">` : ''}
       <small style="color:#9ca3af">${new Date(report.date).toLocaleDateString('fr-FR')}</small>
     </div>
   `).addTo(map);

@@ -199,6 +199,29 @@ function dijkstra(adj, start, end = null) {
   return { dist, prev };
 }
 
+// Like dijkstra but skips edges whose "u|to" key is in the excludeEdges set.
+// Avoids copying the entire adjacency map when only a few edges need removing.
+function dijkstraExclude(adj, start, end, excludeEdges) {
+  const dist = new Map([[start, 0]]);
+  const prev = new Map();
+  const queue = new MinHeap();
+  queue.push([0, start]);
+
+  while (queue.size) {
+    const [d, u] = queue.pop();
+    if (u === end) break;
+    if (d > (dist.get(u) ?? Infinity)) continue;
+    for (const { to, d: w } of (adj.get(u) || [])) {
+      if (excludeEdges.has(`${u}|${to}`)) continue;
+      const nd = d + w;
+      if (nd < (dist.get(to) ?? Infinity)) {
+        dist.set(to, nd); prev.set(to, u); queue.push([nd, to]);
+      }
+    }
+  }
+  return { dist, prev };
+}
+
 function rebuildPath(prev, start, end) {
   const path = [];
   let cur = end;
@@ -303,20 +326,17 @@ function graphLoop(sLat, sLng, targetKm, paths, pathTyp = 'foot') {
     const outKeys = rebuildPath(prevOut, startNode.k, cand.k);
     if (!outKeys) continue;
 
-    // Remove outbound edges from a copy of the adjacency list.
-    // This also removes the departure edge from start, forcing the return
-    // to arrive via a different edge (= different path at start/end).
-    const adjBack = new Map([...adj].map(([k, edges]) => [k, [...edges]]));
+    // Build the excluded-edge set from the outbound path, then run Dijkstra
+    // directly on the original adj while skipping those edges.
+    // This avoids an O(N+E) full adjacency-map copy per candidate.
     const outEdgeSet = new Set();
     for (let i = 0; i < outKeys.length - 1; i++) {
       const a = outKeys[i], b = outKeys[i + 1];
       outEdgeSet.add(`${a}|${b}`);
       outEdgeSet.add(`${b}|${a}`);
-      adjBack.set(a, adjBack.get(a).filter(e => e.to !== b));
-      adjBack.set(b, adjBack.get(b).filter(e => e.to !== a));
     }
 
-    const { prev: prevBack } = dijkstra(adjBack, cand.k, startNode.k);
+    const { prev: prevBack } = dijkstraExclude(adj, cand.k, startNode.k, outEdgeSet);
     const backKeys = rebuildPath(prevBack, cand.k, startNode.k);
     if (!backKeys) continue;
 
@@ -375,7 +395,7 @@ function graphLoopHybrid(sLat, sLng, targetKm, adminPaths, osmPaths, pathTyp = '
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    haversineM, nodeKey, buildGraph, dijkstra,
+    haversineM, nodeKey, buildGraph, dijkstra, dijkstraExclude,
     rebuildPath, nearestNode, graphToResult,
     snapToJunction, pruneDeadEnds, graphAtob, graphAtobHybrid, graphLoop, graphLoopHybrid,
   };
