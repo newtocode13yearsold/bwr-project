@@ -1151,11 +1151,12 @@
 
 .arf-layout {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: 380px minmax(0, 1fr);
   gap: 32px;
   margin-top: 40px;
   align-items: start;
 }
+.arf-layout > * { min-width: 0; }
 
 /* ── Inputs panel ── */
 .arf-inputs {
@@ -1372,7 +1373,11 @@
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 16px;
   padding: 20px 20px 16px;
+  min-width: 0;
 }
+/* The chart canvas carries an intrinsic 600px width; cap it so it never
+   forces the section (and the whole page) wider than the viewport. */
+.arf-chart-wrap canvas { max-width: 100%; height: auto; }
 .arf-chart-title {
   font-size: 0.75rem;
   font-weight: 700;

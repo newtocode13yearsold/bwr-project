@@ -551,6 +551,10 @@
 
 @media (max-width: 380px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
+  /* On very narrow phones the weather column is too tight for the nowrap
+     "suitability" pill — let the row wrap and the pill text reflow. */
+  .weather-current { flex-wrap: wrap; }
+  .weather-suit { white-space: normal; }
 }
 
 /* ── Animated avatar rings by plan ── */

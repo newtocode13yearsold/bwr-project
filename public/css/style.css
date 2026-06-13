@@ -1403,6 +1403,22 @@ body {
   }
   .btn-emoji { font-size: 1.05rem; line-height: 1; }
 
+  /* Admin panel carries ~10 tool buttons — far more than a phone-width bar can
+     hold in one row. Let its toolbar wrap onto multiple rows so every tool
+     stays reachable instead of overflowing off-screen. */
+  #adminPanel .header {
+    height: auto;
+    min-height: calc(54px + env(safe-area-inset-top, 0px));
+    flex-wrap: wrap;
+    row-gap: 6px;
+    padding-top: calc(6px + env(safe-area-inset-top, 0px));
+    padding-bottom: 6px;
+  }
+  #adminPanel .header-right {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
   /* Larger touch targets for inputs and buttons */
   .input-field {
     font-size: 1rem;       /* prevents iOS auto-zoom on focus */
@@ -1691,6 +1707,15 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
   .btn-icon { padding: 7px 9px; min-width: 36px; }
   .logo { font-size: 1.2rem; }
   .header { padding: 0 8px; padding-top: env(safe-area-inset-top, 0px); gap: 3px; }
+}
+
+/* Ultra-narrow phones (≤340px): the map/admin headers carry up to six icon
+   buttons, so shrink the buttons, gap and avatar enough that the toolbar still
+   fits on one row instead of pushing the user menu off-screen. */
+@media (max-width: 340px) {
+  .header-right { gap: 4px; }
+  .btn-icon { padding: 6px 7px; min-width: 32px; }
+  .user-avatar { width: 30px; height: 30px; }
 }
 
 /* ── PWA iOS install modal ── */

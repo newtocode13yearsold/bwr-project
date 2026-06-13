@@ -254,7 +254,16 @@
   .leagues-grid { gap: 8px; }
   .league-pill { padding: 6px 12px; font-size: 0.8rem; }
   .lb-my-rank { flex-wrap: wrap; }
+  .my-rank-info { min-width: 0; }
+  /* Let the stat trio wrap instead of forcing the card (and page) wider
+     than the viewport on narrow screens. */
+  .my-rank-stats { flex-wrap: wrap; justify-content: center; width: 100%; }
 
   .lb-table thead th.hide-mobile,
   .lb-table tbody td.hide-mobile { display: none; }
+
+  /* Tighter cell padding so the 3 visible columns fit narrow phones (≤360px)
+     without the table forcing the page wider than the viewport. */
+  .lb-table thead th,
+  .lb-table tbody td { padding-left: 10px; padding-right: 10px; }
 }
