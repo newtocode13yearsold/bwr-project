@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Thomas — Web Developer</title>
+<meta name="description" content="Thomas — Web Developer. Building modern, fast, and useful web apps. Portfolio of projects including BWR and Oise Au Jardin." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0e14;
+    --bg-soft: #111722;
+    --card: #141b27;
+    --card-hover: #1a2331;
+    --border: #232d3c;
+    --text: #e7edf5;
+    --muted: #8b97a8;
+    --accent: #34d399;
+    --accent-2: #22d3ee;
+    --accent-soft: rgba(52, 211, 153, 0.12);
+    --radius: 18px;
+    --shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.6);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Background glow ---------- */
+  .glow {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background:
+      radial-gradient(600px circle at 15% 10%, rgba(52, 211, 153, 0.10), transparent 45%),
+      radial-gradient(700px circle at 85% 90%, rgba(34, 211, 238, 0.09), transparent 50%);
+    pointer-events: none;
+  }
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
+    pointer-events: none;
+  }
+
+  h1, h2, h3, .nav-logo { font-family: 'Sora', sans-serif; }
+
+  .wrap { width: min(1080px, 92%); margin: 0 auto; }
+
+  /* ---------- Nav ---------- */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(12px);
+    background: rgba(10, 14, 20, 0.7);
+    border-bottom: 1px solid transparent;
+    transition: border-color .3s;
+  }
+  nav.scrolled { border-bottom: 1px solid var(--border); }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 0;
+  }
+  .nav-logo {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-logo .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 14px var(--accent);
+  }
+  .nav-links { display: flex; gap: 28px; }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 500;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  @media (max-width: 620px) { .nav-links { display: none; } }
+
+  /* ---------- Hero ---------- */
+  header { padding: 90px 0 70px; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 15px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    background: var(--bg-soft);
+    margin-bottom: 26px;
+  }
+  .badge .pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 0 var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(52,211,153,0.5); }
+    70% { box-shadow: 0 0 0 9px rgba(52,211,153,0); }
+    100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+  }
+  header h1 {
+    font-size: clamp(2.6rem, 7vw, 4.6rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 22px;
+  }
+  header h1 .grad {
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header p.lead {
+    font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+    color: var(--muted);
+    max-width: 600px;
+    margin-bottom: 36px;
+  }
+  .cta-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 13px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: transform .2s, box-shadow .2s, background .2s;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .btn-primary {
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    color: #06231a;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px -8px rgba(52,211,153,0.5); }
+  .btn-ghost {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--card-hover); transform: translateY(-2px); }
+
+  /* ---------- Section heading ---------- */
+  section { padding: 70px 0; }
+  .sec-head { margin-bottom: 44px; }
+  .sec-head .kicker {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .sec-head h2 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .sec-head p { color: var(--muted); margin-top: 10px; max-width: 560px; }
+
+  /* ---------- About ---------- */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 30px;
+  }
+  @media (max-width: 760px) { .about-grid { grid-template-columns: 1fr; } }
+  .about-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+  }
+  .about-card p { color: var(--muted); margin-bottom: 14px; }
+  .about-card p:last-child { margin-bottom: 0; }
+  .about-card strong { color: var(--text); }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    text-align: center;
+  }
+  .stat .num {
+    font-family: 'Sora', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .stat .lbl { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+  /* ---------- Projects ---------- */
+  .projects { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 760px) { .projects { grid-template-columns: 1fr; } }
+  .project {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: transform .3s, border-color .3s, box-shadow .3s;
+    display: flex;
+    flex-direction: column;
+  }
+  .project:hover {
+    transform: translateY(-6px);
+    border-color: rgba(52,211,153,0.4);
+    box-shadow: var(--shadow);
+  }
+  .project .thumb {
+    height: 170px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .thumb.bwr { background: linear-gradient(135deg, #0f3d2e, #134e4a); }
+  .thumb.jardin { background: linear-gradient(135deg, #14532d, #3f6212); }
+  .thumb.resto { background: linear-gradient(135deg, #7c2d12, #9a3412); }
+  .thumb .emoji { font-size: 3.6rem; filter: drop-shadow(0 6px 16px rgba(0,0,0,0.4)); z-index: 1; }
+  .thumb::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 26px 26px;
+    opacity: 0.5;
+  }
+  .project .body { padding: 24px; flex: 1; display: flex; flex-direction: column; }
+  .project h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
+  .project .desc { color: var(--muted); font-size: 0.95rem; margin-bottom: 18px; flex: 1; }
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .tag {
+    font-size: 0.78rem;
+    padding: 5px 11px;
+    border-radius: 100px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .project .links { display: flex; gap: 14px; align-items: center; }
+  .project .links a {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.92rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: gap .2s, color .2s;
+  }
+  .project .links a:hover { color: var(--accent); gap: 10px; }
+
+  /* ---------- Contact ---------- */
+  .contact-card {
+    background: linear-gradient(135deg, var(--card), var(--bg-soft));
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: clamp(34px, 6vw, 60px);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .contact-card::before {
+    content: '';
+    position: absolute;
+    top: -60%; left: 50%; transform: translateX(-50%);
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(52,211,153,0.15), transparent 65%);
+    pointer-events: none;
+  }
+  .contact-card h2 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    margin-bottom: 14px;
+    position: relative;
+  }
+  .contact-card p { color: var(--muted); margin-bottom: 30px; position: relative; }
+  .contact-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; position: relative; }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 34px 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  /* ---------- Reveal animation ---------- */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+
+  svg.ico { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="grid-bg"></div>
+
+<nav id="nav">
+  <div class="wrap nav-inner">
+    <div class="nav-logo"><span class="dot"></span> Thomas</div>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#projects">Projects</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </div>
+</nav>
+
+<header>
+  <div class="wrap">
+    <div class="badge"><span class="pulse"></span> Available for new projects</div>
+    <h1>Hi, I'm Thomas.<br /><span class="grad">Web Developer.</span></h1>
+    <p class="lead">I build modern, fast, and genuinely useful web apps — from interactive maps to progressive web apps that work offline. Here are a few things I've shipped.</p>
+    <div class="cta-row">
+      <a href="#projects" class="btn btn-primary">
+        View my work
+        <svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+      <a href="#contact" class="btn btn-ghost">Get in touch</a>
+    </div>
+  </div>
+</header>
+
+<section id="about">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">About</div>
+      <h2>A bit about me</h2>
+    </div>
+    <div class="about-grid">
+      <div class="about-card reveal">
+        <p>I'm a <strong>self-driven web developer</strong> who loves turning ideas into real, working products. I focus on clean front-ends, serverless back-ends, and apps that feel fast and effortless to use.</p>
+        <p>My work spans <strong>interactive maps, progressive web apps, route planning, and crowd-sourced data</strong> — built on modern tooling like Cloudflare Workers, Leaflet, and vanilla JavaScript that stays lean and quick.</p>
+        <p>I care about the details: offline support, mobile-first layouts, and interfaces that just make people's lives easier.</p>
+      </div>
+      <div class="stats reveal">
+        <div class="stat"><div class="num">2+</div><div class="lbl">Live web apps</div></div>
+        <div class="stat"><div class="num">PWA</div><div class="lbl">Offline-ready</div></div>
+        <div class="stat"><div class="num">JS</div><div class="lbl">Vanilla &amp; fast</div></div>
+        <div class="stat"><div class="num">∞</div><div class="lbl">Learning</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="projects">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="kicker">Portfolio</div>
+      <h2>Projects I've built</h2>
+      <p>Real, deployed applications — click through to try them live.</p>
+    </div>
+    <div class="projects">
+
+      <article class="project reveal">
+        <div class="thumb bwr"><span class="emoji">🌲</span></div>
+        <div class="body">
+          <h3>BWR — Balades en Forêt</h3>
+          <p class="desc">A progressive web app for interactive forest path mapping and route planning in the Compiègne forest. Plan loops or A→B routes, browse curated trails, report obstacles, and earn badges — all working offline.</p>
+          <div class="tags">
+            <span class="tag">PWA</span>
+            <span class="tag">Leaflet Maps</span>
+            <span class="tag">Cloudflare Workers</span>
+            <span class="tag">Route Planning</span>
+          </div>
+          <div class="links">
+            <a href="https://bwr-worker.ciril8596.workers.dev" target="_blank" rel="noopener">
+              Live site
+              <svg class="ico" viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+            </a>
+          </div>
+        </div>
+      </article>
+
+      <article class="project reveal">
+        <div class="thumb jardin"><span class="emoji">🌻</span></div>
+        <div class="body">
+          <h3>Oise Au Jardin</h3>
+          <p class="desc">A web app for gardening in the Oise region — helping gardeners plan, learn, and keep track of their green spaces with a clean, friendly interface.</p>
+          <div class="tags">
+            <span class="tag">Web App</span>
+            <span class="tag">Cloudflare Workers</span>
+            <span class="tag">Gardening</span>
+          </div>
+          <div class="links">
+            <a href="https://oiseaujardin.ciril8596.workers.dev" target="_blank" rel="noopener">
+              Live site
+              <svg class="ico" viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+            </a>
+          </div>
+        </div>
+      </article>
+
+      <article class="project reveal">
+        <div class="thumb resto"><span class="emoji">🍽️</span></div>
+        <div class="body">
+          <h3>La Table Gourmande</h3>
+          <p class="desc">A polished one-page showcase site for a French restaurant in Compiègne. Responsive design, integrated Google Maps, online reservation form, image gallery, and rich SEO (Open Graph + Schema.org structured data for Google rich results).</p>
+          <div class="tags">
+            <span class="tag">Responsive</span>
+            <span class="tag">SEO / Schema.org</span>
+            <span class="tag">Reservations</span>
+            <span class="tag">Showcase</span>
+          </div>
+          <div class="links">
+            <a href="https://newtocode13yearsold.github.io/la-table-gourmande/" target="_blank" rel="noopener">
+              Live site
+              <svg class="ico" viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+            </a>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="wrap">
+    <div class="contact-card reveal">
+      <h2>Let's work together</h2>
+      <p>Got a project in mind, or just want to say hi? I'd love to hear from you.</p>
+      <div class="contact-row">
+        <a href="mailto:ciril8596@gmail.com" class="btn btn-primary">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 6l8 6 8-6"/></svg>
+          Email me
+        </a>
+        <a href="https://github.com/newtocode13yearsold" target="_blank" rel="noopener" class="btn btn-ghost">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">© <span id="year"></span> Thomas — Web Developer. Built from scratch.</div>
+</footer>
+
+<script>
+  // Year
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Nav border on scroll
+  const nav = document.getElementById('nav');
+  addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 10));
+
+  // Reveal on scroll
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('in'), i * 80);
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+</script>
+</body>
+</html>

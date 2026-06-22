@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1e4d14" />
+  <title>BWR — Guide d'utilisation | Prendre en main l'app</title>
+  <meta name="description" content="Guide complet de BWR : explorer la carte des forêts de l'Oise, planifier un trajet à pied ou à vélo, signaler un obstacle, gagner des badges et passer hors-ligne." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/guide.css" />
+  <link rel="stylesheet" href="css/onboarding.css" />
+  <script src="js/theme.js"></script>
+</head>
+<body class="guide-body">
+
+  <div class="guide-topbar">
+    <a href="/" class="logo">BWR</a>
+    <div class="guide-topbar-links">
+      <button id="btnGuideTheme" title="Thème clair / sombre">🌙</button>
+      <a href="map">Carte</a>
+      <a href="map?tour=1" class="guide-topbar-cta">▶ Visite guidée</a>
+    </div>
+  </div>
+
+  <!-- ── Hero ── -->
+  <header class="guide-hero">
+    <span class="guide-eyebrow">Guide d'utilisation</span>
+    <h1>Prenez BWR en main</h1>
+    <p>Tout ce qu'il faut savoir pour explorer les forêts de l'Oise, planifier vos balades et profiter de chaque fonctionnalité — en quelques minutes.</p>
+    <div class="guide-hero-actions">
+      <a href="map?tour=1" class="bwr-tut-btn bwr-tut-btn-primary">▶ Lancer la visite guidée</a>
+      <a href="map" class="bwr-tut-btn bwr-tut-btn-ghost">Aller à la carte</a>
+    </div>
+  </header>
+
+  <!-- ── Table of contents ── -->
+  <nav class="guide-toc" aria-label="Sommaire">
+    <a href="#carte"><span class="toc-emoji">🗺️</span> La carte</a>
+    <a href="#planifier"><span class="toc-emoji">🧭</span> Planifier un trajet</a>
+    <a href="#signaler"><span class="toc-emoji">⚠️</span> Signaler un obstacle</a>
+    <a href="#profil"><span class="toc-emoji">🏅</span> Profil &amp; badges</a>
+    <a href="#hors-ligne"><span class="toc-emoji">📡</span> Hors-ligne &amp; install</a>
+    <a href="#plans"><span class="toc-emoji">💎</span> Plans</a>
+  </nav>
+
+  <main class="guide-main">
+
+    <!-- Carte -->
+    <section class="guide-section" id="carte">
+      <div class="guide-section-head">
+        <span class="guide-section-icon">🗺️</span>
+        <h2>Explorer la carte</h2>
+      </div>
+      <p>La carte affiche tous les chemins vérifiés sur le terrain. Chaque sentier a une couleur selon sa difficulté&nbsp;: <strong style="color:#22c55e">vert = facile</strong>, <strong style="color:#f97316">orange = moyen</strong>, <strong style="color:#ef4444">rouge = difficile</strong>, gris = impraticable.</p>
+      <ul class="guide-steps">
+        <li>Utilisez la <strong>barre de recherche</strong> en haut pour aller directement à une ville, une forêt ou une adresse.</li>
+        <li>Touchez <strong>Filtres</strong> (⋮) pour masquer certaines difficultés ou basculer entre la carte IGN et la vue satellite.</li>
+        <li>Appuyez sur <strong>📍 Ma position</strong> pour vous localiser, même en pleine forêt.</li>
+        <li>Touchez un chemin pour voir son état, ou <strong>🗺 Mon chemin</strong> pour afficher celui sous vos pieds.</li>
+        <li>En zoomant, les <strong>carrefours nommés</strong> apparaissent pour vous orienter comme les panneaux de la forêt.</li>
+      </ul>
+      <div class="guide-tip"><span class="guide-tip-emoji">💡</span><span>Autorisez la géolocalisation dans votre navigateur pour profiter du suivi GPS en temps réel.</span></div>
+    </section>
+
+    <!-- Planifier -->
+    <section class="guide-section" id="planifier">
+      <div class="guide-section-head">
+        <span class="guide-section-icon">🧭</span>
+        <h2>Planifier un trajet</h2>
+      </div>
+      <p>Le planificateur génère un itinéraire qui emprunte en priorité les chemins forestiers de la carte — pas les grandes routes.</p>
+      <ul class="guide-steps">
+        <li>Choisissez le mode&nbsp;: <strong>Boucle</strong> (revenir au départ) ou <strong>Point A → B</strong>.</li>
+        <li>Indiquez la <strong>distance souhaitée</strong> ou un raccourci rapide (5, 8, 12, 20&nbsp;km).</li>
+        <li>Définissez le <strong>départ</strong>&nbsp;: votre position GPS ou une adresse recherchée.</li>
+        <li>Lancez la génération — l'app trace le trajet, calcule la distance et le <strong>profil altimétrique</strong>.</li>
+        <li>Exportez en <strong>GPX</strong> pour l'ouvrir dans Garmin, Strava ou Komoot. <span class="guide-tier silver">🥈 Argent</span></li>
+      </ul>
+      <div class="guide-tip"><span class="guide-tip-emoji">⚡</span><span>Pressé&nbsp;? Le bouton <strong>« Boucle depuis ma position »</strong> crée un trajet en un seul tap.</span></div>
+    </section>
+
+    <!-- Signaler -->
+    <section class="guide-section" id="signaler">
+      <div class="guide-section-head">
+        <span class="guide-section-icon">⚠️</span>
+        <h2>Signaler un obstacle</h2>
+      </div>
+      <p>Un arbre tombé, un chemin inondé&nbsp;? Vos signalements aident toute la communauté à rester informée en temps réel.</p>
+      <ul class="guide-steps">
+        <li>Depuis la carte, touchez le chemin concerné puis <strong>« Signaler un problème »</strong>.</li>
+        <li>Décrivez l'obstacle et, si vous le souhaitez, ajoutez une <strong>photo</strong> (prise sur place).</li>
+        <li>Validez&nbsp;: le signalement devient visible par tous les utilisateurs immédiatement.</li>
+      </ul>
+    </section>
+
+    <!-- Profil -->
+    <section class="guide-section" id="profil">
+      <div class="guide-section-head">
+        <span class="guide-section-icon">🏅</span>
+        <h2>Profil, badges &amp; objectifs</h2>
+      </div>
+      <p>Votre profil suit votre progression et la synchronise sur tous vos appareils.</p>
+      <ul class="guide-steps">
+        <li>Suivez vos <strong>kilomètres</strong> et votre <strong>nombre de trajets</strong> cumulés.</li>
+        <li>Débloquez des <strong>badges</strong> au fil de vos sorties.</li>
+        <li>Fixez-vous des <strong>objectifs personnalisés</strong> et tournez la <strong>roue du jour</strong> pour un conseil sentier. <span class="guide-tier silver">🥈 Argent</span></li>
+        <li>Consultez la <strong>météo de la forêt</strong> en temps réel. <span class="guide-tier gold">👑 Or</span></li>
+      </ul>
+    </section>
+
+    <!-- Hors-ligne -->
+    <section class="guide-section" id="hors-ligne">
+      <div class="guide-section-head">
+        <span class="guide-section-icon">📡</span>
+        <h2>Hors-ligne &amp; installation</h2>
+      </div>
+      <p>BWR est une application web progressive&nbsp;: installez-la et utilisez-la même sans réseau, là où la forêt est la plus dense.</p>
+      <ul class="guide-steps">
+        <li><strong>Installez l'app</strong> sur votre écran d'accueil (menu ▸ « Installer l'application », ou via le bouton Partager sur iPhone).</li>
+        <li>Avant de partir, téléchargez les <strong>cartes hors-ligne</strong> de votre zone (menu ▸ « Cartes hors-ligne »). <span class="guide-tier silver">🥈 Argent</span></li>
+        <li>Les chemins et signalements déjà consultés restent disponibles sans signal.</li>
+      </ul>
+    </section>
+
+    <!-- Plans -->
+    <section class="guide-section" id="plans">
+      <div class="guide-section-head">
+        <span class="guide-section-icon">💎</span>
+        <h2>Les plans</h2>
+      </div>
+      <p><strong>Gratuit</strong> — carte complète, 3 trajets A→B par semaine, badges débutant.<br>
+      <strong>Argent (3,99&nbsp;€/mois)</strong> — trajets illimités, mode boucle, carte IGN, export GPX, profil altimétrique.<br>
+      <strong>Or (6,99&nbsp;€/mois)</strong> — météo temps réel et cartes hors-ligne étendues.</p>
+      <p style="margin-top:12px"><a href="plans" style="color:var(--forest-600);font-weight:700">Voir la comparaison complète →</a></p>
+    </section>
+
+    <!-- FAQ -->
+    <section class="guide-section guide-faq" id="faq">
+      <div class="guide-section-head">
+        <span class="guide-section-icon">❓</span>
+        <h2>Questions fréquentes</h2>
+      </div>
+      <details>
+        <summary>Ça marche sur iPhone et Android&nbsp;?</summary>
+        <div class="guide-faq-a">Oui. BWR fonctionne dans le navigateur sur iOS et Android, sans rien installer. Vous pouvez l'ajouter à l'écran d'accueil pour un accès comme une vraie app.</div>
+      </details>
+      <details>
+        <summary>Mes trajets sont-ils sauvegardés&nbsp;?</summary>
+        <div class="guide-faq-a">Vos statistiques (kilomètres, badges) sont enregistrées sur votre compte et synchronisées sur tous vos appareils. Les utilisateurs Argent peuvent aussi sauvegarder et partager des itinéraires.</div>
+      </details>
+      <details>
+        <summary>À quelle fréquence les chemins sont-ils mis à jour&nbsp;?</summary>
+        <div class="guide-faq-a">Les sentiers sont vérifiés manuellement sur le terrain chaque mois. Si vous repérez une erreur, signalez-la depuis la carte.</div>
+      </details>
+      <details>
+        <summary>Comment revoir ce tutoriel&nbsp;?</summary>
+        <div class="guide-faq-a">Relancez la visite guidée depuis cette page, ou via le menu ▸ « Guide &amp; aide » à tout moment.</div>
+      </details>
+    </section>
+
+    <!-- Closing CTA -->
+    <section class="guide-cta">
+      <h2>Prêt à explorer&nbsp;?</h2>
+      <p>La forêt vous attend. Lancez la visite guidée ou ouvrez la carte.</p>
+      <div class="guide-hero-actions">
+        <a href="map?tour=1" class="bwr-tut-btn bwr-tut-btn-primary">▶ Visite guidée</a>
+        <a href="routes" class="bwr-tut-btn bwr-tut-btn-ghost" style="color:#fff">Planifier un trajet</a>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="js/config.js"></script>
+  <script>
+    // Lightweight theme toggle for the guide page (mirrors theme.js behaviour).
+    (function () {
+      var btn = document.getElementById('btnGuideTheme');
+      function sync() {
+        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (btn) btn.textContent = dark ? '☀️' : '🌙';
+      }
+      if (btn) btn.addEventListener('click', function () {
+        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        var next = dark ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        try { localStorage.setItem('bwr_theme', next); } catch (e) {}
+        sync();
+      });
+      sync();
+    })();
+  </script>
+  <script defer src="js/ui-shared.js"></script>
+</body>
+</html>

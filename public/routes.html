@@ -87,6 +87,10 @@
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span>
         <span>Changelog</span>
       </a>
+      <a href="guide" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></span>
+        <span>Guide &amp; aide</span>
+      </a>
       <a href="admin" class="nav-drawer-item nav-drawer-admin hidden" id="navDrawerAdmin">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
         <span>Panneau admin</span>
@@ -100,6 +104,19 @@
     <aside class="planner-sidebar">
 
       <div class="sheet-handle" aria-hidden="true"></div>
+
+      <!-- ⚡ Quick start — one-tap loop from current location -->
+      <div class="quick-start" id="quickStart">
+        <div class="qs-title">⚡ Trajet rapide</div>
+        <div class="qs-distance-chips" id="qsChips">
+          <button type="button" class="qs-chip" data-km="5">5 km</button>
+          <button type="button" class="qs-chip active" data-km="8">8 km</button>
+          <button type="button" class="qs-chip" data-km="12">12 km</button>
+          <button type="button" class="qs-chip" data-km="20">20 km</button>
+        </div>
+        <button type="button" class="btn-quick-loop" id="btnQuickLoop">📍 Boucle depuis ma position</button>
+        <button type="button" class="qs-customize" id="qsCustomize">Personnaliser le trajet ↓</button>
+      </div>
 
       <!-- Step 1: Mode -->
       <div class="step" id="step1">
@@ -122,12 +139,14 @@
       </div>
 
       <!-- Step 2: Options -->
-      <div class="step locked" id="step2">
-        <div class="step-header">
+      <div class="step locked collapsible collapsed" id="step2">
+        <div class="step-header" id="step2Header" role="button" tabindex="0" aria-expanded="false">
           <span class="step-number">2</span>
           <span class="step-title">Préférences</span>
+          <span class="step-collapse-chevron" id="step2Chevron">▾</span>
         </div>
 
+        <div class="step2-body" id="step2Body">
         <div class="option-group">
           <label class="option-label">Type de chemin</label>
           <div class="pathtype-grid">
@@ -183,6 +202,7 @@
           </div>
           <p class="distance-hint">Entre 1 et 100 km</p>
         </div>
+        </div><!-- /step2-body -->
       </div>
 
       <!-- Step 3: Points -->

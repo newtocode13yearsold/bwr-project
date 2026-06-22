@@ -12,6 +12,24 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "-p", "3333", "C:\\Users\\TOM\\Downloads\\BWR_preview\\changed-files"],
       "port": 3333
+    },
+    {
+      "name": "table-gourmande",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "C:\\Users\\TOM\\tg-preview", "-l", "4321"],
+      "port": 4321
+    },
+    {
+      "name": "portfolio",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "C:\\Users\\TOM\\portfolio-preview", "-l", "4455"],
+      "port": 4455
+    },
+    {
+      "name": "stock-game",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "C:\\Users\\TOM\\DOCUME~1\\STOCKG~1\\public", "-l", "4567"],
+      "port": 4567
     }
   ]
 }

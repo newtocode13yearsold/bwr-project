@@ -2,3 +2,7 @@ node_modules/
 .wrangler/
 dist/
 .dev.vars
+
+# Generated Instagram promo videos
+scripts/promo/out/
+scripts/promo/.raw/

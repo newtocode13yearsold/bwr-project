@@ -372,3 +372,51 @@ describe('graphLoop', () => {
     assert.ok(rBike.seconds < rFoot.seconds, 'bike should be faster than foot');
   });
 });
+
+// ─── graphLoop daily seed (direction variety) ─────────────────────────────────
+// A 5×5 grid offers many turnaround directions, so the per-day seed can steer
+// the loop differently from one day to the next.
+const GRID_PATHS = (() => {
+  const paths = [];
+  for (let i = 0; i < 5; i++) {
+    for (let j = 0; j < 5; j++) {
+      const lat = 49.350 + i * 0.001;
+      const lon = 2.900 + j * 0.001;
+      if (j < 4) paths.push({ coordinates: [[lat, lon], [lat, lon + 0.001]] });
+      if (i < 4) paths.push({ coordinates: [[lat, lon], [lat + 0.001, lon]] });
+    }
+  }
+  return paths;
+})();
+const GRID_CENTER = [49.352, 2.902];
+
+describe('graphLoop daily seed', () => {
+  test('seed=0 is deterministic (default unchanged)', () => {
+    const a = graphLoop(...GRID_CENTER, 0.6, GRID_PATHS);
+    const b = graphLoop(...GRID_CENTER, 0.6, GRID_PATHS, 'foot', 0);
+    assert.deepEqual(a.coords, b.coords, 'unseeded loop should be stable');
+  });
+
+  test('same seed → same loop (stable within a day)', () => {
+    const a = graphLoop(...GRID_CENTER, 0.6, GRID_PATHS, 'foot', 42);
+    const b = graphLoop(...GRID_CENTER, 0.6, GRID_PATHS, 'foot', 42);
+    assert.deepEqual(a.coords, b.coords);
+  });
+
+  test('different seeds can produce different loops', () => {
+    const shapes = new Set();
+    for (let seed = 1; seed <= 8; seed++) {
+      const r = graphLoop(...GRID_CENTER, 0.6, GRID_PATHS, 'foot', seed);
+      shapes.add(JSON.stringify(r.coords));
+    }
+    assert.ok(shapes.size > 1, 'expected at least two distinct loop shapes across seeds');
+  });
+
+  test('seeded loops still close back to start and stay valid', () => {
+    for (let seed = 1; seed <= 5; seed++) {
+      const r = graphLoop(...GRID_CENTER, 0.6, GRID_PATHS, 'foot', seed);
+      assert.deepEqual(r.coords[0], r.coords[r.coords.length - 1], `loop ${seed} does not close`);
+      assert.ok(r.meters > 0 && r.seconds > 0);
+    }
+  });
+});

@@ -41,6 +41,21 @@ function haversineM(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+// Initial compass bearing (0–360°) from point 1 to point 2.
+function bearingDeg(lat1, lon1, lat2, lon2) {
+  const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+// Smallest absolute difference between two compass bearings (0–180°).
+function bearingDelta(a, b) {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
 function nodeKey(lat, lon) {
   return `${lat.toFixed(5)},${lon.toFixed(5)}`;
 }
@@ -271,7 +286,10 @@ function graphAtob(sLat, sLng, eLat, eLng, paths, transportMode = 'foot') {
 // The return path must arrive at start via a different edge than the outbound departure.
 // paths: pre-filtered array of path objects.
 // pathTyp: 'foot' | 'bike' | 'champs' (used only for speed in the result).
-function graphLoop(sLat, sLng, targetKm, paths, pathTyp = 'foot') {
+// seed: when non-zero, biases the turnaround point toward a per-seed compass
+// direction so the same start point yields a different loop each day. seed=0
+// keeps the deterministic "most direct loop" behaviour (used by the tests).
+function graphLoop(sLat, sLng, targetKm, paths, pathTyp = 'foot', seed = 0) {
   if (!paths.length) throw new Error('Aucun chemin de ce type enregistré');
   const { nodes, adj: adjFull } = buildGraph(paths);
   if (nodes.size < 4) throw new Error('Pas assez de chemins — ajoutes-en depuis le panneau admin');
@@ -303,6 +321,21 @@ function graphLoop(sLat, sLng, targetKm, paths, pathTyp = 'foot') {
   // 1. Dijkstra from start → distances to all nodes in the pruned graph
   const { dist, prev: prevOut } = dijkstra(adj, startNode.k);
 
+  // Per-day preferred compass direction for the turnaround point. The golden
+  // angle (137.508°) spreads consecutive seeds evenly around the circle so
+  // successive days point in well-separated directions. angBias() returns 0 when
+  // unseeded, so the deterministic path is unchanged.
+  const preferredBearing = ((seed % 360) * 137.508) % 360;
+  const ANG_WEIGHT = 0.6;
+  const startN = nodes.get(startNode.k);
+  const angBias = (k) => {
+    if (!seed) return 0;
+    const n = nodes.get(k);
+    if (!n) return 0;
+    const brg = bearingDeg(startN.lat, startN.lon, n.lat, n.lon);
+    return (bearingDelta(brg, preferredBearing) / 180) * ANG_WEIGHT;
+  };
+
   // 2. Collect mid candidates within ±35% of targetM/2
   // All surviving nodes have degree ≥ 2, so no junction filter needed
   const half = targetM / 2;
@@ -310,14 +343,15 @@ function graphLoop(sLat, sLng, targetKm, paths, pathTyp = 'foot') {
   for (const [k, d] of dist) {
     if (d <= 0) continue;
     const ratio = Math.abs(d - half) / half;
-    if (ratio < 0.35) candidates.push({ k, d, ratio });
+    if (ratio < 0.35) candidates.push({ k, d, ratio, ang: angBias(k) });
   }
   if (!candidates.length) {
     for (const [k, d] of dist) {
-      if (d > 0) candidates.push({ k, d, ratio: Math.abs(d - half) / half });
+      if (d > 0) candidates.push({ k, d, ratio: Math.abs(d - half) / half, ang: angBias(k) });
     }
   }
-  candidates.sort((a, b) => a.ratio - b.ratio);
+  // Order by distance fit, nudged toward the day's preferred direction.
+  candidates.sort((a, b) => (a.ratio + a.ang) - (b.ratio + b.ang));
 
   // 3. Try top candidates; score each by distance error + overlap penalty; keep best
   let bestLoop = null, bestScore = Infinity;
@@ -351,7 +385,7 @@ function graphLoop(sLat, sLng, targetKm, paths, pathTyp = 'foot') {
     }
     const distErr     = Math.abs(totalM - targetM) / targetM;
     const overlapFrac = totalM > 0 ? overlap / totalM : 1;
-    const score       = distErr + overlapFrac * 2;
+    const score       = distErr + overlapFrac * 2 + cand.ang;
 
     if (score < bestScore) { bestScore = score; bestLoop = allKeys; }
     if (distErr < 0.15 && overlapFrac < 0.05) break; // good enough
@@ -388,9 +422,9 @@ function graphAtobHybrid(sLat, sLng, eLat, eLng, adminPaths, osmPaths, transport
 
 // Loop routing with admin paths as primary network and OSM paths as weighted
 // gap-fill, so loops can continue past the edge of the curated network.
-function graphLoopHybrid(sLat, sLng, targetKm, adminPaths, osmPaths, pathTyp = 'foot') {
+function graphLoopHybrid(sLat, sLng, targetKm, adminPaths, osmPaths, pathTyp = 'foot', seed = 0) {
   const all = [...adminPaths, ...tagOsmGapFill(osmPaths)];
-  return graphLoop(sLat, sLng, targetKm, all, pathTyp);
+  return graphLoop(sLat, sLng, targetKm, all, pathTyp, seed);
 }
 
 if (typeof module !== 'undefined') {

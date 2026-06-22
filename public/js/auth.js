@@ -75,40 +75,8 @@ function authHeader() {
   return { Authorization: `Bearer ${getToken()}` };
 }
 
-// ── Persistent anonymous visitor ID (survives sessions, never changes per device) ──
-function getVisitorId() {
-  let id = localStorage.getItem('bwr_visitor_id');
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem('bwr_visitor_id', id);
-  }
-  return id;
-}
-
-// ── Page-visit tracking ────────────────────────────────────────────────────
-(function trackPageVisit() {
-  try {
-    // Deduplicate: only ping once per page per device per 30 min (across all tabs)
-    const dedupKey = 'bwr_visited_' + location.pathname;
-    const last = parseInt(localStorage.getItem(dedupKey) || '0', 10);
-    if (Date.now() - last < 30 * 60 * 1000) return;
-    localStorage.setItem(dedupKey, String(Date.now()));
-    const startTime = Date.now();
-    const token   = getToken();
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    fetch(`${API_URL}/api/analytics/visit`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ page: location.pathname, visitorId: getVisitorId() }),
-    }).then(r => r.json()).then(data => {
-      if (!data.visitKey) return;
-      window.addEventListener('pagehide', () => {
-        navigator.sendBeacon(
-          `${API_URL}/api/analytics/visit/duration`,
-          new Blob([JSON.stringify({ visitKey: data.visitKey, duration: Date.now() - startTime })], { type: 'application/json' })
-        );
-      });
-    }).catch(() => {});
-  } catch (_) {}
-})();
+// ── Activity tracking ───────────────────────────────────────────────────────
+// Page views are NOT tracked: anonymous visits could be search-engine bots and
+// only inflated the admin counts. The admin panel now counts real logins and new
+// accounts only — those are recorded server-side in the worker (recordAuthEvent),
+// so there is nothing to send from the browser.

@@ -831,6 +831,10 @@ document.getElementById('mapSearchInput').addEventListener('input', e => {
   const q = e.target.value.trim();
   document.getElementById('mapSearchClear').classList.toggle('hidden', !q);
   clearTimeout(searchTimer);
+  // Persist whatever is typed so the address stays "locked in" across pages,
+  // even before the user picks a suggestion. Shared with the routes page.
+  if (q) saveSearchAddress({ label: e.target.value });
+  else localStorage.removeItem('bwr_saved_address');
   if (q.length < 3) { closeSearchResults(); return; }
   searchTimer = setTimeout(() => doMapSearch(q), 380);
 });
@@ -839,6 +843,7 @@ document.getElementById('mapSearchClear').addEventListener('click', () => {
   document.getElementById('mapSearchInput').value = '';
   document.getElementById('mapSearchClear').classList.add('hidden');
   closeSearchResults();
+  localStorage.removeItem('bwr_saved_address');
   if (searchPin) { map.removeLayer(searchPin); searchPin = null; }
 });
 
@@ -871,19 +876,43 @@ function showMapSearchResults(results) {
     item.addEventListener('mousedown', () => {
       const lat = parseFloat(item.dataset.lat);
       const lng = parseFloat(item.dataset.lon);
-      document.getElementById('mapSearchInput').value =
-        item.querySelector('.search-item-name').textContent;
+      const label = item.querySelector('.search-item-name').textContent;
+      document.getElementById('mapSearchInput').value = label;
       document.getElementById('mapSearchClear').classList.remove('hidden');
       closeSearchResults();
       if (searchPin) map.removeLayer(searchPin);
       searchPin = L.marker([lat, lng]).addTo(map);
       map.setView([lat, lng], 15);
+      // Lock in the chosen address (with coords) so it survives page changes.
+      saveSearchAddress({ label, lat, lng });
     });
   });
 }
 
 function closeSearchResults() {
   document.getElementById('mapSearchResults').classList.add('hidden');
+}
+
+function saveSearchAddress(obj) {
+  try { localStorage.setItem('bwr_saved_address', JSON.stringify(obj)); } catch {}
+}
+
+// Restore the address the user last entered (on map or routes page) so it stays
+// "locked in" when navigating between pages.
+function restoreSearchAddress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('bwr_saved_address'));
+    if (!saved || !saved.label) return;
+    const input = document.getElementById('mapSearchInput');
+    if (!input) return;
+    input.value = saved.label;
+    document.getElementById('mapSearchClear').classList.remove('hidden');
+    if (typeof saved.lat === 'number' && typeof saved.lng === 'number') {
+      if (searchPin) map.removeLayer(searchPin);
+      searchPin = L.marker([saved.lat, saved.lng]).addTo(map);
+      map.setView([saved.lat, saved.lng], 15);
+    }
+  } catch {}
 }
 
 // ── Carrefour labels ──────────────────────────────────────────────────────────
@@ -1011,6 +1040,7 @@ document.getElementById('mapContactForm').addEventListener('submit', async e => 
 })();
 
 initUserMenu();
+restoreSearchAddress();
 loadPaths();
 loadReports();
 if (navigator.onLine) { replayMapPatches(); replayMapReports(); }

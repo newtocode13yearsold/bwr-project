@@ -33,12 +33,95 @@
   z-index: 10;
 }
 
+/* ── Quick start hero ── */
+.quick-start {
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #1e4d14, #2d6b1f);
+  color: #fff;
+  border-bottom: 1px solid #e2e8da;
+}
+
+.qs-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  margin-bottom: 12px;
+}
+
+.qs-distance-chips {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.qs-chip {
+  flex: 1;
+  padding: 8px 4px;
+  border: 1.5px solid rgba(255,255,255,0.35);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.qs-chip:hover { background: rgba(255,255,255,0.20); }
+.qs-chip.active {
+  background: #a3e635;
+  border-color: #a3e635;
+  color: #1a2e12;
+}
+
+.btn-quick-loop {
+  width: 100%;
+  padding: 13px;
+  background: #a3e635;
+  color: #1a2e12;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.98rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.2s, background 0.15s;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+}
+.btn-quick-loop:hover { background: #b6f04a; transform: translateY(-1px); }
+.btn-quick-loop:disabled { opacity: 0.7; cursor: progress; transform: none; }
+
+.qs-customize {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.85);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.qs-customize:hover { color: #fff; }
+
 /* ── Steps ── */
 .step {
   padding: 20px;
   border-bottom: 1px solid #e2e8da;
   transition: opacity 0.2s;
 }
+
+/* ── Collapsible step (Préférences) ── */
+.step.collapsible .step-header { cursor: pointer; user-select: none; }
+.step-collapse-chevron {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: #6b7280;
+  transition: transform 0.2s;
+}
+.step.collapsible:not(.collapsed) .step-collapse-chevron { transform: rotate(180deg); }
+.step.collapsible.collapsed .step2-body { display: none; }
+.step.collapsible.collapsed .step-header { margin-bottom: 0; }
 
 .step.locked {
   opacity: 0.4;
@@ -269,13 +352,19 @@
   border-bottom: none;
   border-top: 2px solid #1e4d14;
   box-shadow: 0 -2px 12px rgba(30,77,20,0.07);
+}
+
+/* Only float the CTA once it's actionable (a point has been placed). While
+   locked it stays in normal flow, so it can't overlap the quick-start hero
+   when the bottom-sheet sidebar is short. */
+.step-cta:not(.locked) {
   position: sticky;
   bottom: 0;
   z-index: 2;
 }
 
 @media (max-width: 768px) {
-  .step-cta {
+  .step-cta:not(.locked) {
     bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 }

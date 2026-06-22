@@ -1957,7 +1957,9 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
   position: fixed;
   top: calc(64px + env(safe-area-inset-top));
   left: 50%;
-  transform: translateX(-50%) translateY(-60px);
+  transform: translateX(-50%) translateY(-12px);
+  opacity: 0;
+  visibility: hidden;
   background: #92400e;
   color: #fef3c7;
   padding: 6px 14px;
@@ -1966,12 +1968,15 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
   font-weight: 600;
   letter-spacing: 0.01em;
   z-index: 9000;
-  transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+  transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1),
+              opacity 0.25s ease, visibility 0.25s;
   pointer-events: none;
   white-space: nowrap;
 }
 #offline-pill.visible {
   transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  visibility: visible;
 }
 
 /* ── Sync spinner ─────────────────────────────────────────────────────────── */

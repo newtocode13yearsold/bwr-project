@@ -348,8 +348,18 @@
 .btn-routes:hover { background: #dbeafe; }
 .btn-logout { background: #f3f4f6; color: #374151; }
 .btn-logout:hover { background: #e5e7eb; }
+.btn-export { background: #eef2ff; color: #3730a3; }
+.btn-export:hover { background: #e0e7ff; }
 .btn-delete { background: #fee2e2; color: #991b1b; margin-top: 6px; }
 .btn-delete:hover { background: #fecaca; }
+
+.account-gdpr-note {
+  margin-top: 14px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted, #6b7280);
+}
+.account-gdpr-note a { color: inherit; text-decoration: underline; }
 
 /* ── Delete confirmation modal ── */
 .modal-overlay {
@@ -904,6 +914,8 @@
 [data-theme="dark"] .btn-routes:hover            { background: #1e2a50; }
 [data-theme="dark"] .btn-logout                  { background: #2a3a30; color: #c8dcc0; }
 [data-theme="dark"] .btn-logout:hover            { background: #334d3b; }
+[data-theme="dark"] .btn-export                  { background: #1e2440; color: #c7d2fe; }
+[data-theme="dark"] .btn-export:hover            { background: #28305a; }
 [data-theme="dark"] .btn-delete                  { background: #3d1515; color: #fca5a5; }
 [data-theme="dark"] .btn-delete:hover            { background: #4d1a1a; }
 

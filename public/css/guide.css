@@ -1,0 +1,235 @@
+/* ── BWR guide / help page ────────────────────────────────────────────────────
+ * Written user manual (#2). Editorial, scannable, mobile-first. Relies on
+ * tokens.css for colour + type. Reuses onboarding.css for the tour CTA button.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+.guide-body {
+  background:
+    radial-gradient(1200px 600px at 50% -200px, var(--forest-100, #f0f7ec), transparent 70%),
+    var(--surface-1, #fafbf7);
+  color: var(--text, #1f2937);
+  min-height: 100vh;
+}
+
+/* ── Hero ── */
+.guide-hero {
+  max-width: var(--container-sm, 720px);
+  margin: 0 auto;
+  padding: var(--space-16, 64px) var(--space-5, 20px) var(--space-8, 32px);
+  text-align: center;
+}
+.guide-eyebrow {
+  display: inline-block;
+  font-size: var(--fs-xs, 0.78rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--forest-600, #2d6b1f);
+  background: var(--forest-100, #f0f7ec);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill, 999px);
+  margin-bottom: var(--space-4, 16px);
+}
+.guide-hero h1 {
+  font-size: var(--fs-4xl, clamp(2.2rem, 5vw, 3.4rem));
+  margin: 0 0 var(--space-3, 12px);
+  color: var(--text-strong, #0b2410);
+}
+.guide-hero p {
+  font-size: var(--fs-md, 1.125rem);
+  color: var(--text-muted, #6b7280);
+  line-height: 1.6;
+  margin: 0 auto var(--space-6, 24px);
+  max-width: 540px;
+}
+.guide-hero-actions { display: flex; gap: var(--space-3, 12px); justify-content: center; flex-wrap: wrap; }
+
+/* ── Table of contents ── */
+.guide-toc {
+  max-width: var(--container-sm, 720px);
+  margin: 0 auto var(--space-10, 40px);
+  padding: 0 var(--space-5, 20px);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3, 12px);
+}
+.guide-toc a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  background: var(--surface-0, #fff);
+  border: 1px solid var(--border, #e2e8da);
+  border-radius: var(--radius-md, 14px);
+  text-decoration: none;
+  color: var(--text-strong, #0b2410);
+  font-weight: 600;
+  font-size: var(--fs-sm, 0.875rem);
+  box-shadow: var(--shadow-xs, 0 1px 2px rgba(11,36,16,.06));
+  transition: transform var(--dur-fast, 140ms) var(--ease-out, ease), border-color var(--dur-fast, 140ms) ease;
+}
+.guide-toc a:hover { transform: translateY(-2px); border-color: var(--forest-500, #4a8a32); }
+.guide-toc .toc-emoji { font-size: 22px; }
+
+/* ── Sections ── */
+.guide-main {
+  max-width: var(--container-sm, 720px);
+  margin: 0 auto;
+  padding: 0 var(--space-5, 20px) var(--space-20, 80px);
+}
+.guide-section {
+  background: var(--surface-0, #fff);
+  border: 1px solid var(--border-soft, #ebeee5);
+  border-radius: var(--radius-lg, 20px);
+  padding: var(--space-6, 24px);
+  margin-bottom: var(--space-5, 20px);
+  box-shadow: var(--shadow-sm, 0 2px 6px -2px rgba(11,36,16,.08));
+  scroll-margin-top: 80px;
+}
+.guide-section-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  margin-bottom: var(--space-4, 16px);
+}
+.guide-section-icon {
+  flex: 0 0 auto;
+  width: 46px; height: 46px;
+  display: grid; place-items: center;
+  font-size: 24px;
+  border-radius: var(--radius-md, 14px);
+  background: var(--forest-100, #f0f7ec);
+}
+.guide-section h2 {
+  font-size: var(--fs-xl, 1.5rem);
+  margin: 0;
+  color: var(--text-strong, #0b2410);
+}
+.guide-section p { line-height: 1.65; margin: 0 0 var(--space-3, 12px); color: var(--text, #1f2937); }
+.guide-section p:last-child { margin-bottom: 0; }
+
+.guide-steps {
+  list-style: none;
+  counter-reset: gstep;
+  margin: var(--space-2, 8px) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3, 12px);
+}
+.guide-steps li {
+  counter-increment: gstep;
+  display: flex;
+  gap: var(--space-3, 12px);
+  align-items: flex-start;
+  line-height: 1.55;
+  font-size: var(--fs-sm, 0.9rem);
+}
+.guide-steps li::before {
+  content: counter(gstep);
+  flex: 0 0 auto;
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--forest-700, #1e4d14);
+  color: var(--lime-300, #d9f99d);
+  font-weight: 700;
+  font-size: var(--fs-xs, 0.78rem);
+}
+
+.guide-tip {
+  display: flex;
+  gap: var(--space-3, 12px);
+  background: var(--lime-300, #d9f99d);
+  color: var(--forest-900, #0b2410);
+  border-radius: var(--radius-md, 14px);
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  font-size: var(--fs-sm, 0.875rem);
+  line-height: 1.5;
+  margin-top: var(--space-4, 16px);
+}
+.guide-tip .guide-tip-emoji { font-size: 18px; }
+
+.guide-tier {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-xs, 0.74rem);
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill, 999px);
+  vertical-align: middle;
+  margin-left: 6px;
+}
+.guide-tier.silver { background: var(--silver-grad-soft); color: var(--silver-600); border: 1px solid var(--silver-200); }
+.guide-tier.gold   { background: var(--gold-grad-soft);   color: var(--gold-text);   border: 1px solid var(--gold-200); }
+
+/* ── FAQ ── */
+.guide-faq details {
+  border-bottom: 1px solid var(--border-soft, #ebeee5);
+  padding: var(--space-3, 12px) 0;
+}
+.guide-faq details:last-child { border-bottom: none; }
+.guide-faq summary {
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-strong, #0b2410);
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+}
+.guide-faq summary::-webkit-details-marker { display: none; }
+.guide-faq summary::after { content: "+"; color: var(--forest-600, #2d6b1f); font-weight: 700; }
+.guide-faq details[open] summary::after { content: "−"; }
+.guide-faq .guide-faq-a { padding-top: var(--space-2, 8px); color: var(--text-muted, #6b7280); line-height: 1.6; font-size: var(--fs-sm, 0.9rem); }
+
+/* ── Closing CTA ── */
+.guide-cta {
+  text-align: center;
+  background: linear-gradient(135deg, var(--forest-800, #133b18), var(--forest-600, #2d6b1f));
+  color: #fff;
+  border-radius: var(--radius-lg, 20px);
+  padding: var(--space-10, 40px) var(--space-6, 24px);
+  margin-top: var(--space-8, 32px);
+}
+.guide-cta h2 { color: #fff; font-size: var(--fs-2xl, 1.875rem); margin: 0 0 var(--space-3, 12px); }
+.guide-cta p { color: var(--lime-300, #d9f99d); margin: 0 0 var(--space-5, 20px); }
+
+/* Simple top bar for the guide page */
+.guide-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3, 12px) var(--space-5, 20px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--surface-1, #fafbf7) 86%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-soft, #ebeee5);
+}
+.guide-topbar .logo {
+  font-family: var(--font-display, Georgia, serif);
+  font-weight: 700;
+  font-size: var(--fs-lg, 1.25rem);
+  color: var(--forest-700, #1e4d14);
+  text-decoration: none;
+}
+.guide-topbar-links { display: flex; gap: var(--space-2, 8px); align-items: center; }
+.guide-topbar-links a, .guide-topbar-links button {
+  font: inherit;
+  font-size: var(--fs-sm, 0.875rem);
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--text-muted, #6b7280);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm, 10px);
+}
+.guide-topbar-links a:hover, .guide-topbar-links button:hover { background: var(--surface-2, #f3f4f0); color: var(--text-strong, #0b2410); }
+.guide-topbar-links a.guide-topbar-cta {
+  background: var(--forest-700, #1e4d14);
+  color: var(--lime-300, #d9f99d);
+}

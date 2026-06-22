@@ -34,12 +34,10 @@ function renderAvatar(user, color) {
   big.style.color        = color.fg;
   big.textContent        = initials(user.name);
 
-  // also update header avatar
-  const headerAvatar = document.querySelector('.user-avatar');
-  if (headerAvatar) {
-    headerAvatar.style.background = color.bg;
-    headerAvatar.style.color      = color.fg;
-  }
+  // NOTE: the small header avatar deliberately keeps the high-contrast CSS
+  // default (lime background, dark text) so the initials stay readable on the
+  // dark green header. Theming it to a dark-on-dark colour made the letters
+  // disappear, so we no longer override its colours here.
 }
 
 function buildColorSwatches(user) {
@@ -131,11 +129,10 @@ function showMsg(id, text, type = 'error') {
 
 function initUserMenu() {
   const menuEl = document.getElementById('userMenu');
-  const color  = getAvatarColor(currentUser.id);
   const ini    = initials(currentUser.name);
   menuEl.innerHTML = `
     <button class="user-btn" id="userBtn">
-      <div class="user-avatar" style="background:${color.bg};color:${color.fg}">${ini}</div>
+      <div class="user-avatar">${ini}</div>
       <span class="btn-label">${currentUser.name.split(' ')[0]}</span>
     </button>
     <div class="user-dropdown hidden" id="userDropdown">
@@ -1333,6 +1330,34 @@ function trapFocus(container) {
   container.addEventListener('keydown', handler);
   return () => container.removeEventListener('keydown', handler);
 }
+
+// ── Export my data (RGPD — droit d'accès & portabilité) ───────────────────────
+document.getElementById('btnExportData').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'Préparation…';
+
+  try {
+    const res = await fetch(`${API_URL}/api/auth/export`, { headers: authHeader() });
+    if (!res.ok) throw new Error('Export indisponible');
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bwr-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+});
 
 // ── Delete account ────────────────────────────────────────────────────────────
 const deleteModal  = document.getElementById('deleteModal');

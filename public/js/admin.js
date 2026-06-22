@@ -1092,30 +1092,28 @@ document.querySelectorAll('.members-tab').forEach(tab => {
   });
 });
 
+// Shows real activity only: logins and new accounts. Page views are not tracked
+// anymore (they could be search-engine bots), so there is nothing anonymous here.
 async function loadVisits() {
   const statsEl = document.getElementById('visitsStats');
   const itemsEl = document.getElementById('visitsItems');
   itemsEl.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Chargement…</p>';
   statsEl.innerHTML = '';
   try {
-    const res  = await fetch(`${API_URL}/api/analytics/visits`, { headers: authHeader() });
+    const res  = await fetch(`${API_URL}/api/analytics/events`, { headers: authHeader() });
     const data = await res.json();
     if (!res.ok) { itemsEl.innerHTML = `<p style="color:red">${data.error}</p>`; return; }
 
-    // API now returns { visits, totalVisits, totalVisitors }
-    const visits       = Array.isArray(data) ? data : (data.visits || []);
-    const totalVisits  = data.totalVisits   ?? visits.length;
-    const totalVisitors = data.totalVisitors ?? 0;
+    const events       = Array.isArray(data) ? data : (data.events || []);
+    const totalLogins  = data.totalLogins  ?? events.filter(e => e.type === 'login').length;
+    const totalSignups = data.totalSignups ?? events.filter(e => e.type === 'signup').length;
 
-    const logged  = visits.filter(v => v.userId);
-    const anon    = visits.filter(v => !v.userId);
-
-    // Compute quick stats (total = logged + anon)
+    // Quick stats over the recent (90-day) window the API returns.
     const now   = Date.now();
     const DAY   = 86400000;
     const WEEK  = 7 * DAY;
-    const today = visits.filter(v => now - new Date(v.timestamp).getTime() < DAY).length;
-    const week  = visits.filter(v => now - new Date(v.timestamp).getTime() < WEEK).length;
+    const today = events.filter(e => now - new Date(e.timestamp).getTime() < DAY).length;
+    const week  = events.filter(e => now - new Date(e.timestamp).getTime() < WEEK).length;
 
     const statCard = (label, val, color, subtitle = '') =>
       `<div style="flex:1;min-width:70px;background:${color};border-radius:10px;padding:10px 12px;text-align:center">
@@ -1124,90 +1122,45 @@ async function loadVisits() {
          ${subtitle ? `<div style="font-size:0.65rem;color:#6b7280;margin-top:1px">${subtitle}</div>` : ''}
        </div>`;
     statsEl.innerHTML =
-      statCard('Depuis le début', totalVisits.toLocaleString('fr-FR'), '#dcfce7', 'visites totales') +
-      statCard('Appareils uniques', totalVisitors.toLocaleString('fr-FR'), '#fef9c3', 'visiteurs anonymes') +
+      statCard('Nouveaux comptes', totalSignups.toLocaleString('fr-FR'), '#dcfce7', 'depuis le début') +
+      statCard('Connexions', totalLogins.toLocaleString('fr-FR'), '#fef9c3', 'depuis le début') +
       statCard("Aujourd'hui", today, '#d1fae5') +
       statCard('Cette semaine', week, '#fef3c7') +
-      statCard('Connectés', logged.length, '#ede9fe', '30 derniers jours') +
-      statCard('Anonymes', anon.length, '#fce7f3', '30 derniers jours') +
-      `<button onclick="loadDebug()" style="margin-top:6px;width:100%;padding:7px 12px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;color:#374151">🔍 Diagnostic KV</button>`;
+      `<div style="display:flex;gap:6px;width:100%;margin-top:6px">
+         <button onclick="loadDebug()" style="flex:1;padding:7px 10px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#374151">🔍 Diagnostic KV</button>
+         <button onclick="resetActivity()" style="flex:1;padding:7px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#b91c1c">🗑️ Réinitialiser</button>
+       </div>`;
 
-    if (visits.length === 0) {
-      itemsEl.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Aucune visite enregistrée.</p>';
+    if (events.length === 0) {
+      itemsEl.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Aucune activité enregistrée pour l\'instant.</p>';
       return;
     }
 
-    const deviceIcon = ua => {
-      if (!ua) return '🖥️';
-      const u = ua.toLowerCase();
-      if (/iphone|ipad|android|mobile/.test(u)) return '📱';
-      if (/tablet/.test(u)) return '📲';
-      return '🖥️';
-    };
     const formatTime = iso => {
       const d = new Date(iso);
       return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' })
            + ' ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
     };
-    const formatDuration = ms => {
-      if (ms < 60000) return '< 1 min';
-      const m = Math.round(ms / 60000);
-      if (m < 60) return `${m} min`;
-      const h = Math.floor(m / 60), rem = m % 60;
-      return rem > 0 ? `${h}h ${rem}min` : `${h}h`;
-    };
 
-    // Group visits into sessions (30-min inactivity = new session)
-    const SESSION_GAP = 30 * 60 * 1000;
-    const byVisitor = {};
-    for (const v of visits) {
-      const key = v.userId || v.visitorId || String(v.visitorNum) || 'unknown';
-      if (!byVisitor[key]) byVisitor[key] = [];
-      byVisitor[key].push(v);
-    }
-    const sessions = [];
-    for (const vList of Object.values(byVisitor)) {
-      vList.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-      let start = vList[0], prev = vList[0];
-      for (let i = 1; i < vList.length; i++) {
-        const gap = new Date(vList[i].timestamp) - new Date(prev.timestamp);
-        if (gap > SESSION_GAP) {
-          sessions.push({ start, end: prev });
-          start = vList[i];
-        }
-        prev = vList[i];
-      }
-      sessions.push({ start, end: prev });
-    }
-    sessions.sort((a, b) => new Date(b.start.timestamp) - new Date(a.start.timestamp));
-
-    const sessionRow = s => {
-      const v = s.start;
-      const visitorTag = v.userId
-        ? `👤 ${v.userName}`
-        : v.visitorNum
-          ? `🔓 Visiteur #${v.visitorNum}`
-          : '🔓 Anonyme';
-      const dur = s.start.duration != null ? s.start.duration : new Date(s.end.timestamp) - new Date(s.start.timestamp);
-      const timeRange = s.start.timestamp === s.end.timestamp
-        ? formatTime(s.start.timestamp)
-        : `${formatTime(s.start.timestamp)} → ${new Date(s.end.timestamp).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}`;
+    const eventRow = e => {
+      const isSignup = e.type === 'signup';
+      const icon  = isSignup ? '✨' : '🔑';
+      const label = isSignup ? 'Nouveau compte' : 'Connexion';
       return `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px">
-        <span style="font-size:1.1rem">${deviceIcon(v.userAgent)}</span>
+        <span style="font-size:1.1rem">${icon}</span>
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-            🕐 ${timeRange}
+            👤 ${e.userName || e.email || 'Utilisateur'}
           </div>
-          <div style="font-size:0.75rem;color:#6b7280">
-            ${visitorTag} — ${formatDuration(dur)}
-          </div>
+          <div style="font-size:0.75rem;color:#6b7280">${label} — 🕐 ${formatTime(e.timestamp)}</div>
         </div>
       </div>`;
     };
 
-    const loggedSessions = sessions.filter(s => s.start.userId);
-    const anonSessions   = sessions.filter(s => !s.start.userId);
+    // Events arrive most-recent-first from the API.
+    const signups = events.filter(e => e.type === 'signup');
+    const logins  = events.filter(e => e.type !== 'signup');
 
     const sectionTitle = (emoji, label, count) =>
       `<div style="font-weight:700;font-size:0.82rem;color:#374151;margin:14px 0 6px;display:flex;align-items:center;gap:6px">
@@ -1215,20 +1168,40 @@ async function loadVisits() {
        </div>`;
 
     let html = '';
-
-    if (loggedSessions.length > 0) {
-      html += sectionTitle('👤', 'Utilisateurs connectés', loggedSessions.length);
-      html += loggedSessions.slice(0, 100).map(sessionRow).join('');
+    if (signups.length > 0) {
+      html += sectionTitle('✨', 'Nouveaux comptes', signups.length);
+      html += signups.slice(0, 100).map(eventRow).join('');
     }
-
-    if (anonSessions.length > 0) {
-      html += sectionTitle('🔓', 'Visiteurs anonymes (non connectés)', anonSessions.length);
-      html += anonSessions.slice(0, 100).map(sessionRow).join('');
+    if (logins.length > 0) {
+      html += sectionTitle('🔑', 'Connexions', logins.length);
+      html += logins.slice(0, 100).map(eventRow).join('');
     }
 
     itemsEl.innerHTML = html;
   } catch {
     itemsEl.innerHTML = '<p style="color:red">Erreur réseau</p>';
+  }
+}
+
+// Wipe recorded activity. Keeps Emilien's entries so a real test data point survives.
+async function resetActivity() {
+  const keepName = prompt(
+    "Réinitialiser l'activité.\n\nLes connexions et nouveaux comptes enregistrés seront effacés.\nLaissez un nom ci-dessous pour CONSERVER son activité (videz le champ pour tout effacer) :",
+    'Emilien'
+  );
+  if (keepName === null) return; // cancelled
+  try {
+    const res  = await fetch(`${API_URL}/api/analytics/reset`, {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keepName: keepName.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) { alert('Erreur : ' + (data.error || 'réinitialisation impossible')); return; }
+    alert(`✅ ${data.deleted} entrée(s) supprimée(s)${data.kept ? `, ${data.kept} conservée(s)` : ''}.`);
+    await loadVisits();
+  } catch {
+    alert('Erreur réseau lors de la réinitialisation.');
   }
 }
 
@@ -1249,32 +1222,21 @@ async function loadDebug() {
     let html = `<div style="font-weight:700;font-size:0.82rem;color:#374151;margin-bottom:8px">📦 Clés KV — total : ${data.totalKeys}</div>`;
     html += `<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:12px">`;
     for (const [prefix, count] of Object.entries(data.counts)) {
-      if (count > 0) html += row(prefix, count, prefix === 'visit:' && count > 50);
+      if (count > 0) html += row(prefix, count);
     }
     html += `</div>`;
 
-    if (data.suspiciousBuckets?.length > 0) {
-      html += `<div style="font-weight:700;font-size:0.82rem;color:#dc2626;margin-bottom:6px">⚠️ Visites suspectes (même minute × page)</div>`;
-      html += `<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:12px">`;
-      for (const { bucket, count } of data.suspiciousBuckets) {
-        html += row(bucket, `${count} entrées`, true);
-      }
-      html += `</div>`;
-    } else {
-      html += `<div style="color:#16a34a;font-size:0.82rem;margin-bottom:12px">✅ Aucune visite suspecte détectée</div>`;
-    }
-
-    if (data.visitSample?.length > 0) {
-      html += `<div style="font-weight:700;font-size:0.82rem;color:#374151;margin-bottom:6px">🔬 Dernières visites (échantillon)</div>`;
+    if (data.eventSample?.length > 0) {
+      html += `<div style="font-weight:700;font-size:0.82rem;color:#374151;margin-bottom:6px">🔬 Dernières activités (échantillon)</div>`;
       html += `<div style="display:flex;flex-direction:column;gap:3px">`;
-      for (const v of data.visitSample) {
-        html += row(`${v.timestamp?.slice(0,16)} — ${v.page || '/'}`, v.userId ? '👤 connecté' : '🔓 anon');
+      for (const v of data.eventSample) {
+        html += row(`${v.timestamp?.slice(0,16)} — ${v.userName || '?'}`, v.type === 'signup' ? '✨ compte' : '🔑 connexion');
       }
       html += `</div>`;
     }
 
     html += `<div style="margin-top:10px;font-size:0.72rem;color:#9ca3af">Généré le ${data.timestamp} · worker v${data.workerVersion}</div>`;
-    html += `<button onclick="loadVisits()" style="margin-top:8px;width:100%;padding:6px;background:#e0e7ff;border:1px solid #c7d2fe;border-radius:7px;font-size:0.8rem;cursor:pointer">← Retour aux visites</button>`;
+    html += `<button onclick="loadVisits()" style="margin-top:8px;width:100%;padding:6px;background:#e0e7ff;border:1px solid #c7d2fe;border-radius:7px;font-size:0.8rem;cursor:pointer">← Retour à l'activité</button>`;
 
     itemsEl.innerHTML = html;
   } catch {
@@ -1412,8 +1374,8 @@ document.getElementById('btnSaveMemberPlan').addEventListener('click', async () 
 });
 
 // ── Revenue dashboard ─────────────────────────────────────────────────────────
-const PLAN_PRICE_MONTHLY = { free: 0, silver: 4.99, gold: 6.99 };
-const PLAN_PRICE_ANNUAL  = { free: 0, silver: 3.74, gold: 5.24 };
+const PLAN_PRICE_MONTHLY = { free: 0, silver: 3.99, gold: 6.99 };
+const PLAN_PRICE_ANNUAL  = { free: 0, silver: 2.99, gold: 5.24 };
 let _revenueCharts = {};
 let _revenueUsers  = null;
 
@@ -1653,7 +1615,7 @@ async function loadRevenue() {
     _revenueCharts.mrr = new Chart(document.getElementById('chartMRR'), {
       type: 'bar',
       data: {
-        labels: ['Argent (4,99 €/mois)', 'Or (6,99 €/mois)'],
+        labels: ['Argent (3,99 €/mois)', 'Or (6,99 €/mois)'],
         datasets: [{ label: 'MRR (€)', data: [+(counts.silver * PLAN_PRICE_MONTHLY.silver).toFixed(2), +(counts.gold * PLAN_PRICE_MONTHLY.gold).toFixed(2)], backgroundColor: ['rgba(148,163,184,0.8)', 'rgba(251,191,36,0.8)'], borderColor: ['#64748b', '#d97706'], borderWidth: 2, borderRadius: 8, borderSkipped: false }]
       },
       options: {
@@ -1676,7 +1638,7 @@ async function loadRevenue() {
 (function initAIForecast() {
   const QUALITY_CONV   = [0, 0.12, 0.25, 0.45, 0.72, 1.10, 1.62, 2.25, 2.95, 3.60, 4.25];
   const QUALITY_LABELS = ['','Très basique','Basique','Moyen-','Moyen','Acceptable','Bon','Très bon','Excellent','Exceptionnel','Parfait'];
-  const ARPU   = 0.65 * 4.99 + 0.35 * 6.99;
+  const ARPU   = 0.65 * 3.99 + 0.35 * 6.99;
   const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
   let aifChart  = null;
@@ -1701,16 +1663,17 @@ async function loadRevenue() {
     statusEl.textContent = '⏳ Chargement des données réelles…';
 
     try {
-      const [visitsRes, usersRes] = await Promise.all([
-        fetch(`${API_URL}/api/analytics/visits`, { headers: authHeader() }),
+      const [eventsRes, usersRes] = await Promise.all([
+        fetch(`${API_URL}/api/analytics/events`, { headers: authHeader() }),
         fetch(`${API_URL}/api/users`, { headers: authHeader() }),
       ]);
 
-      const visitsData = visitsRes.ok ? await visitsRes.json() : [];
-      const visits = Array.isArray(visitsData) ? visitsData : (visitsData.visits || []);
+      const eventsData = eventsRes.ok ? await eventsRes.json() : [];
+      // "Activity" = real logins + new accounts (page views are no longer tracked).
+      const visits = Array.isArray(eventsData) ? eventsData : (eventsData.events || []);
       const users  = usersRes.ok  ? await usersRes.json()  : (_revenueUsers || []);
 
-      // Group visit counts per calendar month (last 5 months, index 4 = current)
+      // Group activity counts per calendar month (last 5 months, index 4 = current)
       const now = new Date();
       const slots = Array.from({ length: 5 }, (_, i) => {
         const d = new Date(now.getFullYear(), now.getMonth() - (4 - i), 1);
@@ -1732,13 +1695,13 @@ async function loadRevenue() {
       users.forEach(u => { if (u.role !== 'admin') counts[u.plan || 'free']++; });
       const totalUsers  = counts.free + counts.silver + counts.gold;
       const payingUsers = counts.silver + counts.gold;
-      const realMRR     = counts.silver * 4.99 + counts.gold * 6.99;
+      const realMRR     = counts.silver * 3.99 + counts.gold * 6.99;
       const realConv    = totalUsers > 0 ? (payingUsers / totalUsers * 100) : 0;
 
       _realData = { visitors: visitsCurrent, history, slope, silver: counts.silver, gold: counts.gold, totalUsers, payingUsers, realMRR, realConv };
 
-      const trendLabel = slope > 0 ? `+${Math.round(slope)} vis./mois` : slope < 0 ? `${Math.round(slope)} vis./mois` : 'Stable';
-      statusEl.textContent = `✅ ${visitsCurrent} visites ce mois · ${payingUsers} abonné${payingUsers !== 1 ? 's' : ''} payant${payingUsers !== 1 ? 's' : ''} · Tendance : ${trendLabel}`;
+      const trendLabel = slope > 0 ? `+${Math.round(slope)} act./mois` : slope < 0 ? `${Math.round(slope)} act./mois` : 'Stable';
+      statusEl.textContent = `✅ ${visitsCurrent} activités ce mois · ${payingUsers} abonné${payingUsers !== 1 ? 's' : ''} payant${payingUsers !== 1 ? 's' : ''} · Tendance : ${trendLabel}`;
       statusEl.style.color = '#15803d';
 
       updateForecast();

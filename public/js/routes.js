@@ -37,10 +37,18 @@ let lastRoute = null;      // most recent computed route — used by save/share
   if (!currentUser) return;
   initUserMenu();
   initMap();
+  initQuickStart();
+  initStep2Collapse();
   if (new URLSearchParams(location.search).has('lat')) {
     handleBestTourParam();
   } else {
     restoreSavedAddress();
+    // Smart default: pre-select "Boucle" so the user can place a point and
+    // generate immediately — no need to choose a mode first.
+    if (!mode) {
+      const loopCard = document.querySelector('.mode-card[data-mode="loop"]');
+      if (loopCard) loopCard.click();
+    }
   }
   loadSavedPaths();
   applyPlanGates();
@@ -49,6 +57,96 @@ let lastRoute = null;      // most recent computed route — used by save/share
   initRouteHistory();
   await handleSharedRouteParam();
 })();
+
+// ── Quick start — one-tap loop from current location ──────────────────────────
+function initQuickStart() {
+  const chips = document.getElementById('qsChips');
+  const distInput = document.getElementById('distanceInput');
+
+  // Sync the default active chip (8 km) into the distance field on load.
+  const activeChip = chips?.querySelector('.qs-chip.active');
+  if (activeChip && distInput) distInput.value = activeChip.dataset.km;
+
+  // Distance chips: highlight + mirror into the (hidden) distance input.
+  chips?.querySelectorAll('.qs-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.querySelectorAll('.qs-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      if (distInput) distInput.value = chip.dataset.km;
+    });
+  });
+
+  // Keep the chips in sync if the user edits the advanced distance field.
+  distInput?.addEventListener('input', () => {
+    chips?.querySelectorAll('.qs-chip').forEach(c =>
+      c.classList.toggle('active', c.dataset.km === String(parseFloat(distInput.value))));
+  });
+
+  // "Personnaliser" reveals the advanced preferences panel and scrolls to it.
+  document.getElementById('qsCustomize')?.addEventListener('click', () => {
+    openStep2();
+    document.getElementById('step1')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // The one-tap button: ensure loop mode, geolocate, drop the start point, generate.
+  document.getElementById('btnQuickLoop')?.addEventListener('click', quickLoopFromLocation);
+}
+
+function quickLoopFromLocation() {
+  const btn = document.getElementById('btnQuickLoop');
+  if (!navigator.geolocation) {
+    showToast('La géolocalisation n\'est pas disponible sur cet appareil.');
+    return;
+  }
+  // Make sure we're in loop mode (unlocks the flow + shows the distance group).
+  if (mode !== 'loop') {
+    const loopCard = document.querySelector('.mode-card[data-mode="loop"]');
+    if (loopCard && !loopCard.classList.contains('locked-feature')) loopCard.click();
+  }
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Localisation…';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      map.setView([lat, lng], 15);
+      resetPoints();
+      pickingPoint = 'start';
+      onMapClick({ latlng: { lat, lng } });   // places start marker + enables generate
+      btn.disabled = false;
+      btn.textContent = original;
+      const gen = document.getElementById('btnGenerate');
+      if (gen && !gen.disabled) gen.click();    // generate immediately
+    },
+    () => {
+      btn.disabled = false;
+      btn.textContent = original;
+      showToast('Position introuvable — autorise la localisation ou clique sur la carte.');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+  );
+}
+
+// ── Step 2 (Préférences) collapse toggle ──────────────────────────────────────
+function openStep2() {
+  const step2 = document.getElementById('step2');
+  if (!step2) return;
+  step2.classList.remove('collapsed');
+  document.getElementById('step2Header')?.setAttribute('aria-expanded', 'true');
+}
+function initStep2Collapse() {
+  const header = document.getElementById('step2Header');
+  const step2 = document.getElementById('step2');
+  if (!header || !step2) return;
+  const toggle = () => {
+    const collapsed = step2.classList.toggle('collapsed');
+    header.setAttribute('aria-expanded', String(!collapsed));
+  };
+  header.addEventListener('click', toggle);
+  header.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+  });
+}
 
 // ── Plan-based UI gating ──────────────────────────────────────────────────────
 // Locks mode cards, difficulty buttons, premium tile layers and exports for
@@ -147,7 +245,7 @@ function updateQuotaStrip() {
     return;
   }
   const stats = currentUser?.stats || {};
-  const count = stats.weekStart === isoMonday() ? (stats.weeklyRoutes || 0) : 0;
+  const count = stats.weekStart === BWR.isoMonday() ? (stats.weeklyRoutes || 0) : 0;
   const remaining = Math.max(0, limit - count);
   const pct = Math.min(100, (count / limit) * 100);
 
@@ -266,9 +364,12 @@ let searchTimeout = null;
 document.getElementById('addressInput').addEventListener('input', e => {
   clearTimeout(searchTimeout);
   const q = e.target.value.trim();
+  // Persist whatever is typed so the address stays "locked in" across pages,
+  // even before the user picks a suggestion. Shared with the map page.
+  if (q) localStorage.setItem('bwr_saved_address', JSON.stringify({ label: e.target.value }));
+  else localStorage.removeItem('bwr_saved_address');
   if (q.length < 3) {
     hideSearch();
-    if (!q) localStorage.removeItem('bwr_saved_address');
     return;
   }
   searchTimeout = setTimeout(() => doSearch(q), 400);
@@ -319,14 +420,18 @@ function hideSearch() {
 function restoreSavedAddress() {
   try {
     const saved = JSON.parse(localStorage.getItem('bwr_saved_address'));
-    if (!saved) return;
+    if (!saved || !saved.label) return;
     const savedMode = localStorage.getItem('bwr_saved_mode');
     if (savedMode) {
       const card = document.querySelector(`.mode-card[data-mode="${savedMode}"]`);
       if (card && !card.classList.contains('locked-feature')) card.click();
     }
     document.getElementById('addressInput').value = saved.label;
-    map.setView([saved.lat, saved.lng], 15);
+    // Only recentre when we have real coordinates (a typed-but-not-selected
+    // address has just a label).
+    if (typeof saved.lat === 'number' && typeof saved.lng === 'number') {
+      map.setView([saved.lat, saved.lng], 15);
+    }
   } catch (_) {}
 }
 
@@ -356,6 +461,9 @@ document.querySelectorAll('.mode-card').forEach(card => {
     localStorage.setItem('bwr_saved_mode', mode);
 
     document.getElementById('distanceGroup').style.display = mode === 'loop' ? '' : 'none';
+    // "Priorité" (Forestier / Plus court) only affects A→B routing — a fixed-distance
+    // loop has no "shortest" variant — so hide it in loop mode to avoid a dead control.
+    document.getElementById('priorityGroup').style.display = mode === 'loop' ? 'none' : '';
 
     document.getElementById('step3Title').textContent =
       mode === 'loop' ? 'Point de départ' : 'Points de départ et arrivée';
@@ -378,8 +486,22 @@ document.querySelectorAll('.pathtype-btn').forEach(btn => {
     document.querySelectorAll('.pathtype-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     pathType = btn.dataset.type;
+    // Keep the travel mode (and therefore the time estimate) consistent with the
+    // path type: a cycle path implies riding, walking paths imply walking. The
+    // user can still override afterwards with the "Mode de déplacement" buttons.
+    syncTransportToPathType(pathType);
   });
 });
+
+// Set transportMode from the chosen path type and reflect it on the
+// "Mode de déplacement" buttons, so picking "Cyclable" updates the time too.
+function syncTransportToPathType(type) {
+  const desired = type === 'bike' ? 'bike' : 'foot';
+  if (desired === transportMode) return;
+  transportMode = desired;
+  document.querySelectorAll('.diff-btn[data-transport]').forEach(b =>
+    b.classList.toggle('active', b.dataset.transport === desired));
+}
 
 document.querySelectorAll('.diff-btn[data-diff]').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -521,7 +643,7 @@ async function generateRoute() {
     // Reflect the server's authoritative count locally so the strip is accurate
     if (currentUser.stats) {
       currentUser.stats.weeklyRoutes = qData.used;
-      currentUser.stats.weekStart = isoMonday();
+      currentUser.stats.weekStart = BWR.isoMonday();
     }
     updateQuotaStrip();
   }
@@ -642,20 +764,22 @@ async function osrmTrip(wpList) {
   return { coords: t.geometry.coordinates.map(([lon, lat]) => [lat, lon]), meters: t.distance, seconds: t.duration };
 }
 
-function osrmLoopWaypoints(sLat, sLng, radiusKm) {
+function osrmLoopWaypoints(sLat, sLng, radiusKm, rotationDeg = 0) {
   const rLat = radiusKm / 111;
   const rLng = radiusKm / (111 * Math.cos(sLat * Math.PI / 180));
   const ring = [0, 45, 90, 135, 180, 225, 270, 315].map(deg => {
-    const rad = deg * Math.PI / 180;
+    const rad = (deg + rotationDeg) * Math.PI / 180;
     return { lat: +(sLat + rLat * Math.cos(rad)).toFixed(6), lon: +(sLng + rLng * Math.sin(rad)).toFixed(6) };
   });
   return [{ lat: sLat, lon: sLng }, ...ring];
 }
 
-async function osrmLoopWithRetry(sLat, sLng, targetKm) {
+async function osrmLoopWithRetry(sLat, sLng, targetKm, seed = 0) {
+  // Rotate the compass ring by a per-day angle so the loop shape changes daily.
+  const rotationDeg = (seed % 8) * 45;
   let r = targetKm / (2 * Math.PI), result;
   for (let i = 0; i < 3; i++) {
-    result = await osrmTrip(osrmLoopWaypoints(sLat, sLng, r));
+    result = await osrmTrip(osrmLoopWaypoints(sLat, sLng, r, rotationDeg));
     const ratio = (targetKm * 1000) / result.meters;
     if (Math.abs(ratio - 1) < 0.2) break;
     r = Math.min(r * ratio, 25);
@@ -789,7 +913,19 @@ async function routeAtob(sLat, sLng, eLat, eLng) {
   return osrmRoute([{ lat: sLat, lon: sLng }, { lat: eLat, lon: eLng }]);
 }
 
+// A small integer that changes once per day (and per start point), so the same
+// start point produces a different boucle from one day to the next. Stable
+// within a given day so a refresh shows the same loop.
+function dailyLoopSeed(sLat, sLng) {
+  const day = new Date().toISOString().slice(0, 10); // YYYY-MM-DD, local-day granularity
+  const key = `${day}|${sLat.toFixed(4)}|${sLng.toFixed(4)}`;
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
+  return Math.abs(h) % 100000 + 1; // never 0 (0 = deterministic mode)
+}
+
 async function routeLoop(sLat, sLng, targetKm) {
+  const seed = dailyLoopSeed(sLat, sLng);
   // 1. Hybrid graph router — real loop. Admin paths are the primary network and
   //    OSM (unnoted) paths fill gaps, so the loop continues past the edge of the
   //    curated network instead of stopping where noted paths run out.
@@ -803,19 +939,20 @@ async function routeLoop(sLat, sLng, targetKm) {
       await fetchOsmPathsForBbox(sLat - padLat, sLng - padLng, sLat + padLat, sLng + padLng),
     );
     if (admin.length || osmPaths.length) {
-      return graphLoopHybrid(sLat, sLng, targetKm, admin, osmPaths, transportMode);
+      // seed rotates the turnaround direction each day → a fresh loop daily
+      return graphLoopHybrid(sLat, sLng, targetKm, admin, osmPaths, transportMode, seed);
     }
   } catch (e) { console.warn('graph loop hybrid:', e.message); }
-  // 2. ORS round_trip (needs ORS_KEY)
+  // 2. ORS round_trip (needs ORS_KEY) — vary the seed daily so the shape changes
   try {
     return await callORS({
       profile: orsProfile(),
       coordinates: [[sLng, sLat]],
-      round_trip: { length: Math.round(targetKm * 1000), points: 5, seed: 1 },
+      round_trip: { length: Math.round(targetKm * 1000), points: 5, seed },
     });
   } catch (e) { console.warn('ORS:', e.message); }
-  // 3. OSRM trip — always works
-  return osrmLoopWithRetry(sLat, sLng, targetKm);
+  // 3. OSRM trip — always works; rotate its waypoint ring by the daily seed
+  return osrmLoopWithRetry(sLat, sLng, targetKm, seed);
 }
 
 // ── Display route ─────────────────────────────────────────────────────────────
@@ -1011,7 +1148,7 @@ function showQuotaExceededModal(quota) {
         <div class="qm-arrow">→</div>
         <div class="qm-tier qm-silver">
           <strong>🥈 Argent</strong>
-          <span>Illimité · 4,99€/mois</span>
+          <span>Illimité · 3,99€/mois</span>
         </div>
       </div>
       <p class="qm-perks">+ Mode boucle, profil altimétrique, export GPX, cartes hors-ligne…</p>
@@ -1145,6 +1282,7 @@ function handleBestTourParam() {
     document.querySelectorAll('.pathtype-btn').forEach(b => b.classList.remove('active'));
     typeBtn.classList.add('active');
     pathType = targetType;
+    syncTransportToPathType(pathType);
   }
 
   // Select difficulty

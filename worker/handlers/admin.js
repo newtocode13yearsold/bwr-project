@@ -153,90 +153,10 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     return json({ success: true });
   }
 
-  // ── Visit analytics ──────────────────────────────────────────────────────────
-  if (pathname === '/api/analytics/visit' && request.method === 'POST') {
-    // Public endpoint – no auth required (fire-and-forget from every page)
-    try {
-      const body = await request.json().catch(() => ({}));
-      const user = await getUserFromToken(env, request).catch(() => null);
-
-      const ip   = request.headers.get('CF-Connecting-IP') || 'unknown';
-      const page = typeof body.page === 'string' ? body.page.slice(0, 200) : '/';
-      const ts   = Date.now();
-
-      // Rate-limit by visitorId: 1 visit per device per page per 30 min
-      const rawVisitorIdEarly = typeof body.visitorId === 'string' ? body.visitorId.slice(0, 36) : null;
-      if (rawVisitorIdEarly) {
-        const deviceKey = `ratelimit:device:${rawVisitorIdEarly}:${page.replace(/\W/g, '_')}`;
-        const lastTs = await env.BWR_KV.get(deviceKey);
-        if (lastTs && ts - parseInt(lastTs, 10) < 30 * 60 * 1000) return json({ ok: true });
-        await env.BWR_KV.put(deviceKey, String(ts), { expirationTtl: 3600 }); // 1h TTL
-      }
-      // Rate-limit by IP: max 1 visit per IP per page per hour (fallback for no-visitorId clients)
-      const hourSlot    = Math.floor(ts / 3600000);
-      const rateLimitKey = `ratelimit:visit:${ip}:${page.replace(/\W/g, '_')}:${hourSlot}`;
-      const countRaw    = await env.BWR_KV.get(rateLimitKey);
-      const count       = countRaw ? parseInt(countRaw, 10) : 0;
-      if (count >= 1) return json({ ok: true }); // silently drop excess
-      await env.BWR_KV.put(rateLimitKey, String(count + 1), { expirationTtl: 7200 }); // 2h TTL
-
-      // Assign a sequential visitor number for anonymous devices (persists forever)
-      let visitorNum = null;
-      const rawVisitorId = rawVisitorIdEarly;
-      if (!user && rawVisitorId) {
-        const numKey = `visitor:num:${rawVisitorId}`;
-        const existing = await env.BWR_KV.get(numKey);
-        if (existing) {
-          visitorNum = parseInt(existing, 10);
-        } else {
-          const totalVisitorsRaw = await env.BWR_KV.get('analytics:visitor_count');
-          visitorNum = (totalVisitorsRaw ? parseInt(totalVisitorsRaw, 10) : 0) + 1;
-          await env.BWR_KV.put('analytics:visitor_count', String(visitorNum));
-          await env.BWR_KV.put(numKey, String(visitorNum)); // permanent — no TTL
-        }
-      }
-
-      // Increment permanent total-visit counter (never expires)
-      const totalRaw = await env.BWR_KV.get('analytics:total_visits');
-      await env.BWR_KV.put('analytics:total_visits', String((totalRaw ? parseInt(totalRaw, 10) : 0) + 1));
-
-      const id    = crypto.randomUUID();
-      const visit = {
-        id,
-        timestamp: new Date(ts).toISOString(),
-        page,
-        userId:     user ? user.id   : null,
-        userName:   user ? user.name : null,
-        visitorId:  rawVisitorId,
-        visitorNum,
-        userAgent: (request.headers.get('User-Agent') || '').slice(0, 300),
-        ip,
-      };
-      const key = `visit:${String(ts).padStart(13, '0')}:${id}`;
-      await env.BWR_KV.put(key, JSON.stringify(visit), { expirationTtl: 60 * 60 * 24 * 30 });
-      return json({ ok: true, visitKey: key });
-    } catch {
-      return json({ ok: false });
-    }
-  }
-
-  // ── Visit duration update (sendBeacon on pagehide) ───────────────────────
-  if (pathname === '/api/analytics/visit/duration' && request.method === 'POST') {
-    try {
-      const body = await request.json().catch(() => ({}));
-      const { visitKey, duration } = body;
-      if (typeof visitKey !== 'string' || !visitKey.startsWith('visit:')) return json({ ok: false });
-      if (typeof duration !== 'number' || duration < 0 || duration > 86400000) return json({ ok: false });
-      const raw = await env.BWR_KV.get(visitKey);
-      if (!raw) return json({ ok: false });
-      const visit = JSON.parse(raw);
-      visit.duration = Math.round(duration);
-      await env.BWR_KV.put(visitKey, JSON.stringify(visit), { expirationTtl: 60 * 60 * 24 * 30 });
-      return json({ ok: true });
-    } catch {
-      return json({ ok: false });
-    }
-  }
+  // ── Activity analytics ───────────────────────────────────────────────────────
+  // NOTE: page-view tracking was removed on purpose — anonymous page views could be
+  // search-engine bots and inflated the counts. We now only record real logins and
+  // new accounts (see recordAuthEvent in worker/kv.js, called from auth.js).
 
   /* ── AI Revenue Forecast — calls Claude with the forecast data ──────── */
   if (pathname === '/api/ai/revenue-forecast' && request.method === 'POST') {
@@ -257,14 +177,14 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     const trendStr = slope > 0 ? `+${Math.round(slope)} vis./mois (croissance)` :
                      slope < 0 ? `${Math.round(slope)} vis./mois (déclin)` : 'Stable';
 
-    const ARPU = 0.65 * 4.99 + 0.35 * 6.99; // ~5.69€
+    const ARPU = 0.65 * 3.99 + 0.35 * 6.99; // ~5.04€
     const pot1 = Math.round(visitors * 0.01 * ARPU);
     const pot2 = Math.round(visitors * 0.02 * ARPU);
     const pot3 = Math.round(visitors * 0.03 * ARPU);
 
     const prompt = `Tu es un expert en croissance SaaS et monétisation d'applications web françaises.
 
-Analyse ces données de prévision de revenus pour BWR — une application de randonnée dans les forêts de l'Oise (France) avec deux plans payants : Argent (4,99 €/mois) et Or (6,99 €/mois).
+Analyse ces données de prévision de revenus pour BWR — une application de randonnée dans les forêts de l'Oise (France) avec deux plans payants : Argent (3,99 €/mois) et Or (6,99 €/mois).
 
 Données réelles (tirées du tableau de bord admin) :
 - Visiteurs ce mois : ${Math.round(visitors)}
@@ -333,7 +253,7 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
     if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
 
     const prefixes = ['user:', 'uemail:', 'session:', 'path:', 'report:', 'contact:',
-                      'visit:', 'savedroute:', 'routeshare:', 'osm:', 'pending:', 'pemail:',
+                      'event:', 'savedroute:', 'routeshare:', 'osm:', 'pending:', 'pemail:',
                       'photo:', 'aisugg:', 'walkedpath:', 'pathgrade:', 'leaderboard:'];
 
     const counts = {};
@@ -344,103 +264,110 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
       totalKeys += keys.length;
     }
 
-    // Sample last 3 visit keys for integrity check
-    const visitKeys = await listKeys(env, 'visit:');
-    const sampleVisits = [];
-    for (const k of visitKeys.slice(-3).reverse()) {
+    // Sample the last 3 activity events for an integrity check
+    const eventKeys = await listKeys(env, 'event:');
+    const sampleEvents = [];
+    for (const k of eventKeys.slice(-3).reverse()) {
       const raw = await env.BWR_KV.get(k.name);
       if (raw) {
         const v = JSON.parse(raw);
-        sampleVisits.push({ key: k.name, page: v.page, timestamp: v.timestamp, userId: v.userId ?? null });
+        sampleEvents.push({ key: k.name, type: v.type, timestamp: v.timestamp, userName: v.userName ?? null });
       }
     }
-
-    // Detect duplicate visits (same timestamp minute + same page → likely test data)
-    const minuteBuckets = {};
-    for (const k of visitKeys) {
-      const raw = await env.BWR_KV.get(k.name).catch(() => null);
-      if (!raw) continue;
-      const v = JSON.parse(raw);
-      const bucket = v.timestamp?.slice(0, 16) + '|' + (v.page || '/');
-      minuteBuckets[bucket] = (minuteBuckets[bucket] || 0) + 1;
-    }
-    const suspiciousBuckets = Object.entries(minuteBuckets)
-      .filter(([, n]) => n > 10)
-      .map(([bucket, n]) => ({ bucket, count: n }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
 
     return json({
       ok: true,
       totalKeys,
       counts,
-      visitSample: sampleVisits,
-      suspiciousBuckets,
-      workerVersion: '2.0',
+      eventSample: sampleEvents,
+      workerVersion: '2.1',
       timestamp: new Date().toISOString(),
     });
   }
 
-  // ── Cleanup duplicate visits (admin only) ───────────────────────────────────
-  if (pathname === '/api/debug/cleanup-visits' && request.method === 'POST') {
-    const admin = await getUserFromToken(env, request);
-    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
-
-    const allKeys = await listKeys(env, 'visit:');
-    // Group keys by minute+page bucket
-    const buckets = {}; // bucket -> [{ key, ts }]
-    for (const k of allKeys) {
-      const raw = await env.BWR_KV.get(k.name).catch(() => null);
-      if (!raw) continue;
-      const v = JSON.parse(raw);
-      const bucket = (v.timestamp?.slice(0, 16) ?? '') + '|' + (v.page || '/');
-      if (!buckets[bucket]) buckets[bucket] = [];
-      buckets[bucket].push({ key: k.name, ts: v.timestamp });
-    }
-    // Delete all keys in buckets with more than 5 identical entries (keep 0 — all fake)
-    const keysToDelete = [];
-    for (const entries of Object.values(buckets)) {
-      if (entries.length > 5) keysToDelete.push(...entries.map(e => e.key));
-    }
-    await Promise.all(keysToDelete.map(k => env.BWR_KV.delete(k)));
-    return json({ ok: true, deleted: keysToDelete.length, totalBefore: allKeys.length });
-  }
-
-  // ── Reset all analytics data (admin only) ────────────────────────────────────
+  // ── Reset activity data (admin only) ─────────────────────────────────────────
+  // Clears recorded activity and purges all leftover legacy page-view keys from
+  // the old tracking system. Pass { keepName } to preserve a person's activity
+  // (case-insensitive substring match on the recorded name) — e.g. keep "Emilien".
+  // Any legacy page view that belongs to keepName is converted into a login event
+  // so it still shows in the new activity panel; everything else is deleted.
   if (pathname === '/api/analytics/reset' && request.method === 'POST') {
     const admin = await getUserFromToken(env, request);
     if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
 
-    const prefixes = ['visit:', 'ratelimit:visit:', 'ratelimit:device:', 'visitor:num:'];
+    const body = await request.json().catch(() => ({}));
+    const keepName = typeof body.keepName === 'string' ? body.keepName.trim().toLowerCase() : '';
+    const matches  = name => !!keepName && (name || '').toLowerCase().includes(keepName);
     let deleted = 0;
-    for (const prefix of prefixes) {
+
+    // 1. Existing activity events: keep keepName's, delete the rest.
+    for (const k of await listKeys(env, 'event:')) {
+      const raw = await env.BWR_KV.get(k.name).catch(() => null);
+      const ev  = raw ? JSON.parse(raw) : null;
+      if (matches(ev?.userName)) continue;
+      await env.BWR_KV.delete(k.name);
+      deleted++;
+    }
+
+    // 2. Legacy page-view keys: convert keepName's visits to login events, drop the rest.
+    for (const k of await listKeys(env, 'visit:')) {
+      const raw = await env.BWR_KV.get(k.name).catch(() => null);
+      const v   = raw ? JSON.parse(raw) : null;
+      if (matches(v?.userName)) {
+        const ts = new Date(v.timestamp || Date.now()).getTime();
+        const id = crypto.randomUUID();
+        await env.BWR_KV.put(`event:${String(ts).padStart(13, '0')}:${id}`,
+          JSON.stringify({ id, type: 'login', timestamp: new Date(ts).toISOString(),
+            userId: v.userId || null, userName: v.userName || '', email: v.email || '' }),
+          { expirationTtl: 60 * 60 * 24 * 90 });
+      }
+      await env.BWR_KV.delete(k.name);
+      deleted++;
+    }
+
+    // 3. Purge the bot-prone rate-limit / visitor-number keys and old counters.
+    for (const prefix of ['ratelimit:visit:', 'ratelimit:device:', 'visitor:num:']) {
       const keys = await listKeys(env, prefix);
       await Promise.all(keys.map(k => env.BWR_KV.delete(k.name)));
       deleted += keys.length;
     }
-    await env.BWR_KV.put('analytics:total_visits', '0');
-    await env.BWR_KV.put('analytics:visitor_count', '0');
-    return json({ ok: true, deleted });
+    await env.BWR_KV.delete('analytics:total_visits');
+    await env.BWR_KV.delete('analytics:visitor_count');
+
+    // 4. Recompute the running counters from the survivors.
+    let kept = 0, logins = 0, signups = 0;
+    for (const k of await listKeys(env, 'event:')) {
+      const raw = await env.BWR_KV.get(k.name).catch(() => null);
+      const ev  = raw ? JSON.parse(raw) : null;
+      if (!ev) continue;
+      kept++;
+      if (ev.type === 'signup') signups++; else logins++;
+    }
+    await env.BWR_KV.put('analytics:total_logins',  String(logins));
+    await env.BWR_KV.put('analytics:total_signups', String(signups));
+
+    return json({ ok: true, deleted, kept });
   }
 
-  if (pathname === '/api/analytics/visits' && request.method === 'GET') {
+  // ── Activity events list (admin only) ────────────────────────────────────────
+  if (pathname === '/api/analytics/events' && request.method === 'GET') {
     const admin = await getUserFromToken(env, request);
     if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
-    const [allKeys, totalRaw, visitorCountRaw] = await Promise.all([
-      listKeys(env, 'visit:'),
-      env.BWR_KV.get('analytics:total_visits'),
-      env.BWR_KV.get('analytics:visitor_count'),
+    const [allKeys, loginsRaw, signupsRaw] = await Promise.all([
+      listKeys(env, 'event:'),
+      env.BWR_KV.get('analytics:total_logins'),
+      env.BWR_KV.get('analytics:total_signups'),
     ]);
-    // Most recent first – keys are already chronological, so reverse
+    // Most recent first – keys are timestamp-prefixed, so reverse the tail.
     const recentKeys = allKeys.slice(-500).reverse();
     const values = await Promise.all(recentKeys.map(k => env.BWR_KV.get(k.name)));
-    // Filter out any visits recorded by admin users (userId matches admin)
-    const visits = values.filter(Boolean).map(v => JSON.parse(v))
+    // Exclude the admin's own logins (the helper already skips admins, but be safe).
+    const events = values.filter(Boolean).map(v => JSON.parse(v))
       .filter(v => v.userId !== admin.id);
     return json({
-      visits,
-      totalVisits: totalRaw ? parseInt(totalRaw, 10) : allKeys.length,
-      totalVisitors: visitorCountRaw ? parseInt(visitorCountRaw, 10) : 0,
+      events,
+      totalLogins:  loginsRaw  ? parseInt(loginsRaw, 10)  : 0,
+      totalSignups: signupsRaw ? parseInt(signupsRaw, 10) : 0,
     });
   }
 

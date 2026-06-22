@@ -719,3 +719,73 @@ describe('POST /api/migrate', () => {
     assert.ok(kv.store.has('path:lp1'), 'granular path key must exist after migration');
   });
 });
+
+// ── Activity analytics (logins + new accounts only — no page-view tracking) ────
+
+describe('GET /api/analytics/events', () => {
+  test('non-admin → 403', async () => {
+    const { env, seedFree } = freshEnv();
+    const { token } = seedFree();
+    const res = await worker.fetch(authed('GET', '/api/analytics/events', token), env);
+    assert.equal(res.status, 403);
+  });
+
+  test('returns recorded login/signup events and counters', async () => {
+    const { env, kv, seedAdmin } = freshEnv();
+    const { token } = seedAdmin();
+    kv.store.set('event:0000000001000:e1', JSON.stringify({ id: 'e1', type: 'signup', timestamp: '2026-06-01T10:00:00.000Z', userId: 'u1', userName: 'Emilien' }));
+    kv.store.set('event:0000000002000:e2', JSON.stringify({ id: 'e2', type: 'login',  timestamp: '2026-06-02T10:00:00.000Z', userId: 'u1', userName: 'Emilien' }));
+    kv.store.set('analytics:total_logins', '5');
+    kv.store.set('analytics:total_signups', '2');
+
+    const res = await worker.fetch(authed('GET', '/api/analytics/events', token), env);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.events.length, 2);
+    assert.equal(body.totalLogins, 5);
+    assert.equal(body.totalSignups, 2);
+  });
+
+  test('the old page-view endpoint no longer exists (404, not tracked)', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('POST', '/api/analytics/visit', { page: '/map' }), env);
+    assert.equal(res.status, 404);
+  });
+});
+
+describe('POST /api/analytics/reset', () => {
+  test('non-admin → 403', async () => {
+    const { env, seedFree } = freshEnv();
+    const { token } = seedFree();
+    const res = await worker.fetch(authed('POST', '/api/analytics/reset', token, {}), env);
+    assert.equal(res.status, 403);
+  });
+
+  test('keeps keepName activity, deletes everything else, and converts legacy visits', async () => {
+    const { env, kv, seedAdmin } = freshEnv();
+    const { token } = seedAdmin();
+    // Two events: one for Emilien (keep), one for a bot-ish other user (drop).
+    kv.store.set('event:0000000001000:e1', JSON.stringify({ id: 'e1', type: 'login', timestamp: '2026-06-01T10:00:00.000Z', userId: 'u1', userName: 'Emilien' }));
+    kv.store.set('event:0000000002000:e2', JSON.stringify({ id: 'e2', type: 'login', timestamp: '2026-06-02T10:00:00.000Z', userId: 'u2', userName: 'Someone' }));
+    // A legacy page-view for Emilien → should be converted into a login event.
+    kv.store.set('visit:0000000003000:v1', JSON.stringify({ id: 'v1', timestamp: '2026-05-01T10:00:00.000Z', userId: 'u1', userName: 'Emilien', page: '/map' }));
+    // A legacy page-view from an anonymous bot → should be deleted, not kept.
+    kv.store.set('visit:0000000004000:v2', JSON.stringify({ id: 'v2', timestamp: '2026-05-02T10:00:00.000Z', userId: null, userName: null, page: '/' }));
+
+    const res = await worker.fetch(authed('POST', '/api/analytics/reset', token, { keepName: 'Emilien' }), env);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.ok(body.ok);
+
+    // No visit: keys survive; the bot event is gone; Emilien's event remains.
+    const surviving = [...kv.store.keys()];
+    assert.ok(!surviving.some(k => k.startsWith('visit:')), 'all legacy visit: keys must be purged');
+    assert.ok(surviving.includes('event:0000000001000:e1'), "Emilien's event is kept");
+    assert.ok(!surviving.includes('event:0000000002000:e2'), "other user's event is deleted");
+    // Emilien's legacy visit became a new login event → 2 surviving events total.
+    const eventKeys = surviving.filter(k => k.startsWith('event:'));
+    assert.equal(eventKeys.length, 2);
+    assert.equal(kv.store.get('analytics:total_logins'), '2');
+    assert.equal(kv.store.get('analytics:total_signups'), '0');
+  });
+});
