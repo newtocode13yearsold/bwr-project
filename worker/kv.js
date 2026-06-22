@@ -8,6 +8,7 @@
 // photo:{reportId}   → data-URI string, 90-day TTL
 // contact:{id}       → JSON contact message
 // session:{token}    → JSON { userId, expiresAt }
+// reset:{token}      → JSON { userId, expiresAt }  (1-hour TTL, single-use password reset)
 // osm:{bbox}         → JSON OSM data  (7-day TTL)
 // savedroute:{userId}:{id} → JSON saved route (coords, stats, metadata)
 // routeshare:{token}       → JSON { userId, routeId }  (180-day TTL)
@@ -17,7 +18,9 @@
 // walkedpath:{userId}:{pathId} → ISO timestamp string
 // aisugg:{userId}:{date}   → legacy AI-suggestion cache (feature removed; keys self-expire, 48h TTL)
 // leaderboard:cache        → JSON sorted entries array  (5-min TTL)
-// visit:{ts}:{id}          → JSON visit record  (30-day TTL)
+// event:{ts}:{id}          → JSON auth event { type:'login'|'signup', ... }  (90-day TTL)
+//                            Only real logins / new accounts are recorded — page
+//                            views are NOT tracked (they could be search-engine bots).
 
 /** Paginates KV list() to return all keys under a prefix (KV caps single calls at 1 000). */
 export async function listKeys(env, prefix) {
@@ -69,6 +72,42 @@ export async function putPath(env, path) {
 
 export async function putReport(env, report) {
   await env.BWR_KV.put(`report:${report.id}`, JSON.stringify(report));
+}
+
+/**
+ * Records a real auth event (a login or a brand-new account) for the admin
+ * activity panel. Page views are intentionally NOT tracked — only humans who
+ * actually sign in or create an account, which search-engine bots never do.
+ * Admin accounts are skipped so the owner's own logins don't inflate the count.
+ * Best-effort: never throws, so it can't break the login/verify flow.
+ *
+ * @param {import('./kv.js').Env} env
+ * @param {'login'|'signup'} type
+ * @param {{ id: string, name?: string, email?: string, role?: string }} user
+ */
+export async function recordAuthEvent(env, type, user) {
+  try {
+    if (!user || user.role === 'admin') return;
+    const ts = Date.now();
+    const id = crypto.randomUUID();
+    const event = {
+      id,
+      type,
+      timestamp: new Date(ts).toISOString(),
+      userId: user.id,
+      userName: user.name || '',
+      email: user.email || '',
+    };
+    const counterKey = type === 'signup' ? 'analytics:total_signups' : 'analytics:total_logins';
+    const totalRaw = await env.BWR_KV.get(counterKey);
+    await Promise.all([
+      env.BWR_KV.put(`event:${String(ts).padStart(13, '0')}:${id}`, JSON.stringify(event),
+        { expirationTtl: 60 * 60 * 24 * 90 }), // 90-day TTL
+      env.BWR_KV.put(counterKey, String((totalRaw ? parseInt(totalRaw, 10) : 0) + 1)),
+    ]);
+  } catch {
+    /* analytics must never break auth */
+  }
 }
 
 /**

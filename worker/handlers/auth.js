@@ -1,13 +1,14 @@
-import { putUser, getUserByEmail, getUser, effectivePlan } from '../kv.js';
+import { putUser, getUserByEmail, getUser, effectivePlan, recordAuthEvent, listKeys, listItems } from '../kv.js';
 import {
   hashPasswordLegacy, hashPassword, getUserFromToken,
   isoMonday, checkRateLimit,
   getLoginAttempts, recordFailedLogin,
-  PENDING_TTL, RESEND_COOLDOWN,
-  sendVerificationEmail,
+  PENDING_TTL, RESEND_COOLDOWN, RESET_TTL, RESET_COOLDOWN,
+  sendVerificationEmail, sendPasswordResetEmail,
 } from '../auth-utils.js';
 
 const REGISTER_RATE_LIMIT = { max: 5, window: 3600 };
+const FORGOT_RATE_LIMIT = { max: 5, window: 3600 };
 
 /**
  * Auth endpoints: register, verify, login, logout, me, profile, password,
@@ -17,7 +18,7 @@ const REGISTER_RATE_LIMIT = { max: 5, window: 3600 };
  * @param {{ pathname: string, url: URL, json: Function, fail: Function }} ctx
  * @returns {Promise<Response|null>}
  */
-export async function handleAuth(request, env, { pathname, url, json, fail }) {
+export async function handleAuth(request, env, { pathname, url, json, fail, cors }) {
   if (pathname === '/api/auth/register' && request.method === 'POST') {
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
     if (!await checkRateLimit(env, 'register', ip, REGISTER_RATE_LIMIT.max, REGISTER_RATE_LIMIT.window))
@@ -105,6 +106,9 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
       env.BWR_KV.delete(`pemail:${newUser.email}`),
     ]);
 
+    // Count this as a new account in the admin activity panel.
+    await recordAuthEvent(env, 'signup', newUser);
+
     return json({ message: 'Email vérifié ! Vous pouvez maintenant vous connecter.' });
   }
 
@@ -139,6 +143,80 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
     await sendVerificationEmail(env, origin, emailKey, pending.name, newToken);
 
     return json({ message: 'Un nouvel email de vérification a été envoyé.' });
+  }
+
+  if (pathname === '/api/auth/forgot-password' && request.method === 'POST') {
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    if (!await checkRateLimit(env, 'forgot', ip, FORGOT_RATE_LIMIT.max, FORGOT_RATE_LIMIT.window))
+      return fail('Trop de demandes. Réessayez dans une heure.', 429);
+
+    const body = await request.json();
+    const emailKey = (body.email || '').toLowerCase();
+    if (!emailKey) return fail('Email requis.');
+
+    // Generic response in all cases below — never reveal whether an account exists.
+    const generic = { message: "Si un compte existe pour cette adresse, un email de réinitialisation a été envoyé." };
+
+    const user = await getUserByEmail(env, emailKey);
+    if (!user) return json(generic);
+
+    // Per-address cooldown so the same inbox can't be flooded with reset emails.
+    if (!await checkRateLimit(env, 'forgotemail', emailKey, 1, RESET_COOLDOWN)) return json(generic);
+
+    const token = crypto.randomUUID();
+    await env.BWR_KV.put(
+      `reset:${token}`,
+      JSON.stringify({ userId: user.id, expiresAt: new Date(Date.now() + RESET_TTL * 1000).toISOString() }),
+      { expirationTtl: RESET_TTL },
+    );
+
+    const origin = new URL(request.url).origin;
+    try {
+      await sendPasswordResetEmail(env, origin, user.email, user.name, token);
+    } catch {
+      // Don't leak the failure either — admin is notified via ntfy inside the helper.
+    }
+
+    return json(generic);
+  }
+
+  if (pathname === '/api/auth/reset-password' && request.method === 'POST') {
+    const { token, password } = await request.json();
+    if (!token || !password) return fail('Champs obligatoires.');
+    if (password.length < 8) return fail('Le mot de passe doit faire au moins 8 caractères.');
+
+    const raw = await env.BWR_KV.get(`reset:${token}`);
+    if (!raw) return fail('Lien invalide ou expiré.', 400);
+
+    const reset = JSON.parse(raw);
+    if (new Date(reset.expiresAt) < new Date()) {
+      await env.BWR_KV.delete(`reset:${token}`);
+      return fail('Lien invalide ou expiré.', 400);
+    }
+
+    const user = await getUser(env, reset.userId);
+    if (!user) {
+      await env.BWR_KV.delete(`reset:${token}`);
+      return fail('Lien invalide ou expiré.', 400);
+    }
+
+    const newSalt = crypto.randomUUID();
+    const newHash = await hashPassword(password, newSalt);
+    await putUser(env, {
+      ...user,
+      passwordHash: newHash,
+      salt: newSalt,
+      hashVersion: 2,
+      sessionsInvalidatedAt: new Date().toISOString(),
+    });
+
+    // Single-use: burn the token, and clear any login lockout so the user can sign in immediately.
+    await Promise.all([
+      env.BWR_KV.delete(`reset:${token}`),
+      env.BWR_KV.delete(`loginattempts:${user.email}`),
+    ]);
+
+    return json({ message: 'Mot de passe réinitialisé. Vous pouvez maintenant vous connecter.' });
   }
 
   if (pathname === '/api/auth/login' && request.method === 'POST') {
@@ -191,6 +269,9 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
     const issuedAt = new Date().toISOString();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     await env.BWR_KV.put(`session:${token}`, JSON.stringify({ userId: user.id, issuedAt, expiresAt }), { expirationTtl: 2592000 });
+
+    // Count this login in the admin activity panel (admins are skipped inside the helper).
+    await recordAuthEvent(env, 'login', user);
 
     return json({
       token,
@@ -432,14 +513,61 @@ export async function handleAuth(request, env, { pathname, url, json, fail }) {
     return json({ message: 'Mot de passe modifié avec succès.' });
   }
 
+  // GDPR right of access / portability (art. 15 & 20): the user downloads a
+  // structured, machine-readable copy of every piece of personal data we hold
+  // about them. Credentials (password hash, salt) are deliberately excluded —
+  // they are not "personal data" the user needs and exposing them is a risk.
+  if (pathname === '/api/auth/export' && request.method === 'GET') {
+    const user = await getUserFromToken(env, request);
+    if (!user) return fail('Non authentifié.', 401);
+
+    const { passwordHash: _ph, salt: _s, hashVersion: _hv, ...profile } = user;
+
+    const savedRoutes = await listItems(env, `savedroute:${user.id}:`);
+    const walkedKeys = await listKeys(env, `walkedpath:${user.id}:`);
+    const walkedPaths = await Promise.all(
+      walkedKeys.map(async (k) => ({
+        pathId: k.name.slice(`walkedpath:${user.id}:`.length),
+        walkedAt: await env.BWR_KV.get(k.name),
+      })),
+    );
+
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      format: 'BWR personal-data export (RGPD art. 15 & 20)',
+      profile,
+      savedRoutes,
+      walkedPaths,
+    };
+
+    const filename = `bwr-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`;
+    return new Response(JSON.stringify(exportData, null, 2), {
+      status: 200,
+      headers: {
+        ...cors,
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+    });
+  }
+
   if (pathname === '/api/auth/account' && request.method === 'DELETE') {
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
     if (user.role === 'admin') return fail('Le compte administrateur ne peut pas être supprimé.', 403);
 
+    // GDPR right to erasure (art. 17): purge every key tied to this user, not
+    // just the account record. Saved routes carry a public share token that
+    // must die with the route, and walked-path markers are per-user.
+    const savedRoutes = await listItems(env, `savedroute:${user.id}:`);
+    const walkedKeys = await listKeys(env, `walkedpath:${user.id}:`);
+
     await Promise.all([
       env.BWR_KV.delete(`user:${user.id}`),
       env.BWR_KV.delete(`uemail:${user.email}`),
+      ...savedRoutes.map(rt => env.BWR_KV.delete(`savedroute:${user.id}:${rt.id}`)),
+      ...savedRoutes.filter(rt => rt.shareToken).map(rt => env.BWR_KV.delete(`routeshare:${rt.shareToken}`)),
+      ...walkedKeys.map(k => env.BWR_KV.delete(k.name)),
     ]);
 
     const auth = request.headers.get('Authorization');

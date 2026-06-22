@@ -131,6 +131,52 @@ resendBtn.addEventListener('click', async () => {
   resendBtn.textContent = 'Renvoyer l\'email de vérification';
 });
 
+// Forgot-password panel
+const forgotPanel    = document.getElementById('forgotPanel');
+const showForgotLink = document.getElementById('showForgotLink');
+const hideForgotLink = document.getElementById('hideForgotLink');
+const forgotBtn      = document.getElementById('forgotBtn');
+const forgotMsg      = document.getElementById('forgotMsg');
+
+showForgotLink.addEventListener('click', (e) => {
+  e.preventDefault();
+  loginForm.classList.add('hidden');
+  forgotPanel.classList.remove('hidden');
+  forgotMsg.classList.add('hidden');
+  // Pre-fill with whatever was typed in the login email field.
+  document.getElementById('forgotEmail').value = document.getElementById('loginEmail').value.trim();
+});
+
+hideForgotLink.addEventListener('click', (e) => {
+  e.preventDefault();
+  forgotPanel.classList.add('hidden');
+  loginForm.classList.remove('hidden');
+});
+
+forgotBtn.addEventListener('click', async () => {
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email) return;
+  forgotBtn.disabled = true;
+  forgotBtn.textContent = 'Envoi…';
+  forgotMsg.classList.add('hidden');
+  try {
+    const r = await fetch(`${API_URL}/api/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const d = await r.json();
+    forgotMsg.textContent = d.error || d.message || 'Email envoyé.';
+    forgotMsg.style.color = r.ok ? '#2d6b1f' : '';
+    forgotMsg.classList.remove('hidden');
+  } catch {
+    forgotMsg.textContent = 'Impossible de contacter le serveur.';
+    forgotMsg.classList.remove('hidden');
+  }
+  forgotBtn.disabled = false;
+  forgotBtn.textContent = 'Envoyer le lien de réinitialisation';
+});
+
 // Password visibility toggles
 document.querySelectorAll('.pw-eye').forEach(btn => {
   btn.addEventListener('click', () => {

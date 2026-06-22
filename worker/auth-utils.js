@@ -96,6 +96,8 @@ export async function recordFailedLogin(env, email) {
 
 export const PENDING_TTL = 86400; // 24 hours
 export const RESEND_COOLDOWN = 300; // 5 minutes between resend requests
+export const RESET_TTL = 3600; // 1 hour — password-reset link lifetime
+export const RESET_COOLDOWN = 300; // 5 minutes between forgot-password emails per address
 
 /** Sends the account-activation email via Resend. Silently no-ops if RESEND_API_KEY is unset (dev). */
 export async function sendVerificationEmail(env, origin, email, name, token) {
@@ -125,6 +127,39 @@ export async function sendVerificationEmail(env, origin, email, name, token) {
       method: 'POST',
       headers: { Title: 'BWR — email verification FAILED', Priority: 'high', Tags: 'email' },
       body: `Resend rejected email to ${email}. Status: ${res.status}. Details: ${body}`,
+    }).catch(() => {});
+    throw new Error(`Resend error ${res.status}: ${body}`);
+  }
+}
+
+/** Sends the password-reset email via Resend. Silently no-ops if RESEND_API_KEY is unset (dev). */
+export async function sendPasswordResetEmail(env, origin, email, name, token) {
+  if (!env.RESEND_API_KEY) return; // skip in dev if key not set
+  const resetUrl = `${origin}/reset?token=${token}`;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: env.RESEND_FROM || 'BWR <noreply@bwr.ciril8596.workers.dev>',
+      to: email,
+      subject: 'Réinitialisation de votre mot de passe — BWR',
+      html: `<p>Bonjour ${name},</p>
+<p>Vous avez demandé à réinitialiser votre mot de passe BWR. Cliquez sur le lien ci-dessous pour en choisir un nouveau. Ce lien expire dans 1 heure.</p>
+<p><a href="${resetUrl}">${resetUrl}</a></p>
+<p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email : votre mot de passe restera inchangé.</p>`,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    // Notify admin via ntfy so email failures are visible in production
+    fetch('https://ntfy.sh/bwr-ciril8596', {
+      method: 'POST',
+      headers: { Title: 'BWR — password reset email FAILED', Priority: 'high', Tags: 'email' },
+      body: `Resend rejected reset email to ${email}. Status: ${res.status}. Details: ${body}`,
     }).catch(() => {});
     throw new Error(`Resend error ${res.status}: ${body}`);
   }

@@ -43,6 +43,7 @@ Main endpoint groups:
 
 - Auth: /api/setup (one-time admin creation), /api/auth/{register,login,logout,me,profile,password,account}, /api/auth/plan/:userId (admin plan changes), /api/auth/stats, /api/auth/consume-route (free weekly quota), /api/auth/wheel-prize
 - Email verification: GET /api/auth/verify?token=… (activate account), POST /api/auth/resend-verification (re-send link, rate-limited 5 min)
+- Password reset: POST /api/auth/forgot-password (email a reset link — always 200, no account enumeration; IP rate-limited 5/h + per-address 5-min cooldown), POST /api/auth/reset-password ({token, password} — single-use `reset:{token}` KV key, 1-hour TTL; rotates salt+hash, sets `sessionsInvalidatedAt`, clears login lockout)
 - Paths (admin-only): POST/PUT/DELETE /api/paths/* — forest/bike paths curated by admin
 - Reports (public): POST /api/reports, DELETE /api/reports/:id (admin), GET /api/reports — crowd-sourced issues (fallen trees, floods, etc.)
 - Routing: POST /api/route — proxy to OpenRouteService (needs ORS_KEY env var)
@@ -61,6 +62,7 @@ Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - photo:{reportId} — data-URI string, 90-day TTL
 - contact:{id} — JSON contact message
 - session:{token} — session metadata (userId, expiresAt), 30-day TTL
+- reset:{token} — JSON {userId, expiresAt}, 1-hour TTL; single-use password-reset link, deleted on use
 - osm:{bbox} — cached OpenStreetMap query results, 7-day TTL
 - savedroute:{userId}:{id} — JSON saved route (coords, stats, name, shareToken, etc.)
 - routeshare:{token} — JSON {userId, routeId}, 180-day TTL; maps share token → route

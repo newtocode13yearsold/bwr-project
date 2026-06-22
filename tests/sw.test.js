@@ -108,6 +108,7 @@ const APP_SHELL_EXPECTED = [
   'verify',
   'changelog',
   'leaderboard',
+  'guide',
   'manifest.json',
   'lib/leaflet.js',
   'lib/leaflet.css',
@@ -184,7 +185,7 @@ describe('fetch handler: offline-data API (paths/reports) → network-first, cac
 
     const url = 'https://bwr-worker.ciril8596.workers.dev/api/paths';
     const cached = new Response(JSON.stringify([{ id: 'p1' }]), { status: 200, headers: { 'Content-Type': 'application/json' } });
-    const appCache = await mockCaches.open('bwr-v32');
+    const appCache = await mockCaches.open('bwr-v40');
     await appCache.put(url, cached);
 
     // Offline: network rejects → must fall back to the cached paths.
@@ -235,7 +236,7 @@ describe('fetch handler: offline-data API (paths/reports) → network-first, cac
 
     // Even if a GET copy is cached, a POST must never be answered from cache.
     const url = 'https://bwr-worker.ciril8596.workers.dev/api/reports';
-    const appCache = await mockCaches.open('bwr-v32');
+    const appCache = await mockCaches.open('bwr-v40');
     await appCache.put(url, new Response('[]', { status: 200 }));
 
     ctx.fetch = () => Promise.reject(new Error('offline'));
@@ -381,7 +382,7 @@ describe('activate handler: old caches deleted', () => {
 
     // Seed old + current caches
     await mockCaches.open('bwr-v1');           // old → must be deleted
-    await mockCaches.open('bwr-v32');          // current CACHE → keep
+    await mockCaches.open('bwr-v40');          // current CACHE → keep
     await mockCaches.open('bwr-offline-tiles'); // TILE_CACHE → keep
 
     let waitUntilPromise;
@@ -391,7 +392,7 @@ describe('activate handler: old caches deleted', () => {
 
     const remaining = await mockCaches.keys();
     assert.ok(!remaining.includes('bwr-v1'), 'old cache bwr-v1 must be deleted');
-    assert.ok(remaining.includes('bwr-v32'), 'current CACHE must be kept');
+    assert.ok(remaining.includes('bwr-v40'), 'current CACHE must be kept');
     assert.ok(remaining.includes('bwr-offline-tiles'), 'TILE_CACHE must be kept');
   });
 });

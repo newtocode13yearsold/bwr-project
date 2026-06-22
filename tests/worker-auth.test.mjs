@@ -728,3 +728,223 @@ describe('wheel prize', () => {
     assert.equal(res.status, 429);
   });
 });
+
+// ── POST /api/auth/forgot-password ───────────────────────────────────────────
+
+describe('forgot-password', () => {
+  // Reads the single reset:* token the handler stored (email sending is skipped in dev).
+  function getResetToken(kv) {
+    for (const k of kv.store.keys()) if (k.startsWith('reset:')) return k.slice('reset:'.length);
+    return null;
+  }
+
+  test('missing email → 400', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('POST', '/api/auth/forgot-password', {}), env);
+    assert.equal(res.status, 400);
+  });
+
+  test('unknown email → 200 (no enumeration) and no reset token created', async () => {
+    const { env, kv } = freshEnv();
+    const res = await worker.fetch(r('POST', '/api/auth/forgot-password', { email: 'ghost@bwr.fr' }), env);
+    assert.equal(res.status, 200);
+    assert.equal(getResetToken(kv), null, 'no reset token for a non-existent account');
+  });
+
+  test('known email → 200 and a reset token is stored', async () => {
+    const { env, kv, registerAndVerify } = freshEnv();
+    await registerAndVerify('fp@bwr.fr', 'origpass1', 'FP');
+    const res = await worker.fetch(r('POST', '/api/auth/forgot-password', { email: 'fp@bwr.fr' }), env);
+    assert.equal(res.status, 200);
+    const token = getResetToken(kv);
+    assert.ok(token, 'reset token must be created for a real account');
+    const reset = JSON.parse(kv.store.get(`reset:${token}`));
+    assert.ok(reset.userId, 'reset entry must reference the user');
+  });
+
+  test('per-address cooldown: second immediate request issues no new token', async () => {
+    const { env, kv, registerAndVerify } = freshEnv();
+    await registerAndVerify('fp2@bwr.fr', 'origpass1', 'FP2');
+    await worker.fetch(r('POST', '/api/auth/forgot-password', { email: 'fp2@bwr.fr' }), env);
+    const first = getResetToken(kv);
+    // Same address again, within cooldown → still 200, but no second token created.
+    const res = await worker.fetch(r('POST', '/api/auth/forgot-password', { email: 'fp2@bwr.fr' }), env);
+    assert.equal(res.status, 200);
+    const tokens = [...kv.store.keys()].filter(k => k.startsWith('reset:'));
+    assert.equal(tokens.length, 1, 'cooldown must prevent a second reset token');
+    assert.equal(tokens[0].slice('reset:'.length), first);
+  });
+
+  test('email lookup is case-insensitive', async () => {
+    const { env, kv, registerAndVerify } = freshEnv();
+    await registerAndVerify('fp3@bwr.fr', 'origpass1', 'FP3');
+    const res = await worker.fetch(r('POST', '/api/auth/forgot-password', { email: 'FP3@BWR.FR' }), env);
+    assert.equal(res.status, 200);
+    assert.ok(getResetToken(kv), 'uppercase email must still resolve to the account');
+  });
+});
+
+// ── POST /api/auth/reset-password ────────────────────────────────────────────
+
+describe('reset-password', () => {
+  // Drives forgot-password to obtain a valid token, then returns it.
+  async function requestReset(env, kv, email) {
+    await worker.fetch(r('POST', '/api/auth/forgot-password', { email }), env);
+    for (const k of kv.store.keys()) if (k.startsWith('reset:')) return k.slice('reset:'.length);
+    return null;
+  }
+
+  test('missing fields → 400', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('POST', '/api/auth/reset-password', { token: 'x' }), env);
+    assert.equal(res.status, 400);
+  });
+
+  test('password shorter than 8 chars → 400', async () => {
+    const { env, kv, registerAndVerify } = freshEnv();
+    await registerAndVerify('rp0@bwr.fr', 'origpass1', 'RP0');
+    const token = await requestReset(env, kv, 'rp0@bwr.fr');
+    const res = await worker.fetch(r('POST', '/api/auth/reset-password', { token, password: 'short' }), env);
+    assert.equal(res.status, 400);
+  });
+
+  test('invalid/unknown token → 400', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('POST', '/api/auth/reset-password', { token: 'nope', password: 'brandnew1' }), env);
+    assert.equal(res.status, 400);
+  });
+
+  test('valid token resets password: old fails, new works', async () => {
+    const { env, kv, registerAndVerify } = freshEnv();
+    await registerAndVerify('rp1@bwr.fr', 'origpass1', 'RP1');
+    const token = await requestReset(env, kv, 'rp1@bwr.fr');
+
+    const res = await worker.fetch(r('POST', '/api/auth/reset-password', { token, password: 'brandnew1' }), env);
+    assert.equal(res.status, 200);
+
+    // Old password must no longer work
+    const oldLogin = await worker.fetch(r('POST', '/api/auth/login', { email: 'rp1@bwr.fr', password: 'origpass1' }), env);
+    assert.equal(oldLogin.status, 401, 'old password must be rejected after reset');
+
+    // New password works
+    const newLogin = await worker.fetch(r('POST', '/api/auth/login', { email: 'rp1@bwr.fr', password: 'brandnew1' }), env);
+    assert.equal(newLogin.status, 200, 'new password must log in');
+  });
+
+  test('token is single-use: second reset with same token → 400', async () => {
+    const { env, kv, registerAndVerify } = freshEnv();
+    await registerAndVerify('rp2@bwr.fr', 'origpass1', 'RP2');
+    const token = await requestReset(env, kv, 'rp2@bwr.fr');
+
+    await worker.fetch(r('POST', '/api/auth/reset-password', { token, password: 'brandnew1' }), env);
+    const second = await worker.fetch(r('POST', '/api/auth/reset-password', { token, password: 'another12' }), env);
+    assert.equal(second.status, 400, 'reused token must be rejected');
+  });
+
+  test('reset rotates the salt and invalidates existing sessions', async () => {
+    const { env, kv, registerAndLogin, getStoredUser } = freshEnv();
+    const { token: sessionToken, user } = await registerAndLogin('rp3@bwr.fr', 'origpass1');
+    const saltBefore = getStoredUser(user.id).salt;
+
+    const resetToken = await requestReset(env, kv, 'rp3@bwr.fr');
+    await worker.fetch(r('POST', '/api/auth/reset-password', { token: resetToken, password: 'brandnew1' }), env);
+
+    const after = getStoredUser(user.id);
+    assert.notEqual(after.salt, saltBefore, 'salt must be rotated');
+    assert.ok(after.sessionsInvalidatedAt, 'sessions must be invalidated');
+
+    // The pre-reset session must no longer authenticate.
+    const me = await worker.fetch(authed('GET', '/api/auth/me', sessionToken), env);
+    assert.equal(me.status, 401, 'old session must be invalidated by the reset');
+  });
+
+  test('expired reset token → 400 and token deleted', async () => {
+    const { env, kv, registerAndVerify } = freshEnv();
+    await registerAndVerify('rp4@bwr.fr', 'origpass1', 'RP4');
+    const token = await requestReset(env, kv, 'rp4@bwr.fr');
+    // Backdate the stored expiry
+    const reset = JSON.parse(kv.store.get(`reset:${token}`));
+    reset.expiresAt = new Date(Date.now() - 1000).toISOString();
+    kv.store.set(`reset:${token}`, JSON.stringify(reset));
+
+    const res = await worker.fetch(r('POST', '/api/auth/reset-password', { token, password: 'brandnew1' }), env);
+    assert.equal(res.status, 400);
+    assert.ok(!kv.store.has(`reset:${token}`), 'expired token must be cleaned up');
+  });
+});
+
+// ── GET /api/auth/export (RGPD — droit d'accès & portabilité) ─────────────────
+
+describe('/api/auth/export', () => {
+  test('no token → 401', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('GET', '/api/auth/export'), env);
+    assert.equal(res.status, 401);
+  });
+
+  test('returns the user data as a JSON attachment, without credentials', async () => {
+    const { env, kv, registerAndLogin } = freshEnv();
+    const login = await registerAndLogin('exp@bwr.fr', 'exportme1', 'Exp');
+
+    // Seed a saved route + walked path so the export is non-trivial.
+    kv.store.set(`savedroute:${login.user.id}:rt1`, JSON.stringify({ id: 'rt1', userId: login.user.id, name: 'Boucle', coords: [[1, 2], [3, 4]], shareToken: 'tok1' }));
+    kv.store.set(`walkedpath:${login.user.id}:p9`, '2026-06-01T10:00:00.000Z');
+
+    const res = await worker.fetch(authed('GET', '/api/auth/export', login.token), env);
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('Content-Disposition') || '', /attachment; filename=/);
+
+    const data = await res.json();
+    assert.equal(data.profile.email, 'exp@bwr.fr');
+    assert.equal(data.profile.passwordHash, undefined, 'export must not leak the password hash');
+    assert.equal(data.profile.salt, undefined, 'export must not leak the salt');
+    assert.equal(data.savedRoutes.length, 1);
+    assert.equal(data.savedRoutes[0].name, 'Boucle');
+    assert.equal(data.walkedPaths.length, 1);
+    assert.equal(data.walkedPaths[0].pathId, 'p9');
+    assert.equal(data.walkedPaths[0].walkedAt, '2026-06-01T10:00:00.000Z');
+  });
+});
+
+// ── DELETE /api/auth/account (RGPD — droit à l'effacement) ────────────────────
+
+describe('/api/auth/account', () => {
+  test('no token → 401', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('DELETE', '/api/auth/account'), env);
+    assert.equal(res.status, 401);
+  });
+
+  test('admin account cannot be deleted → 403', async () => {
+    const { env, kv, seedSession } = freshEnv();
+    kv.store.set('user:admin1', JSON.stringify({ id: 'admin1', name: 'A', email: 'a@bwr.fr', role: 'admin', plan: 'gold' }));
+    kv.store.set('uemail:a@bwr.fr', 'admin1');
+    seedSession('admtok', 'admin1', new Date(Date.now() + 1e9).toISOString());
+    const res = await worker.fetch(authed('DELETE', '/api/auth/account', 'admtok'), env);
+    assert.equal(res.status, 403);
+    assert.ok(kv.store.has('user:admin1'), 'admin account must survive');
+  });
+
+  test('deletion purges account, saved routes, share tokens and walked paths', async () => {
+    const { env, kv } = freshEnv();
+    await worker.fetch(r('POST', '/api/auth/register', { name: 'Del', email: 'del@bwr.fr', password: 'deleteme1' }), env);
+    const vt = kv.store.get('pemail:del@bwr.fr');
+    await worker.fetch(r('GET', `/api/auth/verify?token=${vt}`), env);
+    const login = await (await worker.fetch(r('POST', '/api/auth/login', { email: 'del@bwr.fr', password: 'deleteme1' }), env)).json();
+    const uid = login.user.id;
+
+    kv.store.set(`savedroute:${uid}:rt1`, JSON.stringify({ id: 'rt1', userId: uid, shareToken: 'shtok1' }));
+    kv.store.set(`routeshare:shtok1`, JSON.stringify({ userId: uid, routeId: 'rt1' }));
+    kv.store.set(`walkedpath:${uid}:p1`, '2026-06-01T00:00:00.000Z');
+
+    const res = await worker.fetch(authed('DELETE', '/api/auth/account', login.token), env);
+    assert.equal(res.status, 200);
+
+    assert.ok(!kv.store.has(`user:${uid}`), 'user record must be gone');
+    assert.ok(!kv.store.has('uemail:del@bwr.fr'), 'email index must be gone');
+    assert.ok(!kv.store.has(`savedroute:${uid}:rt1`), 'saved routes must be gone');
+    assert.ok(!kv.store.has('routeshare:shtok1'), 'public share token must be gone');
+    assert.ok(!kv.store.has(`walkedpath:${uid}:p1`), 'walked-path markers must be gone');
+    assert.ok(!kv.store.has(`session:${login.token}`), 'active session must be gone');
+  });
+});
