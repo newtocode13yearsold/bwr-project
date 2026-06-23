@@ -1,5 +1,14 @@
 const CACHE = 'bwr-v40';
+// Tiles live in two separate caches:
+//   • TILE_CACHE — forests the user explicitly downloaded ("Cartes hors-ligne").
+//     Permanent: never expired, never evicted, so a downloaded forest stays
+//     complete offline no matter how much the user pans around afterwards.
+//   • BROWSE_TILE_CACHE — tiles picked up opportunistically while panning online.
+//     LRU-capped so it can't grow unbounded.
+// Keeping them apart is what prevents online browsing from evicting the
+// deliberately-downloaded offline zones (the cause of the "white spot" gaps).
 const TILE_CACHE = 'bwr-offline-tiles';
+const BROWSE_TILE_CACHE = 'bwr-tile-cache';
 const TILE_MAX_ENTRIES = 500;
 const TILE_MAX_AGE_MS  = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -96,7 +105,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE).map(k => caches.delete(k)))
+      Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE && k !== BROWSE_TILE_CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
@@ -132,25 +141,44 @@ self.addEventListener('fetch', e => {
 
   // Tiles — cache first so panning offline is instant; re-fetch when stale or not cached
   if (url.includes('tile') || url.includes('opentopomap') || url.includes('geopf.fr')) {
-    e.respondWith(
-      caches.open(TILE_CACHE).then(async cache => {
-        const cached = await cache.match(e.request);
-        if (cached) {
-          const age = Date.now() - new Date(cached.headers.get('date') || 0).getTime();
-          if (age < TILE_MAX_AGE_MS) return cached;
-        }
+    e.respondWith((async () => {
+      // 1. Downloaded offline zone wins outright — serve as-is, no expiry, no
+      //    eviction. These are opaque (no-cors) responses with no Date header,
+      //    so a staleness check would wrongly mark them expired → white square.
+      const offline = await caches.open(TILE_CACHE);
+      const saved = await offline.match(e.request);
+      if (saved) return saved;
+
+      // 2. Opportunistic browse cache — a fresh-enough copy avoids the network.
+      const browse = await caches.open(BROWSE_TILE_CACHE);
+      const cached = await browse.match(e.request);
+      if (cached) {
+        const dateHeader = cached.headers.get('date');
+        // Opaque/dateless tiles are trusted (a possibly-stale tile beats a white
+        // gap offline); dated tiles honour the 7-day TTL.
+        const age = dateHeader ? Date.now() - new Date(dateHeader).getTime() : 0;
+        if (age < TILE_MAX_AGE_MS) return cached;
+      }
+
+      // 3. Network, then populate the browse cache with LRU eviction. Opaque
+      //    responses (cross-origin tiles fetched without CORS) have status 0, so
+      //    accept them too — otherwise panning online would never warm the cache.
+      try {
         const res = await fetch(e.request);
-        if (res && res.ok) {
-          // Evict oldest entries once the cache reaches the size limit
-          const keys = await cache.keys();
+        if (res && (res.ok || res.type === 'opaque')) {
+          const keys = await browse.keys();
           if (keys.length >= TILE_MAX_ENTRIES) {
-            await Promise.all(keys.slice(0, keys.length - TILE_MAX_ENTRIES + 1).map(k => cache.delete(k)));
+            await Promise.all(keys.slice(0, keys.length - TILE_MAX_ENTRIES + 1).map(k => browse.delete(k)));
           }
-          cache.put(e.request, res.clone());
+          browse.put(e.request, res.clone());
         }
         return res;
-      }).catch(() => new Response('', { status: 504 }))
-    );
+      } catch {
+        // Offline with nothing fresh → fall back to a stale browse copy if we
+        // have one, otherwise signal a tile miss.
+        return cached || new Response('', { status: 504 });
+      }
+    })());
     return;
   }
 

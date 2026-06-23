@@ -41,7 +41,16 @@ async function downloadOfflineZone(zone, onProgress) {
   const BATCH = 8;
   for (let i = 0; i < tiles.length; i += BATCH) {
     await Promise.all(tiles.slice(i, i + BATCH).map(async tileUrl => {
-      try { await cache.put(tileUrl, await fetch(tileUrl, { mode: 'no-cors' })); } catch {}
+      // CORS (not no-cors): OpenTopoMap sends Access-Control-Allow-Origin:* plus
+      // a real Date/Content-Length, so we store a normal, accurately-sized,
+      // dated response. Opaque (no-cors) responses are padded to several MB each
+      // by iOS Safari's quota accounting — caching a whole forest of them blows
+      // the cache quota and makes iOS evict everything (white-spot gaps). Only
+      // store a genuine 200 so a rate-limit/error page never poisons the cache.
+      try {
+        const res = await fetch(tileUrl, { mode: 'cors' });
+        if (res && res.ok) await cache.put(tileUrl, res);
+      } catch {}
       done++;
     }));
     if (onProgress) onProgress(Math.round(done / tiles.length * 100));
