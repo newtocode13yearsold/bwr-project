@@ -24,7 +24,12 @@ const TILE_LAYERS = {
     // crossOrigin: tiles are requested with CORS (OpenTopoMap sends ACAO:*) so the
     // service worker caches them as non-opaque, dated, real-sized responses. Opaque
     // tiles are padded to several MB each by iOS Safari and blow the cache quota.
-    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxNativeZoom: 17, maxZoom: 17, subdomains: ['a','b','c'], crossOrigin: true, updateWhenIdle: false, keepBuffer: 4 }
+    // maxNativeZoom 15: offline downloads only cache z10–15 (z16+ is thousands of
+    // tiles per forest and gets rate-limited by OpenTopoMap). Capping the native
+    // zoom at 15 means Leaflet never requests a z16/17 tile — it upscales the
+    // cached z15 tile instead, so zooming in offline stays sharp-enough rather
+    // than going blank. maxZoom 17 still lets the user zoom that far.
+    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxNativeZoom: 15, maxZoom: 17, subdomains: ['a','b','c'], crossOrigin: true, updateWhenIdle: false, keepBuffer: 4 }
   ),
   satellite: L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',

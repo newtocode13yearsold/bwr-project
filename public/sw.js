@@ -1,4 +1,4 @@
-const CACHE = 'bwr-v43';
+const CACHE = 'bwr-v44';
 // Tiles live in two separate caches:
 //   • TILE_CACHE — forests the user explicitly downloaded ("Cartes hors-ligne").
 //     Permanent: never expired, never evicted, so a downloaded forest stays

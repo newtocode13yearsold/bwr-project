@@ -34,29 +34,56 @@ function _zoneTiles(bbox) {
   return tiles;
 }
 
-async function downloadOfflineZone(zone, onProgress) {
-  const tiles = _zoneTiles(zone.bbox);
-  const cache = await caches.open('bwr-offline-tiles');
-  let done = 0;
-  const BATCH = 8;
-  for (let i = 0; i < tiles.length; i += BATCH) {
-    await Promise.all(tiles.slice(i, i + BATCH).map(async tileUrl => {
+const _sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Fetch one tile and store it, with retries. Returns true only if a genuine
+// 200 actually landed in the cache. OpenTopoMap rate-limits bulk fetching
+// (429/403, sometimes with no CORS header so fetch() rejects), so a single
+// failure must NOT be treated as success — otherwise the zone is marked
+// "downloaded" while the cache is empty and the map is blank offline.
+async function _fetchTileWithRetry(cache, tileUrl, attempts = 4) {
+  for (let a = 0; a < attempts; a++) {
+    try {
       // CORS (not no-cors): OpenTopoMap sends Access-Control-Allow-Origin:* plus
       // a real Date/Content-Length, so we store a normal, accurately-sized,
       // dated response. Opaque (no-cors) responses are padded to several MB each
       // by iOS Safari's quota accounting — caching a whole forest of them blows
       // the cache quota and makes iOS evict everything (white-spot gaps). Only
       // store a genuine 200 so a rate-limit/error page never poisons the cache.
-      try {
-        const res = await fetch(tileUrl, { mode: 'cors' });
-        if (res && res.ok) await cache.put(tileUrl, res);
-      } catch {}
-      done++;
-    }));
-    if (onProgress) onProgress(Math.round(done / tiles.length * 100));
+      const res = await fetch(tileUrl, { mode: 'cors', cache: 'reload' });
+      if (res && res.ok) { await cache.put(tileUrl, res); return true; }
+      // 429/5xx → back off and retry; 4xx other than 429 → give up early.
+      if (res && res.status !== 429 && res.status < 500) return false;
+    } catch { /* network/CORS error → retry */ }
+    await _sleep(400 * (a + 1)); // linear backoff: 400, 800, 1200ms
   }
-  localStorage.setItem(_zoneCacheKey(zone.id), '1');
-  return tiles.length;
+  return false;
+}
+
+// Returns { total, ok, failed }. Throttled (small concurrency + per-batch
+// pause) to stay within OpenTopoMap's fair-use limits, and reports the REAL
+// number of tiles stored so the caller never claims a half-empty zone is ready.
+async function downloadOfflineZone(zone, onProgress) {
+  const tiles = _zoneTiles(zone.bbox);
+  const cache = await caches.open('bwr-offline-tiles');
+  let done = 0, ok = 0;
+  const BATCH = 4; // gentle on the tile server; avoids triggering rate limits
+  for (let i = 0; i < tiles.length; i += BATCH) {
+    const results = await Promise.all(
+      tiles.slice(i, i + BATCH).map(t => _fetchTileWithRetry(cache, t))
+    );
+    ok += results.filter(Boolean).length;
+    done += results.length;
+    if (onProgress) onProgress(Math.round(done / tiles.length * 100));
+    await _sleep(120); // brief pause between batches
+  }
+  const failed = tiles.length - ok;
+  // Only flag the zone as fully cached when essentially everything stored.
+  // A partial download stays un-flagged so the user is told to retry rather
+  // than discovering blank patches in the forest with no signal.
+  if (ok / tiles.length >= 0.97) localStorage.setItem(_zoneCacheKey(zone.id), '1');
+  else localStorage.removeItem(_zoneCacheKey(zone.id));
+  return { total: tiles.length, ok, failed };
 }
 
 // ── Zone picker modal ──────────────────────────────────────────────────────────
@@ -108,9 +135,19 @@ function openOfflineZonePicker() {
       btn.disabled = true;
       btn.textContent = '⏳ 0%';
       try {
-        const count = await downloadOfflineZone(zone, pct => { btn.textContent = `⏳ ${pct}%`; });
-        btn.textContent = '✅ Téléchargée';
-        showToast(`✅ ${zone.name} sauvegardée hors-ligne ! (${count} tuiles)`);
+        const { total, ok, failed } = await downloadOfflineZone(zone, pct => { btn.textContent = `⏳ ${pct}%`; });
+        if (failed === 0) {
+          btn.textContent = '✅ Téléchargée';
+          showToast(`✅ ${zone.name} sauvegardée hors-ligne ! (${ok} tuiles)`);
+        } else if (ok / total >= 0.97) {
+          // essentially complete — flagged as cached, minor gaps acceptable
+          btn.textContent = '✅ Téléchargée';
+          showToast(`✅ ${zone.name} sauvegardée (${ok}/${total} tuiles)`);
+        } else {
+          // too patchy to trust offline — keep it as a retry, don't fake success
+          btn.textContent = '⚠️ Incomplète — réessayer';
+          showToast(`⚠️ ${zone.name} : ${ok}/${total} tuiles seulement (limite du serveur). Réessayez dans un instant.`);
+        }
       } catch {
         btn.textContent = '⬇ Réessayer';
         showToast('Erreur lors du téléchargement hors-ligne');
