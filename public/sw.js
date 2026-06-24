@@ -1,4 +1,4 @@
-const CACHE = 'bwr-v40';
+const CACHE = 'bwr-v43';
 // Tiles live in two separate caches:
 //   • TILE_CACHE — forests the user explicitly downloaded ("Cartes hors-ligne").
 //     Permanent: never expired, never evicted, so a downloaded forest stays
@@ -62,6 +62,7 @@ const APP_SHELL = [
   'js/leaderboard.js',
   'js/verify.js',
   'js/reset.js',
+  'js/track.js',
   'js/index.js',
   'css/tokens.css',
   'css/style.css',

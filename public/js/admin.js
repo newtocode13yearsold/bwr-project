@@ -1092,8 +1092,8 @@ document.querySelectorAll('.members-tab').forEach(tab => {
   });
 });
 
-// Shows real activity only: logins and new accounts. Page views are not tracked
-// anymore (they could be search-engine bots), so there is nothing anonymous here.
+// Shows real activity: anonymous visitors (counted only after > 1 min, so bots and
+// bounces are excluded), plus logins and new accounts.
 async function loadVisits() {
   const statsEl = document.getElementById('visitsStats');
   const itemsEl = document.getElementById('visitsItems');
@@ -1107,6 +1107,7 @@ async function loadVisits() {
     const events       = Array.isArray(data) ? data : (data.events || []);
     const totalLogins  = data.totalLogins  ?? events.filter(e => e.type === 'login').length;
     const totalSignups = data.totalSignups ?? events.filter(e => e.type === 'signup').length;
+    const visitsMonth  = data.visitsThisMonth ?? 0; // real anonymous visitors (> 1 min)
 
     // Quick stats over the recent (90-day) window the API returns.
     const now   = Date.now();
@@ -1122,6 +1123,7 @@ async function loadVisits() {
          ${subtitle ? `<div style="font-size:0.65rem;color:#6b7280;margin-top:1px">${subtitle}</div>` : ''}
        </div>`;
     statsEl.innerHTML =
+      statCard('Visiteurs', visitsMonth.toLocaleString('fr-FR'), '#dbeafe', 'ce mois · > 1 min') +
       statCard('Nouveaux comptes', totalSignups.toLocaleString('fr-FR'), '#dcfce7', 'depuis le début') +
       statCard('Connexions', totalLogins.toLocaleString('fr-FR'), '#fef9c3', 'depuis le début') +
       statCard("Aujourd'hui", today, '#d1fae5') +
@@ -1256,15 +1258,18 @@ async function loadMembers() {
       const expiry = u.planExpiresAt
         ? `<span style="font-size:0.75rem;color:#f97316">⏳ expire le ${new Date(u.planExpiresAt).toLocaleDateString('fr-FR')}</span>`
         : '';
+      const compedBadge = u.comped
+        ? `<span style="font-size:0.75rem;color:#7c3aed">🎁 offert</span>`
+        : '';
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px">
         <div>
           <div style="font-weight:600;font-size:0.9rem">${u.name}</div>
           <div style="font-size:0.78rem;color:#6b7280">${u.email}</div>
-          <div style="margin-top:3px">${planIcon[u.plan] || '🌿'} <strong>${u.plan}</strong> ${expiry}</div>
+          <div style="margin-top:3px">${planIcon[u.plan] || '🌿'} <strong>${u.plan}</strong> ${expiry} ${compedBadge}</div>
         </div>
         ${u.role !== 'admin' ? `<div style="display:flex;gap:6px">
           <button class="btn-secondary member-plan-btn" style="width:auto;padding:6px 12px;font-size:0.8rem"
-            data-id="${u.id}" data-name="${u.name.replace(/"/g,'&quot;')}" data-plan="${u.plan}" data-base="${u.planBase||'free'}">Modifier plan</button>
+            data-id="${u.id}" data-name="${u.name.replace(/"/g,'&quot;')}" data-plan="${u.plan}" data-base="${u.planBase||'free'}" data-comped="${u.comped ? '1' : ''}">Modifier plan</button>
           <button class="btn-secondary member-delete-btn" style="width:auto;padding:6px 12px;font-size:0.8rem;color:#dc2626;border-color:#fca5a5"
             data-id="${u.id}" data-name="${u.name.replace(/"/g,'&quot;')}">Supprimer</button>
         </div>` : ''}
@@ -1272,7 +1277,7 @@ async function loadMembers() {
     }).join('');
     list.querySelectorAll('.member-plan-btn').forEach(btn => {
       btn.addEventListener('click', () =>
-        openMemberPlan(btn.dataset.id, btn.dataset.name, btn.dataset.plan, btn.dataset.base, btn));
+        openMemberPlan(btn.dataset.id, btn.dataset.name, btn.dataset.plan, btn.dataset.base, btn, btn.dataset.comped === '1'));
     });
     list.querySelectorAll('.member-delete-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -1316,12 +1321,13 @@ function trapFocus(container) {
 let _memberPlanTrigger = null;
 let _memberPlanTrapRelease = null;
 
-function openMemberPlan(userId, name, plan, planBase, triggerEl) {
+function openMemberPlan(userId, name, plan, planBase, triggerEl, comped = false) {
   document.getElementById('memberPlanUserId').value = userId;
   document.getElementById('memberPlanTitle').textContent = `Plan de ${name}`;
   document.getElementById('memberPlanSelect').value = plan;
   document.getElementById('memberPlanBase').value = planBase || 'free';
   document.getElementById('memberPlanExpiry').value = '';
+  document.getElementById('memberPlanComped').checked = !!comped;
   const modal = document.getElementById('memberPlanModal');
   modal.classList.remove('hidden');
   _memberPlanTrigger = triggerEl || null;
@@ -1342,6 +1348,8 @@ document.getElementById('btnSaveMemberPlan').addEventListener('click', async () 
   const plan    = document.getElementById('memberPlanSelect').value;
   let   expiry  = document.getElementById('memberPlanExpiry').value;
   const base    = document.getElementById('memberPlanBase').value;
+  // Un abonnement offert n'a de sens que pour un plan payant (Argent/Or).
+  const comped  = document.getElementById('memberPlanComped').checked && (plan === 'silver' || plan === 'gold');
 
   // Visitor plan defaults to 7-day expiry if the admin didn't set one manually.
   if (plan === 'visitor' && !expiry) {
@@ -1353,7 +1361,7 @@ document.getElementById('btnSaveMemberPlan').addEventListener('click', async () 
   btn.textContent = 'Enregistrement…';
   btn.disabled = true;
   try {
-    const body = { plan };
+    const body = { plan, comped };
     if (expiry) { body.planExpiresAt = new Date(expiry + 'T23:59:59').toISOString(); body.planBase = base || 'free'; }
     else        { body.planExpiresAt = null; body.planBase = null; }
     const res = await fetch(`${API_URL}/api/auth/plan/${userId}`, {
@@ -1374,8 +1382,8 @@ document.getElementById('btnSaveMemberPlan').addEventListener('click', async () 
 });
 
 // ── Revenue dashboard ─────────────────────────────────────────────────────────
-const PLAN_PRICE_MONTHLY = { free: 0, silver: 3.99, gold: 6.99 };
-const PLAN_PRICE_ANNUAL  = { free: 0, silver: 2.99, gold: 5.24 };
+const PLAN_PRICE_MONTHLY = { free: 0, silver: 2.99, gold: 6.99 };
+const PLAN_PRICE_ANNUAL  = { free: 0, silver: 2.24, gold: 5.24 };
 let _revenueCharts = {};
 let _revenueUsers  = null;
 
@@ -1555,13 +1563,23 @@ async function loadRevenue() {
     _revenueUsers = data;
 
     const counts = { free: 0, silver: 0, gold: 0 };
-    _revenueUsers.forEach(u => { if (u.role !== 'admin') counts[u.plan] = (counts[u.plan] || 0) + 1; });
+    const comped = { silver: 0, gold: 0 }; // abonnements offerts → exclus du CA
+    _revenueUsers.forEach(u => {
+      if (u.role === 'admin') return;
+      counts[u.plan] = (counts[u.plan] || 0) + 1;
+      if (u.comped && (u.plan === 'silver' || u.plan === 'gold')) comped[u.plan]++;
+    });
 
-    const mrr      = counts.silver * PLAN_PRICE_MONTHLY.silver + counts.gold * PLAN_PRICE_MONTHLY.gold;
-    const arrSilv  = counts.silver * PLAN_PRICE_ANNUAL.silver * 12;
-    const arrGold  = counts.gold   * PLAN_PRICE_ANNUAL.gold   * 12;
+    // Seuls les abonnements réellement payés alimentent le CA.
+    const paySilver = counts.silver - comped.silver;
+    const payGold   = counts.gold   - comped.gold;
+    const compedTot = comped.silver + comped.gold;
+
+    const mrr      = paySilver * PLAN_PRICE_MONTHLY.silver + payGold * PLAN_PRICE_MONTHLY.gold;
+    const arrSilv  = paySilver * PLAN_PRICE_ANNUAL.silver * 12;
+    const arrGold  = payGold   * PLAN_PRICE_ANNUAL.gold   * 12;
     const arr      = arrSilv + arrGold;
-    const paying   = counts.silver + counts.gold;
+    const paying   = paySilver + payGold;
     const total    = counts.free + counts.silver + counts.gold;
     const conv     = total ? Math.round(paying / total * 100) : 0;
 
@@ -1579,7 +1597,7 @@ async function loadRevenue() {
       <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:14px">
         <div style="font-size:0.72rem;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.06em">Abonnés payants</div>
         <div style="font-size:1.75rem;font-weight:800;color:#0284c7;margin-top:4px;line-height:1">${paying}</div>
-        <div style="font-size:0.72rem;color:#6b7280;margin-top:4px">sur ${total} membre${total > 1 ? 's' : ''} au total</div>
+        <div style="font-size:0.72rem;color:#6b7280;margin-top:4px">sur ${total} membre${total > 1 ? 's' : ''} au total${compedTot ? ` · ${compedTot} offert${compedTot > 1 ? 's' : ''} (hors CA)` : ''}</div>
       </div>
       <div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:12px;padding:14px">
         <div style="font-size:0.72rem;font-weight:700;color:#7e22ce;text-transform:uppercase;letter-spacing:0.06em">Taux de conversion</div>
@@ -1615,8 +1633,8 @@ async function loadRevenue() {
     _revenueCharts.mrr = new Chart(document.getElementById('chartMRR'), {
       type: 'bar',
       data: {
-        labels: ['Argent (3,99 €/mois)', 'Or (6,99 €/mois)'],
-        datasets: [{ label: 'MRR (€)', data: [+(counts.silver * PLAN_PRICE_MONTHLY.silver).toFixed(2), +(counts.gold * PLAN_PRICE_MONTHLY.gold).toFixed(2)], backgroundColor: ['rgba(148,163,184,0.8)', 'rgba(251,191,36,0.8)'], borderColor: ['#64748b', '#d97706'], borderWidth: 2, borderRadius: 8, borderSkipped: false }]
+        labels: ['Argent (2,99 €/mois)', 'Or (6,99 €/mois)'],
+        datasets: [{ label: 'MRR (€)', data: [+(paySilver * PLAN_PRICE_MONTHLY.silver).toFixed(2), +(payGold * PLAN_PRICE_MONTHLY.gold).toFixed(2)], backgroundColor: ['rgba(148,163,184,0.8)', 'rgba(251,191,36,0.8)'], borderColor: ['#64748b', '#d97706'], borderWidth: 2, borderRadius: 8, borderSkipped: false }]
       },
       options: {
         responsive: true,
@@ -1638,7 +1656,7 @@ async function loadRevenue() {
 (function initAIForecast() {
   const QUALITY_CONV   = [0, 0.12, 0.25, 0.45, 0.72, 1.10, 1.62, 2.25, 2.95, 3.60, 4.25];
   const QUALITY_LABELS = ['','Très basique','Basique','Moyen-','Moyen','Acceptable','Bon','Très bon','Excellent','Exceptionnel','Parfait'];
-  const ARPU   = 0.65 * 3.99 + 0.35 * 6.99;
+  const ARPU   = 0.65 * 2.99 + 0.35 * 6.99;
   const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 
   let aifChart  = null;
@@ -1668,22 +1686,32 @@ async function loadRevenue() {
         fetch(`${API_URL}/api/users`, { headers: authHeader() }),
       ]);
 
-      const eventsData = eventsRes.ok ? await eventsRes.json() : [];
-      // "Activity" = real logins + new accounts (page views are no longer tracked).
-      const visits = Array.isArray(eventsData) ? eventsData : (eventsData.events || []);
+      const eventsData = eventsRes.ok ? await eventsRes.json() : {};
       const users  = usersRes.ok  ? await usersRes.json()  : (_revenueUsers || []);
 
-      // Group activity counts per calendar month (last 5 months, index 4 = current)
+      // Real anonymous visitors (dwell-gated, > 1 min) per calendar month, keyed YYYY-MM.
+      const monthlyVisits = (eventsData && eventsData.monthlyVisits) || {};
+      const hasRealVisits = Object.values(monthlyVisits).some(v => v > 0);
+      // Fallback proxy while no real visitor data exists yet: logins + new accounts.
+      const activity = Array.isArray(eventsData) ? eventsData : (eventsData.events || []);
+
+      // Last 5 calendar months (UTC, index 4 = current) to match the worker's keys.
       const now = new Date();
+      const monthKey = d => d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
       const slots = Array.from({ length: 5 }, (_, i) => {
-        const d = new Date(now.getFullYear(), now.getMonth() - (4 - i), 1);
-        return { year: d.getFullYear(), month: d.getMonth(), count: 0 };
+        const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (4 - i), 1));
+        return { key: monthKey(d), year: d.getUTCFullYear(), month: d.getUTCMonth(), count: 0 };
       });
-      visits.forEach(v => {
-        const d   = new Date(v.timestamp);
-        const idx = slots.findIndex(s => s.year === d.getFullYear() && s.month === d.getMonth());
-        if (idx >= 0) slots[idx].count++;
-      });
+      if (hasRealVisits) {
+        slots.forEach(s => { s.count = monthlyVisits[s.key] || 0; });
+      } else {
+        activity.forEach(v => {
+          const d   = new Date(v.timestamp);
+          const idx = slots.findIndex(s => s.year === d.getUTCFullYear() && s.month === d.getUTCMonth());
+          if (idx >= 0) slots[idx].count++;
+        });
+      }
+      const metricLabel = hasRealVisits ? 'visiteurs' : 'activités';
 
       const history       = slots.slice(0, 4).map(s => s.count); // M-4 … M-1
       const visitsCurrent = slots[4].count;
@@ -1692,16 +1720,25 @@ async function loadRevenue() {
 
       // Real subscriber counts from user list
       const counts = { free: 0, silver: 0, gold: 0 };
-      users.forEach(u => { if (u.role !== 'admin') counts[u.plan || 'free']++; });
+      const comped = { silver: 0, gold: 0 }; // offerts : exclus du CA, gardés pour l'IA
+      users.forEach(u => {
+        if (u.role === 'admin') return;
+        counts[u.plan || 'free']++;
+        if (u.comped && (u.plan === 'silver' || u.plan === 'gold')) comped[u.plan]++;
+      });
       const totalUsers  = counts.free + counts.silver + counts.gold;
-      const payingUsers = counts.silver + counts.gold;
-      const realMRR     = counts.silver * 3.99 + counts.gold * 6.99;
+      // Le CA ne compte que les abonnements payés ; les offerts sont transmis à part à l'IA.
+      const payingUsers = (counts.silver - comped.silver) + (counts.gold - comped.gold);
+      const realMRR     = (counts.silver - comped.silver) * 2.99 + (counts.gold - comped.gold) * 6.99;
       const realConv    = totalUsers > 0 ? (payingUsers / totalUsers * 100) : 0;
 
-      _realData = { visitors: visitsCurrent, history, slope, silver: counts.silver, gold: counts.gold, totalUsers, payingUsers, realMRR, realConv };
+      _realData = { visitors: visitsCurrent, history, slope, silver: counts.silver, gold: counts.gold,
+                    compedSilver: comped.silver, compedGold: comped.gold,
+                    totalUsers, payingUsers, realMRR, realConv };
 
-      const trendLabel = slope > 0 ? `+${Math.round(slope)} act./mois` : slope < 0 ? `${Math.round(slope)} act./mois` : 'Stable';
-      statusEl.textContent = `✅ ${visitsCurrent} activités ce mois · ${payingUsers} abonné${payingUsers !== 1 ? 's' : ''} payant${payingUsers !== 1 ? 's' : ''} · Tendance : ${trendLabel}`;
+      const unit = hasRealVisits ? 'vis.' : 'act.';
+      const trendLabel = slope > 0 ? `+${Math.round(slope)} ${unit}/mois` : slope < 0 ? `${Math.round(slope)} ${unit}/mois` : 'Stable';
+      statusEl.textContent = `✅ ${visitsCurrent} ${metricLabel} ce mois · ${payingUsers} abonné${payingUsers !== 1 ? 's' : ''} payant${payingUsers !== 1 ? 's' : ''} · Tendance : ${trendLabel}`;
       statusEl.style.color = '#15803d';
 
       updateForecast();
@@ -1800,6 +1837,8 @@ async function loadRevenue() {
       const arr        = mrr * 12;
       const silver     = _realData ? _realData.silver      : 0;
       const gold       = _realData ? _realData.gold        : 0;
+      const compedSilver = _realData ? _realData.compedSilver : 0;
+      const compedGold   = _realData ? _realData.compedGold   : 0;
       const totalUsers = _realData ? _realData.totalUsers  : 0;
       const realConv   = _realData ? _realData.realConv    : 0;
       const rate       = realConv;
@@ -1812,7 +1851,7 @@ async function loadRevenue() {
         const res = await fetch(`${API_URL}/api/ai/revenue-forecast`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...authHeader() },
-          body: JSON.stringify({ visitors, rate, mrr, arr, subs, slope, target, prob, history, silver, gold, totalUsers, realConv }),
+          body: JSON.stringify({ visitors, rate, mrr, arr, subs, slope, target, prob, history, silver, gold, compedSilver, compedGold, totalUsers, realConv }),
         });
         const d = await res.json();
         document.getElementById('aifInsightText').textContent =

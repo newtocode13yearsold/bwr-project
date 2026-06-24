@@ -789,3 +789,66 @@ describe('POST /api/analytics/reset', () => {
     assert.equal(kv.store.get('analytics:total_signups'), '0');
   });
 });
+
+// ── POST /api/track/visit — anonymous, dwell-gated visitor counter ────────────
+
+describe('POST /api/track/visit', () => {
+  const month = () => new Date().toISOString().slice(0, 7); // YYYY-MM (UTC)
+
+  test('counts a visit without auth and increments the monthly counter', async () => {
+    const { env, kv } = freshEnv();
+    const res = await worker.fetch(r('POST', '/api/track/visit', { vid: 'visitor-a' }), env);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.counted, true);
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), '1');
+  });
+
+  test('same browser (vid) is counted at most once per month', async () => {
+    const { env, kv } = freshEnv();
+    await worker.fetch(r('POST', '/api/track/visit', { vid: 'dup' }), env);
+    const res2 = await worker.fetch(r('POST', '/api/track/visit', { vid: 'dup' }), env);
+    const body2 = await res2.json();
+    assert.equal(body2.counted, false);
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), '1', 'counter must not double-count');
+  });
+
+  test('different browsers each add to the count', async () => {
+    const { env, kv } = freshEnv();
+    await worker.fetch(r('POST', '/api/track/visit', { vid: 'one' }), env);
+    await worker.fetch(r('POST', '/api/track/visit', { vid: 'two' }), env);
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), '2');
+  });
+
+  test('missing vid still counts (best-effort, no dedup)', async () => {
+    const { env, kv } = freshEnv();
+    await worker.fetch(r('POST', '/api/track/visit', {}), env);
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), '1');
+  });
+});
+
+// ── GET /api/analytics/events — exposes real monthly visitor counts ───────────
+
+describe('GET /api/analytics/events monthlyVisits', () => {
+  const month = () => new Date().toISOString().slice(0, 7);
+
+  test('admin sees real visitor counts for the current month', async () => {
+    const { env, kv, seedAdmin } = freshEnv();
+    const { token } = seedAdmin();
+    kv.store.set(`analytics:visits:${month()}`, '7');
+
+    const res = await worker.fetch(authed('GET', '/api/analytics/events', token), env);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.visitsThisMonth, 7);
+    assert.equal(body.monthlyVisits[month()], 7);
+  });
+
+  test('non-admin is refused', async () => {
+    const { env, seedFree } = freshEnv();
+    const { token } = seedFree();
+    const res = await worker.fetch(authed('GET', '/api/analytics/events', token), env);
+    assert.equal(res.status, 403);
+  });
+});

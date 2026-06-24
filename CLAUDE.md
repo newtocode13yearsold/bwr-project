@@ -41,7 +41,7 @@ When adding an endpoint, put it in the matching handler module — do **not** gr
 
 Main endpoint groups:
 
-- Auth: /api/setup (one-time admin creation), /api/auth/{register,login,logout,me,profile,password,account}, /api/auth/plan/:userId (admin plan changes), /api/auth/stats, /api/auth/consume-route (free weekly quota), /api/auth/wheel-prize
+- Auth: /api/setup (one-time admin creation), /api/auth/{register,login,logout,me,profile,password,account}, /api/auth/plan/:userId (admin plan changes), /api/auth/stats, /api/auth/consume-route (free weekly quota), /api/auth/wheel-prize, /api/auth/start-trial (self-service one-time free 7-day Silver trial — free accounts only, gated by `silverTrialUsed`; reuses the `planExpiresAt`/`planBase` revert-on-expiry path in `/api/auth/me`)
 - Email verification: GET /api/auth/verify?token=… (activate account), POST /api/auth/resend-verification (re-send link, rate-limited 5 min)
 - Password reset: POST /api/auth/forgot-password (email a reset link — always 200, no account enumeration; IP rate-limited 5/h + per-address 5-min cooldown), POST /api/auth/reset-password ({token, password} — single-use `reset:{token}` KV key, 1-hour TTL; rotates salt+hash, sets `sessionsInvalidatedAt`, clears login lockout)
 - Paths (admin-only): POST/PUT/DELETE /api/paths/* — forest/bike paths curated by admin
@@ -49,6 +49,7 @@ Main endpoint groups:
 - Routing: POST /api/route — proxy to OpenRouteService (needs ORS_KEY env var)
 - OSM Proxy: GET /api/osm?bbox=... — caches OpenStreetMap path data for 7 days
 - Contact: POST /api/contact — sends to ntfy.sh push notification service
+- Analytics: POST /api/track/visit (public — counts one unique anonymous visitor per month, called by `public/js/track.js` only after > 1 min of presence so bots/bounces are excluded), GET /api/analytics/events (admin — recent login/signup events + `totalLogins`/`totalSignups` + `monthlyVisits`/`visitsThisMonth`)
 - Saved routes (Silver+): POST /api/savedroutes, GET /api/savedroutes, GET /api/savedroutes/:id, DELETE /api/savedroutes/:id
 - Share route (public): GET /api/savedroutes/share/:token — returns route by share token, no auth required
 
@@ -64,6 +65,8 @@ Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - session:{token} — session metadata (userId, expiresAt), 30-day TTL
 - reset:{token} — JSON {userId, expiresAt}, 1-hour TTL; single-use password-reset link, deleted on use
 - osm:{bbox} — cached OpenStreetMap query results, 7-day TTL
+- analytics:visits:{YYYY-MM} — integer count of unique anonymous visitors that month (dwell-gated > 1 min), ~13-month TTL
+- vseen:{YYYY-MM}:{vid} — per-browser dedup marker so each visitor counts once per month, ~40-day TTL
 - savedroute:{userId}:{id} — JSON saved route (coords, stats, name, shareToken, etc.)
 - routeshare:{token} — JSON {userId, routeId}, 180-day TTL; maps share token → route
 

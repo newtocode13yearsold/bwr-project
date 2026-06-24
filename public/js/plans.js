@@ -104,7 +104,7 @@ document.getElementById('activationForm').addEventListener('submit', async e => 
   btn.textContent = 'Envoi…';
   btn.disabled = true;
 
-  const planLabel   = plan === 'visitor' ? 'Visiteur (1,10€ / 7 jours)' : plan === 'gold' ? 'Or (6,99€/mois)' : 'Argent (3,99€/mois)';
+  const planLabel   = plan === 'visitor' ? 'Visiteur (1,10€ / 7 jours)' : plan === 'gold' ? 'Or (6,99€/mois)' : 'Argent (2,99€/mois)';
   const periodLabel = plan === 'visitor' ? 'paiement unique' : period === 'annual' ? 'annuel (-25 %)' : 'mensuel';
   const formatted = `=== Demande d'activation BWR ===
 Plan : ${planLabel}
@@ -162,6 +162,52 @@ Message : ${message || '(aucun)'}
   setTimeout(check, 1500);
 })();
 
+/* ── Free 7-day Silver trial CTA ─────────────────────────────────────── */
+// Self-service trial on the Silver card. Logged-out visitors are sent to login;
+// logged-in free users (who haven't used it) activate it instantly. Anyone who
+// already used the trial, or is already Silver/Gold, doesn't see the button.
+(function applySilverTrial() {
+  const btn = document.getElementById('silverTrialCta');
+  if (!btn) return;
+
+  function loggedIn() { return typeof getToken === 'function' && !!getToken(); }
+
+  function refresh() {
+    if (!loggedIn()) { btn.style.display = ''; return; } // invite visitors to sign up
+    const u = (typeof getCachedUser === 'function') ? getCachedUser() : null;
+    if (!u) return; // wait for auth-ready
+    const eligible = (u.plan || 'free') === 'free' && !u.silverTrialUsed;
+    btn.style.display = eligible ? '' : 'none';
+  }
+
+  btn.addEventListener('click', async () => {
+    if (!loggedIn()) { location.href = 'login'; return; }
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Activation…';
+    try {
+      const res = await fetch(`${API_URL}/api/auth/start-trial`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Activation impossible.');
+      const cached = getCachedUser();
+      if (cached) setSession(getToken(), { ...cached, plan: 'silver', planExpiresAt: data.planExpiresAt, silverTrialUsed: true });
+      alert('🎉 Essai Argent activé ! Vous profitez de toutes les fonctionnalités pendant 7 jours.');
+      location.href = 'profile';
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = original;
+      alert('Impossible d\'activer l\'essai : ' + err.message);
+    }
+  });
+
+  refresh();
+  window.addEventListener('bwr:auth-ready', refresh);
+  setTimeout(refresh, 1500);
+})();
+
 /* ── Sticky nav shadow on scroll ─────────────────────────────────────── */
 const plansNav = document.getElementById('plansNav');
 if (plansNav) {
@@ -199,6 +245,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 
   let chartInstance = null;
   let initialized = false;
+  let realData = null; // filled from the server: real subscribers, MRR and visitor history
 
   initForecast();
 
@@ -224,8 +271,8 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     const QUALITY_CONV   = [0, 0.12, 0.25, 0.45, 0.72, 1.10, 1.62, 2.25, 2.95, 3.60, 4.25];
     const QUALITY_LABELS = ['', 'Très basique', 'Basique', 'Moyen-', 'Moyen', 'Acceptable', 'Bon', 'Très bon', 'Excellent', 'Exceptionnel', 'Parfait'];
 
-    /* ARPU: 65 % Silver (3.99 €) + 35 % Gold (6.99 €) */
-    const ARPU = 0.65 * 3.99 + 0.35 * 6.99;
+    /* ARPU: 65 % Silver (2.99 €) + 35 % Gold (6.99 €) */
+    const ARPU = 0.65 * 2.99 + 0.35 * 6.99;
 
     function lerp(a, b, t) { return a + (b - a) * t; }
 
@@ -401,14 +448,23 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
       const histValid = histRaw.filter(v => v !== null);
       const slope = histValid.length >= 2 ? trendSlope(histValid) : 0;
 
-      const rate = convRate(quality);
-      const subs = visitors * (rate / 100);
-      const mrr  = subs * ARPU;
+      const modelRate = convRate(quality);
+      // With real data loaded, the current KPIs show actual subscribers / MRR; the
+      // quality slider then only drives the *projected* conversion of future traffic.
+      const rate = realData ? realData.realConv    : modelRate;
+      const subs = realData ? realData.payingUsers : visitors * (modelRate / 100);
+      const mrr  = realData ? realData.realMRR      : subs * ARPU;
 
-      /* 6-month forecast with trend applied to visitor projection */
+      // Conversion implied by real data (paying / visitors) drives the projection.
+      const projRate = realData && visitors > 0
+        ? (realData.payingUsers / visitors) * 100
+        : modelRate;
+
+      /* 6-month forecast: anchor month 0 on real MRR, grow with the visitor trend */
       const forecastMRR = Array.from({ length: 6 }, (_, i) => {
+        if (i === 0 && realData) return realData.realMRR;
         const projVisitors = Math.max(0, visitors + slope * (i + 1));
-        return projVisitors * (rate / 100) * ARPU;
+        return projVisitors * (projRate / 100) * ARPU;
       });
 
       const prob = probHit(mrr, target);
@@ -419,7 +475,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
       document.getElementById('arfQualityVal').textContent   = fmtNum(quality) + ' / 10';
       document.getElementById('arfTargetVal').textContent    = fmtEur(target);
       document.getElementById('arfQualityHint').textContent  =
-        (QUALITY_LABELS[Math.round(quality)] || 'Bon') + ' — conversion estimée : ' + fmtNum(rate) + ' %';
+        (QUALITY_LABELS[Math.round(quality)] || 'Bon') + ' — conversion estimée : ' + fmtNum(modelRate) + ' %';
 
       document.getElementById('arfProbPct').textContent      = prob + '%';
       document.getElementById('arfMRR').textContent          = fmtEur(mrr);
@@ -480,17 +536,25 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
           })(histValid)
         : 0;
 
-      const rate = (function convRate(q) {
+      const modelRate = (function convRate(q) {
         const T=[0,0.12,0.25,0.45,0.72,1.10,1.62,2.25,2.95,3.60,4.25];
         const lo=Math.floor(q),hi=Math.ceil(q),t=q-lo;
         return (T[lo]||0)*(1-t)+(T[hi]||0)*t;
       })(quality);
 
-      const ARPU = 0.65*3.99+0.35*6.99;
-      const subs = visitors*(rate/100);
-      const mrr  = subs*ARPU;
+      const ARPU = 0.65*2.99+0.35*6.99;
+      // Prefer real figures when loaded; fall back to the slider model otherwise.
+      const rate = realData ? realData.realConv    : modelRate;
+      const subs = realData ? realData.payingUsers : visitors*(modelRate/100);
+      const mrr  = realData ? realData.realMRR      : subs*ARPU;
       const arr  = mrr*12;
       const prob = Math.max(1,Math.min(99,Math.round(100/(1+Math.exp(-7*(mrr/target-0.85))))));
+      const history = realData ? realData.history : histRaw;
+      const realFields = realData ? {
+        silver: realData.silver, gold: realData.gold,
+        compedSilver: realData.compedSilver, compedGold: realData.compedGold,
+        totalUsers: realData.totalUsers, realConv: realData.realConv,
+      } : {};
 
       analyseBtn.disabled = true;
       analyseBtn.textContent = '⏳ Analyse en cours…';
@@ -499,8 +563,8 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
       try {
         const res = await fetch(`${API_URL}/api/ai/revenue-forecast`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ visitors, quality, rate, mrr, arr, subs, slope, target, prob, history: histRaw }),
+          headers: { 'Content-Type': 'application/json', ...(typeof authHeader === 'function' ? authHeader() : {}) },
+          body: JSON.stringify({ visitors, quality, rate, mrr, arr, subs, slope, target, prob, history, ...realFields }),
         });
 
         if (!res.ok) {
@@ -526,5 +590,80 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     histInputs.forEach(el => el.addEventListener('input', update));
 
     update();
+    loadRealData(); // auto-fill from real subscribers + visitor history (no manual entry)
+
+    function relabel(valId, text) {
+      const el = document.getElementById(valId);
+      if (el && el.nextElementSibling) el.nextElementSibling.textContent = text;
+    }
+
+    /* Pull real subscribers, MRR and dwell-gated visitor history from the server
+       and pre-fill the model so the owner never has to type the numbers. */
+    async function loadRealData() {
+      const hdr = (typeof authHeader === 'function') ? authHeader() : {};
+      try {
+        const [evRes, usRes] = await Promise.all([
+          fetch(`${API_URL}/api/analytics/events`, { headers: hdr }),
+          fetch(`${API_URL}/api/users`, { headers: hdr }),
+        ]);
+        const ev    = evRes.ok ? await evRes.json() : {};
+        const users = usRes.ok ? await usRes.json() : [];
+
+        // Real anonymous visitors (> 1 min) by month; fall back to activity if none.
+        const monthlyVisits = (ev && ev.monthlyVisits) || {};
+        const hasRealVisits = Object.values(monthlyVisits).some(v => v > 0);
+        const activity = Array.isArray(ev) ? ev : (ev.events || []);
+        const now = new Date();
+        const monthKey = d => d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
+        const slots = Array.from({ length: 5 }, (_, i) => {
+          const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (4 - i), 1));
+          return { key: monthKey(d), y: d.getUTCFullYear(), m: d.getUTCMonth(), count: 0 };
+        });
+        if (hasRealVisits) {
+          slots.forEach(s => { s.count = monthlyVisits[s.key] || 0; });
+        } else {
+          activity.forEach(v => {
+            const d = new Date(v.timestamp);
+            const i = slots.findIndex(s => s.y === d.getUTCFullYear() && s.m === d.getUTCMonth());
+            if (i >= 0) slots[i].count++;
+          });
+        }
+        const history       = slots.slice(0, 4).map(s => s.count);
+        const visitsCurrent = slots[4].count;
+
+        // Real subscriber counts from the user list (comped = offered, excluded from MRR).
+        const counts = { free: 0, silver: 0, gold: 0 };
+        const comped = { silver: 0, gold: 0 };
+        users.forEach(u => {
+          if (u.role === 'admin') return;
+          counts[u.plan || 'free'] = (counts[u.plan || 'free'] || 0) + 1;
+          if (u.comped && (u.plan === 'silver' || u.plan === 'gold')) comped[u.plan]++;
+        });
+        const totalUsers  = counts.free + counts.silver + counts.gold;
+        const payingUsers = (counts.silver - comped.silver) + (counts.gold - comped.gold);
+        const realMRR     = (counts.silver - comped.silver) * 2.99 + (counts.gold - comped.gold) * 6.99;
+        const realConv    = totalUsers > 0 ? (payingUsers / totalUsers * 100) : 0;
+
+        realData = {
+          visitors: visitsCurrent, history,
+          silver: counts.silver, gold: counts.gold,
+          compedSilver: comped.silver, compedGold: comped.gold,
+          totalUsers, payingUsers, realMRR, realConv,
+        };
+
+        // Pre-fill the inputs with reality (still adjustable as a what-if).
+        const maxV = parseInt(sliderVisitors.max, 10) || 30000;
+        sliderVisitors.value = Math.min(maxV, Math.max(0, Math.round(visitsCurrent / 10) * 10));
+        histInputs.forEach((el, i) => { el.value = history[i] != null ? history[i] : ''; });
+
+        // These KPIs now show real figures — relabel them accordingly.
+        relabel('arfMRR', 'MRR réel');
+        relabel('arfSubs', 'Abonnés payants');
+
+        update();
+      } catch {
+        /* Network/auth failure → keep the manual slider model. */
+      }
+    }
   }
 })();

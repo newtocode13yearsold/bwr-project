@@ -112,6 +112,7 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
       plan: u.plan || 'free',
       planExpiresAt: u.planExpiresAt || null,
       planBase: u.planBase || null,
+      comped: u.comped || false,
       createdAt: u.createdAt || null,
     }));
     return json(safe);
@@ -168,7 +169,10 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
 
     const { visitors = 0, rate = 0, mrr = 0, arr = 0,
             subs = 0, slope = 0, target = 200, prob = 0, history = [],
-            silver = 0, gold = 0, totalUsers = 0, realConv = 0 } = body;
+            silver = 0, gold = 0, compedSilver = 0, compedGold = 0,
+            totalUsers = 0, realConv = 0 } = body;
+
+    const compedTotal = Math.round(compedSilver + compedGold);
 
     const histStr = history.filter(v => v !== null).length > 0
       ? history.map((v, i) => v !== null ? `M-${4 - i}: ${v} vis.` : null).filter(Boolean).join(', ')
@@ -177,20 +181,21 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     const trendStr = slope > 0 ? `+${Math.round(slope)} vis./mois (croissance)` :
                      slope < 0 ? `${Math.round(slope)} vis./mois (déclin)` : 'Stable';
 
-    const ARPU = 0.65 * 3.99 + 0.35 * 6.99; // ~5.04€
+    const ARPU = 0.65 * 2.99 + 0.35 * 6.99; // ~4.39€
     const pot1 = Math.round(visitors * 0.01 * ARPU);
     const pot2 = Math.round(visitors * 0.02 * ARPU);
     const pot3 = Math.round(visitors * 0.03 * ARPU);
 
     const prompt = `Tu es un expert en croissance SaaS et monétisation d'applications web françaises.
 
-Analyse ces données de prévision de revenus pour BWR — une application de randonnée dans les forêts de l'Oise (France) avec deux plans payants : Argent (3,99 €/mois) et Or (6,99 €/mois).
+Analyse ces données de prévision de revenus pour BWR — une application de randonnée dans les forêts de l'Oise (France) avec deux plans payants : Argent (2,99 €/mois) et Or (6,99 €/mois).
 
 Données réelles (tirées du tableau de bord admin) :
 - Visiteurs ce mois : ${Math.round(visitors)}
 - Historique trafic : ${histStr}
 - Tendance trafic : ${trendStr}
 - Membres total : ${totalUsers} (dont ${Math.round(totalUsers - silver - gold)} gratuits, ${silver} Argent, ${gold} Or)
+- Abonnements offerts gratuitement : ${compedTotal} (${Math.round(compedSilver)} Argent + ${Math.round(compedGold)} Or) — exclus du chiffre d'affaires mais bien des utilisateurs actifs à fidéliser
 - Abonnés payants actuels : ${Math.round(subs)} (${Number(realConv > 0 ? realConv : rate).toFixed(2)} % de conversion)
 - MRR réel : ${Number(mrr).toFixed(2)} €/mois
 - ARR annualisé : ${Math.round(arr)} €/an
@@ -325,8 +330,10 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
       deleted++;
     }
 
-    // 3. Purge the bot-prone rate-limit / visitor-number keys and old counters.
-    for (const prefix of ['ratelimit:visit:', 'ratelimit:device:', 'visitor:num:']) {
+    // 3. Purge the bot-prone rate-limit / visitor-number keys and old counters,
+    //    plus the dwell-gated visitor counters (analytics:visits:* + vseen:* markers).
+    for (const prefix of ['ratelimit:visit:', 'ratelimit:device:', 'visitor:num:',
+                          'analytics:visits:', 'vseen:']) {
       const keys = await listKeys(env, prefix);
       await Promise.all(keys.map(k => env.BWR_KV.delete(k.name)));
       deleted += keys.length;
@@ -349,14 +356,52 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
     return json({ ok: true, deleted, kept });
   }
 
+  // ── Anonymous visit tracking (PUBLIC — no auth) ──────────────────────────────
+  // Counts one unique visitor per calendar month. The client (public/js/track.js)
+  // only calls this after the visitor has stayed > 1 min, so search-engine bots and
+  // instant bounces — the reason raw page-view tracking was removed — never reach
+  // here. Dedup per browser via the anonymous `vid` marker (no PII stored).
+  if (pathname === '/api/track/visit' && request.method === 'POST') {
+    try {
+      const body  = await request.json().catch(() => ({}));
+      const vid   = typeof body.vid === 'string' ? body.vid.slice(0, 64) : '';
+      const month = new Date().toISOString().slice(0, 7); // YYYY-MM (UTC)
+
+      // Already counted this browser this month → no-op.
+      if (vid) {
+        const seenKey = `vseen:${month}:${vid}`;
+        if (await env.BWR_KV.get(seenKey)) return json({ ok: true, counted: false });
+        await env.BWR_KV.put(seenKey, '1', { expirationTtl: 60 * 60 * 24 * 40 }); // ~40 days
+      }
+
+      const counterKey = `analytics:visits:${month}`;
+      const cur = await env.BWR_KV.get(counterKey);
+      await env.BWR_KV.put(counterKey, String((cur ? parseInt(cur, 10) : 0) + 1),
+        { expirationTtl: 60 * 60 * 24 * 400 }); // keep ~13 months
+      return json({ ok: true, counted: true });
+    } catch {
+      // Analytics must never surface an error to a normal visitor.
+      return json({ ok: true });
+    }
+  }
+
   // ── Activity events list (admin only) ────────────────────────────────────────
   if (pathname === '/api/analytics/events' && request.method === 'GET') {
     const admin = await getUserFromToken(env, request);
     if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
-    const [allKeys, loginsRaw, signupsRaw] = await Promise.all([
+    // Real anonymous visitor counts (dwell-gated) for the last 6 calendar months.
+    const now = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      months.push(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1))
+        .toISOString().slice(0, 7));
+    }
+
+    const [allKeys, loginsRaw, signupsRaw, ...visitRaw] = await Promise.all([
       listKeys(env, 'event:'),
       env.BWR_KV.get('analytics:total_logins'),
       env.BWR_KV.get('analytics:total_signups'),
+      ...months.map(m => env.BWR_KV.get(`analytics:visits:${m}`)),
     ]);
     // Most recent first – keys are timestamp-prefixed, so reverse the tail.
     const recentKeys = allKeys.slice(-500).reverse();
@@ -364,10 +409,16 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
     // Exclude the admin's own logins (the helper already skips admins, but be safe).
     const events = values.filter(Boolean).map(v => JSON.parse(v))
       .filter(v => v.userId !== admin.id);
+
+    const monthlyVisits = {};
+    months.forEach((m, i) => { monthlyVisits[m] = visitRaw[i] ? parseInt(visitRaw[i], 10) : 0; });
+
     return json({
       events,
       totalLogins:  loginsRaw  ? parseInt(loginsRaw, 10)  : 0,
       totalSignups: signupsRaw ? parseInt(signupsRaw, 10) : 0,
+      monthlyVisits,
+      visitsThisMonth: monthlyVisits[months[months.length - 1]] || 0,
     });
   }
 

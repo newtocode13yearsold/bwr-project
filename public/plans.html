@@ -181,10 +181,10 @@
           <p class="pc-tag">L'expérience complète</p>
         </header>
         <div class="pc-price">
-          <span class="pc-amount" data-monthly="3,99€" data-annual="2,99€">3,99€</span>
+          <span class="pc-amount" data-monthly="2,99€" data-annual="2,24€">2,99€</span>
           <span class="pc-period" data-monthly="/ mois" data-annual="/ mois facturé annuellement">/ mois</span>
         </div>
-        <p class="pc-annual-note" data-annual="Soit 35,88€/an au lieu de 47,88€ — vous économisez 12,00€"></p>
+        <p class="pc-annual-note" data-annual="Soit 26,91€/an au lieu de 35,88€ — vous économisez 8,97€"></p>
         <ul class="pc-features">
           <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Trajets illimités</strong></li>
           <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Mode boucle + A → B</strong></li>
@@ -193,7 +193,7 @@
           <li class="pf yes"><span class="pf-icon">✓</span> Carrefours nommés</li>
           <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Export GPX illimité</strong></li>
           <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Profil altimétrique</strong></li>
-          <li class="pf yes"><span class="pf-icon">✓</span> Cache 1 trajet hors-ligne</li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>🗺️ Cartes hors-ligne — zéro réseau en forêt</strong></li>
           <li class="pf yes"><span class="pf-icon">✓</span> Sauvegarde cloud des stats</li>
           <li class="pf yes"><span class="pf-icon">✓</span> Journal photo (5 par sortie)</li>
           <li class="pf yes"><span class="pf-icon">✓</span> POI panoramiques sur la carte</li>
@@ -203,6 +203,7 @@
           <li class="pf yes"><span class="pf-icon">✓</span> Classements hebdomadaires</li>
         </ul>
         <button class="pc-cta cta-silver" data-plan="silver">Passer à Argent</button>
+        <button class="pc-trial-cta" id="silverTrialCta" style="display:none">🎁 Essayer 7 jours gratuitement</button>
         <p class="pc-footnote">Sans engagement · Annulable en 1 clic</p>
       </article>
 
@@ -454,8 +455,8 @@
                 <label for="arfVisitors">Visiteurs ce mois</label>
                 <span class="arf-val" id="arfVisitorsVal">2 000</span>
               </div>
-              <input type="range" class="arf-slider" id="arfVisitors" min="100" max="30000" step="100" value="2000">
-              <div class="arf-slider-labels"><span>100</span><span>30 000</span></div>
+              <input type="range" class="arf-slider" id="arfVisitors" min="0" max="30000" step="10" value="2000">
+              <div class="arf-slider-labels"><span>0</span><span>30 000</span></div>
             </div>
 
             <div class="arf-field">
@@ -631,7 +632,7 @@
           <span class="af-label">Plan choisi</span>
           <select id="afPlan" required>
             <option value="visitor">🎫 Visiteur · 1,10€ / 7 jours</option>
-            <option value="silver">🥈 Argent · 3,99€/mois</option>
+            <option value="silver">🥈 Argent · 2,99€/mois</option>
             <option value="gold" disabled>🥇 Or · 6,99€/mois (bientôt disponible)</option>
           </select>
         </label>
@@ -662,6 +663,7 @@
   <script src="js/plans.js"></script>
   <script src="js/install.js"></script>
   <script src="js/ui-shared.js"></script>
+  <script src="js/track.js"></script>
 
 </body>
 </html>
