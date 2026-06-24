@@ -130,8 +130,17 @@ gate, but a determined user editing JS could bypass it. Full enforcement would n
 server-side route generation. The client fails *closed* (blocks) if the quota check
 can't be confirmed, so the one easy bypass (blocking the request) is closed.
 
-If you change the quota number, update it in `features.js`, the `LIMIT` in
-`worker/handlers/auth.js` (consume-route), and `tests/features.test.js` together.
+Free-tier loop sub-quota: **3 loop routes per week** (`FEATURES.loops_per_week`).
+Loops also count toward `routes_per_week`, so a loop consumes one of the 3 loop
+slots *and* one of the 10 weekly routes; A→B routes only consume a weekly route.
+The client sends `{ mode }` to `consume-route`; the server tracks
+`user.stats.weeklyLoops` (alongside `weeklyRoutes`, same `weekStart` reset) and
+returns `{ ok:false, reason:'loop' }` / `{ reason:'route' }` so the client can show
+the right upsell (`showLoopQuotaModal` vs `showQuotaExceededModal`).
+
+If you change either quota number, update it in `features.js`, the matching `LIMIT`
+/ `LOOP_LIMIT` in `worker/handlers/auth.js` (consume-route), and `tests/features.test.js`
++ `tests/worker-auth.test.mjs` together.
 
 Badges are earned based on stats:
 - Routes count and total km are persisted server-side in `user.stats` via

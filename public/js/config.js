@@ -1,5 +1,7 @@
 // Change this to your Cloudflare Worker URL after deploying
-const API_URL = 'https://bwr-worker.ciril8596.workers.dev';
+const API_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? '' // same-origin dev worker
+  : 'https://bwr-worker.ciril8596.workers.dev';
 
 // Fallback contact address shown in error messages when the API is unreachable
 const CONTACT_EMAIL = 'ciril8596@gmail.com';

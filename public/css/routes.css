@@ -34,6 +34,86 @@
 }
 
 /* ── Quick start hero ── */
+/* ✨ AI planner */
+.ai-planner {
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #143d2e 0%, #1e4d14 55%, #3a2d6b 100%);
+  color: #fff;
+  border-bottom: 1px solid #e2e8da;
+}
+.ai-planner-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.ai-planner-spark { font-size: 1.4rem; line-height: 1; }
+.ai-planner-title { font-size: 0.98rem; font-weight: 800; letter-spacing: 0.2px; }
+.ai-planner-sub { font-size: 0.78rem; opacity: 0.85; margin: 2px 0 0; }
+
+.ai-input-row { display: flex; gap: 8px; }
+.ai-input {
+  flex: 1;
+  padding: 11px 13px;
+  border: 1.5px solid rgba(255,255,255,0.28);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.ai-input::placeholder { color: rgba(255,255,255,0.6); }
+.ai-input:focus { outline: none; border-color: #a3e635; background: rgba(255,255,255,0.18); }
+.ai-submit {
+  flex: 0 0 auto;
+  width: 44px;
+  border: none;
+  border-radius: 10px;
+  background: #a3e635;
+  color: #1a2e12;
+  font-size: 1.25rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.ai-submit:hover { background: #b6f04a; transform: translateY(-1px); }
+.ai-submit:disabled { opacity: 0.65; cursor: progress; transform: none; }
+.ai-submit.loading { color: transparent; position: relative; }
+.ai-submit.loading::after {
+  content: ''; position: absolute; inset: 0; margin: auto;
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(26,46,18,0.35); border-top-color: #1a2e12;
+  animation: ai-spin 0.7s linear infinite;
+}
+@keyframes ai-spin { to { transform: rotate(360deg); } }
+
+.ai-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.ai-chip {
+  padding: 6px 11px;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ai-chip:hover { background: rgba(255,255,255,0.22); }
+
+.ai-feedback {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.ai-feedback-loading { background: rgba(255,255,255,0.14); color: #fff; }
+.ai-feedback-ok { background: rgba(163,230,53,0.22); color: #eaffd0; }
+.ai-feedback-error { background: rgba(248,113,113,0.2); color: #ffe2e2; }
+.ai-feedback-info { background: rgba(96,165,250,0.2); color: #e3effe; }
+
 .quick-start {
   padding: 18px 20px;
   background: linear-gradient(135deg, #1e4d14, #2d6b1f);
@@ -576,7 +656,13 @@
 .result-actions {
   display: flex;
   gap: 8px;
+  /* GPX / KML / Strava share the first row; the wider "Nouveau trajet" button
+     wraps to its own full-width row below. Without this the 4 buttons are
+     crammed into the 320px sidebar and the long label gets clipped. */
+  flex-wrap: wrap;
 }
+.result-actions .btn-gpx { flex: 1 1 0; min-width: 64px; }
+.result-actions .btn-reset { flex: 1 1 100%; }
 
 .btn-gpx {
   flex: 1;
@@ -796,6 +882,11 @@
     flex: none;
     min-height: 48vh;
     height: 52vh;
+    /* Cancel the global `#map { margin-bottom: 56px }` (style.css) meant for the
+       full-screen map page. Here the map sits ABOVE the bottom-sheet sidebar,
+       which already pads itself clear of the fixed bottom nav — so that margin
+       only leaves a dead 56px gap between the map and the sidebar. */
+    margin-bottom: 0;
   }
 
   /* Sidebar is a scrollable bottom sheet */

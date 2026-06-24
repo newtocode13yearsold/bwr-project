@@ -159,7 +159,9 @@ try {
   window.addEventListener('load', function () { map.invalidateSize(); });
 
   L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-    maxZoom: 17,
+    // maxNativeZoom 15 + crossOrigin: mirror js/map.js so this homepage map reuses
+    // the offline-downloaded forest tiles (cached z10–15) instead of going blank.
+    maxNativeZoom: 15, maxZoom: 17, subdomains: ['a', 'b', 'c'], crossOrigin: true,
   }).addTo(map);
 
   function haversine(lat1, lon1, lat2, lon2) {

@@ -625,12 +625,50 @@ document.getElementById('supportBlock').style.display = show;
   const upsellCard = document.getElementById('upsellCard');
   if (upsellCard) upsellCard.style.display = (plan === 'free') ? '' : 'none';
 
+  // One-time free 7-day Silver trial — offered to free users who haven't used it yet.
+  const trialBtn  = document.getElementById('startTrialBtn');
+  const trialNote = document.getElementById('trialNote');
+  if (trialBtn) {
+    const eligible = plan === 'free' && !user.silverTrialUsed;
+    trialBtn.style.display  = eligible ? '' : 'none';
+    if (trialNote) trialNote.style.display = eligible ? '' : 'none';
+    if (eligible) trialBtn.addEventListener('click', startSilverTrial, { once: true });
+  }
+
   // ── Engagement gadgets (all tiers; recent routes gated inside) ──
   renderActivityHeatmap(user.stats);
   renderRecords(user.stats);
   renderStreakBanner(user.stats);
   renderMonthlyChallenge(user.stats);
   renderRecentRoutes(plan);
+}
+
+// Activates the one-time free 7-day Silver trial, then reloads so the page
+// re-renders with the unlocked premium sections.
+async function startSilverTrial(e) {
+  const btn = e.currentTarget;
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Activation…';
+  try {
+    const res = await fetch(`${API_URL}/api/auth/start-trial`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Activation impossible.');
+    const cached = getCachedUser();
+    if (cached) {
+      setSession(localStorage.getItem('bwr_token'),
+        { ...cached, plan: 'silver', planExpiresAt: data.planExpiresAt, silverTrialUsed: true });
+    }
+    alert('🎉 Essai Argent activé ! Vous profitez de toutes les fonctionnalités pendant 7 jours.');
+    location.reload();
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = original;
+    alert('Impossible d\'activer l\'essai : ' + err.message);
+  }
 }
 
 // ── Small helpers ─────────────────────────────────────────────────────────────

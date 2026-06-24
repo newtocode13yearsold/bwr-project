@@ -31,6 +31,10 @@ import { mkdir, rm, readdir, rename, readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { pickVariant } from './variety.mjs';
+
+// Per-run variety: accent palette, shuffled photo subset, rotating copy.
+const V = pickVariant('ad');
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(__dirname, 'out');
@@ -121,8 +125,8 @@ const helpers = {
   // Cinematic b-roll INTRO: full-screen slideshow of royalty-free outdoor
   // photos (Ken Burns zoom + crossfade) with the animated hook text on top.
   // `imgs` is an array of data-URI strings. Holds ~ (imgs.length*1.4)s.
-  async introMontage(page, imgs, lines) {
-    await page.evaluate(({ imgs, lines }) => {
+  async introMontage(page, imgs, lines, accent = '#22c55e') {
+    await page.evaluate(({ imgs, lines, accent }) => {
       const ov = document.createElement('div');
       ov.id = '__adIntro';
       ov.innerHTML =
@@ -147,14 +151,14 @@ const helpers = {
         `align-items:center;gap:10px;padding:0 42px;text-align:center;color:#fff;font-family:system-ui,Segoe UI,sans-serif}` +
         `#__adIntro .hl{font:800 42px/1.12 system-ui;letter-spacing:-.8px;text-shadow:0 3px 16px rgba(0,0,0,.6);` +
         `opacity:0;transform:translateY(18px);transition:opacity .55s ease,transform .55s cubic-bezier(.2,.8,.2,1)}` +
-        `#__adIntro .hl.in{opacity:1;transform:none}#__adIntro .hl b{color:#22c55e}`;
+        `#__adIntro .hl.in{opacity:1;transform:none}#__adIntro .hl b{color:${accent}}`;
       document.head.appendChild(st);
       // stagger the slide animation starts so they cross-fade in sequence
       ov.querySelectorAll('.sl').forEach((el, i) => {
         el.style.animationDelay = `${-(dur - i * 1.4)}s, ${-(dur - i * 1.4)}s`;
       });
       requestAnimationFrame(() => ov.querySelectorAll('.hl').forEach(el => el.classList.add('in')));
-    }, { imgs, lines });
+    }, { imgs, lines, accent });
   },
   async removeIntro(page) {
     await page.evaluate(() => {
@@ -196,26 +200,26 @@ const helpers = {
     });
   },
   // Full-screen call-to-action end card.
-  async endCard(page) {
-    await page.evaluate(() => {
+  async endCard(page, opts = {}) {
+    await page.evaluate(({ accent, deep, deep2, tag, cta }) => {
       document.getElementById('__adCap')?.remove();
       const ov = document.createElement('div');
       ov.id = '__adCTA';
       ov.innerHTML =
         '<div class="logo">' +
           '<svg width="86" height="86" viewBox="0 0 64 64" style="filter:drop-shadow(0 6px 18px rgba(0,0,0,.4))">' +
-          '<rect width="64" height="64" rx="14" fill="#1e4d14"/>' +
-          '<polygon points="32,7 42,25 37,25 46,40 36,40 41,53 23,53 28,40 18,40 27,25 22,25" fill="#22c55e"/>' +
+          `<rect width="64" height="64" rx="14" fill="${deep}"/>` +
+          `<polygon points="32,7 42,25 37,25 46,40 36,40 41,53 23,53 28,40 18,40 27,25 22,25" fill="${accent}"/>` +
           '</svg></div>' +
         '<div class="brand">BWR</div>' +
-        '<div class="tag">Bike · Walk · Run — la carte qui simplifie ta vie</div>' +
-        '<div class="cta">Essaie gratuitement →</div>' +
+        `<div class="tag">${tag}</div>` +
+        `<div class="cta">${cta}</div>` +
         '<div class="url">bwr-worker.ciril8596.workers.dev</div>';
       Object.assign(ov.style, {
         position: 'fixed', inset: '0', zIndex: '2147483647', display: 'flex',
         flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
         gap: '0', textAlign: 'center', fontFamily: 'system-ui,Segoe UI,sans-serif',
-        background: 'radial-gradient(120% 80% at 50% 35%, #1e4d14 0%, #0b1a0c 72%, #050d06 100%)',
+        background: `radial-gradient(120% 80% at 50% 35%, ${deep} 0%, ${deep2} 72%, #050d06 100%)`,
         color: '#fff',
       });
       document.body.appendChild(ov);
@@ -225,27 +229,34 @@ const helpers = {
         'transition:opacity .5s ease,transform .5s cubic-bezier(.2,.8,.2,1)}' +
         '#__adCTA .brand{font:900 64px/1 system-ui;letter-spacing:1px;margin-top:18px}' +
         '#__adCTA .tag{font:600 21px/1.35 system-ui;opacity:.92;margin-top:14px;max-width:420px;padding:0 30px}' +
-        '#__adCTA .cta{font:800 26px/1 system-ui;margin-top:34px;background:#22c55e;color:#06140c;' +
-        'padding:16px 30px;border-radius:999px;box-shadow:0 10px 30px rgba(34,197,94,.35)}' +
+        `#__adCTA .cta{font:800 26px/1 system-ui;margin-top:34px;background:${accent};color:#06140c;` +
+        `padding:16px 30px;border-radius:999px;box-shadow:0 10px 30px ${accent}59}` +
         '#__adCTA .url{font:600 18px/1 system-ui;opacity:.8;margin-top:22px;letter-spacing:.3px}' +
         '#__adCTA .in{opacity:1;transform:none}';
       document.head.appendChild(st);
       const kids = [...ov.children];
       kids.forEach((el, i) => setTimeout(() => el.classList.add('in'), 120 + i * 220));
+    }, {
+      accent: opts.accent || '#22c55e', deep: opts.deep || '#1e4d14', deep2: opts.deep2 || '#0b1a0c',
+      tag: opts.tag || 'Bike · Walk · Run — la carte qui simplifie ta vie',
+      cta: opts.cta || 'Essaie gratuitement →',
     });
   },
 };
 
 // ── ad scene script (punchy, with b-roll) ────────────────────────────────────
 // `broll` is an array of data-URI strings (royalty-free outdoor photos).
-async function runTour(page, broll) {
+async function runTour(page, allBroll) {
   const h = helpers;
+  // Use a shuffled random subset of the loaded photos → different intro + flashes each run.
+  const broll = V.pickBroll(allBroll);
   const b = (i) => broll[i % broll.length]; // safe index
+  const flash = (i) => V.flashes[i % V.flashes.length];
 
   // 0) INTRO — cinematic b-roll montage + hook (no site chrome yet).
   await page.goto('/index.html', { waitUntil: 'domcontentloaded', timeout: 25000 });
   await h.settle(300);
-  await h.introMontage(page, broll, ['Marre de tourner', 'en rond en <b>forêt</b> ?', '', 'BWR s’en charge.']);
+  await h.introMontage(page, broll, V.intro, V.accent);
   await h.settle(Math.max(4200, broll.length * 1400));
   await h.removeIntro(page);
   await h.settle(400);
@@ -256,7 +267,7 @@ async function runTour(page, broll) {
   await h.settle(500);
 
   // → b-roll transition into the map.
-  await h.brollFlash(page, b(0), 'Tous les sentiers, en un coup d’œil', 1400);
+  await h.brollFlash(page, b(0), flash(0), 1400);
 
   // 1) MAP — live trail status.
   await page.goto('/map.html', { waitUntil: 'domcontentloaded', timeout: 25000 });
@@ -269,7 +280,7 @@ async function runTour(page, broll) {
   await h.settle(1400);
 
   // → b-roll transition into routes.
-  await h.brollFlash(page, b(1), 'Vélo, marche ou course ?', 1400);
+  await h.brollFlash(page, b(1), flash(1), 1400);
 
   // 2) ROUTES — the core hook.
   await page.goto('/routes.html', { waitUntil: 'domcontentloaded', timeout: 25000 });
@@ -286,7 +297,7 @@ async function runTour(page, broll) {
   await h.settle(600);
 
   // → b-roll transition into profile.
-  await h.brollFlash(page, b(2), 'Repousse tes limites', 1400);
+  await h.brollFlash(page, b(2), flash(2), 1400);
 
   // 3) PROFILE — gamification.
   await page.goto('/profile.html', { waitUntil: 'domcontentloaded', timeout: 25000 });
@@ -299,7 +310,7 @@ async function runTour(page, broll) {
   await h.settle(600);
 
   // 4) END CARD — call to action.
-  await h.endCard(page);
+  await h.endCard(page, { accent: V.accent, deep: V.deep, deep2: V.deep2, tag: V.cta.tag, cta: V.cta.cta });
   await h.settle(3200);
 }
 
@@ -347,6 +358,7 @@ async function record() {
 
   const broll = await loadBroll();
   console.log(`  • ${broll.length} b-roll image(s) loaded`);
+  console.log(`  • variant → ${V.describe()}`);
   const page = await context.newPage();
   try { await runTour(page, broll); }
   catch (e) { console.warn(`  ! tour hiccup: ${e.message}`); }

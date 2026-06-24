@@ -215,7 +215,7 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
       let analysis = '';
 
       if (env.AI) {
-        const cfRes = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+        const cfRes = await env.AI.run('@cf/meta/llama-3.1-8b-instruct-fp8', {
           messages: [
             { role: 'system', content: 'Tu es un expert SaaS. Réponds uniquement en français, de façon concise et directe.' },
             { role: 'user', content: prompt },

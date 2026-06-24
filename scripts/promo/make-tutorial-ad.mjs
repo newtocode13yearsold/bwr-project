@@ -26,6 +26,10 @@ import { mkdir, rm, readdir, rename, readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { pickVariant } from './variety.mjs';
+
+// Per-run variety: accent palette, shuffled photo subset, rotating copy.
+const V = pickVariant('tuto');
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(__dirname, 'out');
@@ -89,14 +93,14 @@ const helpers = {
   },
   // Tutorial caption: a numbered step badge + title + subtitle, slides up.
   async step(page, n, total, title, sub = '') {
-    await page.evaluate(({ n, total, title, sub }) => {
+    await page.evaluate(({ n, total, title, sub, accent }) => {
       document.getElementById('__tutCap')?.remove();
       const bar = document.createElement('div');
       bar.id = '__tutCap';
       const badge = n
         ? `<div style="display:inline-block;font:800 15px/1 system-ui,Segoe UI,sans-serif;` +
-          `letter-spacing:.5px;color:#06140c;background:#a3e635;padding:7px 13px;border-radius:999px;` +
-          `margin-bottom:12px;box-shadow:0 6px 18px rgba(163,230,53,.35)">ÉTAPE ${n}/${total}</div>`
+          `letter-spacing:.5px;color:#06140c;background:${accent};padding:7px 13px;border-radius:999px;` +
+          `margin-bottom:12px;box-shadow:0 6px 18px ${accent}59">ÉTAPE ${n}/${total}</div>`
         : '';
       bar.innerHTML =
         badge +
@@ -113,11 +117,11 @@ const helpers = {
       });
       document.body.appendChild(bar);
       requestAnimationFrame(() => { bar.style.transform = 'translateY(0)'; bar.style.opacity = '1'; });
-    }, { n, total, title, sub });
+    }, { n, total, title, sub, accent: V.accent });
   },
   // Cinematic b-roll INTRO with the tutorial title.
-  async introMontage(page, imgs, lines) {
-    await page.evaluate(({ imgs, lines }) => {
+  async introMontage(page, imgs, lines, accent = '#a3e635') {
+    await page.evaluate(({ imgs, lines, accent }) => {
       const ov = document.createElement('div');
       ov.id = '__tutIntro';
       ov.innerHTML =
@@ -141,13 +145,13 @@ const helpers = {
         `align-items:center;gap:10px;padding:0 42px;text-align:center;color:#fff;font-family:system-ui,Segoe UI,sans-serif}` +
         `#__tutIntro .hl{font:800 42px/1.12 system-ui;letter-spacing:-.8px;text-shadow:0 3px 16px rgba(0,0,0,.6);` +
         `opacity:0;transform:translateY(18px);transition:opacity .55s ease,transform .55s cubic-bezier(.2,.8,.2,1)}` +
-        `#__tutIntro .hl.in{opacity:1;transform:none}#__tutIntro .hl b{color:#a3e635}`;
+        `#__tutIntro .hl.in{opacity:1;transform:none}#__tutIntro .hl b{color:${accent}}`;
       document.head.appendChild(st);
       ov.querySelectorAll('.sl').forEach((el, i) => {
         el.style.animationDelay = `${-(dur - i * 1.4)}s, ${-(dur - i * 1.4)}s`;
       });
       requestAnimationFrame(() => ov.querySelectorAll('.hl').forEach(el => el.classList.add('in')));
-    }, { imgs, lines });
+    }, { imgs, lines, accent });
   },
   async removeIntro(page) {
     await page.evaluate(() => {
@@ -187,26 +191,26 @@ const helpers = {
       setTimeout(() => ov.remove(), 320);
     });
   },
-  async endCard(page) {
-    await page.evaluate(() => {
+  async endCard(page, opts = {}) {
+    await page.evaluate(({ accent, deep, deep2, tag, cta }) => {
       document.getElementById('__tutCap')?.remove();
       const ov = document.createElement('div');
       ov.id = '__tutCTA';
       ov.innerHTML =
         '<div class="logo">' +
           '<svg width="86" height="86" viewBox="0 0 64 64" style="filter:drop-shadow(0 6px 18px rgba(0,0,0,.4))">' +
-          '<rect width="64" height="64" rx="14" fill="#1e4d14"/>' +
-          '<polygon points="32,7 42,25 37,25 46,40 36,40 41,53 23,53 28,40 18,40 27,25 22,25" fill="#a3e635"/>' +
+          `<rect width="64" height="64" rx="14" fill="${deep}"/>` +
+          `<polygon points="32,7 42,25 37,25 46,40 36,40 41,53 23,53 28,40 18,40 27,25 22,25" fill="${accent}"/>` +
           '</svg></div>' +
         '<div class="brand">BWR</div>' +
-        '<div class="tag">Maintenant, à toi de jouer 🌲</div>' +
-        '<div class="cta">Commence gratuitement →</div>' +
+        `<div class="tag">${tag}</div>` +
+        `<div class="cta">${cta}</div>` +
         '<div class="url">bwr-worker.ciril8596.workers.dev</div>';
       Object.assign(ov.style, {
         position: 'fixed', inset: '0', zIndex: '2147483647', display: 'flex',
         flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
         gap: '0', textAlign: 'center', fontFamily: 'system-ui,Segoe UI,sans-serif',
-        background: 'radial-gradient(120% 80% at 50% 35%, #1e4d14 0%, #0b1a0c 72%, #050d06 100%)',
+        background: `radial-gradient(120% 80% at 50% 35%, ${deep} 0%, ${deep2} 72%, #050d06 100%)`,
         color: '#fff',
       });
       document.body.appendChild(ov);
@@ -216,27 +220,33 @@ const helpers = {
         'transition:opacity .5s ease,transform .5s cubic-bezier(.2,.8,.2,1)}' +
         '#__tutCTA .brand{font:900 64px/1 system-ui;letter-spacing:1px;margin-top:18px}' +
         '#__tutCTA .tag{font:600 21px/1.35 system-ui;opacity:.92;margin-top:14px;max-width:420px;padding:0 30px}' +
-        '#__tutCTA .cta{font:800 26px/1 system-ui;margin-top:34px;background:#a3e635;color:#06140c;' +
-        'padding:16px 30px;border-radius:999px;box-shadow:0 10px 30px rgba(163,230,53,.35)}' +
+        `#__tutCTA .cta{font:800 26px/1 system-ui;margin-top:34px;background:${accent};color:#06140c;` +
+        `padding:16px 30px;border-radius:999px;box-shadow:0 10px 30px ${accent}59}` +
         '#__tutCTA .url{font:600 18px/1 system-ui;opacity:.8;margin-top:22px;letter-spacing:.3px}' +
         '#__tutCTA .in{opacity:1;transform:none}';
       document.head.appendChild(st);
       const kids = [...ov.children];
       kids.forEach((el, i) => setTimeout(() => el.classList.add('in'), 120 + i * 220));
+    }, {
+      accent: opts.accent || '#a3e635', deep: opts.deep || '#1e4d14', deep2: opts.deep2 || '#0b1a0c',
+      tag: opts.tag || 'Maintenant, à toi de jouer 🌲',
+      cta: opts.cta || 'Commence gratuitement →',
     });
   },
 };
 
 // ── tutorial scene script ─────────────────────────────────────────────────────
-async function runTour(page, broll) {
+async function runTour(page, allBroll) {
   const h = helpers;
+  // Shuffled random subset of the loaded photos → different intro + flashes each run.
+  const broll = V.pickBroll(allBroll);
   const b = (i) => broll[i % broll.length];
   const N = 5; // number of steps
 
   // 0) INTRO — title card.
   await page.goto('/index.html', { waitUntil: 'domcontentloaded', timeout: 25000 });
   await h.settle(300);
-  await h.introMontage(page, broll, ['Comment utiliser', '<b>BWR</b>', '', 'en 30 secondes']);
+  await h.introMontage(page, broll, V.intro, V.accent);
   await h.settle(Math.max(4200, broll.length * 1400));
   await h.removeIntro(page);
   await h.settle(400);
@@ -294,7 +304,7 @@ async function runTour(page, broll) {
   await h.settle(2200);
 
   // 6) END CARD.
-  await h.endCard(page);
+  await h.endCard(page, { accent: V.accent, deep: V.deep, deep2: V.deep2, tag: V.cta.tag, cta: V.cta.cta });
   await h.settle(3200);
 }
 
@@ -342,6 +352,7 @@ async function record() {
 
   const broll = await loadBroll();
   console.log(`  • ${broll.length} b-roll image(s) loaded`);
+  console.log(`  • variant → ${V.describe()}`);
   const page = await context.newPage();
   try { await runTour(page, broll); }
   catch (e) { console.warn(`  ! tour hiccup: ${e.message}`); }

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BWR — Promo Reel · Trace ta boucle</title>
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="lib/leaflet.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&family=Fraunces:opsz,wght@9..144,700;9..144,900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest-900:#0b2410; --forest-700:#1e4d14; --forest-500:#4a8a32;
+    --lime:#a3e635; --lime-400:#bef264;
+    --easy:#22c55e; --medium:#f97316; --hard:#ef4444;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#05140a;overflow:hidden;font-family:Inter,sans-serif}
+  #page{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px}
+  #stage{
+    position:relative;width:calc(100vh * 9 / 16);max-width:96vw;aspect-ratio:9/16;
+    background:#05140a;border-radius:22px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(163,230,53,.15);
+  }
+  #map{position:absolute;inset:0;background:#0b2410;
+       filter:saturate(.85) contrast(1.05) brightness(.92) hue-rotate(-6deg);}
+  .leaflet-control-attribution{font-size:8px;opacity:.5}
+  .leaflet-control-zoom{display:none}
+
+  #vignette{position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(120% 80% at 50% 18%, transparent 40%, rgba(2,12,6,.55) 100%),
+      linear-gradient(180deg, rgba(2,12,6,.55) 0%, transparent 22%, transparent 60%, rgba(2,12,6,.85) 100%);
+    z-index:400;}
+
+  /* ── caption layers ── */
+  .layer{position:absolute;inset:0;z-index:450;pointer-events:none;
+         display:flex;flex-direction:column;justify-content:center;align-items:center;
+         text-align:center;padding:0 8%}
+  .top{justify-content:flex-start;padding-top:11%}
+  .bottom{justify-content:flex-end;padding-bottom:13%}
+
+  .kicker{font:800 clamp(13px,3.4vh,30px)/1 Inter;letter-spacing:.22em;text-transform:uppercase;
+          color:var(--lime);text-shadow:0 2px 18px rgba(0,0,0,.7)}
+  .huge{font:900 clamp(34px,8.6vh,90px)/.94 Fraunces;color:#fff;
+        text-shadow:0 4px 30px rgba(0,0,0,.85);letter-spacing:-.01em}
+  .huge .num{color:var(--lime);display:inline-block}
+  .sub{font:700 clamp(15px,3.6vh,32px)/1.2 Inter;color:#eafff0;margin-top:2vh;
+       text-shadow:0 2px 18px rgba(0,0,0,.8)}
+
+  /* ── fake app planner panel ── */
+  .panel{position:absolute;left:50%;bottom:0;transform:translate(-50%,110%);
+         width:88%;z-index:460;
+         background:rgba(8,24,12,.78);backdrop-filter:blur(10px);
+         border:1px solid rgba(163,230,53,.30);border-top-left-radius:22px;border-top-right-radius:22px;
+         padding:5% 6% 7%;box-shadow:0 -18px 50px rgba(0,0,0,.5);
+         transition:transform .6s cubic-bezier(.2,.85,.2,1)}
+  .panel.in{transform:translate(-50%,0)}
+  .panel h4{font:800 clamp(13px,3vh,24px)/1 Inter;color:#dff5d0;letter-spacing:.02em;
+            margin-bottom:2.6vh;display:flex;align-items:center;gap:8px}
+  .row{display:flex;gap:2.4%;margin-bottom:2.6vh}
+  .opt{flex:1;text-align:center;border:2px solid rgba(163,230,53,.22);border-radius:14px;
+       padding:1.7vh 0;color:#cdeac0;font:800 clamp(12px,2.7vh,20px)/1 Inter;
+       background:rgba(163,230,53,.05);transition:all .28s ease;position:relative}
+  .opt small{display:block;font:600 clamp(9px,1.9vh,14px)/1 Inter;color:#8fb37f;margin-top:.7vh}
+  .opt.sel{border-color:var(--lime);background:rgba(163,230,53,.18);color:#fff;
+           box-shadow:0 0 0 4px rgba(163,230,53,.12)}
+  .opt.sel.tap{animation:tap .5s cubic-bezier(.2,1.5,.3,1)}
+  @keyframes tap{0%{transform:scale(.9)}40%{transform:scale(1.07)}100%{transform:scale(1)}}
+  .opt .dot{display:inline-block;width:.9em;height:.9em;border-radius:50%;vertical-align:-.05em;margin-right:.35em}
+  .gen{width:100%;text-align:center;border:none;border-radius:14px;
+       padding:2vh 0;color:#06140a;font:900 clamp(14px,3.2vh,26px)/1 Inter;
+       background:var(--lime);box-shadow:0 14px 40px rgba(163,230,53,.35);
+       transition:transform .25s ease}
+  .gen.tap{animation:gentap .55s cubic-bezier(.2,1.5,.3,1)}
+  @keyframes gentap{0%{transform:scale(1)}45%{transform:scale(.94)}100%{transform:scale(1)}}
+
+  /* ── result stat card ── */
+  .statcard{display:inline-flex;flex-direction:column;align-items:center;gap:12px;
+            background:rgba(8,24,12,.66);backdrop-filter:blur(8px);
+            border:1px solid rgba(163,230,53,.35);border-radius:18px;
+            padding:20px 26px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+  .statcard .title{font:900 clamp(18px,4.4vh,40px)/1 Fraunces;color:#fff}
+  .stats{display:flex;gap:18px}
+  .stat{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .stat .v{font:900 clamp(20px,5vh,44px)/1 Fraunces;color:var(--lime)}
+  .stat .l{font:700 clamp(10px,2.2vh,16px)/1 Inter;color:#cdeac0;letter-spacing:.04em;text-transform:uppercase}
+
+  /* ── start marker pulse ── */
+  .gps{width:18px;height:18px;border-radius:50%;background:var(--lime);
+       box-shadow:0 0 0 4px rgba(163,230,53,.35);position:relative}
+  .gps::after{content:'';position:absolute;inset:-9px;border-radius:50%;
+       border:2px solid var(--lime);animation:ping 1.6s ease-out infinite}
+  @keyframes ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.2);opacity:0}}
+
+  /* logo / cta */
+  .logo{font:900 clamp(40px,11vh,120px)/1 Fraunces;color:#fff;letter-spacing:.02em;
+        text-shadow:0 6px 40px rgba(0,0,0,.8)}
+  .logo b{color:var(--lime)}
+  .cta-btn{margin-top:3vh;font:800 clamp(15px,3.6vh,30px)/1 Inter;color:#06140a;
+           background:var(--lime);border-radius:999px;padding:16px 30px;
+           text-decoration:none;display:inline-block;pointer-events:auto;
+           box-shadow:0 14px 40px rgba(163,230,53,.35)}
+  .url{margin-top:2.4vh;font:700 clamp(13px,3vh,26px)/1 Inter;color:#cdeac0;letter-spacing:.04em}
+
+  #prog{position:absolute;top:0;left:0;height:5px;width:0;z-index:500;
+        background:linear-gradient(90deg,var(--lime),var(--lime-400));box-shadow:0 0 12px var(--lime)}
+
+  .hidden{display:none!important}
+  .fade{opacity:0;transform:translateY(22px) scale(.98);
+        transition:opacity .5s ease, transform .6s cubic-bezier(.2,.8,.2,1)}
+  .fade.in{opacity:1;transform:none}
+  .pop{animation:pop .5s cubic-bezier(.2,1.4,.3,1) both}
+  @keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+  .beat{animation:beat .42s ease both}
+  @keyframes beat{0%{transform:scale(1)}30%{transform:scale(1.06)}100%{transform:scale(1)}}
+
+  #gate{position:absolute;inset:0;z-index:700;background:rgba(3,12,6,.92);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+        text-align:center;padding:0 10%}
+  #gate .logo{font-size:clamp(40px,12vh,110px)}
+  #gate p{color:#bcd9b0;font:600 clamp(13px,2.6vh,20px)/1.4 Inter;max-width:30ch}
+  #gate button{cursor:pointer;border:none}
+  .play{font:900 clamp(17px,4vh,30px)/1 Inter;color:#06140a;background:var(--lime);
+        border-radius:999px;padding:18px 36px;box-shadow:0 14px 40px rgba(163,230,53,.4)}
+
+  #controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;
+            color:#9fc090;font:600 13px/1.4 Inter;max-width:96vw}
+  #controls button,#controls label{cursor:pointer;border:1px solid rgba(163,230,53,.3);
+    background:rgba(163,230,53,.08);color:#dff5d0;border-radius:10px;padding:9px 14px;font:700 13px Inter}
+  #controls button:hover,#controls label:hover{background:rgba(163,230,53,.18)}
+  #controls .hint{border:none;background:none;color:#7fa672;max-width:60ch;text-align:center}
+  input[type=file]{display:none}
+</style>
+</head>
+<body>
+<div id="page">
+  <div id="stage">
+    <div id="map"></div>
+    <div id="vignette"></div>
+    <div id="prog"></div>
+
+    <!-- caption layers -->
+    <div class="layer top hidden" id="L-hook-top"><div class="kicker fade" id="hk-kick">Forêt de Compiègne</div></div>
+    <div class="layer hidden" id="L-hook"><div class="huge fade" id="hk-main"></div><div class="sub fade" id="hk-sub"></div></div>
+
+    <!-- fake app planner -->
+    <div class="panel" id="panel">
+      <h4>🥾 Crée ta rando</h4>
+      <div class="row" id="row-mode">
+        <div class="opt" id="o-atob">A → B<small>Aller</small></div>
+        <div class="opt" id="o-loop">⭕ Boucle<small>Retour différent</small></div>
+      </div>
+      <div class="row" id="row-km">
+        <div class="opt" id="o-5">5 km</div>
+        <div class="opt" id="o-8">8 km</div>
+        <div class="opt" id="o-12">12 km</div>
+      </div>
+      <div class="row" id="row-diff">
+        <div class="opt" id="o-easy"><span class="dot" style="background:var(--easy)"></span>Facile</div>
+        <div class="opt" id="o-med"><span class="dot" style="background:var(--medium)"></span>Moyen</div>
+        <div class="opt" id="o-hard"><span class="dot" style="background:var(--hard)"></span>Difficile</div>
+      </div>
+      <div class="gen" id="genBtn">Générer l'itinéraire →</div>
+    </div>
+
+    <!-- result -->
+    <div class="layer bottom hidden" id="L-stat"><div class="statcard pop" id="scard"></div></div>
+
+    <div class="layer hidden" id="L-cta">
+      <div class="logo fade" id="cta-logo">B<b>W</b>R</div>
+      <a class="cta-btn fade" id="cta-btn" href="https://bwr-worker.ciril8596.workers.dev/routes" target="_blank" rel="noopener">Crée ta rando →</a>
+      <div class="url fade" id="cta-url">bwr-worker.ciril8596.workers.dev</div>
+    </div>
+
+    <!-- start gate -->
+    <div id="gate">
+      <div class="logo">B<b>W</b>R</div>
+      <button class="play" id="playBtn">▶ Lancer le reel</button>
+      <p>Son inclus 🎵 — monte le volume. Plein écran conseillé pour enregistrer.</p>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button id="rec">⏺ Enregistrer la vidéo</button>
+    <button id="replay">↻ Rejouer</button>
+    <button id="fs">⛶ Plein écran</button>
+    <a href="https://bwr-worker.ciril8596.workers.dev/routes" target="_blank" rel="noopener" style="text-decoration:none">🗺️ Planifier sur l'app</a>
+    <label for="audio">🎵 Remplacer la musique</label>
+    <input type="file" id="audio" accept="audio/*" />
+    <div class="hint">Musique générée incluse (libre de droits). « Enregistrer la vidéo » → partage CET onglet + coche « audio de l'onglet » → un fichier se télécharge. Format 9:16, ~22 s.</div>
+  </div>
+</div>
+
+<script src="lib/leaflet.js"></script>
+<script>
+/* ─────────────────────────────────────────────────────────────
+   BWR promo reel #2 — "Trace ta boucle en 10 s"
+   A cinematic, scripted demo of the route planner over a real map.
+   ───────────────────────────────────────────────────────────── */
+
+// A pretty forest loop near the heart of Compiègne forest. [lat,lon], closed.
+const START = [49.3705,2.8950];
+const LOOP = [
+  [49.3705,2.8950],[49.3742,2.8988],[49.3763,2.9058],[49.3737,2.9121],
+  [49.3690,2.9138],[49.3648,2.9092],[49.3643,2.9013],[49.3672,2.8958],[49.3705,2.8950]
+];
+const RESULT = { km:'8,2 km', dur:'2 h 05', up:'+120 m' };
+
+const map = L.map('map',{zoomControl:false,attributionControl:true,
+  fadeAnimation:true,zoomAnimation:true,inertia:false,keyboard:false,
+  dragging:false,scrollWheelZoom:false,doubleClickZoom:false,touchZoom:false})
+  .setView([49.37,2.90],12);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+  maxZoom:19, subdomains:'abcd',
+  attribution:'© OpenStreetMap · © CARTO'
+}).addTo(map);
+
+// ── helpers ────────────────────────────────────────────────
+const $ = s=>document.querySelector(s);
+const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+let abort=false;
+
+function showOnly(id){
+  ['L-hook-top','L-hook','L-stat','L-cta'].forEach(x=>$('#'+x).classList.add('hidden'));
+  if(id) $('#'+id).classList.remove('hidden');
+}
+function fadeIn(el,delay=0){ setTimeout(()=>el.classList.add('in'),delay); }
+function resetFades(){ document.querySelectorAll('.fade').forEach(e=>e.classList.remove('in')); }
+
+// animate a "tap" + selection on a planner option
+async function tapSelect(id,wait=650){
+  if(abort)return;
+  const el=$('#'+id);
+  el.classList.add('sel','tap');
+  setTimeout(()=>el.classList.remove('tap'),550);
+  await sleep(wait);
+}
+
+// draw the loop progressively
+async function drawLoop(dur){
+  const line = L.polyline([],{color:'#22c55e',weight:7,opacity:.96,
+    lineJoin:'round',lineCap:'round'}).addTo(map);
+  const glow = L.polyline([],{color:'#ffffff',weight:13,opacity:.18,
+    lineJoin:'round',lineCap:'round'}).addTo(map);
+  const dense=[];
+  for(let i=0;i<LOOP.length-1;i++){
+    const a=LOOP[i],b=LOOP[i+1],steps=16;
+    for(let s=0;s<steps;s++) dense.push([a[0]+(b[0]-a[0])*s/steps, a[1]+(b[1]-a[1])*s/steps]);
+  }
+  dense.push(LOOP[LOOP.length-1]);
+  const start=performance.now();
+  return new Promise(res=>{
+    function frame(now){
+      if(abort){map.removeLayer(line);map.removeLayer(glow);return res(line);}
+      const p=Math.min(1,(now-start)/dur);
+      const n=Math.max(2,Math.floor(p*dense.length));
+      const slice=dense.slice(0,n);
+      line.setLatLngs(slice); glow.setLatLngs(slice);
+      if(p<1) requestAnimationFrame(frame); else res(line);
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+// progress bar
+let progRAF;
+function runProgress(total){
+  const el=$('#prog'); const start=performance.now();
+  (function tick(now){
+    if(abort) return;
+    const p=Math.min(1,(now-start)/total);
+    el.style.width=(p*100)+'%';
+    if(p<1) progRAF=requestAnimationFrame(tick);
+  })(performance.now());
+}
+
+let drawn=[], startMarker=null;
+function clearStage(){
+  drawn.forEach(l=>map.removeLayer(l)); drawn=[];
+  if(startMarker){ map.removeLayer(startMarker); startMarker=null; }
+  $('#panel').classList.remove('in');
+  document.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel','tap'));
+  $('#genBtn').classList.remove('tap');
+}
+
+// ── the timeline (≈22 s) ───────────────────────────────────
+const TOTAL = 22000;
+async function play(){
+  abort=false; resetFades(); $('#prog').style.width='0';
+  map.invalidateSize(); clearStage();
+  runProgress(TOTAL);
+
+  // SCENE 0 — hook (0–4.4s)
+  map.flyTo([49.37,2.905],12,{duration:1.2});
+  showOnly('L-hook'); $('#hk-main').innerHTML=''; $('#hk-sub').textContent='';
+  $('#L-hook-top').classList.remove('hidden');
+  fadeIn($('#hk-kick'),100);
+  await sleep(700); if(abort)return;
+  $('#hk-main').innerHTML='Marre de<br>tourner en rond ?';
+  fadeIn($('#hk-main'),50);
+  await sleep(1800); if(abort)return;
+  resetFades();
+  await sleep(350);
+  $('#hk-main').innerHTML='Ta boucle en<br><span class="num">10 secondes</span>';
+  $('#hk-main').classList.add('beat');
+  fadeIn($('#hk-main'),30);
+  $('#hk-sub').textContent='à pied ou à vélo 🥾🚲';
+  fadeIn($('#hk-sub'),350);
+  await sleep(1500); if(abort)return;
+  $('#L-hook-top').classList.add('hidden');
+  showOnly(null);
+
+  // SCENE 1 — drop start point (4.4–6.4s)
+  map.flyTo(START,13.6,{duration:1.4});
+  await sleep(900); if(abort)return;
+  startMarker = L.marker(START,{icon:L.divIcon({className:'',html:'<div class="gps"></div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(map);
+  await sleep(950); if(abort)return;
+
+  // SCENE 2 — planner panel + selections (6.4–11.4s)
+  $('#panel').classList.add('in');
+  await sleep(900); if(abort)return;
+  await tapSelect('o-loop',850);
+  await tapSelect('o-8',850);
+  await tapSelect('o-easy',900);
+
+  // SCENE 3 — generate (11.4–12.4s)
+  if(abort)return;
+  $('#genBtn').classList.add('tap');
+  await sleep(950); if(abort)return;
+  $('#panel').classList.remove('in');
+  await sleep(450); if(abort)return;
+
+  // SCENE 4 — draw the loop (12.8–17s)
+  map.flyToBounds(L.latLngBounds(LOOP).pad(0.28),{duration:1.2});
+  await sleep(700); if(abort)return;
+  const line=await drawLoop(3000);
+  drawn.push(line);
+  await sleep(400); if(abort)return;
+
+  // SCENE 5 — stat card (17–19.4s)
+  $('#scard').innerHTML=`<div class="title">Itinéraire prêt ✅</div>
+    <div class="stats">
+      <div class="stat"><span class="v">${RESULT.km}</span><span class="l">Distance</span></div>
+      <div class="stat"><span class="v">${RESULT.dur}</span><span class="l">Durée</span></div>
+      <div class="stat"><span class="v">${RESULT.up}</span><span class="l">Dénivelé</span></div>
+    </div>`;
+  $('#scard').classList.remove('pop'); void $('#scard').offsetWidth; $('#scard').classList.add('pop');
+  showOnly('L-stat');
+  await sleep(2300); if(abort)return;
+
+  // SCENE 6 — CTA (19.4–22s)
+  map.flyToBounds(L.latLngBounds(LOOP).pad(0.15),{duration:1.2});
+  resetFades(); showOnly('L-cta');
+  fadeIn($('#cta-logo'),150);
+  fadeIn($('#cta-btn'),650);
+  fadeIn($('#cta-url'),950);
+  $('#cta-logo').classList.add('beat');
+}
+
+// ── generated soundtrack (royalty-free, synthesized live, 22s) ──
+let audioCtx=null, musicStop=null;
+function startMusic(){
+  stopMusic();
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC) return;
+  const ac=new AC(); audioCtx=ac;
+  const master=ac.createGain();
+  const t0=ac.currentTime+0.06;
+  master.gain.setValueAtTime(0,t0);
+  master.gain.linearRampToValueAtTime(0.85,t0+1.1);
+  master.connect(ac.destination);
+
+  const bpm=120, beat=60/bpm, bars=11;      // 11*4*0.5 = 22.0s
+  const end=t0+bars*4*beat;
+  const N={A2:110,E3:164.81,A3:220,C4:261.63,D4:293.66,E4:329.63,
+           G4:392,A4:440,C5:523.25,D5:587.33,E5:659.25};
+  const arp =[N.A3,N.C4,N.E4,N.G4,N.A4,N.G4,N.E4,N.C4];
+  const lead=[N.A4,N.C5,N.E5,N.D5,N.C5,N.A4,N.G4,N.A4];
+  const bass=[N.A2,N.A2,N.E3,N.E3];
+
+  function tone(freq,start,dur,type,gain,pan){
+    const o=ac.createOscillator(); o.type=type; o.frequency.setValueAtTime(freq,start);
+    const g=ac.createGain();
+    g.gain.setValueAtTime(0,start);
+    g.gain.linearRampToValueAtTime(gain,start+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,start+dur);
+    let node=g;
+    if(pan!==undefined){const p=ac.createStereoPanner();p.pan.value=pan;g.connect(p);node=p;}
+    o.connect(g); node.connect(master); o.start(start); o.stop(start+dur+0.05);
+  }
+  function kick(start){
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.frequency.setValueAtTime(150,start);
+    o.frequency.exponentialRampToValueAtTime(45,start+0.12);
+    g.gain.setValueAtTime(0.95,start);
+    g.gain.exponentialRampToValueAtTime(0.001,start+0.2);
+    o.connect(g); g.connect(master); o.start(start); o.stop(start+0.22);
+  }
+  function hat(start){
+    const buf=ac.createBuffer(1,(ac.sampleRate*0.05)|0,ac.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2);
+    const b=ac.createBufferSource(); b.buffer=buf;
+    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000;
+    const g=ac.createGain(); g.gain.value=0.16;
+    b.connect(hp); hp.connect(g); g.connect(master); b.start(start);
+  }
+  for(let bar=0;bar<bars;bar++){
+    const bs=t0+bar*4*beat;
+    for(let i=0;i<8;i++) tone(arp[i%arp.length],bs+i*0.5*beat,0.45*beat,'triangle',0.15,i%2?0.25:-0.25);
+    if(bar>=2 && bar<bars-1){
+      for(let b=0;b<4;b++){ kick(bs+b*beat); hat(bs+b*beat+0.5*beat); }
+      tone(bass[bar%4],bs,2*beat,'sawtooth',0.20,0);
+      tone(bass[(bar+1)%4],bs+2*beat,2*beat,'sawtooth',0.20,0);
+    }
+    if(bar>=4 && bar<bars-1)
+      for(let i=0;i<8;i+=2) tone(lead[(bar*2+i/2)%lead.length],bs+i*0.5*beat,0.9*beat,'square',0.10,0.15);
+    if(bar===bars-1) [N.A3,N.C4,N.E4,N.A4].forEach(f=>tone(f,bs,2.4,'triangle',0.18,0));
+  }
+  master.gain.setValueAtTime(0.85,end-0.7);
+  master.gain.linearRampToValueAtTime(0,end+0.3);
+  musicStop=()=>{ try{ac.close();}catch(e){} };
+}
+function stopMusic(){ if(musicStop){musicStop();musicStop=null;} }
+function startSound(){
+  if(audioEl){ audioEl.currentTime=0; audioEl.play().catch(()=>{}); }
+  else startMusic();
+}
+
+// ── controls ───────────────────────────────────────────────
+$('#playBtn').addEventListener('click',()=>{
+  $('#gate').style.display='none';
+  map.invalidateSize();
+  startSound();
+  play();
+});
+$('#replay').addEventListener('click',async()=>{
+  abort=true; stopMusic(); await sleep(60); abort=false;
+  clearStage();
+  startSound();
+  play();
+});
+
+// ── one-click recorder → downloads a video file ──────────────
+$('#rec').addEventListener('click',async()=>{
+  if(!navigator.mediaDevices?.getDisplayMedia){ alert('Ton navigateur ne supporte pas l’enregistrement. Utilise un screen-recorder.'); return; }
+  let stream;
+  try{
+    stream=await navigator.mediaDevices.getDisplayMedia({
+      video:{frameRate:30}, audio:true, preferCurrentTab:true
+    });
+  }catch(e){ return; }
+  const mime = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4'
+            : MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus'
+            : 'video/webm';
+  const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:9000000});
+  const chunks=[]; rec.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+  rec.onstop=()=>{
+    const blob=new Blob(chunks,{type:mime});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='bwr-reel-trace-ta-boucle'+(mime.includes('mp4')?'.mp4':'.webm');
+    document.body.appendChild(a); a.click(); a.remove();
+    stream.getTracks().forEach(t=>t.stop());
+    $('#rec').textContent='⏺ Enregistrer la vidéo';
+  };
+  $('#rec').textContent='● Enregistrement…';
+  $('#gate').style.display='none'; map.invalidateSize();
+  abort=true; stopMusic(); await sleep(80); abort=false;
+  clearStage();
+  rec.start(); startSound(); play();
+  setTimeout(()=>{ try{ rec.stop(); }catch(e){} }, TOTAL+700);
+});
+$('#fs').addEventListener('click',()=>{
+  const s=$('#stage');
+  if(!document.fullscreenElement) s.requestFullscreen?.(); else document.exitFullscreen?.();
+});
+
+let audioEl=null;
+$('#audio').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f)return;
+  if(audioEl){ audioEl.pause(); }
+  audioEl=new Audio(URL.createObjectURL(f)); audioEl.loop=false;
+});
+
+window.addEventListener('resize',()=>map.invalidateSize());
+setTimeout(()=>map.invalidateSize(),200);
+</script>
+<script src="js/track.js"></script>
+</body>
+</html>

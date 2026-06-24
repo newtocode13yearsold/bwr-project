@@ -123,6 +123,10 @@
   align-items: flex-start;
   line-height: 1.55;
   font-size: var(--fs-sm, 0.9rem);
+  /* Grid/flex items default to min-width:auto and refuse to shrink below their
+     content, which pushed these list rows past the viewport on narrow phones
+     (horizontal scroll). Allow them to shrink so the text wraps instead. */
+  min-width: 0;
 }
 .guide-steps li::before {
   content: counter(gstep);

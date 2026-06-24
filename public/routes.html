@@ -105,6 +105,29 @@
 
       <div class="sheet-handle" aria-hidden="true"></div>
 
+      <!-- ✨ AI planner — describe your walk in one sentence -->
+      <div class="ai-planner" id="aiPlanner">
+        <div class="ai-planner-head">
+          <span class="ai-planner-spark">✨</span>
+          <div>
+            <strong class="ai-planner-title">Planifie avec l'IA</strong>
+            <p class="ai-planner-sub">Décris ta balade, je m'occupe du reste.</p>
+          </div>
+        </div>
+        <div class="ai-input-row">
+          <input type="text" id="aiInput" class="ai-input"
+            placeholder="Ex : une boucle de 23 km par les étangs Saint-Pierre"
+            autocomplete="off" />
+          <button type="button" id="aiSubmit" class="ai-submit" title="Générer">→</button>
+        </div>
+        <div class="ai-chips" id="aiChips">
+          <button type="button" class="ai-chip" data-q="Une boucle facile de 10 km en forêt">🌲 Boucle 10 km</button>
+          <button type="button" class="ai-chip" data-q="Une sortie vélo de 25 km">🚴 Vélo 25 km</button>
+          <button type="button" class="ai-chip" data-q="Une boucle de 15 km par les Beaux Monts">⛰ Beaux Monts</button>
+        </div>
+        <div class="ai-feedback hidden" id="aiFeedback"></div>
+      </div>
+
       <!-- ⚡ Quick start — one-tap loop from current location -->
       <div class="quick-start" id="quickStart">
         <div class="qs-title">⚡ Trajet rapide</div>
@@ -348,6 +371,7 @@
   <script src="js/features.js"></script>
   <script src="js/exporters.js"></script>
   <script src="js/forests.js"></script>
+  <script src="js/carrefours.js"></script>
   <script src="js/graph-router.js"></script>
   <script src="js/routes.js"></script>
   <script defer src="js/install.js"></script>

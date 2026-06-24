@@ -28,6 +28,10 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { scenes } from './scenes.mjs';
+import { pickVariant } from './variety.mjs';
+
+// Per-run variety: this tour has no photos, but the caption accent rotates.
+const V = pickVariant('promo');
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(__dirname, 'out');
@@ -94,11 +98,12 @@ const helpers = {
 
 // Branded caption banner injected into the page (baked into the recording).
 function captionScript(caption, sub) {
-  return ({ caption, sub }) => {
+  return ({ caption, sub, accent }) => {
     document.getElementById('__promoCap')?.remove();
     const bar = document.createElement('div');
     bar.id = '__promoCap';
     bar.innerHTML =
+      `<div style="width:46px;height:5px;border-radius:999px;background:${accent};margin-bottom:14px;box-shadow:0 4px 14px ${accent}66"></div>` +
       `<div style="font:700 30px/1.15 system-ui,Segoe UI,sans-serif;letter-spacing:-.5px">${caption}</div>` +
       `<div style="font:500 18px/1.3 system-ui,Segoe UI,sans-serif;opacity:.85;margin-top:6px">${sub}</div>`;
     Object.assign(bar.style, {
@@ -114,6 +119,7 @@ function captionScript(caption, sub) {
 
 async function record() {
   console.log(`▶ recording tour of ${BASE_URL} …`);
+  console.log(`  • variant → palette=${V.palette.name}`);
   await rm(RAW_DIR, { recursive: true, force: true });
   await mkdir(RAW_DIR, { recursive: true });
   await mkdir(OUT_DIR, { recursive: true });
@@ -153,7 +159,7 @@ async function record() {
     } catch (e) {
       console.warn(`    ! navigation slow for ${scene.id}: ${e.message}`);
     }
-    await page.evaluate(captionScript(), { caption: scene.caption, sub: scene.sub });
+    await page.evaluate(captionScript(), { caption: scene.caption, sub: scene.sub, accent: V.accent });
     try { await scene.run(page, helpers); }
     catch (e) { console.warn(`    ! scene ${scene.id} hiccup: ${e.message}`); }
   }

@@ -30,6 +30,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["-y", "serve", "C:\\Users\\TOM\\DOCUME~1\\STOCKG~1\\public", "-l", "4567"],
       "port": 4567
+    },
+    {
+      "name": "city-skyline",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "C:\\Users\\TOM\\DOCUME~1\\CITYSK~1.0", "-l", "4600"],
+      "port": 4600
     }
   ]
 }

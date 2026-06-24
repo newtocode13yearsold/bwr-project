@@ -86,6 +86,10 @@ describe('limitOf', () => {
   test('routes_per_week: silver = Infinity', () => assert.equal(limitOf('routes_per_week', 'silver'), Infinity));
   test('routes_per_week: gold = Infinity',   () => assert.equal(limitOf('routes_per_week', 'gold'),   Infinity));
 
+  test('loops_per_week: free = 3',           () => assert.equal(limitOf('loops_per_week', 'free'),   3));
+  test('loops_per_week: silver = Infinity',  () => assert.equal(limitOf('loops_per_week', 'silver'), Infinity));
+  test('loops_per_week: gold = Infinity',    () => assert.equal(limitOf('loops_per_week', 'gold'),   Infinity));
+
   test('offline_cache: free = 0',   () => assert.equal(limitOf('offline_cache', 'free'),   0));
   test('offline_cache: silver = 1', () => assert.equal(limitOf('offline_cache', 'silver'), 1));
   test('offline_cache: gold = 20',  () => assert.equal(limitOf('offline_cache', 'gold'),   20));
@@ -102,7 +106,7 @@ describe('limitOf', () => {
 
 describe('requiredTier', () => {
   test('carrefours → free (available to all)', () => assert.equal(requiredTier('carrefours'), 'free'));
-  test('routes_per_week → free (quota is 3, but truthy)', () => assert.equal(requiredTier('routes_per_week'), 'free'));
+  test('routes_per_week → free (quota is 10, but truthy)', () => assert.equal(requiredTier('routes_per_week'), 'free'));
   test('loop_mode → free',           () => assert.equal(requiredTier('loop_mode'),         'free'));
   test('elevation_profile → silver', () => assert.equal(requiredTier('elevation_profile'), 'silver'));
   test('gpx_export → silver',        () => assert.equal(requiredTier('gpx_export'),        'silver'));

@@ -64,7 +64,7 @@ Une idée par slide ; flèche « → » en bas à droite des slides 1 à 6.
 
 **Slide 7 — CTA**
 > ✅ **C'EST GRATUIT**
-> 3 trajets/semaine offerts. Lien en bio.
+> 10 trajets/semaine offerts. Lien en bio.
 > 👉 bwr-worker.ciril8596.workers.dev
 
 ---

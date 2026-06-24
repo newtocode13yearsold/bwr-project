@@ -305,6 +305,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       planExpiresAt: updated.planExpiresAt || null,
       planBase: updated.planBase || null,
       visitorPlanCount: updated.visitorPlanCount || 0,
+      silverTrialUsed: !!updated.silverTrialUsed,
       stats: updated.stats || { routes: 0, km: 0, weeklyRoutes: 0, weekStart: isoMonday() },
     });
   }
@@ -314,7 +315,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
 
     const targetId = pathname.split('/')[4];
-    const { plan, planExpiresAt, planBase } = await request.json();
+    const { plan, planExpiresAt, planBase, comped } = await request.json();
     if (!['free', 'silver', 'gold', 'visitor'].includes(plan)) return fail('Plan invalide.');
 
     const target = await getUser(env, targetId);
@@ -329,9 +330,38 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     if (plan === 'visitor') updated.visitorPlanCount = (target.visitorPlanCount || 0) + 1;
     if (planExpiresAt !== undefined) updated.planExpiresAt = planExpiresAt || null;
     if (planBase !== undefined) updated.planBase = planBase || null;
+    // `comped` = abonnement offert gratuitement : exclu du CA, mais visible dans l'analyse IA.
+    // Un plan gratuit/visiteur ne peut pas être « offert » (rien à compter).
+    if (comped !== undefined) updated.comped = (plan === 'silver' || plan === 'gold') ? !!comped : false;
     await putUser(env, updated);
 
     return json({ success: true, plan, planExpiresAt: updated.planExpiresAt || null, visitorPlanCount: updated.visitorPlanCount });
+  }
+
+  // Self-service free 7-day Silver trial. One per account, free accounts only.
+  // Reuses the planExpiresAt/planBase expiry mechanism (see /api/auth/me): when
+  // the 7 days elapse the plan reverts to 'free' automatically on the next read.
+  if (pathname === '/api/auth/start-trial' && request.method === 'POST') {
+    const user = await getUserFromToken(env, request);
+    if (!user) return fail('Non authentifié.', 401);
+
+    if (user.silverTrialUsed) return fail('Vous avez déjà utilisé votre essai gratuit Argent.', 409);
+    if (user.role === 'admin' || (user.plan || 'free') !== 'free') {
+      return fail("L'essai gratuit est réservé aux comptes Gratuit.", 400);
+    }
+
+    const TRIAL_DAYS = 7;
+    const expiresAt = new Date(Date.now() + TRIAL_DAYS * 86400000).toISOString();
+    await putUser(env, {
+      ...user,
+      plan: 'silver',
+      planExpiresAt: expiresAt,
+      planBase: 'free',
+      silverTrialUsed: true,
+      silverTrialStartedAt: new Date().toISOString(),
+    });
+
+    return json({ success: true, plan: 'silver', planExpiresAt: expiresAt });
   }
 
   if (pathname === '/api/auth/wheel-prize' && request.method === 'POST') {
@@ -474,18 +504,30 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const plan = user.plan || 'free';
     if (plan !== 'free') return json({ ok: true, unlimited: true });
 
+    const body = await request.json().catch(() => ({}));
+    const isLoop = body.mode === 'loop';
+
     const weekStart = isoMonday();
     const stats = user.stats || { routes: 0, km: 0 };
-    const weeklyRoutes = stats.weekStart === weekStart ? (stats.weeklyRoutes || 0) : 0;
+    const sameWeek = stats.weekStart === weekStart;
+    const weeklyRoutes = sameWeek ? (stats.weeklyRoutes || 0) : 0;
+    const weeklyLoops  = sameWeek ? (stats.weeklyLoops  || 0) : 0;
 
-    const LIMIT = 10;
+    const LIMIT = 10;       // total routes / week (free)
+    const LOOP_LIMIT = 3;   // loop routes / week (free) — see features.js loops_per_week
+
+    // Loop sub-quota is checked first so its dedicated upsell wins.
+    if (isLoop && weeklyLoops >= LOOP_LIMIT) {
+      return json({ ok: false, reason: 'loop', used: weeklyLoops, limit: LOOP_LIMIT }, 429);
+    }
     if (weeklyRoutes >= LIMIT) {
-      return json({ ok: false, used: weeklyRoutes, limit: LIMIT }, 429);
+      return json({ ok: false, reason: 'route', used: weeklyRoutes, limit: LIMIT }, 429);
     }
 
     const newCount = weeklyRoutes + 1;
-    await putUser(env, { ...user, stats: { ...stats, weeklyRoutes: newCount, weekStart } });
-    return json({ ok: true, used: newCount, limit: LIMIT });
+    const newLoops = weeklyLoops + (isLoop ? 1 : 0);
+    await putUser(env, { ...user, stats: { ...stats, weeklyRoutes: newCount, weeklyLoops: newLoops, weekStart } });
+    return json({ ok: true, used: newCount, limit: LIMIT, loopsUsed: newLoops, loopLimit: LOOP_LIMIT, isLoop });
   }
 
   if (pathname === '/api/auth/password' && request.method === 'PUT') {

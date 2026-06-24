@@ -37,6 +37,7 @@ let lastRoute = null;      // most recent computed route — used by save/share
   if (!currentUser) return;
   initUserMenu();
   initMap();
+  initAiPlanner();
   initQuickStart();
   initStep2Collapse();
   if (new URLSearchParams(location.search).has('lat')) {
@@ -125,6 +126,153 @@ function quickLoopFromLocation() {
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
   );
+}
+
+// ── ✨ AI planner — natural language → planner controls → auto-generate ────────
+function initAiPlanner() {
+  const input = document.getElementById('aiInput');
+  const submit = document.getElementById('aiSubmit');
+  if (!input || !submit) return;
+
+  const run = () => runAiPlan(input.value.trim());
+  submit.addEventListener('click', run);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); run(); } });
+  document.querySelectorAll('#aiChips .ai-chip').forEach(chip =>
+    chip.addEventListener('click', () => { input.value = chip.dataset.q; run(); }));
+}
+
+function setAiFeedback(kind, html) {
+  const fb = document.getElementById('aiFeedback');
+  if (!fb) return;
+  fb.className = `ai-feedback ai-feedback-${kind}`;
+  fb.innerHTML = html;
+  fb.classList.remove('hidden');
+}
+
+async function runAiPlan(text) {
+  if (!text || text.length < 3) {
+    setAiFeedback('error', 'Décris ta balade en quelques mots.');
+    return;
+  }
+  const submit = document.getElementById('aiSubmit');
+  submit.disabled = true;
+  submit.classList.add('loading');
+  setAiFeedback('loading', '🧠 Je réfléchis à ton trajet…');
+
+  let intent;
+  try {
+    const res = await fetchWithTimeout(`${API_URL}/api/ai-plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ text }),
+    }, 30000);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.plan) {
+      setAiFeedback('error', data.error || 'Petit souci de mon côté, réessaie dans un instant.');
+      return;
+    }
+    // Off-topic / unclear request: the assistant replies conversationally
+    // instead of forcing a route. Show its message and stop here.
+    if (data.understood === false) {
+      setAiFeedback('info', data.reply || 'Dis-moi plutôt la distance ou l\'ambiance de balade que tu cherches 🌲');
+      return;
+    }
+    intent = data.plan;
+    intent.reply = data.reply || null;
+  } catch {
+    setAiFeedback('error', 'Pas de connexion — vérifie ta connexion et réessaie.');
+    return;
+  } finally {
+    submit.disabled = false;
+    submit.classList.remove('loading');
+  }
+
+  await applyAiIntent(intent);
+}
+
+// Resolve a free-text place name to coordinates: first try the named forest
+// junctions (instant, offline), then fall back to Nominatim geocoding bounded to
+// the Compiègne forest. Returns { lat, lng } or null.
+async function resolvePlace(name) {
+  if (!name) return null;
+  const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ');
+  const qTokens = norm(name).split(/\s+/).filter(t => t.length > 2 && !['les', 'des', 'carrefour', 'etang', 'etangs'].includes(t));
+
+  // 1. Fuzzy match against named carrefours (require ≥2 distinctive token hits).
+  if (typeof CARREFOURS !== 'undefined' && qTokens.length) {
+    let best = null, bestScore = 0;
+    for (const c of CARREFOURS) {
+      const cn = norm(c.name);
+      const score = qTokens.filter(t => cn.includes(t)).length;
+      if (score > bestScore) { bestScore = score; best = c; }
+    }
+    if (best && bestScore >= 2) return { lat: best.lat, lng: best.lon };
+  }
+
+  // 2. Nominatim, biased to the forest bounding box.
+  const bbox = '2.70,49.50,3.05,49.28'; // left,top,right,bottom
+  const tryGeocode = async (q, bounded) => {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}`
+      + `&format=json&limit=1&countrycodes=fr&viewbox=${bbox}${bounded ? '&bounded=1' : ''}`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'fr' } });
+    const d = await res.json();
+    return d[0] ? { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon) } : null;
+  };
+  try {
+    return (await tryGeocode(`${name}, Forêt de Compiègne`, true))
+        || (await tryGeocode(`${name}, Compiègne`, false));
+  } catch {
+    return null;
+  }
+}
+
+// Drive the existing planner controls from the AI intent, then auto-generate.
+async function applyAiIntent(intent) {
+  const wantMode = intent.mode === 'atob' ? 'atob' : 'loop';
+
+  // 1. Mode — clicking the card unlocks the steps and sets pickingPoint = 'start'.
+  const card = document.querySelector(`.mode-card[data-mode="${wantMode}"]`);
+  if (card && !card.classList.contains('locked-feature')) card.click();
+
+  // 2. Preferences (each click updates the matching state variable).
+  if (intent.pathType)  document.querySelector(`.pathtype-btn[data-type="${intent.pathType}"]`)?.click();
+  if (intent.difficulty) document.querySelector(`.diff-btn[data-diff="${intent.difficulty}"]`)?.click();
+  if (intent.transport)  document.querySelector(`.diff-btn[data-transport="${intent.transport}"]`)?.click();
+
+  // 3. Distance (loop only).
+  if (wantMode === 'loop' && intent.distanceKm) {
+    const di = document.getElementById('distanceInput');
+    if (di) { di.value = Math.min(100, Math.max(1, intent.distanceKm)); di.dispatchEvent(new Event('input')); }
+  }
+
+  // 4. Resolve and drop the start point.
+  setAiFeedback('loading', '📍 Je localise ' + (intent.startPlace || 'le départ') + '…');
+  let start = await resolvePlace(intent.startPlace);
+  let placeNote = '';
+  if (!start) {
+    start = { lat: MAP_CENTER[0], lng: MAP_CENTER[1] };
+    if (intent.startPlace) placeNote = ` (lieu introuvable — point placé au centre, ajuste-le)`;
+  }
+
+  resetPoints();
+  pickingPoint = 'start';
+  map.setView([start.lat, start.lng], 14);
+  onMapClick({ latlng: { lat: start.lat, lng: start.lng } });
+
+  // 5. A→B: resolve and place the arrival point too.
+  if (wantMode === 'atob') {
+    const end = await resolvePlace(intent.endPlace);
+    if (end) {
+      pickingPoint = 'end';
+      onMapClick({ latlng: { lat: end.lat, lng: end.lng } });
+    }
+  }
+
+  setAiFeedback('ok', `✓ ${intent.reply || intent.summary}${placeNote}`);
+
+  // 6. Generate — reuses the full three-tier routing engine + quota gate.
+  const gen = document.getElementById('btnGenerate');
+  if (gen && !gen.disabled) gen.click();
 }
 
 // ── Step 2 (Préférences) collapse toggle ──────────────────────────────────────
@@ -300,7 +448,11 @@ const LAYER_MAX_ZOOM = { ign: 17, osm: 19, satellite: 20 };
 const TILE_LAYERS = {
   ign: () => L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 17, maxZoom: 17, subdomains: ['a','b','c'] }
+    // maxNativeZoom 15 + crossOrigin: must mirror the map page (js/map.js) so the
+    // offline-downloaded forest tiles (cached z10–15, CORS/non-opaque) cover this
+    // page too. Without the cap, zooming past 15 requests uncached z16/17 tiles
+    // and the route planner goes blank offline.
+    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 15, maxZoom: 17, subdomains: ['a','b','c'], crossOrigin: true }
   ),
   osm: () => L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     { attribution: '© OpenStreetMap', maxNativeZoom: 19, maxZoom: 19, detectRetina: true }
@@ -617,7 +769,8 @@ async function generateRoute() {
       try {
         const qRes = await fetchWithTimeout(`${API_URL}/api/auth/consume-route`, {
           method: 'POST',
-          headers: { ...authHeader() },
+          headers: { 'Content-Type': 'application/json', ...authHeader() },
+          body: JSON.stringify({ mode }),
         }, 8000);
         const body = await qRes.json().catch(() => ({}));
         qData = { ...body, ok: qRes.ok && body.ok === true };
@@ -634,7 +787,11 @@ async function generateRoute() {
       return;
     }
     if (!qData.ok) {
-      showQuotaExceededModal({ used: qData.used ?? 3, limit: qData.limit ?? 3 });
+      if (qData.reason === 'loop') {
+        showLoopQuotaModal({ used: qData.used ?? 3, limit: qData.limit ?? 3 });
+      } else {
+        showQuotaExceededModal({ used: qData.used ?? 10, limit: qData.limit ?? 10 });
+      }
       btn.textContent = 'Calculer le trajet';
       btn.classList.remove('loading');
       btn.disabled = false;
@@ -1143,15 +1300,15 @@ function showQuotaExceededModal(quota) {
       <div class="qm-comparison">
         <div class="qm-tier qm-free">
           <strong>🌿 Gratuit</strong>
-          <span>3 trajets / semaine</span>
+          <span>10 trajets / semaine</span>
         </div>
         <div class="qm-arrow">→</div>
         <div class="qm-tier qm-silver">
           <strong>🥈 Argent</strong>
-          <span>Illimité · 3,99€/mois</span>
+          <span>Illimité · 2,99€/mois</span>
         </div>
       </div>
-      <p class="qm-perks">+ Mode boucle, profil altimétrique, export GPX, cartes hors-ligne…</p>
+      <p class="qm-perks">+ Boucles illimitées, profil altimétrique, export GPX, cartes hors-ligne…</p>
       <a href="plans" class="um-cta">Passer à Argent</a>
       <button class="um-secondary">Revenir lundi</button>
     </div>
@@ -1161,6 +1318,45 @@ function showQuotaExceededModal(quota) {
   const onKeyQuota = e => { if (e.key === 'Escape') closeQuota(); };
   document.addEventListener('keydown', onKeyQuota);
   m.querySelector('.um-close').onclick    = closeQuota;
+  m.querySelector('.um-secondary').onclick = closeQuota;
+  m.addEventListener('click', e => { if (e.target === m) closeQuota(); });
+}
+
+// Free users get a small weekly allowance of loop routes; A→B stays bounded only
+// by the 10-routes/week quota. Shown when the loop sub-quota is exhausted.
+function showLoopQuotaModal(quota) {
+  const existing = document.getElementById('quotaModal');
+  if (existing) existing.remove();
+  const m = document.createElement('div');
+  m.id = 'quotaModal';
+  m.className = 'upgrade-modal-overlay';
+  m.innerHTML = `
+    <div class="upgrade-modal-card quota-card">
+      <button class="um-close" aria-label="Fermer">×</button>
+      <div class="um-icon">🔄</div>
+      <h3>Vous avez utilisé vos boucles gratuites</h3>
+      <p><strong>${quota.used} / ${quota.limit}</strong> boucles utilisées cette semaine.</p>
+      <div class="qm-comparison">
+        <div class="qm-tier qm-free">
+          <strong>🌿 Gratuit</strong>
+          <span>${quota.limit} boucles / semaine</span>
+        </div>
+        <div class="qm-arrow">→</div>
+        <div class="qm-tier qm-silver">
+          <strong>🥈 Argent</strong>
+          <span>Boucles illimitées · 2,99€/mois</span>
+        </div>
+      </div>
+      <p class="qm-perks">Les trajets A → B restent disponibles. + profil altimétrique, export GPX, cartes hors-ligne…</p>
+      <a href="plans" class="um-cta">Passer à Argent</a>
+      <button class="um-secondary">Revenir lundi</button>
+    </div>
+  `;
+  document.body.appendChild(m);
+  const closeQuota = () => { document.removeEventListener('keydown', onKeyQuota); m.remove(); };
+  const onKeyQuota = e => { if (e.key === 'Escape') closeQuota(); };
+  document.addEventListener('keydown', onKeyQuota);
+  m.querySelector('.um-close').onclick     = closeQuota;
   m.querySelector('.um-secondary').onclick = closeQuota;
   m.addEventListener('click', e => { if (e.target === m) closeQuota(); });
 }

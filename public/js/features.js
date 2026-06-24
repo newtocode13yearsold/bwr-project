@@ -20,11 +20,12 @@
     /* — Core routing — */
     routes_per_week:     { free: 10,    visitor: Infinity, silver: Infinity, gold: Infinity },
     loop_mode:           { free: true,  visitor: true,     silver: true,     gold: true     },
+    loops_per_week:      { free: 3,     visitor: Infinity, silver: Infinity, gold: Infinity },
     difficulty_hard:     { free: false, visitor: true,     silver: true,     gold: true     },
 
     /* — Map & layers — */
     satellite_tiles:     { free: false, visitor: false,    silver: false,    gold: true     },
-    ign_topo_tiles:      { free: true,  visitor: true,     silver: true,     gold: true     },
+    ign_topo_tiles:      { free: false, visitor: false,    silver: true,     gold: true     },
     carrefours:          { free: true,  visitor: true,     silver: true,     gold: true     },
 
     /* — Trip analysis & export — */

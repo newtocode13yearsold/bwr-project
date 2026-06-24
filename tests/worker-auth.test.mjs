@@ -499,6 +499,86 @@ describe('plan change (admin only)', () => {
     assert.equal(res.status, 200);
     assert.equal(ctx.getStoredUser('usr').plan, 'silver');
   });
+
+  test('comped flag stored for a paid plan (offered subscription, excluded from revenue)', async () => {
+    const ctx = freshEnv();
+    setupAdminAndUser(ctx);
+    const res = await worker.fetch(authed('PUT', '/api/auth/plan/usr', 'admin-tok', { plan: 'gold', comped: true }), ctx.env);
+    assert.equal(res.status, 200);
+    assert.equal(ctx.getStoredUser('usr').comped, true);
+  });
+
+  test('comped is forced false for a free plan (nothing to offer)', async () => {
+    const ctx = freshEnv();
+    setupAdminAndUser(ctx);
+    const res = await worker.fetch(authed('PUT', '/api/auth/plan/usr', 'admin-tok', { plan: 'free', comped: true }), ctx.env);
+    assert.equal(res.status, 200);
+    assert.equal(ctx.getStoredUser('usr').comped, false);
+  });
+});
+
+// ── POST /api/auth/start-trial ────────────────────────────────────────────────
+
+describe('free Silver trial', () => {
+  function seedFree(ctx, id = 'free1') {
+    ctx.seedUser({ id, name: 'Free', email: `${id}@bwr.fr`, role: 'free', plan: 'free', passwordHash: 'x', salt: 'y', hashVersion: 2 });
+    ctx.seedSession(`tok-${id}`, id, new Date(Date.now() + 86400000).toISOString());
+    return `tok-${id}`;
+  }
+
+  test('unauthenticated → 401', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('POST', '/api/auth/start-trial'), env);
+    assert.equal(res.status, 401);
+  });
+
+  test('free user activates a 7-day Silver trial', async () => {
+    const ctx = freshEnv();
+    const tok = seedFree(ctx);
+    const res = await worker.fetch(authed('POST', '/api/auth/start-trial', tok), ctx.env);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.plan, 'silver');
+    const stored = ctx.getStoredUser('free1');
+    assert.equal(stored.plan, 'silver');
+    assert.equal(stored.planBase, 'free');
+    assert.equal(stored.silverTrialUsed, true);
+    // ~7 days out (allow a minute of slack).
+    const days = (new Date(stored.planExpiresAt) - Date.now()) / 86400000;
+    assert.ok(Math.abs(days - 7) < 0.01, `expected ~7 days, got ${days}`);
+  });
+
+  test('trial cannot be claimed twice', async () => {
+    const ctx = freshEnv();
+    const tok = seedFree(ctx);
+    await worker.fetch(authed('POST', '/api/auth/start-trial', tok), ctx.env);
+    // After the first trial, plan is silver + flag set; a second attempt is rejected.
+    const res = await worker.fetch(authed('POST', '/api/auth/start-trial', tok), ctx.env);
+    assert.equal(res.status, 409);
+  });
+
+  test('paid plans cannot start the free trial', async () => {
+    const ctx = freshEnv();
+    ctx.seedUser({ id: 'pay', name: 'Pay', email: 'pay@bwr.fr', role: 'free', plan: 'silver', passwordHash: 'x', salt: 'y', hashVersion: 2 });
+    ctx.seedSession('tok-pay', 'pay', new Date(Date.now() + 86400000).toISOString());
+    const res = await worker.fetch(authed('POST', '/api/auth/start-trial', 'tok-pay'), ctx.env);
+    assert.equal(res.status, 400);
+  });
+
+  test('expired trial reverts to free via /api/auth/me', async () => {
+    const ctx = freshEnv();
+    ctx.seedUser({
+      id: 'exp', name: 'Exp', email: 'exp@bwr.fr', role: 'free',
+      plan: 'silver', planBase: 'free', silverTrialUsed: true,
+      planExpiresAt: new Date(Date.now() - 1000).toISOString(),
+      passwordHash: 'x', salt: 'y', hashVersion: 2,
+    });
+    ctx.seedSession('tok-exp', 'exp', new Date(Date.now() + 86400000).toISOString());
+    const res = await worker.fetch(authed('GET', '/api/auth/me', 'tok-exp'), ctx.env);
+    const data = await res.json();
+    assert.equal(data.plan, 'free');
+    assert.equal(data.silverTrialUsed, true, 'used flag persists so the trial is not re-offered');
+  });
 });
 
 // ── POST /api/auth/logout ─────────────────────────────────────────────────────
@@ -670,6 +750,63 @@ describe('consume-route (weekly quota)', () => {
     const res = await worker.fetch(authed('POST', '/api/auth/consume-route', token), env);
     assert.equal(res.status, 200, 'should succeed after week resets');
     assert.equal((await res.json()).used, 1);
+  });
+
+  test('free user: 3 loop routes ok, 4th loop → 429 reason=loop', async () => {
+    const { env, registerAndLogin } = freshEnv();
+    const { token } = await registerAndLogin('loop@bwr.fr', 'pass1234');
+    for (let i = 1; i <= 3; i++) {
+      const res = await worker.fetch(authed('POST', '/api/auth/consume-route', token, { mode: 'loop' }), env);
+      assert.equal(res.status, 200);
+      assert.equal((await res.json()).loopsUsed, i);
+    }
+    const res = await worker.fetch(authed('POST', '/api/auth/consume-route', token, { mode: 'loop' }), env);
+    assert.equal(res.status, 429);
+    const data = await res.json();
+    assert.equal(data.ok, false);
+    assert.equal(data.reason, 'loop');
+    assert.equal(data.limit, 3);
+  });
+
+  test('free user: A→B still works after loop quota exhausted', async () => {
+    const { env, registerAndLogin } = freshEnv();
+    const { token } = await registerAndLogin('mix@bwr.fr', 'pass1234');
+    for (let i = 0; i < 3; i++) {
+      await worker.fetch(authed('POST', '/api/auth/consume-route', token, { mode: 'loop' }), env);
+    }
+    // 4th loop is blocked…
+    const blocked = await worker.fetch(authed('POST', '/api/auth/consume-route', token, { mode: 'loop' }), env);
+    assert.equal(blocked.status, 429);
+    // …but an A→B route still goes through (under the 10/week cap).
+    const atob = await worker.fetch(authed('POST', '/api/auth/consume-route', token, { mode: 'atob' }), env);
+    assert.equal(atob.status, 200);
+    assert.equal((await atob.json()).ok, true);
+  });
+
+  test('loops do not over-count: each loop consumes one general route', async () => {
+    const { env, registerAndLogin, getAllUsers } = freshEnv();
+    const { token } = await registerAndLogin('count@bwr.fr', 'pass1234');
+    await worker.fetch(authed('POST', '/api/auth/consume-route', token, { mode: 'loop' }), env);
+    await worker.fetch(authed('POST', '/api/auth/consume-route', token, { mode: 'atob' }), env);
+    const [user] = getAllUsers();
+    assert.equal(user.stats.weeklyRoutes, 2);
+    assert.equal(user.stats.weeklyLoops, 1);
+  });
+
+  test('loop counter resets with the week', async () => {
+    const { env, kv, registerAndLogin, getAllUsers } = freshEnv();
+    const { token } = await registerAndLogin('looprst@bwr.fr', 'pass1234');
+    for (let i = 0; i < 3; i++) {
+      await worker.fetch(authed('POST', '/api/auth/consume-route', token, { mode: 'loop' }), env);
+    }
+    const [user] = getAllUsers();
+    kv.store.set(`user:${user.id}`, JSON.stringify({
+      ...user,
+      stats: { ...user.stats, weekStart: '2000-01-03' },
+    }));
+    const res = await worker.fetch(authed('POST', '/api/auth/consume-route', token, { mode: 'loop' }), env);
+    assert.equal(res.status, 200, 'loop allowed again after week resets');
+    assert.equal((await res.json()).loopsUsed, 1);
   });
 });
 

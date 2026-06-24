@@ -1,6 +1,11 @@
 import { listItems, listKeys, putUser, effectivePlan, patchLeaderboardCache } from '../kv.js';
 import { getUserFromToken, checkRateLimit } from '../auth-utils.js';
 const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
+// Current Cloudflare Workers AI model (the free, primary AI engine). The previous
+// '@cf/meta/llama-3.1-8b-instruct' was deprecated 2026-05-30; this FP8 8B variant is
+// its direct successor — fast (~2-4 s) with JSON-mode support. (The 70B model is far
+// smarter but takes ~50 s, which blows past the client's request timeout.)
+const CF_AI_MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8';
 
 /**
  * Social and gamification endpoints: walked paths, leaderboard, push alerts,
@@ -156,6 +161,177 @@ Réponds uniquement avec le texte du conseil, sans guillemets ni explication.`;
       return json({ tip });
     } catch {
       return json({ tip: 'La forêt t\'attend — sors et découvre un nouveau sentier !' });
+    }
+  }
+
+  // ── AI route planner — natural language → structured planner intent ──
+  // The user types e.g. "une boucle de 23 km par les étangs Saint-Pierre" and we
+  // return the planner controls (mode, distance, transport…) + a place name. The
+  // client resolves the place to coordinates and drives the existing route engine.
+  if (pathname === '/api/ai-plan' && request.method === 'POST') {
+    const user = await getUserFromToken(env, request);
+    if (!user) return fail('Non authentifié.', 401);
+
+    const body = await request.json().catch(() => ({}));
+    const text = String(body.text || '').slice(0, 300).trim();
+    if (text.length < 3) return fail('Décris ta balade en quelques mots.', 400);
+
+    if (!env.AI && !env.ANTHROPIC_API_KEY) return fail('Le planificateur IA est momentanément indisponible.', 503);
+
+    // Quota: free → 2 / week, Silver & Gold → 20 / day (cost guard, effectively unlimited).
+    const plan = effectivePlan(user);
+    const [limit, window] = plan === 'free' ? [2, 604800] : [20, 86400];
+    const allowed = await checkRateLimit(env, 'aiplan', user.id, limit, window);
+    if (!allowed) {
+      return fail(plan === 'free'
+        ? 'Tu as utilisé tes 2 demandes IA gratuites. Passe à Argent ou Or pour des balades IA illimitées.'
+        : 'Limite de demandes IA atteinte pour aujourd\'hui. Réessaie demain.', 429);
+    }
+
+    const prompt = `Tu es l'assistant de randonnée de BWR, une appli de balades dans la Forêt de Compiègne (Oise, France). Tu parles français de façon naturelle et chaleureuse, comme un guide local sympathique. L'utilisateur te décrit librement la balade qu'il a envie de faire — parfois précisément, souvent en quelques mots vagues — et tu remplis les réglages d'un planificateur de trajet.
+
+Demande de l'utilisateur : "${text}"
+
+Comprends l'INTENTION même quand c'est vague, familier ou incomplet. Ne demande JAMAIS à l'utilisateur de reformuler : déduis toujours une balade plausible avec des valeurs par défaut raisonnables, puis propose-la. Exemples : "envie de marcher un peu" → petite boucle facile à pied ; "un gros truc sportif en vélo" → grande boucle difficile en vélo ; "une rando peinarde cet aprèm" → boucle facile de longueur moyenne.
+
+Règles de remplissage :
+- understood : true si la demande concerne une balade/randonnée/sortie vélo (même très vague). false UNIQUEMENT si c'est totalement hors-sujet (météo, salutation, question sans rapport avec une balade).
+- mode : "loop" (boucle, retour au départ) par défaut ; "atob" seulement si l'utilisateur indique clairement un départ ET une arrivée différents.
+- distanceKm : la distance en km (1 à 100). Si non précisée, choisis une valeur par défaut sensée selon le ton : ~8 km pour une petite/tranquille, ~15 km pour une normale, ~30 km pour une grande/sportive.
+- transport : "bike" si vélo/VTT/cyclisme, sinon "foot".
+- pathType : "bike" pour vélo, "champs" pour champs/plaines, "mix" si mélange forêt+route, sinon "foot" (forestier).
+- difficulty : "hard" si sportif/difficile/dénivelé, "medium" si modéré, sinon "easy".
+- startPlace : le lieu de départ OU un lieu à traverser/"passer par" (ex : "les étangs Saint-Pierre", "carrefour de la Faisanderie", "Pierrefonds"). Omets si aucun lieu cité (le départ sera alors le centre de la forêt).
+- endPlace : le lieu d'arrivée, uniquement en mode "atob". Omets sinon.
+- summary : une phrase courte qui résume le trajet retenu (ex : "Boucle forestière facile de 8 km").
+- reply : une réponse conversationnelle, courte et naturelle (1 phrase, comme un humain). Si understood=true, confirme avec entrain ce que tu prépares. Si understood=false, réponds gentiment et ramène la personne vers une balade (ex : "Je m'occupe surtout de tes balades en forêt ! Dis-moi plutôt la distance ou l'ambiance que tu cherches 🌲").
+
+Réponds UNIQUEMENT avec un objet JSON valide (sans texte autour, sans balises Markdown) ayant exactement ces clés : understood (booléen), mode ("loop" ou "atob"), distanceKm (nombre 1-100, ou null), transport ("foot" ou "bike"), pathType ("foot"/"bike"/"champs"/"mix"), difficulty ("easy"/"medium"/"hard"), startPlace (texte ou null), endPlace (texte ou null), summary (texte), reply (texte).`;
+
+    // Structured-output JSON schema for Cloudflare Workers AI (the free, primary engine).
+    const jsonSchema = {
+      type: 'object',
+      properties: {
+        understood: { type: 'boolean' },
+        mode: { type: 'string' },
+        distanceKm: { type: ['number', 'null'] },
+        transport: { type: 'string' },
+        pathType: { type: 'string' },
+        difficulty: { type: 'string' },
+        startPlace: { type: ['string', 'null'] },
+        endPlace: { type: ['string', 'null'] },
+        summary: { type: 'string' },
+        reply: { type: 'string' },
+      },
+      required: ['understood', 'mode', 'transport', 'pathType', 'difficulty', 'summary', 'reply'],
+    };
+
+    // Parse a Workers AI result that may be an object or a JSON string (with stray prose).
+    const coerce = (r) => {
+      if (r && typeof r === 'object') return r;
+      if (typeof r === 'string') {
+        try { return JSON.parse(r); } catch { /* try to extract */ }
+        const m = r.match(/\{[\s\S]*\}/);
+        if (m) { try { return JSON.parse(m[0]); } catch { /* give up */ } }
+      }
+      return null;
+    };
+
+    try {
+      let p = null;
+
+      // 1. Cloudflare Workers AI — free, already bound, no external key needed.
+      if (env.AI) {
+        const messages = [
+          { role: 'system', content: 'Tu remplis les réglages d\'un planificateur de balade en forêt. Réponds uniquement avec l\'objet JSON demandé, en français pour les textes.' },
+          { role: 'user', content: prompt },
+        ];
+        // Attempt A: structured JSON output (json_schema).
+        try {
+          const cfRes = await env.AI.run(CF_AI_MODEL, {
+            messages,
+            response_format: { type: 'json_schema', json_schema: jsonSchema },
+            max_tokens: 500,
+          });
+          p = coerce(cfRes.response);
+        } catch (e) {
+          console.error('ai-plan: structured Workers AI failed', String(e).slice(0, 200));
+        }
+        // Attempt B: plain completion, extract the JSON ourselves (model may not support json_schema).
+        if (!p) {
+          try {
+            const cfRes = await env.AI.run(CF_AI_MODEL, { messages, max_tokens: 500 });
+            p = coerce(cfRes.response);
+          } catch (e) {
+            console.error('ai-plan: plain Workers AI failed', String(e).slice(0, 200));
+          }
+        }
+      }
+
+      // 2. Fallback — Anthropic tool use, only if a key is configured.
+      if ((!p || typeof p !== 'object') && env.ANTHROPIC_API_KEY) {
+        const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: CLAUDE_MODEL,
+            max_tokens: 400,
+            tools: [{
+              name: 'set_route_plan',
+              description: 'Définit les réglages du planificateur de trajet à partir de la demande.',
+              input_schema: {
+                type: 'object',
+                properties: {
+                  understood: { type: 'boolean' },
+                  mode: { type: 'string', enum: ['loop', 'atob'] },
+                  distanceKm: { type: 'number' },
+                  transport: { type: 'string', enum: ['foot', 'bike'] },
+                  pathType: { type: 'string', enum: ['foot', 'bike', 'champs', 'mix'] },
+                  difficulty: { type: 'string', enum: ['easy', 'medium', 'hard'] },
+                  startPlace: { type: 'string' },
+                  endPlace: { type: 'string' },
+                  summary: { type: 'string' },
+                  reply: { type: 'string' },
+                },
+                required: ['understood', 'mode', 'transport', 'pathType', 'difficulty', 'summary', 'reply'],
+              },
+            }],
+            tool_choice: { type: 'tool', name: 'set_route_plan' },
+            messages: [{ role: 'user', content: prompt }],
+          }),
+        });
+        if (aiRes.ok) {
+          const aiData = await aiRes.json();
+          const toolUse = (aiData.content || []).find(c => c.type === 'tool_use');
+          if (toolUse && toolUse.input) p = toolUse.input;
+        } else {
+          const errBody = await aiRes.text().catch(() => '');
+          console.error('ai-plan: Anthropic API error', aiRes.status, errBody.slice(0, 300));
+        }
+      }
+
+      if (!p || typeof p !== 'object') throw new Error('No AI output');
+
+      const understood = p.understood !== false;
+      const reply = p.reply ? String(p.reply).slice(0, 280) : null;
+      const clean = {
+        mode: p.mode === 'atob' ? 'atob' : 'loop',
+        distanceKm: typeof p.distanceKm === 'number' ? Math.min(100, Math.max(1, p.distanceKm)) : null,
+        transport: p.transport === 'bike' ? 'bike' : 'foot',
+        pathType: ['foot', 'bike', 'champs', 'mix'].includes(p.pathType) ? p.pathType : 'foot',
+        difficulty: ['easy', 'medium', 'hard'].includes(p.difficulty) ? p.difficulty : 'easy',
+        startPlace: p.startPlace ? String(p.startPlace).slice(0, 120) : null,
+        endPlace: p.endPlace ? String(p.endPlace).slice(0, 120) : null,
+        summary: String(p.summary || 'Trajet personnalisé').slice(0, 200),
+      };
+      console.log('ai-plan ok', JSON.stringify({ text, understood, startPlace: clean.startPlace, endPlace: clean.endPlace, distanceKm: clean.distanceKm, mode: clean.mode }));
+      return json({ plan: clean, understood, reply });
+    } catch {
+      return fail('Petit souci de mon côté, je n\'ai pas pu préparer ton trajet. Réessaie dans un instant 🙏', 502);
     }
   }
 

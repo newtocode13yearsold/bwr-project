@@ -545,6 +545,27 @@
 }
 .btn-cta-secondary:disabled:hover { transform: none; }
 
+/* Secondary "free trial" CTA under the Silver button — outlined, lighter weight
+   than the primary CTA so it reads as a complementary offer. */
+.pc-trial-cta {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--silver, #64748b);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition: background var(--dur-fast), transform var(--dur-fast);
+}
+.pc-trial-cta:hover { background: var(--surface-2); transform: translateY(-1px); }
+.pc-trial-cta:disabled { opacity: 0.6; cursor: progress; }
+
 .pc-footnote {
   text-align: center;
   margin: 0;

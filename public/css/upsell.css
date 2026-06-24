@@ -458,6 +458,26 @@
   transition: background var(--dur-fast), transform var(--dur-fast);
 }
 .card-upsell .upsell-cta:hover { background: var(--forest-600); transform: translateY(-1px); }
+/* Primary trial button: lime accent so the free offer stands out from the ghost link. */
+.card-upsell .upsell-trial {
+  background: linear-gradient(135deg, #a3e635, #65a30d);
+  color: #1a2e05;
+  border: none;
+  cursor: pointer;
+}
+.card-upsell .upsell-trial:hover { background: linear-gradient(135deg, #bef264, #4d7c0f); }
+.card-upsell .upsell-trial:disabled { opacity: 0.6; cursor: progress; }
+.card-upsell .upsell-cta-ghost {
+  background: transparent;
+  color: var(--forest-700);
+  border: 1.5px solid var(--forest-700);
+}
+.card-upsell .upsell-cta-ghost:hover { background: rgba(0, 0, 0, 0.04); color: var(--forest-600); }
+.card-upsell .upsell-trial-note {
+  margin: 10px 0 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
 .card-upsell .upsell-price {
   font-size: 0.82rem;
   color: var(--text-muted);

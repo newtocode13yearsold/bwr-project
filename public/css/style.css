@@ -1264,7 +1264,10 @@ body {
 }
 .map-locate-btn.locate-watching:hover {
   background: #eff6ff;
-  transform: translateX(-50%) translateY(-2px);
+  /* This button is a flex child of .map-bottom-btns (not centred via left:50%),
+     so it must only lift on hover — a translateX(-50%) here would slide it left
+     on top of the neighbouring "Mon chemin" button. */
+  transform: translateY(-2px);
 }
 .map-locate-btn.locate-searching {
   animation: locate-spin 1s linear infinite;
@@ -1647,6 +1650,14 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
   /* Legend — push above bottom nav */
   .legend {
     bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* On the map page the centred "Ma position / Mon chemin" buttons sit at the
+     bottom; the bottom-right legend would otherwise overlap (and half-hide) the
+     right button. Lift the legend clear above that button row. Scoped to
+     .map-body so the admin legend (no bottom buttons) is unaffected. */
+  .map-body .legend {
+    bottom: calc(128px + env(safe-area-inset-bottom, 0px));
   }
 
   .bottom-nav {
