@@ -63,27 +63,56 @@ async function _fetchTileWithRetry(cache, tileUrl, attempts = 4) {
 // Returns { total, ok, failed }. Throttled (small concurrency + per-batch
 // pause) to stay within OpenTopoMap's fair-use limits, and reports the REAL
 // number of tiles stored so the caller never claims a half-empty zone is ready.
+//
+// Two phases:
+//   1. 'download' — sweep every tile once, gently (small batches, real pauses).
+//   2. 'fill'     — retry ONLY the tiles that failed, one at a time with a
+//      cooldown between sweeps. Rate-limit rejections arrive in bursts, so the
+//      misses cluster into a blank patch; re-grabbing just those tiles after
+//      the limit window resets fills the holes instead of leaving a gap.
+// onProgress is called with { phase, pct } so the UI can show both phases.
 async function downloadOfflineZone(zone, onProgress) {
   const tiles = _zoneTiles(zone.bbox);
   const cache = await caches.open('bwr-offline-tiles');
-  let done = 0, ok = 0;
-  const BATCH = 4; // gentle on the tile server; avoids triggering rate limits
+  const report = (phase, done, total) =>
+    onProgress && onProgress({ phase, pct: total ? Math.round(done / total * 100) : 100 });
+
+  // ── Phase 1: main download. Smaller batches + longer pauses than before so
+  //    the tile server rate-limits fewer requests in the first place. ──
+  const BATCH = 3;
+  const failed = [];
+  let done = 0;
   for (let i = 0; i < tiles.length; i += BATCH) {
-    const results = await Promise.all(
-      tiles.slice(i, i + BATCH).map(t => _fetchTileWithRetry(cache, t))
-    );
-    ok += results.filter(Boolean).length;
-    done += results.length;
-    if (onProgress) onProgress(Math.round(done / tiles.length * 100));
-    await _sleep(120); // brief pause between batches
+    const slice = tiles.slice(i, i + BATCH);
+    const results = await Promise.all(slice.map(t => _fetchTileWithRetry(cache, t)));
+    results.forEach((okFlag, j) => { if (!okFlag) failed.push(slice[j]); });
+    done += slice.length;
+    report('download', done, tiles.length);
+    await _sleep(220); // brief pause between batches
   }
-  const failed = tiles.length - ok;
-  // Only flag the zone as fully cached when essentially everything stored.
-  // A partial download stays un-flagged so the user is told to retry rather
-  // than discovering blank patches in the forest with no signal.
-  if (ok / tiles.length >= 0.97) localStorage.setItem(_zoneCacheKey(zone.id), '1');
+
+  // ── Phase 2: fill the gaps. Up to 3 cooldown-spaced sweeps over only the
+  //    tiles still missing, one at a time with extra retries, so a rate-limited
+  //    burst gets another chance instead of leaving a blank patch. ──
+  let gaps = failed;
+  for (let sweep = 0; sweep < 3 && gaps.length; sweep++) {
+    await _sleep(1500); // let the server's rate-limit window cool down
+    const stillFailed = [];
+    let filled = 0;
+    for (const tileUrl of gaps) {
+      if (!(await _fetchTileWithRetry(cache, tileUrl, 5))) stillFailed.push(tileUrl);
+      report('fill', ++filled, gaps.length);
+    }
+    gaps = stillFailed;
+  }
+
+  const ok = tiles.length - gaps.length;
+  // Only flag the zone as cached when it's actually complete (a hair of slack
+  // for a stray permanently-blocked tile). A partial download stays un-flagged
+  // so the user is told to retry rather than finding a blank patch offline.
+  if (ok / tiles.length >= 0.995) localStorage.setItem(_zoneCacheKey(zone.id), '1');
   else localStorage.removeItem(_zoneCacheKey(zone.id));
-  return { total: tiles.length, ok, failed };
+  return { total: tiles.length, ok, failed: gaps.length };
 }
 
 // ── Zone picker modal ──────────────────────────────────────────────────────────
@@ -135,18 +164,22 @@ function openOfflineZonePicker() {
       btn.disabled = true;
       btn.textContent = '⏳ 0%';
       try {
-        const { total, ok, failed } = await downloadOfflineZone(zone, pct => { btn.textContent = `⏳ ${pct}%`; });
+        const { total, ok, failed } = await downloadOfflineZone(zone, info => {
+          // Phase 2 (gap-filling) gets its own icon so the user can see the app
+          // is patching holes rather than stuck at the same percentage.
+          btn.textContent = info.phase === 'fill' ? `🧩 ${info.pct}%` : `⏳ ${info.pct}%`;
+        });
         if (failed === 0) {
           btn.textContent = '✅ Téléchargée';
           showToast(`✅ ${zone.name} sauvegardée hors-ligne ! (${ok} tuiles)`);
-        } else if (ok / total >= 0.97) {
-          // essentially complete — flagged as cached, minor gaps acceptable
+        } else if (ok / total >= 0.995) {
+          // essentially complete — flagged as cached, a stray blocked tile aside
           btn.textContent = '✅ Téléchargée';
           showToast(`✅ ${zone.name} sauvegardée (${ok}/${total} tuiles)`);
         } else {
           // too patchy to trust offline — keep it as a retry, don't fake success
           btn.textContent = '⚠️ Incomplète — réessayer';
-          showToast(`⚠️ ${zone.name} : ${ok}/${total} tuiles seulement (limite du serveur). Réessayez dans un instant.`);
+          showToast(`⚠️ ${zone.name} : ${ok}/${total} tuiles (le serveur a bloqué le reste). Réessayez dans un instant.`);
         }
       } catch {
         btn.textContent = '⬇ Réessayer';
