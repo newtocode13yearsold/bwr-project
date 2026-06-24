@@ -118,19 +118,21 @@
 }
 .guide-steps li {
   counter-increment: gstep;
-  display: flex;
-  gap: var(--space-3, 12px);
-  align-items: flex-start;
+  /* The number badge is positioned absolutely in the left padding rather than
+     being a flex sibling. Using flex here made the text, <strong> and the tier
+     badge each their own flex item on a single non-wrapping row, which overflowed
+     the viewport on narrow phones (horizontal scroll). As a normal block the
+     inline content wraps naturally. */
+  position: relative;
+  padding-left: 38px; /* 26px badge + 12px gap */
+  min-width: 0;
   line-height: 1.55;
   font-size: var(--fs-sm, 0.9rem);
-  /* Grid/flex items default to min-width:auto and refuse to shrink below their
-     content, which pushed these list rows past the viewport on narrow phones
-     (horizontal scroll). Allow them to shrink so the text wraps instead. */
-  min-width: 0;
 }
 .guide-steps li::before {
   content: counter(gstep);
-  flex: 0 0 auto;
+  position: absolute;
+  left: 0; top: 0;
   width: 26px; height: 26px;
   display: grid; place-items: center;
   border-radius: 50%;
