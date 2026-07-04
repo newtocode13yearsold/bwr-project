@@ -506,11 +506,18 @@ function renderPlanAndProgress(user) {
 
   // ── Weekly route quota strip (free users only) ──
   renderQuotaStrip(plan);
-  const level  = Math.floor(km / 5) + 1;
-  const xpIn   = km - (level - 1) * 5;
-  const xpPct  = Math.min(100, (xpIn / 5) * 100);
+  // ── Level / XP — earned through community contributions, not distance ──
+  // XP = 2 per report + 1 per graded path (same formula as the leaderboard points),
+  // so the level here matches a member's standing in the classement.
+  const XP_PER_LEVEL = 10;
+  const reportsXp   = (user.stats?.reports || 0) * 2;
+  const gradesXp    = (user.stats?.pathGrades || 0);
+  const xp          = reportsXp + gradesXp;
+  const level       = Math.floor(xp / XP_PER_LEVEL) + 1;
+  const xpIn        = xp - (level - 1) * XP_PER_LEVEL;
+  const xpPct       = Math.min(100, (xpIn / XP_PER_LEVEL) * 100);
   document.getElementById('levelNum').textContent = `Niveau ${level}`;
-  document.getElementById('levelXp').textContent  = `${xpIn.toFixed(1)} / 5 km`;
+  document.getElementById('levelXp').textContent  = `${xpIn} / ${XP_PER_LEVEL} XP`;
   document.getElementById('xpFill').style.width   = `${xpPct}%`;
 
   // Badges — for free users, show locked silhouettes for higher-tier badges
@@ -605,17 +612,16 @@ function renderPlanAndProgress(user) {
     renderDailyWheel(plan);
     renderPrizeList(plan);
 
-    // Gold-exclusive blocks
-    const show = isGold ? '' : 'none';
+    // Premium blocks — gated per-feature so Argent unlocks what it's entitled to.
     document.getElementById('goalBlock').style.display  = BWR.can('custom_goals', plan) ? '' : 'none';
-    document.getElementById('weatherBlock').style.display = show;
-document.getElementById('supportBlock').style.display = show;
-    document.getElementById('pushAlertsBlock').style.display = show;
-    document.getElementById('trailHealthBlock').style.display = show;
+    document.getElementById('weatherBlock').style.display = BWR.can('weather', plan) ? '' : 'none';
+    document.getElementById('supportBlock').style.display = BWR.can('priority_support', plan) ? '' : 'none';
+    document.getElementById('pushAlertsBlock').style.display = BWR.can('path_alerts', plan) ? '' : 'none';
+    document.getElementById('trailHealthBlock').style.display = isGold ? '' : 'none';
 
     if (BWR.can('custom_goals', plan)) renderGoals();
     if (BWR.can('weather', plan)) renderWeather();
-    if (isGold) renderPushAlerts();
+    if (BWR.can('path_alerts', plan)) renderPushAlerts();
     if (isGold) renderTrailHealth();
   } else {
     document.getElementById('premiumSection').style.display = 'none';

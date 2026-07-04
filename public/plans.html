@@ -69,6 +69,10 @@
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>
         <span>Classement</span>
       </a>
+      <a href="forum" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+        <span>Forum</span>
+      </a>
       <a href="news" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg></span>
         <span>Actualités</span>
@@ -191,10 +195,16 @@
           <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Mode boucle + A → B</strong></li>
           <li class="pf yes"><span class="pf-icon">✓</span> Toutes les difficultés</li>
           <li class="pf yes"><span class="pf-icon">✓</span> Carte IGN topographique</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Vue satellite IGN</li>
           <li class="pf yes"><span class="pf-icon">✓</span> Carrefours nommés</li>
           <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Export GPX illimité</strong></li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Export KML + Strava / Komoot</strong></li>
           <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Profil altimétrique</strong></li>
-          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>🗺️ Cartes hors-ligne — zéro réseau en forêt</strong></li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>🗺️ Cartes hors-ligne — jusqu'à 20 trajets</strong></li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Météo forêt en temps réel</strong></li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Alertes push de chemin</strong></li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Objectifs personnalisés</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Couleur de tracé personnalisée</li>
           <li class="pf yes"><span class="pf-icon">✓</span> Sauvegarde cloud des stats</li>
           <li class="pf yes"><span class="pf-icon">✓</span> Journal photo (5 par sortie)</li>
           <li class="pf yes"><span class="pf-icon">✓</span> POI panoramiques sur la carte</li>
@@ -202,6 +212,8 @@
           <li class="pf yes"><span class="pf-icon">✓</span> Signalement d'obstacles + photo</li>
           <li class="pf yes"><span class="pf-icon">✓</span> 21 badges (8 + 13 Argent)</li>
           <li class="pf yes"><span class="pf-icon">✓</span> Classements hebdomadaires</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Support prioritaire sous 24h</li>
+          <li class="pf yes"><span class="pf-icon">✓</span> Accès anticipé aux nouveautés</li>
         </ul>
         <button class="pc-cta cta-silver" data-plan="silver">Passer à Argent</button>
         <button class="pc-trial-cta" id="silverTrialCta" style="display:none">🎁 Essayer 7 jours gratuitement</button>
@@ -229,21 +241,13 @@
         <ul class="pc-features">
           <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Tout le plan Argent, plus :</strong></li>
           <li class="pf yes"><span class="pf-icon">✓</span> Mode multi-étapes</li>
-          <li class="pf yes"><span class="pf-icon">✓</span> Vue satellite IGN</li>
-          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Export KML + Strava / Komoot</strong></li>
-          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Jusqu'à 20 trajets hors-ligne</strong></li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>🗺️ Carte des chemins parcourus</strong></li>
           <li class="pf yes"><span class="pf-icon">✓</span> Journal photo illimité</li>
           <li class="pf yes"><span class="pf-icon">✓</span> Notes de curateur sur les POI</li>
-          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Météo forêt en temps réel</strong></li>
-          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Alertes push de chemin</strong></li>
-          <li class="pf yes"><span class="pf-icon">✓</span> Objectifs personnalisés</li>
-          <li class="pf yes"><span class="pf-icon">✓</span> Couleur de tracé personnalisée</li>
           <li class="pf yes"><span class="pf-icon">✓</span> Cadre de profil légendaire animé</li>
-          <li class="pf yes"><span class="pf-icon">✓</span> 8 badges Or animés exclusifs</li>
+          <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>8 badges Or animés exclusifs</strong></li>
           <li class="pf yes"><span class="pf-icon">✓</span> Création + admin de groupes</li>
           <li class="pf yes hl"><span class="pf-icon">✓</span> <strong>Discord communauté privée</strong></li>
-          <li class="pf yes"><span class="pf-icon">✓</span> Support prioritaire sous 24h</li>
-          <li class="pf yes"><span class="pf-icon">✓</span> Accès anticipé aux nouveautés</li>
         </ul>
         <button class="pc-cta cta-gold-soon" disabled aria-disabled="true">Bientôt disponible</button>
         <p class="pc-footnote">Le plan Or arrive très bientôt — restez à l'écoute.</p>
@@ -313,16 +317,17 @@
             <tr class="ct-section"><td colspan="4">Cartes &amp; visualisation</td></tr>
             <tr><td>Carte OpenStreetMap</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
             <tr><td>Carte IGN topographique</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
-            <tr><td>Vue satellite IGN</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+            <tr><td>Vue satellite IGN</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
             <tr><td>Carrefours nommés</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Carte des chemins parcourus</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
             <tr><td>POI panoramiques</td><td class="no">—</td><td class="ok">✓</td><td class="ok">+ notes</td></tr>
 
             <tr class="ct-section"><td colspan="4">Analyse &amp; export</td></tr>
             <tr><td>Profil altimétrique</td><td class="no">—</td><td class="ok">✓</td><td class="ok">+ analyse</td></tr>
             <tr><td>Export GPX</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
-            <tr><td>Export KML</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
-            <tr><td>Push Strava / Komoot</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
-            <tr><td>Trajets hors-ligne</td><td class="no">—</td><td class="num">1</td><td class="num">20</td></tr>
+            <tr><td>Export KML</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Push Strava / Komoot</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Trajets hors-ligne</td><td class="no">—</td><td class="num">20</td><td class="num">20</td></tr>
 
             <tr class="ct-section"><td colspan="4">Cloud &amp; historique</td></tr>
             <tr><td>Sauvegarde des statistiques</td><td class="no">Local uniquement</td><td class="ok">Cloud</td><td class="ok">Cloud</td></tr>
@@ -332,13 +337,13 @@
             <tr class="ct-section"><td colspan="4">Signalements &amp; alertes</td></tr>
             <tr><td>Voir les signalements</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
             <tr><td>Créer un signalement</td><td class="no">—</td><td class="ok">+ photo</td><td class="ok">+ priorité</td></tr>
-            <tr><td>Alertes push de chemin</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+            <tr><td>Alertes push de chemin</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
 
             <tr class="ct-section"><td colspan="4">Personnalisation</td></tr>
             <tr><td>Roue quotidienne</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
-            <tr><td>Objectifs personnalisés</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
-            <tr><td>Météo forêt en temps réel</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
-            <tr><td>Couleur de tracé custom</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+            <tr><td>Objectifs personnalisés</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Météo forêt en temps réel</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+            <tr><td>Couleur de tracé custom</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
             <tr><td>Cadre de profil</td><td class="num">Statique</td><td class="ok">Argent</td><td class="ok">Légendaire animé</td></tr>
 
             <tr class="ct-section"><td colspan="4">Badges &amp; progression</td></tr>
@@ -353,8 +358,8 @@
             <tr><td>Discord communauté</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
 
             <tr class="ct-section"><td colspan="4">Support &amp; perks</td></tr>
-            <tr><td>Support email</td><td class="ok">Best-effort</td><td class="ok">48h</td><td class="ok">24h prioritaire</td></tr>
-            <tr><td>Accès anticipé</td><td class="no">—</td><td class="no">—</td><td class="ok">✓</td></tr>
+            <tr><td>Support email</td><td class="ok">Best-effort</td><td class="ok">24h prioritaire</td><td class="ok">24h prioritaire</td></tr>
+            <tr><td>Accès anticipé</td><td class="no">—</td><td class="ok">✓</td><td class="ok">✓</td></tr>
           </tbody>
         </table>
       </div>

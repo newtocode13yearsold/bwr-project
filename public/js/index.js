@@ -158,11 +158,23 @@ try {
 
   window.addEventListener('load', function () { map.invalidateSize(); });
 
-  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+  const _homeTiles = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
     // maxNativeZoom 15 + crossOrigin: mirror js/map.js so this homepage map reuses
     // the offline-downloaded forest tiles (cached z10–15) instead of going blank.
     maxNativeZoom: 15, maxZoom: 17, subdomains: ['a', 'b', 'c'], crossOrigin: true,
-  }).addTo(map);
+  });
+  // Self-heal grey tiles: re-request any tile OpenTopoMap rate-limits (429/403)
+  // with a growing backoff, since Leaflet otherwise leaves it permanently grey.
+  const _homeRetryDelays = [600, 1500, 3000, 5000];
+  _homeTiles.on('tileerror', (e) => {
+    const img = e.tile; if (!img) return;
+    const tries = img._bwrRetries || 0;
+    if (tries >= _homeRetryDelays.length) return;
+    img._bwrRetries = tries + 1;
+    const base = (img.src || '').replace(/[?&]bwrRetry=\d+/, '');
+    setTimeout(() => { img.src = base + (base.includes('?') ? '&' : '?') + 'bwrRetry=' + (tries + 1); }, _homeRetryDelays[tries]);
+  });
+  _homeTiles.addTo(map);
 
   function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371;
@@ -201,16 +213,12 @@ try {
         }).addTo(map);
       });
 
-      // Compute deduplicated stats (skip exact-duplicate geometries)
-      const seen = new Set();
+      // Count every graded path with valid geometry
       let totalKm = 0;
       let uniqueCount = 0;
       for (const p of paths) {
         const c = p.coordinates;
         if (!c || c.length < 2) continue;
-        const fp = `${c[0][0].toFixed(4)}|${c[0][1].toFixed(4)}|${c[c.length - 1][0].toFixed(4)}|${c[c.length - 1][1].toFixed(4)}|${c.length}`;
-        if (seen.has(fp)) continue;
-        seen.add(fp);
         uniqueCount++;
         for (let i = 1; i < c.length; i++) totalKm += haversine(c[i - 1][0], c[i - 1][1], c[i][0], c[i][1]);
       }

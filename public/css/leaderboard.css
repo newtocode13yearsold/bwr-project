@@ -80,6 +80,37 @@
 .league-forestier  { background: #f0fdf4; border-color: #86efac; color: #15803d; }
 .league-legende    { background: #fffbeb; border-color: #fde68a; color: #92400e; }
 
+/* ── Period tabs (Semaine / Mois / Depuis toujours) ── */
+.lb-tabs {
+  display: flex;
+  gap: 6px;
+  background: white;
+  padding: 6px;
+  border-radius: 999px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.lb-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lb-tab:hover { background: #f3f4f6; }
+
+.lb-tab.active {
+  background: #166534;
+  color: white;
+}
+
 /* ── My rank card ── */
 .lb-my-rank {
   background: white;

@@ -70,6 +70,44 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     return json({ success: true, usersReset: users.length });
   }
 
+  if (pathname === '/api/migrate/pathgrades' && request.method === 'POST') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+
+    // 1. Attribute every currently-ungraded path to the admin, so a path that got
+    //    its difficulty by being drawn/imported (rather than via the grade click)
+    //    still counts as "graded". Lines up the breakdown table (total paths) with
+    //    the leaderboard "chemins notés" stat.
+    const pathKeys = await listKeys(env, 'path:');
+    let backfilled = 0;
+    for (const k of pathKeys) {
+      const id = k.name.slice('path:'.length);
+      const existing = await env.BWR_KV.list({ prefix: `pathgrade:${id}:`, limit: 1 });
+      if (existing.keys.length === 0) {
+        await env.BWR_KV.put(`pathgrade:${id}:${admin.id}`, JSON.stringify({ walkedWhenGraded: false }));
+        backfilled++;
+      }
+    }
+
+    // 2. Recompute every user's pathGrades authoritatively from their grade keys
+    //    (pathgrade:{pathId}:{userId}), so the stat can never drift from reality.
+    const gradeKeys = await listKeys(env, 'pathgrade:');
+    const counts = {};
+    for (const k of gradeKeys) {
+      const uid = k.name.slice(k.name.lastIndexOf(':') + 1);
+      counts[uid] = (counts[uid] || 0) + 1;
+    }
+    const users = await listItems(env, 'user:');
+    await Promise.all(users.map(u =>
+      putUser(env, { ...u, stats: { ...(u.stats || {}), pathGrades: counts[u.id] || 0 } })
+    ));
+
+    // Drop the leaderboard cache so the next GET rebuilds it from the new stats.
+    await env.BWR_KV.delete('leaderboard:cache');
+
+    return json({ success: true, backfilled, usersRecomputed: users.length });
+  }
+
   if (pathname === '/api/setup' && request.method === 'POST') {
     const existing = await env.BWR_KV.list({ prefix: 'user:', limit: 1 });
     if (!existing.list_complete || existing.keys.length > 0) return fail('Setup already completed.', 403);

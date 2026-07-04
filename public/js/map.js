@@ -37,10 +37,35 @@ const TILE_LAYERS = {
   ),
 };
 
+// Self-heal grey tiles. When you zoom/pan, Leaflet fires a burst of tile
+// requests at once; OpenTopoMap rate-limits part of the burst (429/403) and
+// Leaflet then leaves those tiles a PERMANENT grey square — it never re-requests
+// a failed tile on its own. That's why half the forest goes grey behind the
+// coloured paths while the rest of the map is fine. Here we re-request each
+// failed tile a few times with a growing backoff, long enough to outlast the
+// server's rate-limit window, so the grey gaps fill themselves in.
+const _TILE_RETRY_DELAYS = [600, 1500, 3000, 5000]; // ms; total reach ~10s
+function makeTilesSelfHealing(layer) {
+  layer.on('tileerror', (e) => {
+    const img = e.tile;
+    if (!img) return;
+    const tries = img._bwrRetries || 0;
+    if (tries >= _TILE_RETRY_DELAYS.length) return; // give up; avoid retry loops
+    img._bwrRetries = tries + 1;
+    // Drop any previous retry marker, then add a fresh one. Keep existing query
+    // params intact (the satellite WMTS URL carries its tile coords in the query).
+    const base = (img.src || '').replace(/[?&]bwrRetry=\d+/, '');
+    const sep = base.includes('?') ? '&' : '?';
+    setTimeout(() => { img.src = base + sep + 'bwrRetry=' + (tries + 1); }, _TILE_RETRY_DELAYS[tries]);
+  });
+}
+Object.values(TILE_LAYERS).forEach(makeTilesSelfHealing);
+
 const _cachedUser = (typeof getCachedUser === 'function') ? getCachedUser() : null;
 const _userPlan   = (typeof BWR !== 'undefined') ? BWR.normalisePlan(_cachedUser?.plan) : (_cachedUser?.plan || 'free');
 
 const map = L.map('map', { zoomControl: true, minZoom: 8, maxZoom: LAYER_MAX_ZOOM.ign }).setView(MAP_CENTER, MAP_ZOOM);
+window.map = map; // expose for the shared GPS tracker (js/gps-tracker.js)
 TILE_LAYERS.ign.addTo(map);
 
 let currentLayer = 'ign';
@@ -613,11 +638,11 @@ document.querySelectorAll('input[name="tileLayer"]').forEach(radio => {
   radio.addEventListener('change', () => {
     const wanted = radio.value;
     const plan = _userPlan;
-    // Gate satellite (Gold only) — show upsell instead of switching.
+    // Gate satellite — show upsell instead of switching.
     if (wanted === 'satellite' && !BWR.can('satellite_tiles', plan)) {
       radio.checked = false;
       document.querySelector(`input[name="tileLayer"][value="${currentLayer}"]`).checked = true;
-      showUpgradeToast('satellite', 'gold');
+      showUpgradeToast('La vue satellite', BWR.requiredTier('satellite_tiles'));
       return;
     }
     map.removeLayer(TILE_LAYERS[currentLayer]);
@@ -634,8 +659,11 @@ document.querySelectorAll('input[name="tileLayer"]').forEach(radio => {
     if (!radio) return;
     const v = radio.value;
     if (v === 'satellite' && !BWR.can('satellite_tiles', _userPlan)) {
+      const tier = BWR.requiredTier('satellite_tiles');
       label.classList.add('plan-locked');
-      label.insertAdjacentHTML('beforeend', ' <span class="tier-tag gold">👑 Or</span>');
+      label.insertAdjacentHTML('beforeend',
+        tier === 'gold' ? ' <span class="tier-tag gold">👑 Or</span>'
+                        : ' <span class="tier-tag silver">🔒 Argent</span>');
     }
   });
 })();
@@ -730,17 +758,34 @@ function _findNearestPath(lat, lng) {
   return bestDist <= 60 ? { path: best, dist: Math.round(bestDist), latlng: bestLatLng } : null;
 }
 
-document.getElementById('btnSelectPath').addEventListener('click', () => {
-  if (!_currentPosition) {
-    showLocateToast('Activez d\'abord la géolocalisation', true);
-    return;
-  }
+// "Mon point" — one tap selects the path you're standing on AND lets you report
+// the exact spot you're at. Works for every plan. If geolocation isn't active yet,
+// it kicks it off and runs as soon as the first fix lands.
+let _pendingSelectHere = false;
+
+async function selectHere() {
+  if (!_currentPosition) return;
+  const here = L.latLng(_currentPosition.lat, _currentPosition.lng);
   const result = _findNearestPath(_currentPosition.lat, _currentPosition.lng);
-  if (!result) {
-    showLocateToast('Aucun chemin trouvé à moins de 60 m', true);
+  if (result) {
+    // On (or within 60 m of) a known path → open it; its report buttons file at this spot.
+    openPathPopup(result.path, L.latLng(result.latlng[0], result.latlng[1]));
+  } else {
+    // Off any known path → let the user report the precise place they're standing on.
+    await _loadMapEdit();
+    openReportPopup(null, here);
+  }
+}
+
+document.getElementById('btnSelectPath').addEventListener('click', () => {
+  if (_currentPosition) { selectHere(); return; }
+  if (!navigator.geolocation) {
+    showLocateToast('Géolocalisation non disponible', true);
     return;
   }
-  openPathPopup(result.path, L.latLng(result.latlng[0], result.latlng[1]));
+  _pendingSelectHere = true;
+  showLocateToast('Localisation en cours…');
+  startLocationWatch();
 });
 
 function updateLocationLayers(lat, lng, accuracy) {
@@ -796,6 +841,12 @@ document.getElementById('btnLocate').addEventListener('click', () => {
   }
 
   // idle → start
+  startLocationWatch();
+});
+
+// Begin the GPS watch (shared by the locate button and the "Mon point" button).
+function startLocationWatch() {
+  if (locationWatchId !== null) return; // already watching
   locateState = 'searching';
   _updateLocateBtn();
 
@@ -817,8 +868,12 @@ document.getElementById('btnLocate').addEventListener('click', () => {
         const targetZoom = wasSearching ? Math.max(map.getZoom(), 15) : map.getZoom();
         map.setView([lat, lng], targetZoom, { animate: true, duration: wasSearching ? 0.8 : 0.4 });
       }
+
+      // Fulfil a queued "Mon point" tap as soon as we have a fix.
+      if (_pendingSelectHere) { _pendingSelectHere = false; selectHere(); }
     },
     (err) => {
+      _pendingSelectHere = false;
       stopLocating();
       const msgs = {
         1: 'Permission refusée — autorise la localisation dans les réglages',
@@ -829,7 +884,7 @@ document.getElementById('btnLocate').addEventListener('click', () => {
     },
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
   );
-});
+}
 
 // ── Search bar ────────────────────────────────────────────────────────────────
 let searchPin = null;

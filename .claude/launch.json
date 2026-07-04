@@ -36,6 +36,18 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["-y", "serve", "C:\\Users\\TOM\\DOCUME~1\\CITYSK~1.0", "-l", "4600"],
       "port": 4600
+    },
+    {
+      "name": "ushingui",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd /d C:\\Users\\TOM\\Documents\\ushingui-site && npx wrangler dev --port 8799 --local"],
+      "port": 8799
+    },
+    {
+      "name": "sonora",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "C:\\Users\\TOM\\DOCUME~1\\PROJET~1\\SONORA~1", "-l", "4700"],
+      "port": 4700
     }
   ]
 }

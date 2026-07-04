@@ -82,6 +82,7 @@ function initUserMenu() {
 // ── Map init ──────────────────────────────────────────────────────────────────
 function initMap() {
   map = L.map('map', { minZoom: 8, maxZoom: 17 }).setView(MAP_CENTER, MAP_ZOOM);
+  window.map = map; // expose for the shared GPS tracker (js/gps-tracker.js)
 
   ignLayer = L.tileLayer(
     'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
@@ -302,7 +303,7 @@ async function loadOSMPaths() {
     if (cached) {
       try {
         renderOSMPaths(JSON.parse(cached));
-        const count = osmLayers.length;
+        const count = osmLayers.length / 2; // hit + visible line per path
         showStatus(count > 0
           ? `${count} chemins (cache hors-ligne) — clique sur un chemin en pointillés.`
           : 'Hors-ligne — clique sur un chemin pour modifier sa couleur.');
@@ -330,7 +331,7 @@ async function loadOSMPaths() {
     const data = await res.json();
     try { localStorage.setItem('bwr_osm_cache', JSON.stringify(data)); } catch {}
     renderOSMPaths(data);
-    const count = osmLayers.length;
+    const count = osmLayers.length / 2; // hit + visible line per path
     if (count === 0) {
       showStatus('Aucun chemin trouvé ici — zoome sur une forêt de l\'Oise.');
     } else {
@@ -342,7 +343,7 @@ async function loadOSMPaths() {
     if (cached) {
       try {
         renderOSMPaths(JSON.parse(cached));
-        const count = osmLayers.length;
+        const count = osmLayers.length / 2; // hit + visible line per path
         if (count > 0) {
           showStatus(`${count} chemins (cache) — clique sur un chemin en pointillés.`);
           return;
@@ -400,17 +401,21 @@ function renderOSMPaths(data) {
       opacity: 0.6,
       dashArray: '6, 6',
     });
+    // Invisible wide hit area so the thin dashed line is easy to tap/click.
+    const hit = L.polyline(coords, { color: '#000', weight: 22, opacity: 0, interactive: true });
 
-    line.on('mouseover', () => line.setStyle({ color: '#2563eb', opacity: 1, weight: 4 }));
-    line.on('mouseout',  () => line.setStyle({ color: '#475569', opacity: 0.6, weight: 3 }));
-    line.on('click', (e) => {
+    const over = () => line.setStyle({ color: '#2563eb', opacity: 1, weight: 4 });
+    const out  = () => line.setStyle({ color: '#475569', opacity: 0.6, weight: 3 });
+    const pick = (e) => {
       L.DomEvent.stopPropagation(e);
       const name = el.tags?.name || el.tags?.ref || 'Chemin sans nom';
       openNewPathPopup(coords, name, e.latlng, autoType);
-    });
+    };
+    [line, hit].forEach(l => { l.on('mouseover', over); l.on('mouseout', out); l.on('click', pick); });
 
+    hit.addTo(map);
     line.addTo(map);
-    osmLayers.push(line);
+    osmLayers.push(hit, line);
   });
 }
 
@@ -1888,6 +1893,108 @@ if (navigator.onLine) { replayOfflineQueue(); replayOfflineNewPaths(); }
 
 const btnAdminSync = document.getElementById('btnAdminSync');
 if (btnAdminSync) btnAdminSync.addEventListener('click', function () { replayOfflineQueue(); replayOfflineNewPaths(); });
+
+// ── "Ma position" locate pin + "Mon point" (mirrors the public map) ─────────────
+(function initAdminLocate() {
+  const btn = document.getElementById('btnAdminLocate');
+  if (!btn) return;
+  const btnHere = document.getElementById('btnAdminSelectHere');
+  let watchId = null;
+  let marker = null;
+  let circle = null;
+  let centered = false;
+  let currentPos = null;     // {lat,lng} of the latest fix, null when idle
+  let pendingHere = false;   // a "Mon point" tap waiting for the first fix
+
+  function stop() {
+    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    if (marker && map) { map.removeLayer(marker); marker = null; }
+    if (circle && map) { map.removeLayer(circle); circle = null; }
+    centered = false;
+    currentPos = null;
+    pendingHere = false;
+    btn.classList.remove('locate-following');
+    btn.textContent = '📍 Ma position';
+  }
+
+  function startWatch() {
+    if (watchId !== null) return;
+    btn.textContent = '⏳ Recherche…';
+    watchId = navigator.geolocation.watchPosition(
+      ({ coords: { latitude: lat, longitude: lng, accuracy } }) => {
+        if (!map) return;
+        btn.textContent = '⏹ Arrêter le suivi';
+        btn.classList.add('locate-following');
+        currentPos = { lat, lng };
+        if (circle) circle.setLatLng([lat, lng]).setRadius(accuracy);
+        else circle = L.circle([lat, lng], { radius: accuracy, color: '#3b82f6', fillColor: '#93c5fd', fillOpacity: 0.15, weight: 1.5, interactive: false }).addTo(map);
+        if (marker) marker.setLatLng([lat, lng]);
+        else marker = L.circleMarker([lat, lng], { radius: 7, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.9, weight: 2 }).addTo(map).bindTooltip('📍 Vous êtes ici');
+        if (!centered) { map.setView([lat, lng], Math.max(map.getZoom(), 15), { animate: true }); centered = true; }
+        if (pendingHere) { pendingHere = false; selectHere(); }
+      },
+      (err) => {
+        stop();
+        const msgs = { 1: 'Permission refusée', 2: 'Position introuvable', 3: 'Délai dépassé' };
+        showStatus(msgs[err.code] || 'Erreur de localisation', true);
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+  }
+
+  btn.addEventListener('click', () => {
+    if (!navigator.geolocation) { showStatus('Géolocalisation non disponible', true); return; }
+    if (watchId !== null) { stop(); return; }
+    startWatch();
+  });
+
+  // ── "Mon point" — open the path you're standing on for management ──────────────
+  // Distance from (lat,lng) to a path's nearest segment, in metres.
+  function distToPathM(lat, lng, coords) {
+    let best = Infinity;
+    for (let i = 0; i < coords.length - 1; i++) {
+      const [lat1, lng1] = coords[i], [lat2, lng2] = coords[i + 1];
+      const dx = lat2 - lat1, dy = lng2 - lng1;
+      const len2 = dx * dx + dy * dy;
+      const t = len2 ? Math.max(0, Math.min(1, ((lat - lat1) * dx + (lng - lng1) * dy) / len2)) : 0;
+      const nLat = lat1 + t * dx, nLng = lng1 + t * dy;
+      const R = 6371000, toRad = Math.PI / 180;
+      const a = Math.sin((nLat - lat) * toRad / 2) ** 2 +
+        Math.cos(lat * toRad) * Math.cos(nLat * toRad) * Math.sin((nLng - lng) * toRad / 2) ** 2;
+      const d = 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+      if (d < best) { best = d; }
+    }
+    return best;
+  }
+
+  function selectHere() {
+    if (!currentPos) return;
+    const { lat, lng } = currentPos;
+    let nearest = null, bestDist = Infinity;
+    for (const path of allPaths) {
+      if (!path.coordinates || path.coordinates.length < 2) continue;
+      const d = distToPathM(lat, lng, path.coordinates);
+      if (d < bestDist) { bestDist = d; nearest = path; }
+    }
+    if (nearest && bestDist <= 60) {
+      const here = L.latLng(lat, lng);
+      if (editModeActive) openEditForm(nearest);
+      else openColorPopup(nearest, here);
+    } else {
+      showStatus('Aucun chemin à moins de 60 m de votre position.', true);
+    }
+  }
+
+  if (btnHere) {
+    btnHere.addEventListener('click', () => {
+      if (currentPos) { selectHere(); return; }
+      if (!navigator.geolocation) { showStatus('Géolocalisation non disponible', true); return; }
+      pendingHere = true;
+      showStatus('Localisation en cours…');
+      startWatch();
+    });
+  }
+})();
 
 // ── Offline tile download (zone Forêt de Compiègne) ───────────────────────
 const FOREST_BBOX = { north: 49.47, south: 49.27, west: 2.65, east: 3.10 };

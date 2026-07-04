@@ -13,11 +13,17 @@
 // savedroute:{userId}:{id} → JSON saved route (coords, stats, metadata)
 // routeshare:{token}       → JSON { userId, routeId }  (180-day TTL)
 // news:{id}                → JSON news item (incl. likes / dislikes counts)
+// forum:topic:{id}         → JSON forum topic { userId, authorName, title, body, createdAt, lastActivityAt, replyCount }
+// forum:reply:{topicId}:{paddedTs}:{id} → JSON reply { topicId, userId, authorName, body, createdAt }
+//                            (ts in the key keeps replies ordered within a topic)
 // newsreact:{newsId}:{voter} → 'like' | 'dislike'  (voter = u:{userId} or ip:{addr})
 // pathgrade:{pathId}:{userId} → JSON { walkedWhenGraded: bool }
 // walkedpath:{userId}:{pathId} → ISO timestamp string
 // aisugg:{userId}:{date}   → legacy AI-suggestion cache (feature removed; keys self-expire, 48h TTL)
-// leaderboard:cache        → JSON sorted entries array  (5-min TTL)
+// leaderboard:cache        → JSON sorted entries array  (5-min TTL, "all-time" board)
+// leaderboard:cache:{week|month} → JSON sorted entries for the current period (5-min TTL)
+// xp:{period}:{userId}     → JSON { name, reports, pathGrades } earned in that period
+//                            (period = ISO week "2026-W26" or month "2026-06"; ~70-day TTL)
 // event:{ts}:{id}          → JSON auth event { type:'login'|'signup', ... }  (90-day TTL)
 //                            Only real logins / new accounts are recorded — page
 //                            views are NOT tracked (they could be search-engine bots).
@@ -130,6 +136,60 @@ export async function patchLeaderboardCache(env, updatedUser) {
   if (idx >= 0) entries[idx] = entry; else entries.push(entry);
   entries.sort((a, b) => b.points - a.points || b.reports - a.reports);
   await env.BWR_KV.put('leaderboard:cache', JSON.stringify(entries), { expirationTtl: 300 });
+}
+
+// ── Period keys for the weekly / monthly leaderboards ──────────────────────────
+/** ISO-8601 week key for a date, e.g. "2026-W26". Weeks start Monday. */
+export function isoWeekKey(d = new Date()) {
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const day = date.getUTCDay() || 7;            // Sunday → 7
+  date.setUTCDate(date.getUTCDate() + 4 - day); // shift to the Thursday of this week
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((date - yearStart) / 86400000 + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+
+/** Calendar-month key for a date, e.g. "2026-06". */
+export function monthKey(d = new Date()) {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+/** The period key for a leaderboard scope. Returns null for 'all' (no bucket). */
+export function periodKeyFor(scope, d = new Date()) {
+  if (scope === 'week') return isoWeekKey(d);
+  if (scope === 'month') return monthKey(d);
+  return null;
+}
+
+/**
+ * Adds XP deltas (a report and/or a graded path) to a user's current
+ * week and month buckets, so the periodic leaderboards reflect recent activity.
+ * Counts are clamped at 0 (a reversal can't push a bucket negative). Best-effort —
+ * never throws, so it can't break a report/grade write.
+ *
+ * @param {import('./kv.js').Env} env
+ * @param {{ id: string, name?: string }} user
+ * @param {{ reports?: number, pathGrades?: number }} delta
+ */
+export async function addPeriodXp(env, user, delta) {
+  try {
+    const dReports = delta.reports || 0;
+    const dGrades = delta.pathGrades || 0;
+    if (dReports === 0 && dGrades === 0) return;
+    const now = new Date();
+    const TTL = 60 * 60 * 24 * 70; // 70 days — outlasts any current week or month
+    await Promise.all([isoWeekKey(now), monthKey(now)].map(async period => {
+      const key = `xp:${period}:${user.id}`;
+      const raw = await env.BWR_KV.get(key);
+      const cur = raw ? JSON.parse(raw) : { reports: 0, pathGrades: 0 };
+      cur.name = user.name;
+      cur.reports = Math.max(0, (cur.reports || 0) + dReports);
+      cur.pathGrades = Math.max(0, (cur.pathGrades || 0) + dGrades);
+      await env.BWR_KV.put(key, JSON.stringify(cur), { expirationTtl: TTL });
+    }));
+  } catch {
+    /* periodic-XP tracking must never break the underlying write */
+  }
 }
 
 /**

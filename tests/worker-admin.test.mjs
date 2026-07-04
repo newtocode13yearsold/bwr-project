@@ -304,11 +304,11 @@ describe('POST /api/reports', () => {
     assert.equal(res.status, 401);
   });
 
-  test('free user → 403', async () => {
+  test('free user creates report → 201 (reporting is free for all plans)', async () => {
     const { env, seedFree } = freshEnv();
     const { token } = seedFree();
     const res = await worker.fetch(authed('POST', '/api/reports', token, { type: 'other', lat: 49.35, lon: 2.90 }), env);
-    assert.equal(res.status, 403);
+    assert.equal(res.status, 201);
   });
 
   test('silver user creates report → 201, stats.reports incremented', async () => {

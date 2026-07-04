@@ -122,10 +122,12 @@ export async function sendVerificationEmail(env, origin, email, name, token) {
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    // Notify admin via ntfy so email failures are visible in production
-    fetch('https://ntfy.sh/bwr-ciril8596', {
+    console.error(`Resend verification email failed for ${email}: ${res.status} ${body}`);
+    // Notify admin via ntfy so email failures are visible in production.
+    // Must be awaited: on Workers an un-awaited fetch is killed once the handler throws.
+    await fetch('https://ntfy.sh/bwr-ciril8596', {
       method: 'POST',
-      headers: { Title: 'BWR — email verification FAILED', Priority: 'high', Tags: 'email' },
+      headers: { Title: 'BWR - email verification FAILED', Priority: 'high', Tags: 'email' },
       body: `Resend rejected email to ${email}. Status: ${res.status}. Details: ${body}`,
     }).catch(() => {});
     throw new Error(`Resend error ${res.status}: ${body}`);
@@ -155,10 +157,12 @@ export async function sendPasswordResetEmail(env, origin, email, name, token) {
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    // Notify admin via ntfy so email failures are visible in production
-    fetch('https://ntfy.sh/bwr-ciril8596', {
+    console.error(`Resend password reset email failed for ${email}: ${res.status} ${body}`);
+    // Notify admin via ntfy so email failures are visible in production.
+    // Must be awaited: on Workers an un-awaited fetch is killed once the handler throws.
+    await fetch('https://ntfy.sh/bwr-ciril8596', {
       method: 'POST',
-      headers: { Title: 'BWR — password reset email FAILED', Priority: 'high', Tags: 'email' },
+      headers: { Title: 'BWR - password reset email FAILED', Priority: 'high', Tags: 'email' },
       body: `Resend rejected reset email to ${email}. Status: ${res.status}. Details: ${body}`,
     }).catch(() => {});
     throw new Error(`Resend error ${res.status}: ${body}`);

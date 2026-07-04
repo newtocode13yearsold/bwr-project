@@ -5,6 +5,7 @@ import { handleReports }    from './worker/handlers/reports.js';
 import { handleContent }    from './worker/handlers/content.js';
 import { handleSavedRoutes } from './worker/handlers/savedroutes.js';
 import { handleSocial }     from './worker/handlers/social.js';
+import { handleForum }      from './worker/handlers/forum.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://bwr-worker.ciril8596.workers.dev',
@@ -67,6 +68,7 @@ export default {
       await handleContent(request, env, ctx)     ??
       await handleSavedRoutes(request, env, ctx) ??
       await handleSocial(request, env, ctx)      ??
+      await handleForum(request, env, ctx)       ??
       new Response('Not found', { status: 404, headers: cors })
     );
   },

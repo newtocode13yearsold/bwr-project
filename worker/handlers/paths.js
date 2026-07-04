@@ -1,4 +1,4 @@
-import { listItems, getPath, putPath, putUser, getUser, effectivePlan, patchLeaderboardCache } from '../kv.js';
+import { listItems, getPath, putPath, putUser, getUser, effectivePlan, patchLeaderboardCache, addPeriodXp } from '../kv.js';
 import { getUserFromToken } from '../auth-utils.js';
 
 const STATUS_LABELS = {
@@ -53,6 +53,21 @@ export async function handlePaths(request, env, { pathname, json, fail }) {
     };
 
     await putPath(env, newPath);
+
+    // Drawing or importing a path is itself a classification — credit it as a
+    // grade for the creator so it shows up in their "chemins notés" leaderboard
+    // stat, exactly like grading an existing path. Idempotent via the pathgrade
+    // key, so a later PATCH on the same path can't double-count it.
+    const gradeKey = `pathgrade:${newPath.id}:${user.id}`;
+    const gStats = user.stats || {};
+    const gradedUser = { ...user, stats: { ...gStats, pathGrades: (gStats.pathGrades || 0) + 1 } };
+    await Promise.all([
+      env.BWR_KV.put(gradeKey, JSON.stringify({ walkedWhenGraded: false })),
+      putUser(env, gradedUser),
+    ]);
+    await patchLeaderboardCache(env, gradedUser);
+    await addPeriodXp(env, gradedUser, { pathGrades: 1 });
+
     return json(newPath, 201);
   }
 
@@ -133,7 +148,8 @@ export async function handlePaths(request, env, { pathname, json, fail }) {
         env.BWR_KV.put(gradeKey, JSON.stringify({ walkedWhenGraded: walkedRecently })),
         putUser(env, gradedUser),
       ]);
-      patchLeaderboardCache(env, gradedUser);
+      await patchLeaderboardCache(env, gradedUser);
+      await addPeriodXp(env, gradedUser, { pathGrades: 1 });
     }
 
     if (body.status !== oldStatus) {
@@ -170,7 +186,9 @@ export async function handlePaths(request, env, { pathname, json, fail }) {
           const gs = grader.stats || {};
           const newStats = { ...gs, pathGrades: Math.max(0, (gs.pathGrades || 0) - 1) };
           if (!walkedWhenGraded) newStats.unwalkedGrades = Math.max(0, (gs.unwalkedGrades || 0) - 1);
-          await putUser(env, { ...grader, stats: newStats });
+          const revertedGrader = { ...grader, stats: newStats };
+          await putUser(env, revertedGrader);
+          await addPeriodXp(env, revertedGrader, { pathGrades: -1 });
         }
         await env.BWR_KV.delete(k.name);
       }));

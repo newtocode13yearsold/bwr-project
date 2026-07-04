@@ -28,7 +28,7 @@ function renderLeaguesLegend() {
   `).join('');
 }
 
-function renderMyRank(entries, myId) {
+function renderMyRank(entries, myId, period) {
   const card = document.getElementById('myRankCard');
   if (!card || !myId) { card && card.classList.add('hidden'); return; }
 
@@ -45,21 +45,29 @@ function renderMyRank(entries, myId) {
   document.getElementById('myRankReports').textContent = me.reports;
   document.getElementById('myRankGrades').textContent = me.pathGrades;
   document.getElementById('myRankPoints').textContent = me.points;
+
+  // Forest coverage is a cumulative, all-time figure — hide it on the periodic boards.
+  const covBlock = document.getElementById('myRankCoverageBlock');
+  if (covBlock) covBlock.style.display = period === 'all' ? '' : 'none';
   const covEl = document.getElementById('myRankCoverage');
-  if (covEl) covEl.textContent = (me.forestCoverage || 0) + '%';
+  if (covEl && period === 'all') covEl.textContent = (me.forestCoverage || 0) + '%';
 
   card.classList.remove('hidden');
 }
 
-function renderTable(entries, myId) {
+function renderTable(entries, myId, period) {
   const wrap = document.getElementById('lbTableWrap');
   if (!wrap) return;
 
+  // Forest coverage is cumulative, so it only makes sense on the all-time board.
+  const showCoverage = period === 'all';
+
   if (entries.length === 0) {
+    const when = period === 'week' ? 'cette semaine' : period === 'month' ? 'ce mois-ci' : '';
     wrap.innerHTML = `
       <div class="lb-empty">
         <div class="lb-empty-icon">🏆</div>
-        <div class="lb-empty-text">Aucun participant pour l'instant.<br>Signalez un problème ou notez un chemin pour apparaître ici !</div>
+        <div class="lb-empty-text">Aucun participant ${when ? when + ' ' : ''}pour l'instant.<br>Signalez un problème ou notez un chemin pour apparaître ici !</div>
       </div>`;
     return;
   }
@@ -75,6 +83,10 @@ function renderTable(entries, myId) {
 
     const coverage = e.forestCoverage || 0;
     const coverageBar = `<div class="lb-cov-bar"><div class="lb-cov-fill" style="width:${Math.min(100, coverage)}%"></div></div>`;
+    const coverageCell = showCoverage ? `
+        <td class="lb-cov-cell hide-mobile">
+          <div class="lb-cov-wrap">${coverageBar}<span class="lb-cov-pct">${coverage}%</span></div>
+        </td>` : '';
 
     return `
       <tr class="${isMe ? 'is-me' : ''}">
@@ -93,10 +105,7 @@ function renderTable(entries, myId) {
           </div>
         </td>
         <td class="lb-stat-cell hide-mobile">${e.reports}</td>
-        <td class="lb-stat-cell hide-mobile">${e.pathGrades}</td>
-        <td class="lb-cov-cell hide-mobile">
-          <div class="lb-cov-wrap">${coverageBar}<span class="lb-cov-pct">${coverage}%</span></div>
-        </td>
+        <td class="lb-stat-cell hide-mobile">${e.pathGrades}</td>${coverageCell}
         <td class="lb-points-cell">${e.points} pts</td>
       </tr>`;
   }).join('');
@@ -109,7 +118,7 @@ function renderTable(entries, myId) {
           <th>Membre</th>
           <th class="hide-mobile" style="text-align:center">Signalements</th>
           <th class="hide-mobile" style="text-align:center">Chemins notés</th>
-          <th class="hide-mobile">Forêt explorée</th>
+          ${showCoverage ? '<th class="hide-mobile">Forêt explorée</th>' : ''}
           <th>Points</th>
         </tr>
       </thead>
@@ -121,25 +130,38 @@ function escHtml(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-async function loadLeaderboard() {
+let currentPeriod = 'week';
+
+async function loadLeaderboard(period = currentPeriod) {
+  currentPeriod = period;
   const wrap = document.getElementById('lbTableWrap');
   if (wrap) wrap.innerHTML = '<div class="lb-loading">Chargement du classement…</div>';
 
   try {
     const [lbRes, meUser] = await Promise.all([
-      fetch(`${API_URL}/api/leaderboard`),
+      fetch(`${API_URL}/api/leaderboard?period=${period}`),
       fetchCurrentUser(),
     ]);
 
     const entries = lbRes.ok ? await lbRes.json() : [];
     const myId = meUser?.id || null;
 
-    renderMyRank(entries, myId);
-    renderTable(entries, myId);
+    renderMyRank(entries, myId, period);
+    renderTable(entries, myId, period);
   } catch {
     const wrap = document.getElementById('lbTableWrap');
     if (wrap) wrap.innerHTML = '<div class="lb-loading">Impossible de charger le classement.</div>';
   }
+}
+
+function initPeriodTabs() {
+  const tabs = [...document.querySelectorAll('.lb-tab')];
+  tabs.forEach(tab => tab.addEventListener('click', () => {
+    if (tab.classList.contains('active')) return;
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    loadLeaderboard(tab.dataset.period);
+  }));
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -166,5 +188,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   renderLeaguesLegend();
-  loadLeaderboard();
+  initPeriodTabs();
+  loadLeaderboard('week');
 });

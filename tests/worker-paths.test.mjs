@@ -97,6 +97,18 @@ describe('POST /api/paths', () => {
     assert.ok(kv.store.has(`path:${data.id}`));
   });
 
+  test('drawing/importing a path credits the creator with a pathGrade', async () => {
+    const { env, token, kv, userId } = freshEnv('user', 'silver');
+    const res = await worker.fetch(authed('POST', '/api/paths', token, {
+      name: 'Sentier tracé', coordinates: sampleCoords, status: 'easy',
+    }), env);
+    assert.equal(res.status, 201);
+    const data = await res.json();
+    const user = JSON.parse(kv.store.get(`user:${userId}`));
+    assert.equal(user.stats.pathGrades, 1, 'creating a path counts as grading it');
+    assert.ok(kv.store.has(`pathgrade:${data.id}:${userId}`), 'a grade key is written for the creator');
+  });
+
   test('sanitises invalid status and pathType to defaults', async () => {
     const { env, token } = freshEnv('user', 'gold');
     const res = await worker.fetch(authed('POST', '/api/paths', token, {

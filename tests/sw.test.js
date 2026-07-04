@@ -105,6 +105,7 @@ const APP_SHELL_EXPECTED = [
   'login',
   'plans',
   'news',
+  'forum',
   'verify',
   'changelog',
   'leaderboard',
@@ -124,6 +125,7 @@ const APP_SHELL_EXPECTED = [
   'js/graph-router.js',
   'js/exporters.js',
   'js/news.js',
+  'js/forum.js',
   'js/install.js',
 ];
 
@@ -382,7 +384,7 @@ describe('activate handler: old caches deleted', () => {
 
     // Seed old + current caches
     await mockCaches.open('bwr-v1');           // old → must be deleted
-    await mockCaches.open('bwr-v44');          // current CACHE → keep
+    await mockCaches.open('bwr-v47');          // current CACHE → keep
     await mockCaches.open('bwr-offline-tiles'); // TILE_CACHE → keep
 
     let waitUntilPromise;
@@ -392,7 +394,7 @@ describe('activate handler: old caches deleted', () => {
 
     const remaining = await mockCaches.keys();
     assert.ok(!remaining.includes('bwr-v1'), 'old cache bwr-v1 must be deleted');
-    assert.ok(remaining.includes('bwr-v44'), 'current CACHE must be kept');
+    assert.ok(remaining.includes('bwr-v47'), 'current CACHE must be kept');
     assert.ok(remaining.includes('bwr-offline-tiles'), 'TILE_CACHE must be kept');
   });
 });

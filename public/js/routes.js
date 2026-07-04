@@ -313,7 +313,7 @@ function applyPlanGates() {
   // Lock satellite tile button
   if (!BWR.can('satellite_tiles', plan)) {
     const satBtn = document.querySelector('.layer-btn[data-layer="satellite"]');
-    if (satBtn) markBtnLocked(satBtn, 'gold');
+    if (satBtn) markBtnLocked(satBtn, BWR.requiredTier('satellite_tiles'));
   }
   // Lock IGN topo for free users (default tile becomes OSM)
   if (!BWR.can('ign_topo_tiles', plan)) {
@@ -464,11 +464,34 @@ const TILE_LAYERS = {
 };
 let currentTile = null;
 
+// Self-heal grey tiles. On zoom/pan Leaflet fires a burst of tile requests;
+// OpenTopoMap rate-limits part of the burst (429/403) and then leaves those
+// tiles a PERMANENT grey square — it never re-requests a failed tile on its own,
+// which is why half the forest goes grey behind the route. Re-request each failed
+// tile a few times with a growing backoff (long enough to outlast the rate-limit
+// window) so the gaps fill themselves in. Mirrors the map page (js/map.js).
+const _TILE_RETRY_DELAYS = [600, 1500, 3000, 5000];
+function makeTilesSelfHealing(layer) {
+  layer.on('tileerror', (e) => {
+    const img = e.tile;
+    if (!img) return;
+    const tries = img._bwrRetries || 0;
+    if (tries >= _TILE_RETRY_DELAYS.length) return; // give up; avoid retry loops
+    img._bwrRetries = tries + 1;
+    // Keep existing query params intact (the satellite WMTS URL carries its tile
+    // coords in the query); just swap our own retry marker.
+    const base = (img.src || '').replace(/[?&]bwrRetry=\d+/, '');
+    const sep = base.includes('?') ? '&' : '?';
+    setTimeout(() => { img.src = base + sep + 'bwrRetry=' + (tries + 1); }, _TILE_RETRY_DELAYS[tries]);
+  });
+  return layer;
+}
+
 function initMap() {
   const plan = currentUser?.plan || 'free';
   const defaultLayer = BWR.can('ign_topo_tiles', plan) ? 'ign' : 'osm';
   map = L.map('map', { zoomControl: true, maxZoom: LAYER_MAX_ZOOM[defaultLayer] }).setView(MAP_CENTER, MAP_ZOOM);
-  currentTile = TILE_LAYERS[defaultLayer]();
+  currentTile = makeTilesSelfHealing(TILE_LAYERS[defaultLayer]());
   currentTile.addTo(map);
   // Reflect that on the layer-button row if it exists
   setTimeout(() => {
@@ -487,7 +510,7 @@ function initMap() {
       map.removeLayer(currentTile);
       const layerKey = btn.dataset.layer;
       map.setMaxZoom(LAYER_MAX_ZOOM[layerKey]);
-      currentTile = TILE_LAYERS[layerKey]();
+      currentTile = makeTilesSelfHealing(TILE_LAYERS[layerKey]());
       currentTile.addTo(map);
       document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -984,6 +1007,45 @@ function applyOsmSurfaceWeights(paths) {
   });
 }
 
+// ── Difficulty-aware path weighting ───────────────────────────────────────────
+// The chosen difficulty (easy/medium/hard) now steers the *route*, not just its
+// colour. Admin paths carry a graded `status` using the same three levels, so we
+// make paths whose grade matches the pick cheap to travel and mismatched grades
+// progressively more expensive — picking Medium (orange) routes you over the
+// orange-graded trails wherever possible. OSM paths have no admin grade, so we
+// approximate their toughness from surface/highway roughness instead.
+const DIFF_RANK = { easy: 0, medium: 1, hard: 2 };
+// Cost multiplier added per grade-level of mismatch. 0.9 → a one-level mismatch
+// costs 1.9×, two levels 2.8×: a strong preference that still lets the router use
+// a mismatched path when no graded alternative exists (so routes never fail).
+const DIFF_PENALTY = 0.9;
+
+function pathDifficultyRank(p) {
+  // Admin-graded path → trust its status directly.
+  if (p.status && p.status in DIFF_RANK) return DIFF_RANK[p.status];
+  if (p.status === 'not_passable') return 2; // impassable → treat as hardest terrain
+  // OSM path → infer roughness from surface / highway tags.
+  const surface = p._surface || '';
+  const highway = p._highway || '';
+  if (/^(asphalt|paved|concrete|sett|cobblestone|paving_stones)$/.test(surface)) return 0;
+  if (highway === 'footway' || highway === 'cycleway') return 0;
+  if (highway === 'track' || highway === 'bridleway') return 2;
+  if (highway === 'path') {
+    return /^(ground|dirt|earth|mud|grass|sand|rock|gravel|fine_gravel|unpaved)$/.test(surface) ? 2 : 1;
+  }
+  return 1; // unknown → neutral
+}
+
+function applyDifficultyWeights(paths) {
+  const target = DIFF_RANK[difficulty];
+  if (target === undefined) return paths; // safety — unknown difficulty: no bias
+  return paths.map(p => {
+    const gap = Math.abs(pathDifficultyRank(p) - target);
+    if (gap === 0) return p; // perfect grade match — keep it cheap
+    return { ...p, _weight: (p._weight || 1) * (1 + gap * DIFF_PENALTY) };
+  });
+}
+
 // Client-side OSM bbox cache — avoids re-fetching the same area within a session.
 // Server already caches 7 days in KV; this cuts even that round-trip for repeated calls.
 const _osmPathCache = new Map();
@@ -1043,8 +1105,9 @@ async function routeAtob(sLat, sLng, eLat, eLng) {
     Math.min(sLat, eLat) - pad, Math.min(sLng, eLng) - pad,
     Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
   );
-  const weightedOsmPaths = applyOsmSurfaceWeights(osmPaths);
-  const admin = savedPaths.length ? filterPaths(savedPaths) : [];
+  // Surface preference first, then bias toward paths matching the chosen difficulty.
+  const weightedOsmPaths = applyDifficultyWeights(applyOsmSurfaceWeights(osmPaths));
+  const admin = applyDifficultyWeights(savedPaths.length ? filterPaths(savedPaths) : []);
 
   // 1. Combined admin + OSM graph (admin mildly preferred). Also compute the OSM-only
   //    route and keep whichever is shorter — guards against any residual admin detour.
@@ -1087,14 +1150,14 @@ async function routeLoop(sLat, sLng, targetKm) {
   //    OSM (unnoted) paths fill gaps, so the loop continues past the edge of the
   //    curated network instead of stopping where noted paths run out.
   try {
-    const admin = filterPaths(savedPaths);
+    const admin = applyDifficultyWeights(filterPaths(savedPaths));
     // bbox roughly covers the loop's reach around the start point (radius ≈ half the target)
     const radiusKm = Math.max(targetKm / 2, 1);
     const padLat = radiusKm / 111;
     const padLng = radiusKm / (111 * Math.cos(sLat * Math.PI / 180));
-    const osmPaths = applyOsmSurfaceWeights(
+    const osmPaths = applyDifficultyWeights(applyOsmSurfaceWeights(
       await fetchOsmPathsForBbox(sLat - padLat, sLng - padLng, sLat + padLat, sLng + padLng),
-    );
+    ));
     if (admin.length || osmPaths.length) {
       // seed rotates the turnaround direction each day → a fresh loop daily
       return graphLoopHybrid(sLat, sLng, targetKm, admin, osmPaths, transportMode, seed);
@@ -1240,14 +1303,17 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
       btnKML.querySelector('.lock-badge')?.remove();
       btnKML.onclick = () => downloadKML(coords, routeName);
     } else {
+      const kmlTier = BWR.requiredTier('kml_export');
       btnKML.classList.add('locked-feature');
-      btnKML.setAttribute('data-tier', 'gold');
+      btnKML.setAttribute('data-tier', kmlTier);
       btnKML.dataset.featureLabel = 'L\'export KML';
       if (!btnKML.querySelector('.lock-badge')) {
-        const b = document.createElement('span'); b.className = 'lock-badge tier-gold'; b.textContent = '👑 Or';
+        const b = document.createElement('span');
+        b.className = `lock-badge tier-${kmlTier}`;
+        b.textContent = kmlTier === 'gold' ? '👑 Or' : '🔒 Argent';
         btnKML.appendChild(b);
       }
-      btnKML.onclick = (e) => { e.preventDefault(); showUpgradeModal('gold', 'L\'export KML'); };
+      btnKML.onclick = (e) => { e.preventDefault(); showUpgradeModal(kmlTier, 'L\'export KML'); };
     }
   }
   const btnStrava = document.getElementById('btnStrava');
@@ -1257,7 +1323,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
       btnStrava.onclick = () => pushToStrava(coords, routeName);
     } else {
       btnStrava.classList.add('locked-feature');
-      btnStrava.onclick = (e) => { e.preventDefault(); showUpgradeModal('gold', 'Le push Strava'); };
+      btnStrava.onclick = (e) => { e.preventDefault(); showUpgradeModal(BWR.requiredTier('strava_komoot_push'), 'Le push Strava'); };
     }
   }
 

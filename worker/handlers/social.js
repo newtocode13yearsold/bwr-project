@@ -1,4 +1,4 @@
-import { listItems, listKeys, putUser, effectivePlan, patchLeaderboardCache } from '../kv.js';
+import { listItems, listKeys, putUser, effectivePlan, patchLeaderboardCache, periodKeyFor } from '../kv.js';
 import { getUserFromToken, checkRateLimit } from '../auth-utils.js';
 const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
 // Current Cloudflare Workers AI model (the free, primary AI engine). The previous
@@ -15,7 +15,7 @@ const CF_AI_MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8';
  * @param {{ pathname: string, json: Function, fail: Function }} ctx
  * @returns {Promise<Response|null>}
  */
-export async function handleSocial(request, env, { pathname, json, fail }) {
+export async function handleSocial(request, env, { pathname, url, json, fail }) {
   if (pathname === '/api/walkedpaths' && request.method === 'POST') {
     const user = await getUserFromToken(env, request);
     if (!user) return json({ error: 'Non authentifié' }, 401);
@@ -37,7 +37,7 @@ export async function handleSocial(request, env, { pathname, json, fail }) {
       const prev = user.stats?.walkedPathsCount || 0;
       const walkedUser = { ...user, stats: { ...(user.stats || {}), walkedPathsCount: prev + newPaths.length } };
       await putUser(env, walkedUser);
-      patchLeaderboardCache(env, walkedUser);
+      await patchLeaderboardCache(env, walkedUser);
     }
 
     return json({ walkedPathsCount: (user.stats?.walkedPathsCount || 0) + newPaths.length });
@@ -63,6 +63,36 @@ export async function handleSocial(request, env, { pathname, json, fail }) {
   }
 
   if (pathname === '/api/leaderboard' && request.method === 'GET') {
+    const scope = url.searchParams.get('period') || 'all'; // 'all' | 'week' | 'month'
+    const periodKey = periodKeyFor(scope);
+
+    // ── Weekly / monthly board: built from the per-period xp:{period}:{userId} buckets ──
+    if (periodKey) {
+      const cacheKey = `leaderboard:cache:${scope}`;
+      const cached = await env.BWR_KV.get(cacheKey);
+      if (cached) return json(JSON.parse(cached));
+
+      const bucketKeys = await listKeys(env, `xp:${periodKey}:`);
+      const buckets = await Promise.all(bucketKeys.map(async k => {
+        const raw = await env.BWR_KV.get(k.name);
+        return raw ? { id: k.name.slice(`xp:${periodKey}:`.length), ...JSON.parse(raw) } : null;
+      }));
+
+      const entries = buckets
+        .filter(b => b && b.name)
+        .map(b => {
+          const reports = b.reports || 0;
+          const pathGrades = b.pathGrades || 0;
+          return { id: b.id, name: b.name, reports, pathGrades, points: reports * 2 + pathGrades, forestCoverage: null };
+        })
+        .filter(e => e.points > 0)
+        .sort((a, b) => b.points - a.points || b.reports - a.reports);
+
+      await env.BWR_KV.put(cacheKey, JSON.stringify(entries), { expirationTtl: 300 });
+      return json(entries);
+    }
+
+    // ── All-time board (default) ──
     const cached = await env.BWR_KV.get('leaderboard:cache');
     if (cached) return json(JSON.parse(cached));
 
@@ -92,7 +122,8 @@ export async function handleSocial(request, env, { pathname, json, fail }) {
   if (pathname === '/api/push/subscribe' && request.method === 'POST') {
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
-    if (effectivePlan(user) !== 'gold') return fail('Les alertes push sont disponibles avec le plan Or.', 403);
+    const plan = effectivePlan(user);
+    if (plan !== 'gold' && plan !== 'silver') return fail('Les alertes push sont disponibles avec le plan Argent.', 403);
 
     const channel = `bwr-u-${user.id.slice(0, 8)}`;
     await putUser(env, { ...user, alertsEnabled: true, alertsChannel: channel });

@@ -24,20 +24,20 @@
     difficulty_hard:     { free: false, visitor: true,     silver: true,     gold: true     },
 
     /* — Map & layers — */
-    satellite_tiles:     { free: false, visitor: false,    silver: false,    gold: true     },
+    satellite_tiles:     { free: false, visitor: false,    silver: true,     gold: true     },
     ign_topo_tiles:      { free: false, visitor: false,    silver: true,     gold: true     },
     carrefours:          { free: true,  visitor: true,     silver: true,     gold: true     },
 
     /* — Trip analysis & export — */
     elevation_profile:   { free: false, visitor: true,     silver: true,     gold: true     },
     gpx_export:          { free: false, visitor: true,     silver: true,     gold: true     },
-    kml_export:          { free: false, visitor: false,    silver: false,    gold: true     },
-    strava_komoot_push:  { free: false, visitor: false,    silver: false,    gold: true     },
-    offline_cache:       { free: 0,     visitor: 1,        silver: 1,        gold: 20       },
+    kml_export:          { free: false, visitor: false,    silver: true,     gold: true     },
+    strava_komoot_push:  { free: false, visitor: false,    silver: true,     gold: true     },
+    offline_cache:       { free: 0,     visitor: 1,        silver: 20,       gold: 20       },
 
     /* — Reports & alerts — */
-    reports_create:      { free: false, visitor: true,     silver: true,     gold: true     },
-    path_alerts:         { free: false, visitor: false,    silver: false,    gold: true     },
+    reports_create:      { free: true,  visitor: true,     silver: true,     gold: true     },
+    path_alerts:         { free: false, visitor: false,    silver: true,     gold: true     },
 
     /* — Path editing — */
     path_difficulty_edit: { free: true,  visitor: true,   silver: true,     gold: true     },
@@ -45,9 +45,9 @@
 
     /* — Personalisation & gamification — */
     daily_wheel:         { free: false, visitor: true,     silver: true,     gold: true     },
-    custom_goals:        { free: false, visitor: false,    silver: false,    gold: true     },
-    weather:             { free: false, visitor: false,    silver: false,    gold: true     },
-    custom_route_color:  { free: false, visitor: false,    silver: false,    gold: true     },
+    custom_goals:        { free: false, visitor: false,    silver: true,     gold: true     },
+    weather:             { free: false, visitor: false,    silver: true,     gold: true     },
+    custom_route_color:  { free: false, visitor: false,    silver: true,     gold: true     },
 
     /* — Badges & progression — */
     badges_free:         { free: true,  visitor: true,     silver: true,     gold: true     },
@@ -59,8 +59,15 @@
     route_sharing:       { free: false, visitor: true,     silver: true,     gold: true     },
 
     /* — Support / perks — */
-    priority_support:    { free: false, visitor: false,    silver: false,    gold: true     },
-    early_access:        { free: false, visitor: false,    silver: false,    gold: true     },
+    priority_support:    { free: false, visitor: false,    silver: true,     gold: true     },
+    early_access:        { free: false, visitor: false,    silver: true,     gold: true     },
+
+    /* — Community forum — */
+    // forum_post: create topics + reply. forum_topics_visible: how many topics a
+    // free account may read (the rest are locked behind an upsell). Mirror any
+    // change in worker/handlers/forum.js (FREE_VISIBLE_TOPICS) + the tests.
+    forum_post:           { free: false, visitor: true,    silver: true,     gold: true     },
+    forum_topics_visible: { free: 5,     visitor: Infinity, silver: Infinity, gold: Infinity },
 
   };
 

@@ -1,4 +1,4 @@
-import { listItems, getPath, putReport, putUser, effectivePlan, patchLeaderboardCache } from '../kv.js';
+import { listItems, getPath, putReport, putUser, patchLeaderboardCache, addPeriodXp } from '../kv.js';
 import { getUserFromToken } from '../auth-utils.js';
 
 const TYPE_LABELS = {
@@ -35,7 +35,7 @@ export async function handleReports(request, env, { pathname, json, fail, cors }
   if (pathname === '/api/reports' && request.method === 'POST') {
     const reporter = await getUserFromToken(env, request);
     if (!reporter) return fail('Connexion requise.', 401);
-    if (effectivePlan(reporter) === 'free') return fail('Abonnement Argent requis pour signaler un problème.', 403);
+    // Reporting a problem is free for every signed-in user (all tiers).
 
     const body = await request.json();
 
@@ -77,7 +77,8 @@ export async function handleReports(request, env, { pathname, json, fail, cors }
     const rStats = reporter.stats || { routes: 0, km: 0 };
     const updatedReporter = { ...reporter, stats: { ...rStats, reports: (rStats.reports || 0) + 1 } };
     await putUser(env, updatedReporter);
-    patchLeaderboardCache(env, updatedReporter);
+    await patchLeaderboardCache(env, updatedReporter);
+    await addPeriodXp(env, updatedReporter, { reports: 1 });
 
     try {
       await fetch('https://ntfy.sh/bwr-ciril8596', {

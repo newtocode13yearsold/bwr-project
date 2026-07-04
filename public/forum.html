@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1e4d14" />
+  <title>Forum — BWR · Oise</title>
+  <meta name="description" content="Le forum de la communauté BWR : posez vos questions, partagez vos balades et échangez avec les autres marcheurs et cyclistes des forêts de l'Oise." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/home.css" />
+  <script src="js/theme.js"></script>
+  <style>
+    html, body { height: auto !important; overflow: auto !important; }
+    body { background: var(--surface-1, #fafbf7); }
+
+    .page-hero {
+      padding: 56px 24px 56px;
+      text-align: center;
+      background: linear-gradient(160deg, #0b2410 0%, #1e4d14 55%, #2d6b1f 100%);
+      color: #fff;
+    }
+    .page-hero-badge {
+      display: inline-block;
+      background: rgba(163, 230, 53, 0.18);
+      color: #a3e635;
+      border: 1px solid rgba(163, 230, 53, 0.35);
+      border-radius: 999px;
+      padding: 4px 16px;
+      font-size: 0.82rem; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    .page-hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700; letter-spacing: -0.02em;
+      margin-bottom: 14px; line-height: 1.15;
+    }
+    .page-hero p { color: rgba(255,255,255,0.72); font-size: 1.02rem; max-width: 540px; margin: 0 auto; }
+
+    .forum-section { max-width: 800px; margin: 0 auto; padding: 40px 24px 96px; }
+
+    .forum-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .forum-toolbar h2 {
+      font-family: var(--font-display); font-size: 1.4rem; font-weight: 700;
+      color: var(--text-strong, #0b2410);
+    }
+    .btn-new {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--forest-700, #1e4d14); color: #a3e635;
+      border: none; border-radius: 10px; padding: 10px 18px;
+      font-size: 0.92rem; font-weight: 700; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-new:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-new[disabled] { background: var(--surface-2,#eef0ea); color: var(--text-muted,#6b7280); cursor: not-allowed; }
+
+    /* ── Topic list ── */
+    .topic-card {
+      background: #fff; border: 1px solid var(--border-soft, #ebeee5);
+      border-radius: 14px; padding: 20px 22px; margin-bottom: 14px;
+      cursor: pointer; transition: box-shadow 0.18s, transform 0.1s, border-color 0.18s;
+    }
+    .topic-card:hover { box-shadow: 0 8px 24px -10px rgba(11,36,16,0.16); transform: translateY(-1px); }
+    .topic-card-title {
+      font-family: var(--font-display); font-size: 1.12rem; font-weight: 700;
+      color: var(--text-strong, #0b2410); line-height: 1.3; margin-bottom: 6px;
+    }
+    .topic-card-preview { font-size: 0.92rem; color: var(--text, #4b5563); line-height: 1.55; margin-bottom: 12px; }
+    .topic-card-meta {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      font-size: 0.8rem; color: var(--text-muted, #6b7280);
+    }
+    .topic-card-author { font-weight: 600; color: var(--forest-600, #2d6b1f); }
+    .topic-card-replies { display: inline-flex; align-items: center; gap: 5px; }
+
+    /* ── Locked card ── */
+    .topic-card.locked { cursor: default; background: var(--surface-2, #f5f6f2); border-style: dashed; }
+    .topic-card.locked:hover { box-shadow: none; transform: none; }
+    .topic-card.locked .topic-card-title { color: var(--text-muted, #6b7280); }
+    .lock-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--silver-grad-soft, linear-gradient(135deg,#f1f5f9,#e2e8f0));
+      color: var(--silver-700, #334155); border: 1px solid var(--silver-200, #e2e8f0);
+      border-radius: 999px; padding: 5px 14px; font-size: 0.82rem; font-weight: 600;
+      text-decoration: none; margin-top: 8px;
+    }
+    .lock-pill:hover { filter: brightness(0.97); }
+
+    .upsell-banner {
+      background: linear-gradient(135deg, #fffbeb, #fef3c7);
+      border: 1px solid #fde68a; border-radius: 14px;
+      padding: 20px 22px; margin: 8px 0 24px; text-align: center;
+    }
+    .upsell-banner p { color: #92400e; font-size: 0.95rem; margin-bottom: 12px; line-height: 1.5; }
+    .upsell-banner a {
+      display: inline-block; background: var(--forest-700, #1e4d14); color: #a3e635;
+      border-radius: 10px; padding: 9px 20px; font-weight: 700; font-size: 0.9rem; text-decoration: none;
+    }
+
+    /* ── Topic detail ── */
+    .detail-back {
+      display: inline-flex; align-items: center; gap: 6px; background: none; border: none;
+      color: var(--forest-600, #2d6b1f); font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      padding: 0; margin-bottom: 18px;
+    }
+    .detail-back:hover { text-decoration: underline; }
+    .detail-head { margin-bottom: 8px; }
+    .detail-title {
+      font-family: var(--font-display); font-size: clamp(1.4rem, 4vw, 2rem); font-weight: 700;
+      color: var(--text-strong, #0b2410); line-height: 1.2; letter-spacing: -0.02em;
+    }
+    .post {
+      background: #fff; border: 1px solid var(--border-soft, #ebeee5); border-radius: 14px;
+      padding: 22px; margin-bottom: 16px;
+    }
+    .post.op { border-color: var(--forest-300, #b9d8a4); }
+    .post-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+    .post-author { display: flex; align-items: center; gap: 10px; }
+    .post-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, #1e4d14, #2d6b1f); color: #a3e635;
+      display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;
+    }
+    .post-author-name { font-weight: 700; color: var(--text-strong, #0b2410); font-size: 0.92rem; }
+    .post-date { font-size: 0.78rem; color: var(--text-muted, #6b7280); }
+    .post-body { font-size: 0.97rem; color: var(--text, #1f2937); line-height: 1.7; white-space: pre-line; word-break: break-word; }
+    .post-delete {
+      background: #fee2e2; color: #b91c1c; border: none; border-radius: 8px;
+      padding: 5px 12px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+    }
+    .post-delete:hover { opacity: 0.75; }
+
+    .replies-title {
+      font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted, #6b7280); margin: 28px 0 14px;
+    }
+
+    /* ── Reply composer ── */
+    .composer { background: #fff; border: 1px solid var(--border-soft, #ebeee5); border-radius: 14px; padding: 18px; margin-top: 12px; }
+    .composer textarea {
+      width: 100%; border: 1.5px solid var(--border, #e2e8da); border-radius: 10px;
+      padding: 12px 14px; font-size: 0.96rem; font-family: var(--font-sans); color: var(--text, #1f2937);
+      background: #fff; outline: none; resize: vertical; min-height: 90px; line-height: 1.6;
+    }
+    .composer textarea:focus { border-color: var(--forest-600, #2d6b1f); }
+    .composer-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+    .composer-error { color: #b91c1c; font-size: 0.85rem; min-height: 18px; margin-top: 6px; }
+    .composer-locked { text-align: center; color: var(--text-muted, #6b7280); font-size: 0.92rem; padding: 8px; }
+    .composer-locked a { color: var(--forest-700, #1e4d14); font-weight: 700; text-decoration: none; }
+
+    .forum-loading, .forum-empty { text-align: center; color: var(--text-muted, #6b7280); padding: 56px 0; }
+
+    /* ── Modal (new topic) ── */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0; background: rgba(11,36,16,0.55);
+      backdrop-filter: blur(4px); z-index: 500; align-items: center; justify-content: center; padding: 24px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-box {
+      background: #fff; border-radius: 20px; padding: 32px; width: 100%; max-width: 560px;
+      box-shadow: 0 24px 60px -16px rgba(11,36,16,0.35); animation: modalIn 0.22s cubic-bezier(0.16,1,0.30,1);
+    }
+    @keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: none; } }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+    .modal-header h2 { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--text-strong, #0b2410); }
+    .modal-close { background: none; border: none; font-size: 1.4rem; color: var(--text-muted, #6b7280); cursor: pointer; line-height: 1; padding: 4px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-strong, #0b2410); margin-bottom: 6px; letter-spacing: 0.03em; text-transform: uppercase; }
+    .form-input, .form-textarea {
+      width: 100%; border: 1.5px solid var(--border, #e2e8da); border-radius: 10px; padding: 10px 14px;
+      font-size: 0.97rem; font-family: var(--font-sans); color: var(--text, #1f2937); background: #fff; outline: none; transition: border-color 0.15s;
+    }
+    .form-input:focus, .form-textarea:focus { border-color: var(--forest-600, #2d6b1f); }
+    .form-textarea { resize: vertical; min-height: 130px; line-height: 1.6; }
+    .modal-error { color: #b91c1c; font-size: 0.875rem; margin-bottom: 12px; min-height: 20px; }
+    .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px; }
+    .btn-cancel { background: var(--surface-2, #f3f4f0); color: var(--text, #1f2937); border: none; border-radius: 10px; padding: 10px 22px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+    .btn-save { background: var(--forest-700, #1e4d14); color: #a3e635; border: none; border-radius: 10px; padding: 10px 28px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-save:hover:not(:disabled) { opacity: 0.88; }
+
+    .forum-footer { background: #0b2410; color: rgba(255,255,255,0.55); text-align: center; padding: 32px 24px; font-size: 0.85rem; }
+    .forum-footer a { color: #a3e635; text-decoration: none; }
+
+    @media (max-width: 600px) { .topic-card, .post { padding: 18px 16px; } .modal-box { padding: 26px 20px; } }
+    @media (max-width: 768px) { body { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); } }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-left">
+      <a href="/" class="logo" style="text-decoration:none">BWR</a>
+      <nav class="header-nav-links">
+        <a href="map">Carte</a>
+        <a href="routes">Planifier</a>
+        <a href="forum" class="active">Forum</a>
+        <a href="plans">Plans</a>
+      </nav>
+    </div>
+    <div class="header-right">
+      <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
+      <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
+      <div class="user-menu" id="userMenu"></div>
+    </div>
+  </header>
+
+  <!-- Nav drawer -->
+  <div class="nav-drawer-overlay hidden" id="navDrawerOverlay"></div>
+  <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
+    <div class="nav-drawer-header">
+      <span class="nav-drawer-logo">BWR</span>
+      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+    </div>
+    <nav class="nav-drawer-links">
+      <a href="map" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
+        <span>Carte</span>
+      </a>
+      <a href="routes" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
+        <span>Planifier un trajet</span>
+      </a>
+      <a href="best-tours" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></span>
+        <span>Meilleures balades</span>
+      </a>
+      <a href="profile" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+        <span>Mon profil</span>
+      </a>
+      <a href="leaderboard" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>
+        <span>Classement</span>
+      </a>
+      <a href="forum" class="nav-drawer-item active">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+        <span>Forum</span>
+      </a>
+      <a href="news" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg></span>
+        <span>Actualités</span>
+      </a>
+      <a href="plans" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+        <span>Plans &amp; abonnements</span>
+      </a>
+      <a href="changelog" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span>
+        <span>Changelog</span>
+      </a>
+      <a href="admin" class="nav-drawer-item nav-drawer-admin hidden" id="navDrawerAdmin">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        <span>Panneau admin</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- ── Hero ── -->
+  <div class="page-hero">
+    <div class="page-hero-badge">🌲 Communauté</div>
+    <h1>Forum</h1>
+    <p>Posez vos questions, partagez vos balades et échangez avec les autres marcheurs et cyclistes de l'Oise.</p>
+  </div>
+
+  <!-- ── Main view (list or detail, swapped by JS) ── -->
+  <section class="forum-section" id="forumRoot">
+    <div class="forum-loading">Chargement du forum…</div>
+  </section>
+
+  <!-- ── New-topic modal ── -->
+  <div class="modal-backdrop" id="topicModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>Nouveau sujet</h2>
+        <button class="modal-close" id="modalClose" aria-label="Fermer">×</button>
+      </div>
+      <form id="topicForm">
+        <div class="form-group">
+          <label class="form-label" for="fieldTitle">Titre</label>
+          <input type="text" id="fieldTitle" class="form-input" placeholder="De quoi veux-tu parler ?" required maxlength="140" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="fieldBody">Message</label>
+          <textarea id="fieldBody" class="form-textarea" placeholder="Partage ta question, ton retour ou ta découverte…" required maxlength="8000"></textarea>
+        </div>
+        <p class="modal-error" id="modalError"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="modalCancel">Annuler</button>
+          <button type="submit" class="btn-save" id="modalSave">Publier</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Footer ── -->
+  <footer class="forum-footer">
+    <p>© 2026 <a href="/">BWR</a> · Carte interactive de l'Oise ·
+       <a href="mailto:ciril8596@gmail.com">Contact</a></p>
+  </footer>
+
+  <nav class="bottom-nav" aria-label="Navigation principale">
+    <a href="map" class="bnav-item">
+      <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
+      <span class="bnav-label">Carte</span>
+    </a>
+    <a href="routes" class="bnav-item">
+      <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
+      <span class="bnav-label">Trajets</span>
+    </a>
+    <a href="forum" class="bnav-item active">
+      <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+      <span class="bnav-label">Forum</span>
+    </a>
+    <a href="profile" class="bnav-item">
+      <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+      <span class="bnav-label">Profil</span>
+    </a>
+  </nav>
+
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/forum.js"></script>
+  <script src="js/ui-shared.js"></script>
+</body>
+</html>

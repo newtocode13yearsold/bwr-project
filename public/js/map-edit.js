@@ -51,7 +51,7 @@ async function loadOsmEditPaths() {
     if (!res.ok) throw new Error();
     const data = await res.json();
     renderOsmEditPaths(data);
-    const count = _osmEditLayers.length;
+    const count = _osmEditLayers.length / 2; // hit + visible line per path
     showEditModeBar(count === 0
       ? 'Aucun chemin OSM trouvé ici — zoome sur la forêt.'
       : `${count} chemins disponibles — clique sur un chemin en pointillés`);
@@ -73,11 +73,15 @@ function renderOsmEditPaths(data) {
     if (coords.length < 2) return;
     const name = el.tags?.name || el.tags?.ref || 'Chemin sans nom';
     const line = L.polyline(coords, { color: '#475569', weight: 3, opacity: 0.65, dashArray: '6, 6' });
-    line.on('mouseover', () => { line.setStyle({ color: '#2563eb', opacity: 1, weight: 5, dashArray: null }); map.getContainer().style.cursor = 'pointer'; });
-    line.on('mouseout',  () => { line.setStyle({ color: '#475569', opacity: 0.65, weight: 3, dashArray: '6, 6' }); map.getContainer().style.cursor = 'crosshair'; });
-    line.on('click', e => { L.DomEvent.stopPropagation(e); openNewPathPopupUser(coords, name, e.latlng); });
+    // Invisible wide hit area so the thin dashed line is easy to tap/click.
+    const hit = L.polyline(coords, { color: '#000', weight: 22, opacity: 0, interactive: true });
+    const over = () => { line.setStyle({ color: '#2563eb', opacity: 1, weight: 5, dashArray: null }); map.getContainer().style.cursor = 'pointer'; };
+    const out  = () => { line.setStyle({ color: '#475569', opacity: 0.65, weight: 3, dashArray: '6, 6' }); map.getContainer().style.cursor = 'crosshair'; };
+    const pick = e => { L.DomEvent.stopPropagation(e); openNewPathPopupUser(coords, name, e.latlng); };
+    [line, hit].forEach(l => { l.on('mouseover', over); l.on('mouseout', out); l.on('click', pick); });
+    hit.addTo(map);
     line.addTo(map);
-    _osmEditLayers.push(line);
+    _osmEditLayers.push(hit, line);
   });
 }
 
@@ -230,6 +234,9 @@ function openDifficultyPopup(path, latlng) {
 
 // ── Report popup ──────────────────────────────────────────────────────────────
 function openReportPopup(path, latlng, defaultType = 'fallen_tree') {
+  // `path` may be null when the user reports an exact GPS spot off any known path.
+  const pid = path?.id || 'here';
+  const where = path ? `sur : ${path.name || 'Chemin sans nom'}` : 'à l\'endroit où vous êtes';
   const types = Object.entries(REPORT_LABELS).map(([id, label]) =>
     `<button class="rtype-inline-btn" data-type="${id}">${REPORT_ICONS[id]} ${label}</button>`
   ).join('');
@@ -239,17 +246,17 @@ function openReportPopup(path, latlng, defaultType = 'fallen_tree') {
     .setContent(`
       <div class="popup">
         <strong>⚠️ Signaler un problème</strong>
-        <p class="popup-report-path">sur : ${path.name || 'Chemin sans nom'}</p>
-        <div class="rtype-inline-grid" id="rtypes-${path.id}">${types}</div>
-        <textarea class="popup-report-note" id="rnote-${path.id}" placeholder="Détails (optionnel)..." rows="2"></textarea>
-        <label class="photo-upload-label" id="photoLabel-${path.id}">
+        <p class="popup-report-path">${where}</p>
+        <div class="rtype-inline-grid" id="rtypes-${pid}">${types}</div>
+        <textarea class="popup-report-note" id="rnote-${pid}" placeholder="Détails (optionnel)..." rows="2"></textarea>
+        <label class="photo-upload-label" id="photoLabel-${pid}">
           📷 Ajouter une photo
-          <input type="file" id="rphoto-${path.id}" accept="image/*" capture="environment" style="display:none">
+          <input type="file" id="rphoto-${pid}" accept="image/*" capture="environment" style="display:none">
         </label>
-        <img id="rphoto-preview-${path.id}" class="report-photo-preview hidden" alt="preview">
+        <img id="rphoto-preview-${pid}" class="report-photo-preview hidden" alt="preview">
         <div class="popup-report-actions">
-          <button class="popup-submit-btn" id="rsubmit-${path.id}">Envoyer</button>
-          <button class="popup-cancel-btn" id="rcancel-${path.id}">Annuler</button>
+          <button class="popup-submit-btn" id="rsubmit-${pid}">Envoyer</button>
+          <button class="popup-cancel-btn" id="rcancel-${pid}">Annuler</button>
         </div>
       </div>
     `)
@@ -259,38 +266,39 @@ function openReportPopup(path, latlng, defaultType = 'fallen_tree') {
     let selectedType = defaultType;
     let photoData    = null;
 
-    const defaultBtn = document.querySelector(`#rtypes-${path.id} .rtype-inline-btn[data-type="${defaultType}"]`);
+    const defaultBtn = document.querySelector(`#rtypes-${pid} .rtype-inline-btn[data-type="${defaultType}"]`);
     if (defaultBtn) defaultBtn.classList.add('active');
 
-    document.querySelectorAll(`#rtypes-${path.id} .rtype-inline-btn`).forEach(btn => {
+    document.querySelectorAll(`#rtypes-${pid} .rtype-inline-btn`).forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll(`#rtypes-${path.id} .rtype-inline-btn`).forEach(b => b.classList.remove('active'));
+        document.querySelectorAll(`#rtypes-${pid} .rtype-inline-btn`).forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         selectedType = btn.dataset.type;
       });
     });
 
-    document.getElementById(`photoLabel-${path.id}`)?.addEventListener('click', () => {
-      document.getElementById(`rphoto-${path.id}`)?.click();
-    });
+    // NOTE: the <label> wraps the hidden <input>, so clicking it already opens
+    // the file/camera picker natively. Do NOT add a manual .click() here — that
+    // double-fires the input and makes the picker open then instantly close on
+    // mobile webviews (the "photo button does nothing" bug).
 
-    document.getElementById(`rphoto-${path.id}`)?.addEventListener('change', async e => {
+    document.getElementById(`rphoto-${pid}`)?.addEventListener('change', async e => {
       const file = e.target.files[0];
       if (!file) return;
       photoData = await resizeImage(file);
-      const preview = document.getElementById(`rphoto-preview-${path.id}`);
+      const preview = document.getElementById(`rphoto-preview-${pid}`);
       if (preview) { preview.src = photoData; preview.classList.remove('hidden'); }
-      const label = document.getElementById(`photoLabel-${path.id}`);
+      const label = document.getElementById(`photoLabel-${pid}`);
       if (label) label.textContent = '✅ Photo ajoutée';
     });
 
-    document.getElementById(`rsubmit-${path.id}`)?.addEventListener('click', async () => {
-      const note = document.getElementById(`rnote-${path.id}`)?.value.trim() || '';
+    document.getElementById(`rsubmit-${pid}`)?.addEventListener('click', async () => {
+      const note = document.getElementById(`rnote-${pid}`)?.value.trim() || '';
       map.closePopup();
       await submitReport(path, selectedType, note, photoData, latlng);
     });
 
-    document.getElementById(`rcancel-${path.id}`)?.addEventListener('click', () => map.closePopup());
+    document.getElementById(`rcancel-${pid}`)?.addEventListener('click', () => map.closePopup());
   }, 50);
 }
 
@@ -311,7 +319,7 @@ async function submitReport(path, type, note, photo = null, latlng = null) {
       const report = await res.json();
       if (latlng) { report.lat = latlng.lat; report.lon = latlng.lng; }
       if (photo) report.photo = photo;
-      const marker = placeReportMarker(report, path.coordinates);
+      const marker = placeReportMarker(report, path?.coordinates);
       if (marker) marker.openPopup();
       showToast('✅ Signalement envoyé — merci !');
     } else if (res.status === 503) {

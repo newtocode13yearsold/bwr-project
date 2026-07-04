@@ -79,6 +79,10 @@
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>
         <span>Classement</span>
       </a>
+      <a href="forum" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+        <span>Forum</span>
+      </a>
       <a href="news" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg></span>
         <span>Actualités</span>
@@ -198,7 +202,8 @@
 
   <div class="map-bottom-btns">
     <button class="map-locate-btn" id="btnLocate" title="Ma position">📍 Ma position</button>
-    <button class="map-select-path-btn" id="btnSelectPath" title="Voir le chemin sous ma position">🗺 Mon chemin</button>
+    <button class="map-select-path-btn" id="btnSelectPath" title="Sélectionner le chemin et l'endroit où je suis pour le signaler">🗺 Mon point</button>
+    <button class="map-locate-btn map-track-btn" id="btnGpsTracker" title="Compter ma distance parcourue">▶ Suivi GPS</button>
   </div>
 
   <script src="lib/leaflet.js"></script>
@@ -209,6 +214,7 @@
   <script src="js/carrefours.js"></script>
   <script src="js/forests.js"></script>
   <script src="js/map.js"></script>
+  <script src="js/gps-tracker.js"></script>
   <nav class="bottom-nav" aria-label="Navigation principale">
     <a href="map" class="bnav-item active">
       <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>

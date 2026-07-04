@@ -61,7 +61,8 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const origin = new URL(request.url).origin;
     try {
       await sendVerificationEmail(env, origin, emailKey, name, token);
-    } catch {
+    } catch (e) {
+      console.error('register: verification email failed:', e && e.message);
       return fail("Votre compte a été créé mais l'envoi de l'email de vérification a échoué. Utilisez le bouton « Renvoyer l'email » sur la page de connexion.", 500);
     }
 
