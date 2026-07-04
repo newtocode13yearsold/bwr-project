@@ -104,10 +104,10 @@ jobs:
     steps:
       - name: Check worker is responding
         run: |
-          echo "Pinging https://bwr-worker.ciril8596.workers.dev ..."
+          echo "Pinging https://bwrmaps.com ..."
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             --max-time 15 \
-            "https://bwr-worker.ciril8596.workers.dev/api/auth/me" \
+            "https://bwrmaps.com/api/auth/me" \
             -H "Authorization: Bearer invalid-token-health-check")
           echo "Response status: $STATUS"
           # /api/auth/me returns 401 for invalid tokens — that means the worker is alive
@@ -125,7 +125,7 @@ jobs:
           # Use -L to follow redirects (Cloudflare assets can 307 → 200)
           STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" \
             --max-time 15 \
-            "https://bwr-worker.ciril8596.workers.dev/login.html")
+            "https://bwrmaps.com/login.html")
           echo "Response status: $STATUS"
           if [ "$STATUS" -eq 200 ]; then
             echo "Frontend is up"
@@ -139,7 +139,7 @@ jobs:
           echo "Checking /api/paths..."
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             --max-time 15 \
-            "https://bwr-worker.ciril8596.workers.dev/api/paths")
+            "https://bwrmaps.com/api/paths")
           echo "Response status: $STATUS"
           if [ "$STATUS" -eq 200 ]; then
             echo "/api/paths is up"

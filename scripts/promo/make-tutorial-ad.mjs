@@ -40,7 +40,7 @@ const BROLL_DIR = join(ASSETS, 'broll');
 const MASTER = join(OUT_DIR, 'bwr-tuto-master.webm');
 const BED = join(OUT_DIR, 'bwr-tuto-bed.m4a');
 
-const BASE_URL = process.env.PROMO_BASE_URL || 'https://bwr-worker.ciril8596.workers.dev';
+const BASE_URL = process.env.PROMO_BASE_URL || 'https://bwrmaps.com';
 
 const VIEWPORT = { width: 540, height: 960 };
 const SCALE = 2;
@@ -205,7 +205,7 @@ const helpers = {
         '<div class="brand">BWR</div>' +
         `<div class="tag">${tag}</div>` +
         `<div class="cta">${cta}</div>` +
-        '<div class="url">bwr-worker.ciril8596.workers.dev</div>';
+        '<div class="url">bwrmaps.com</div>';
       Object.assign(ov.style, {
         position: 'fixed', inset: '0', zIndex: '2147483647', display: 'flex',
         flexDirection: 'column', justifyContent: 'center', alignItems: 'center',

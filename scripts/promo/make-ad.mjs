@@ -45,7 +45,7 @@ const BROLL_DIR = join(ASSETS, 'broll');             // royalty-free b-roll stil
 const MASTER = join(OUT_DIR, 'bwr-ad-master.webm');
 const BED = join(OUT_DIR, 'bwr-ad-bed.m4a');         // full-length music bed (from EDM)
 
-const BASE_URL = process.env.PROMO_BASE_URL || 'https://bwr-worker.ciril8596.workers.dev';
+const BASE_URL = process.env.PROMO_BASE_URL || 'https://bwrmaps.com';
 
 // Mobile-layout viewport at 2× density → crisp 1080×1920 master video.
 const VIEWPORT = { width: 540, height: 960 };
@@ -214,7 +214,7 @@ const helpers = {
         '<div class="brand">BWR</div>' +
         `<div class="tag">${tag}</div>` +
         `<div class="cta">${cta}</div>` +
-        '<div class="url">bwr-worker.ciril8596.workers.dev</div>';
+        '<div class="url">bwrmaps.com</div>';
       Object.assign(ov.style, {
         position: 'fixed', inset: '0', zIndex: '2147483647', display: 'flex',
         flexDirection: 'column', justifyContent: 'center', alignItems: 'center',

@@ -62,7 +62,7 @@ function makeSWContext() {
     addEventListener: (event, handler) => { handlers[event] = handler; },
     skipWaiting: () => Promise.resolve(),
     clients: { claim: () => Promise.resolve() },
-    location: { origin: 'https://bwr-worker.ciril8596.workers.dev' },
+    location: { origin: 'https://bwrmaps.com' },
   };
 
   // Run sw.js inside this context
@@ -185,7 +185,7 @@ describe('fetch handler: offline-data API (paths/reports) → network-first, cac
   test('GET /api/paths offline with cached copy → served from cache (map still shows trails)', async () => {
     const { handlers, mockCaches, ctx, makeFetchEvent } = makeSWContext();
 
-    const url = 'https://bwr-worker.ciril8596.workers.dev/api/paths';
+    const url = 'https://bwrmaps.com/api/paths';
     const cached = new Response(JSON.stringify([{ id: 'p1' }]), { status: 200, headers: { 'Content-Type': 'application/json' } });
     const appCache = await mockCaches.open('bwr-v40');
     await appCache.put(url, cached);
@@ -204,7 +204,7 @@ describe('fetch handler: offline-data API (paths/reports) → network-first, cac
   test('GET /api/paths online → fetched from network and written to cache for later offline use', async () => {
     const { handlers, mockCaches, ctx, makeFetchEvent } = makeSWContext();
 
-    const url = 'https://bwr-worker.ciril8596.workers.dev/api/paths';
+    const url = 'https://bwrmaps.com/api/paths';
     let networkCalled = false;
     ctx.fetch = () => {
       networkCalled = true;
@@ -225,7 +225,7 @@ describe('fetch handler: offline-data API (paths/reports) → network-first, cac
 
   test('GET /api/reports offline with no cache → 503 JSON (graceful, no crash)', async () => {
     const { handlers, makeFetchEvent } = makeSWContext();
-    const { event, getResponse } = makeFetchEvent('https://bwr-worker.ciril8596.workers.dev/api/reports');
+    const { event, getResponse } = makeFetchEvent('https://bwrmaps.com/api/reports');
     handlers.fetch(event);
     const res = await getResponse();
     assert.equal(res.status, 503);
@@ -237,7 +237,7 @@ describe('fetch handler: offline-data API (paths/reports) → network-first, cac
     const { handlers, mockCaches, ctx, makeFetchEvent } = makeSWContext();
 
     // Even if a GET copy is cached, a POST must never be answered from cache.
-    const url = 'https://bwr-worker.ciril8596.workers.dev/api/reports';
+    const url = 'https://bwrmaps.com/api/reports';
     const appCache = await mockCaches.open('bwr-v40');
     await appCache.put(url, new Response('[]', { status: 200 }));
 
@@ -365,7 +365,7 @@ describe('fetch handler: cross-origin assets → not intercepted', () => {
 
   test('same-origin asset → still intercepted (cache-first)', async () => {
     const { handlers, makeFetchEvent } = makeSWContext();
-    const iconUrl = 'https://bwr-worker.ciril8596.workers.dev/icons/icon.svg';
+    const iconUrl = 'https://bwrmaps.com/icons/icon.svg';
     const { event, getResponse } = makeFetchEvent(iconUrl);
     handlers.fetch(event);
     const responsePromise = getResponse();

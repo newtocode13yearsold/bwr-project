@@ -4,7 +4,7 @@ Tout le contenu prêt à poster pour expliquer l'app sur Instagram : un **Reel**
 verticale), un **carrousel** (post 1080×1350) et les **Stories**. Textes en français,
 ton chaleureux et concret. Reprend le déroulé de la visite guidée in-app.
 
-URL à mettre en bio : `bwr-worker.ciril8596.workers.dev` → page **Guide** : `…/guide`
+URL à mettre en bio : `bwrmaps.com` → page **Guide** : `…/guide`
 
 ---
 
@@ -65,7 +65,7 @@ Une idée par slide ; flèche « → » en bas à droite des slides 1 à 6.
 **Slide 7 — CTA**
 > ✅ **C'EST GRATUIT**
 > 10 trajets/semaine offerts. Lien en bio.
-> 👉 bwr-worker.ciril8596.workers.dev
+> 👉 bwrmaps.com
 
 ---
 

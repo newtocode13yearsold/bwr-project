@@ -6,4 +6,4 @@ Disallow: /routes.html
 Disallow: /profile.html
 Disallow: /api/
 
-Sitemap: https://bwr-worker.ciril8596.workers.dev/sitemap.xml
+Sitemap: https://bwrmaps.com/sitemap.xml

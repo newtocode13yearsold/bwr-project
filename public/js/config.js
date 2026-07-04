@@ -1,7 +1,13 @@
-// Change this to your Cloudflare Worker URL after deploying
-const API_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? '' // same-origin dev worker
-  : 'https://bwr-worker.ciril8596.workers.dev';
+// Primary domain is bwrmaps.com (custom domain on the same Worker that serves the API).
+// - localhost / workers.dev deployments call themselves (same-origin) so they never break
+//   if the custom domain is mid-migration.
+// - everything else (custom domain, *.pages.dev previews) targets the canonical API host.
+const API_URL = (function () {
+  const h = location.hostname;
+  if (h === 'localhost' || h === '127.0.0.1') return '';        // same-origin dev worker
+  if (h.endsWith('.workers.dev')) return '';                    // same-origin workers.dev deploy
+  return 'https://bwrmaps.com';                                 // canonical API host
+})();
 
 // Fallback contact address shown in error messages when the API is unreachable
 const CONTACT_EMAIL = 'ciril8596@gmail.com';

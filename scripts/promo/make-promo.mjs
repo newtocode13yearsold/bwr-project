@@ -38,7 +38,7 @@ const OUT_DIR = join(__dirname, 'out');
 const RAW_DIR = join(__dirname, '.raw');
 const MASTER = join(OUT_DIR, 'bwr-promo-master.webm');
 
-const BASE_URL = process.env.PROMO_BASE_URL || 'https://bwr-worker.ciril8596.workers.dev';
+const BASE_URL = process.env.PROMO_BASE_URL || 'https://bwrmaps.com';
 
 // Mobile-layout viewport at 2× density → crisp 1080×1920 master video.
 const VIEWPORT = { width: 540, height: 960 };

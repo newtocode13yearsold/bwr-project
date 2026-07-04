@@ -202,7 +202,7 @@ Environment Variables (set in Cloudflare Workers dashboard):
 - RESEND_FROM — Sender address, e.g. `BWR <noreply@yourdomain.com>` (defaults to a placeholder; must match a verified domain in your Resend account)
 
 Constants (js/config.js):
-- API_URL — Points to deployed worker endpoint (e.g., https://bwr-worker.ciril8596.workers.dev)
+- API_URL — Canonical API host is `https://bwrmaps.com` (custom domain on the same Worker). localhost and `*.workers.dev` deployments call themselves same-origin; the legacy `bwr-worker.ciril8596.workers.dev` still works.
 - MAP_CENTER — [49.35, 2.90] (Compiegne forest)
 - MAP_ZOOM — 13
 - STATUS_COLORS — Maps status string to hex color
@@ -245,7 +245,7 @@ Manual testing still needed for:
 
 3. OSM Proxy Caching: Cached for 7 days per bbox. If you change admin path data, OSM overlay will not update until cache expires or you manually clear.
 
-4. CORS Allowlisted: `worker.js` reflects the request Origin only if it matches the allowlist (`bwr-worker.ciril8596.workers.dev`, `localhost:8787`, or any `*.pages.dev` preview); otherwise it falls back to the canonical prod origin. Responses also set `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, and `Permissions-Policy`. Add new allowed origins to `ALLOWED_ORIGINS` / `isAllowedOrigin`.
+4. CORS Allowlisted: `worker.js` reflects the request Origin only if it matches the allowlist (`bwrmaps.com`, `www.bwrmaps.com`, the legacy `bwr-worker.ciril8596.workers.dev`, `localhost:8787`, or any `*.pages.dev` preview); otherwise it falls back to the canonical prod origin `https://bwrmaps.com`. Responses also set `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, and `Permissions-Policy`. Add new allowed origins to `ALLOWED_ORIGINS` / `isAllowedOrigin`.
 
 5. Password Hashing: PBKDF2-SHA-256 with 100 000 iterations. Legacy SHA-256 accounts migrate automatically on next login (hashVersion field tracks which scheme).
 

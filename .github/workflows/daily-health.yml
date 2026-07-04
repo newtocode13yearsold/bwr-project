@@ -22,7 +22,7 @@ jobs:
       # ── Pages HTML ─────────────────────────────────────────────────────────────
       - name: Check HTML pages
         run: |
-          BASE="https://bwr-worker.ciril8596.workers.dev"
+          BASE="https://bwrmaps.com"
           ERRORS=0
 
           check() {
@@ -54,7 +54,7 @@ jobs:
       # ── Endpoints API ──────────────────────────────────────────────────────────
       - name: Check API endpoints
         run: |
-          BASE="https://bwr-worker.ciril8596.workers.dev"
+          BASE="https://bwrmaps.com"
           ERRORS=0
 
           check() {

@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 // Tests E2E contre le worker déployé en production.
 // page.route() intercepte les appels API côté navigateur, peu importe l'origine.
-const BASE_URL = 'https://bwr-worker.ciril8596.workers.dev';
+const BASE_URL = 'https://bwrmaps.com';
 
 export default defineConfig({
   testDir: './tests/e2e',

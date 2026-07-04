@@ -34,7 +34,7 @@ export async function handleContent(request, env, { pathname, url, json, fail })
     ];
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'BWR-Oise/1.0 (https://bwr-worker.ciril8596.workers.dev; ciril8596@gmail.com)',
+      'User-Agent': 'BWR-Oise/1.0 (https://bwrmaps.com; ciril8596@gmail.com)',
     };
 
     for (const endpoint of ATTEMPTS) {

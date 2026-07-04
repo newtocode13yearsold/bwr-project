@@ -8,6 +8,8 @@ import { handleSocial }     from './worker/handlers/social.js';
 import { handleForum }      from './worker/handlers/forum.js';
 
 const ALLOWED_ORIGINS = new Set([
+  'https://bwrmaps.com',
+  'https://www.bwrmaps.com',
   'https://bwr-worker.ciril8596.workers.dev',
   'http://localhost:8787',
 ]);
@@ -31,11 +33,18 @@ export default {
    */
   async fetch(request, env) {
     const url      = new URL(request.url);
+
+    // Canonical host: 301 www → apex so search engines don't index duplicates.
+    if (url.hostname === 'www.bwrmaps.com') {
+      url.hostname = 'bwrmaps.com';
+      return Response.redirect(url.toString(), 301);
+    }
+
     const pathname = url.pathname;
     const origin   = request.headers.get('Origin') ?? '';
     const allowedOrigin = isAllowedOrigin(origin)
       ? origin
-      : 'https://bwr-worker.ciril8596.workers.dev';
+      : 'https://bwrmaps.com';
 
     const cors = {
       'Access-Control-Allow-Origin':  allowedOrigin,

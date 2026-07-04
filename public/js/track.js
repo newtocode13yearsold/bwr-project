@@ -10,7 +10,7 @@
 (function () {
   var API = (typeof API_URL !== 'undefined' && API_URL)
     ? API_URL
-    : 'https://bwr-worker.ciril8596.workers.dev';
+    : 'https://bwrmaps.com';
 
   var DWELL_MS = 60 * 1000; // must stay > 1 min to be counted
 
