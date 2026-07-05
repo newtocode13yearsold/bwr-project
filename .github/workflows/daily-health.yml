@@ -113,14 +113,22 @@ jobs:
         run: |
           ERRORS=0
 
+          # Services externes = serveurs tiers (OSRM/Nominatim/Open-Elevation…)
+          # notoirement instables. On réessaie 3× avant de signaler, et ces
+          # échecs sont rapportés mais NON bloquants (voir "Fail if errors").
           check() {
             local label="$1" url="$2" expected="$3"
             shift 3
-            STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 20 "$@" "$url")
+            local STATUS=""
+            for attempt in 1 2 3; do
+              STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" --max-time 20 "$@" "$url")
+              [ "$STATUS" -eq "$expected" ] 2>/dev/null && break
+              [ "$attempt" -lt 3 ] && sleep 4
+            done
             if [ "$STATUS" -eq "$expected" ]; then
               echo "  ✅  $label → $STATUS"
             else
-              echo "  ❌  $label → reçu $STATUS, attendu $expected"
+              echo "  ⚠️  $label → reçu $STATUS, attendu $expected (service externe — non bloquant)"
               echo "EXT  | $label | reçu $STATUS attendu $expected" >> /tmp/failures.txt
               ERRORS=$((ERRORS + 1))
             fi
@@ -297,8 +305,17 @@ $DETAILS"
       - name: Fail if errors
         if: always()
         run: |
-          TOTAL=${HEALTH_TOTAL:-0}
-          if [ "$TOTAL" -gt 0 ] 2>/dev/null; then
-            echo "❌ Health check échoué avec $TOTAL erreur(s)."
+          EP=${HEALTH_EP:-0}
+          EA=${HEALTH_EA:-0}
+          EX=${HEALTH_EX:-0}
+          # Seules les pages et API BWR (ce qu'on contrôle) font échouer le job.
+          # Les services externes tiers sont signalés (email/ntfy) mais NON bloquants.
+          BLOCKING=$(( EP + EA ))
+          if [ "$BLOCKING" -gt 0 ] 2>/dev/null; then
+            echo "❌ Health check échoué : $BLOCKING erreur(s) sur les pages/API BWR."
             exit 1
           fi
+          if [ "$EX" -gt 0 ] 2>/dev/null; then
+            echo "⚠️  $EX service(s) externe(s) en échec — signalé mais non bloquant."
+          fi
+          echo "✅ Pages et API BWR opérationnelles."
