@@ -243,9 +243,9 @@ body {
   border-radius: 50%;
   flex-shrink: 0;
 }
-.dot.easy         { background: #22c55e; }
-.dot.medium       { background: #f97316; }
-.dot.hard         { background: #ef4444; }
+.dot.easy         { background: var(--status-easy); }
+.dot.medium       { background: var(--status-medium); }
+.dot.hard         { background: var(--status-hard); }
 .dot.not_passable { background: var(--text-faint); }
 .dot.no_bike      { background: #6366f1; }
 
@@ -620,7 +620,7 @@ body {
   width: 100%;
   padding: 7px 12px;
   background: #fff1f2;
-  border: 1.5px solid #ef4444;
+  border: 1.5px solid var(--status-hard);
   border-radius: 8px;
   color: var(--danger);
   font-size: 0.82rem;
@@ -784,7 +784,7 @@ body {
   color: #92400e;
   font-weight: 600;
 }
-.popup-split-btn:hover { background: #fde68a; }
+.popup-split-btn:hover { background: var(--gold-200); }
 
 .popup-delete-btn {
   padding: 7px 10px;
@@ -811,7 +811,7 @@ body {
   padding: 10px 22px;
   font-size: 0.88rem;
   font-weight: 700;
-  color: #b45309;
+  color: var(--gold-600);
   box-shadow: 0 4px 20px rgba(0,0,0,0.18);
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
@@ -874,7 +874,7 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 1rem;
-  border: 2px solid #f97316;
+  border: 2px solid var(--status-medium);
 }
 
 /* ── Popup fallen tree button ── */
@@ -883,7 +883,7 @@ body {
   width: 100%;
   padding: 8px 12px;
   background: #f0fdf4;
-  border: 1.5px solid #22c55e;
+  border: 1.5px solid var(--status-easy);
   border-radius: 8px;
   color: #15803d;
   font-size: 0.85rem;
@@ -900,7 +900,7 @@ body {
   width: 100%;
   padding: 7px 12px;
   background: #fff7ed;
-  border: 1.5px solid #f97316;
+  border: 1.5px solid var(--status-medium);
   border-radius: 8px;
   color: #c2410c;
   font-size: 0.82rem;
@@ -931,8 +931,8 @@ body {
   color: #374151;
   transition: all 0.15s;
 }
-.rtype-inline-btn:hover { border-color: #f97316; color: #c2410c; }
-.rtype-inline-btn.active { background: #f97316; color: white; border-color: #f97316; }
+.rtype-inline-btn:hover { border-color: var(--status-medium); color: #c2410c; }
+.rtype-inline-btn.active { background: var(--status-medium); color: white; border-color: var(--status-medium); }
 
 .popup-report-note {
   width: 100%;
@@ -983,7 +983,7 @@ body {
   width: 100%;
   padding: 8px 12px;
   background: #f0fdf4;
-  border: 1.5px solid #22c55e;
+  border: 1.5px solid var(--status-easy);
   border-radius: 8px;
   color: #15803d;
   font-size: 0.85rem;
@@ -1253,7 +1253,7 @@ body {
 
 /* ── GPS distance tracker button (shared: map + admin) ── */
 .map-track-btn.tracking {
-  background: #1e4d14;
+  background: var(--forest-700);
   color: #fff;
   box-shadow: 0 0 0 3px #10b981, 0 2px 12px rgba(16,185,129,0.4);
   animation: locate-pulse 2s ease-in-out infinite;
@@ -2059,7 +2059,7 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
   flex-shrink: 0;
 }
 .legend-dash.deployed-dash {
-  border-top: 2.5px dashed #16a34a;
+  border-top: 2.5px dashed var(--success);
   height: 0;
 }
 .legend-dash.nearby-dash {
@@ -2082,7 +2082,7 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
   letter-spacing: 0.04em;
   color: #15803d;
   background: rgba(240, 244, 236, 0.82);
-  border: 1.5px dashed #16a34a;
+  border: 1.5px dashed var(--success);
   border-radius: 4px;
   padding: 2px 7px;
   backdrop-filter: blur(2px);
@@ -2281,7 +2281,7 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #ef4444;
+  background: var(--status-hard);
   border: 2px solid #fff;
   animation: notif-pulse 2s ease-in-out infinite;
 }
@@ -2307,7 +2307,7 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
   padding: 12px 14px 10px;
   font-size: 0.78rem;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   border-bottom: 1px solid #f3f4f6;
@@ -2326,11 +2326,11 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
   min-width: 0;
 }
 .notif-item-title { font-size: 0.9rem; color: #1e293b; }
-.notif-item-sub   { font-size: 0.78rem; color: #6b7280; }
+.notif-item-sub   { font-size: 0.78rem; color: var(--text-muted); }
 .notif-item-link  {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #1e4d14;
+  color: var(--forest-700);
   text-decoration: none;
   margin-top: 4px;
 }

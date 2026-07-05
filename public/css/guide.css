@@ -5,9 +5,9 @@
 
 .guide-body {
   background:
-    radial-gradient(1200px 600px at 50% -200px, var(--forest-100, #f0f7ec), transparent 70%),
-    var(--surface-1, #fafbf7);
-  color: var(--text, #1f2937);
+    radial-gradient(1200px 600px at 50% -200px, var(--forest-100, var(--forest-100)), transparent 70%),
+    var(--surface-1, var(--surface-1));
+  color: var(--text, var(--text));
   min-height: 100vh;
 }
 
@@ -24,8 +24,8 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--forest-600, #2d6b1f);
-  background: var(--forest-100, #f0f7ec);
+  color: var(--forest-600, var(--forest-600));
+  background: var(--forest-100, var(--forest-100));
   padding: 6px 14px;
   border-radius: var(--radius-pill, 999px);
   margin-bottom: var(--space-4, 16px);
@@ -33,11 +33,11 @@
 .guide-hero h1 {
   font-size: var(--fs-4xl, clamp(2.2rem, 5vw, 3.4rem));
   margin: 0 0 var(--space-3, 12px);
-  color: var(--text-strong, #0b2410);
+  color: var(--text-strong, var(--forest-900));
 }
 .guide-hero p {
   font-size: var(--fs-md, 1.125rem);
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted, var(--text-muted));
   line-height: 1.6;
   margin: 0 auto var(--space-6, 24px);
   max-width: 540px;
@@ -59,16 +59,16 @@
   gap: var(--space-3, 12px);
   padding: var(--space-3, 12px) var(--space-4, 16px);
   background: var(--surface-0, #fff);
-  border: 1px solid var(--border, #e2e8da);
+  border: 1px solid var(--border, var(--border));
   border-radius: var(--radius-md, 14px);
   text-decoration: none;
-  color: var(--text-strong, #0b2410);
+  color: var(--text-strong, var(--forest-900));
   font-weight: 600;
   font-size: var(--fs-sm, 0.875rem);
   box-shadow: var(--shadow-xs, 0 1px 2px rgba(11,36,16,.06));
   transition: transform var(--dur-fast, 140ms) var(--ease-out, ease), border-color var(--dur-fast, 140ms) ease;
 }
-.guide-toc a:hover { transform: translateY(-2px); border-color: var(--forest-500, #4a8a32); }
+.guide-toc a:hover { transform: translateY(-2px); border-color: var(--forest-500, var(--forest-500)); }
 .guide-toc .toc-emoji { font-size: 22px; }
 
 /* ── Sections ── */
@@ -79,7 +79,7 @@
 }
 .guide-section {
   background: var(--surface-0, #fff);
-  border: 1px solid var(--border-soft, #ebeee5);
+  border: 1px solid var(--border-soft, var(--border-soft));
   border-radius: var(--radius-lg, 20px);
   padding: var(--space-6, 24px);
   margin-bottom: var(--space-5, 20px);
@@ -98,14 +98,14 @@
   display: grid; place-items: center;
   font-size: 24px;
   border-radius: var(--radius-md, 14px);
-  background: var(--forest-100, #f0f7ec);
+  background: var(--forest-100, var(--forest-100));
 }
 .guide-section h2 {
   font-size: var(--fs-xl, 1.5rem);
   margin: 0;
-  color: var(--text-strong, #0b2410);
+  color: var(--text-strong, var(--forest-900));
 }
-.guide-section p { line-height: 1.65; margin: 0 0 var(--space-3, 12px); color: var(--text, #1f2937); }
+.guide-section p { line-height: 1.65; margin: 0 0 var(--space-3, 12px); color: var(--text, var(--text)); }
 .guide-section p:last-child { margin-bottom: 0; }
 
 .guide-steps {
@@ -136,8 +136,8 @@
   width: 26px; height: 26px;
   display: grid; place-items: center;
   border-radius: 50%;
-  background: var(--forest-700, #1e4d14);
-  color: var(--lime-300, #d9f99d);
+  background: var(--forest-700, var(--forest-700));
+  color: var(--lime-300, var(--lime-300));
   font-weight: 700;
   font-size: var(--fs-xs, 0.78rem);
 }
@@ -145,8 +145,8 @@
 .guide-tip {
   display: flex;
   gap: var(--space-3, 12px);
-  background: var(--lime-300, #d9f99d);
-  color: var(--forest-900, #0b2410);
+  background: var(--lime-300, var(--lime-300));
+  color: var(--forest-900, var(--forest-900));
   border-radius: var(--radius-md, 14px);
   padding: var(--space-3, 12px) var(--space-4, 16px);
   font-size: var(--fs-sm, 0.875rem);
@@ -171,35 +171,35 @@
 
 /* ── FAQ ── */
 .guide-faq details {
-  border-bottom: 1px solid var(--border-soft, #ebeee5);
+  border-bottom: 1px solid var(--border-soft, var(--border-soft));
   padding: var(--space-3, 12px) 0;
 }
 .guide-faq details:last-child { border-bottom: none; }
 .guide-faq summary {
   font-weight: 600;
   cursor: pointer;
-  color: var(--text-strong, #0b2410);
+  color: var(--text-strong, var(--forest-900));
   list-style: none;
   display: flex;
   justify-content: space-between;
   gap: var(--space-3, 12px);
 }
 .guide-faq summary::-webkit-details-marker { display: none; }
-.guide-faq summary::after { content: "+"; color: var(--forest-600, #2d6b1f); font-weight: 700; }
+.guide-faq summary::after { content: "+"; color: var(--forest-600, var(--forest-600)); font-weight: 700; }
 .guide-faq details[open] summary::after { content: "−"; }
-.guide-faq .guide-faq-a { padding-top: var(--space-2, 8px); color: var(--text-muted, #6b7280); line-height: 1.6; font-size: var(--fs-sm, 0.9rem); }
+.guide-faq .guide-faq-a { padding-top: var(--space-2, 8px); color: var(--text-muted, var(--text-muted)); line-height: 1.6; font-size: var(--fs-sm, 0.9rem); }
 
 /* ── Closing CTA ── */
 .guide-cta {
   text-align: center;
-  background: linear-gradient(135deg, var(--forest-800, #133b18), var(--forest-600, #2d6b1f));
+  background: linear-gradient(135deg, var(--forest-800, var(--forest-800)), var(--forest-600, var(--forest-600)));
   color: #fff;
   border-radius: var(--radius-lg, 20px);
   padding: var(--space-10, 40px) var(--space-6, 24px);
   margin-top: var(--space-8, 32px);
 }
 .guide-cta h2 { color: #fff; font-size: var(--fs-2xl, 1.875rem); margin: 0 0 var(--space-3, 12px); }
-.guide-cta p { color: var(--lime-300, #d9f99d); margin: 0 0 var(--space-5, 20px); }
+.guide-cta p { color: var(--lime-300, var(--lime-300)); margin: 0 0 var(--space-5, 20px); }
 
 /* Simple top bar for the guide page */
 .guide-topbar {
@@ -210,15 +210,15 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: color-mix(in srgb, var(--surface-1, #fafbf7) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-1, var(--surface-1)) 86%, transparent);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border-soft, #ebeee5);
+  border-bottom: 1px solid var(--border-soft, var(--border-soft));
 }
 .guide-topbar .logo {
   font-family: var(--font-display, Georgia, serif);
   font-weight: 700;
   font-size: var(--fs-lg, 1.25rem);
-  color: var(--forest-700, #1e4d14);
+  color: var(--forest-700, var(--forest-700));
   text-decoration: none;
 }
 .guide-topbar-links { display: flex; gap: var(--space-2, 8px); align-items: center; }
@@ -227,15 +227,15 @@
   font-size: var(--fs-sm, 0.875rem);
   font-weight: 600;
   text-decoration: none;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted, var(--text-muted));
   background: none;
   border: none;
   cursor: pointer;
   padding: 8px 12px;
   border-radius: var(--radius-sm, 10px);
 }
-.guide-topbar-links a:hover, .guide-topbar-links button:hover { background: var(--surface-2, #f3f4f0); color: var(--text-strong, #0b2410); }
+.guide-topbar-links a:hover, .guide-topbar-links button:hover { background: var(--surface-2, var(--surface-2)); color: var(--text-strong, var(--forest-900)); }
 .guide-topbar-links a.guide-topbar-cta {
-  background: var(--forest-700, #1e4d14);
-  color: var(--lime-300, #d9f99d);
+  background: var(--forest-700, var(--forest-700));
+  color: var(--lime-300, var(--lime-300));
 }

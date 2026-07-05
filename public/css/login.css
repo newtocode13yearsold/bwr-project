@@ -29,24 +29,24 @@
 }
 
 .back-link {
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 0.85rem;
   text-decoration: none;
   align-self: flex-start;
 }
-.back-link:hover { color: #1e4d14; }
+.back-link:hover { color: var(--forest-700); }
 
 .login-logo {
   font-size: 2.5rem;
   font-weight: 900;
   letter-spacing: 4px;
-  color: #1e4d14;
+  color: var(--forest-700);
   text-align: center;
 }
 
 .login-sub {
   text-align: center;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 0.9rem;
   font-style: italic;
   margin-top: -8px;
@@ -67,7 +67,7 @@
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #6b7280;
+  color: var(--text-muted);
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
@@ -76,7 +76,7 @@
 
 .tab.active {
   background: white;
-  color: #1e4d14;
+  color: var(--forest-700);
   box-shadow: 0 1px 4px rgba(0,0,0,0.12);
 }
 
@@ -178,8 +178,8 @@
 .user-avatar {
   width: 26px;
   height: 26px;
-  background: #a3e635;
-  color: #1e4d14;
+  background: var(--lime-500);
+  color: var(--forest-700);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -219,11 +219,11 @@
 
 .user-dropdown .dropdown-name {
   font-weight: 700;
-  color: #1e4d14;
+  color: var(--forest-700);
   border-bottom: 1px solid #e5e7eb;
 }
 
-.user-dropdown .dropdown-logout { color: #dc2626; }
+.user-dropdown .dropdown-logout { color: var(--danger); }
 
 /* ── Mobile ── */
 @media (max-width: 480px) {

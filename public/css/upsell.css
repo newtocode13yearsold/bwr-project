@@ -203,11 +203,11 @@
 /* Urgency states */
 .quota-strip.qs-warn {
   background: linear-gradient(135deg, #fff7ed 0%, var(--surface-0) 100%);
-  border-color: var(--warning, #f97316);
+  border-color: var(--warning, var(--status-medium));
 }
 .quota-strip.qs-danger {
   background: linear-gradient(135deg, #fef2f2 0%, var(--surface-0) 100%);
-  border-color: var(--danger, #ef4444);
+  border-color: var(--danger, var(--status-hard));
 }
 .quota-strip .qs-header {
   display: flex;
@@ -242,8 +242,8 @@
   border-radius: inherit;
   transition: width 0.4s ease-out;
 }
-.quota-strip.qs-warn  .qs-fill { background: linear-gradient(90deg, #fb923c, #f97316); }
-.quota-strip.qs-danger .qs-fill { background: linear-gradient(90deg, #f87171, #ef4444); }
+.quota-strip.qs-warn  .qs-fill { background: linear-gradient(90deg, #fb923c, var(--status-medium)); }
+.quota-strip.qs-danger .qs-fill { background: linear-gradient(90deg, #f87171, var(--status-hard)); }
 .quota-strip .qs-cta {
   display: inline-block;
   margin-top: 2px;
@@ -460,12 +460,12 @@
 .card-upsell .upsell-cta:hover { background: var(--forest-600); transform: translateY(-1px); }
 /* Primary trial button: lime accent so the free offer stands out from the ghost link. */
 .card-upsell .upsell-trial {
-  background: linear-gradient(135deg, #a3e635, #65a30d);
+  background: linear-gradient(135deg, var(--lime-500), var(--lime-600));
   color: #1a2e05;
   border: none;
   cursor: pointer;
 }
-.card-upsell .upsell-trial:hover { background: linear-gradient(135deg, #bef264, #4d7c0f); }
+.card-upsell .upsell-trial:hover { background: linear-gradient(135deg, var(--lime-400), #4d7c0f); }
 .card-upsell .upsell-trial:disabled { opacity: 0.6; cursor: progress; }
 .card-upsell .upsell-cta-ghost {
   background: transparent;
