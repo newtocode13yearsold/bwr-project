@@ -20,7 +20,8 @@ const isAllowedOrigin = o => ALLOWED_ORIGINS.has(o) || /^https:\/\/[^.]+\.pages\
 /**
  * @typedef {{ BWR_KV: KVNamespace, ORS_KEY?: string, ANTHROPIC_API_KEY?: string,
  *             RESEND_API_KEY?: string, RESEND_FROM?: string,
- *             ADMIN_NAME?: string, ADMIN_EMAIL?: string, AI?: Ai }} Env
+ *             ADMIN_NAME?: string, ADMIN_EMAIL?: string, AI?: Ai,
+ *             ASSETS: Fetcher }} Env
  */
 
 export default {
@@ -34,9 +35,13 @@ export default {
   async fetch(request, env) {
     const url      = new URL(request.url);
 
-    // Canonical host: 301 www → apex so search engines don't index duplicates.
-    if (url.hostname === 'www.bwrmaps.com') {
+    // Canonical host: 301 every non-primary host (www + the legacy workers.dev
+    // URL) to the apex bwrmaps.com so there's a single indexed site. Runs on
+    // every request because run_worker_first is enabled (see wrangler.jsonc).
+    if (url.hostname === 'www.bwrmaps.com' ||
+        url.hostname === 'bwr-worker.ciril8596.workers.dev') {
       url.hostname = 'bwrmaps.com';
+      url.port = '';
       return Response.redirect(url.toString(), 301);
     }
 
@@ -69,7 +74,7 @@ export default {
 
     const ctx = { pathname, url, json, fail, cors };
 
-    return (
+    const apiResponse =
       await handleAdmin(request, env, ctx)      ??
       await handleAuth(request, env, ctx)        ??
       await handlePaths(request, env, ctx)       ??
@@ -77,8 +82,15 @@ export default {
       await handleContent(request, env, ctx)     ??
       await handleSavedRoutes(request, env, ctx) ??
       await handleSocial(request, env, ctx)      ??
-      await handleForum(request, env, ctx)       ??
-      new Response('Not found', { status: 404, headers: cors })
-    );
+      await handleForum(request, env, ctx);
+
+    if (apiResponse) return apiResponse;
+
+    // Unmatched /api/* is a genuine 404; anything else is a static-asset
+    // request — hand it to the assets binding (the Worker runs first now).
+    if (pathname.startsWith('/api/')) {
+      return new Response('Not found', { status: 404, headers: cors });
+    }
+    return env.ASSETS.fetch(request);
   },
 };

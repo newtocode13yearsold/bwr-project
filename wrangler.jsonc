@@ -2,7 +2,7 @@
   "name": "bwr-worker",
   "main": "worker.js",
   "compatibility_date": "2024-01-01",
-  "assets": { "directory": "./public", "run_worker_first": false },
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true },
   "workers_dev": true,
   "routes": [
     { "pattern": "bwrmaps.com", "custom_domain": true },
