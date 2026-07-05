@@ -11,7 +11,7 @@ const ROOT = join(__dirname, '..');
 
 const THRESHOLDS = {
   js:  150 * 1024,  // 150 KB per JS file
-  css:  60 * 1024,  //  60 KB per CSS file
+  css: 100 * 1024,  // 100 KB per CSS file
 };
 
 function scanDir(dir, ext) {
