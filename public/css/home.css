@@ -1539,7 +1539,7 @@ textarea.cf-input { resize: vertical; min-height: 100px; }
   .about-visual { flex-direction: row; justify-content: flex-start; }
   .about-lines { display: none; }
   .nav-links { display: none; }
-  .nav-burger { display: flex; }
+  .nav-burger { display: flex; margin-left: auto; }
   .nav-cta { display: none; }
 }
 

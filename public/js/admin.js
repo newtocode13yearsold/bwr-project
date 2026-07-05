@@ -25,6 +25,15 @@ function initConditionTags(containerId) {
   });
 }
 
+// Escape user-controlled text before dropping it into innerHTML. Names, emails and
+// contact messages come from public/registration input and are stored raw server-side,
+// so every one that lands in an admin panel MUST pass through here (stored-XSS guard).
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
 const REPORT_ICONS  = { fallen_tree:'🌲', flooded:'💧', muddy:'🟤', rutted:'🛞', broken_sign:'🪧', closed:'🚫', danger:'⚠️', other:'📝' };
 const REPORT_LABELS_ADMIN = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', muddy:'Boueux', rutted:'Ornières', broken_sign:'Carrefour cassé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
 
@@ -1031,16 +1040,18 @@ async function loadMessages() {
     if (messages.length === 0) { list.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Aucun message.</p>'; return; }
     list.innerHTML = messages.map(m => {
       const date = new Date(m.date).toLocaleString('fr-FR');
+      const name = escapeHtml(m.name);
+      const email = escapeHtml(m.email);
       return `<div data-id="${m.id}" style="padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
           <div>
-            <div style="font-weight:600;font-size:0.9rem">${m.name}</div>
-            <div style="font-size:0.78rem;color:#6b7280">${m.email} · ${date}</div>
+            <div style="font-weight:600;font-size:0.9rem">${name}</div>
+            <div style="font-size:0.78rem;color:#6b7280">${email} · ${date}</div>
           </div>
           <button class="btn-secondary msg-delete-btn" data-id="${m.id}" style="width:auto;padding:4px 10px;font-size:0.78rem;flex-shrink:0">Supprimer</button>
         </div>
-        <p style="margin:8px 0 0;font-size:0.88rem;white-space:pre-wrap;color:#374151">${m.message.replace(/</g,'&lt;')}</p>
-        <a href="mailto:${m.email}?subject=Re: votre message BWR" style="display:inline-block;margin-top:8px;font-size:0.8rem;color:#166534;text-decoration:underline">↩ Répondre par email</a>
+        <p style="margin:8px 0 0;font-size:0.88rem;white-space:pre-wrap;color:#374151">${escapeHtml(m.message)}</p>
+        <a href="mailto:${encodeURIComponent(m.email)}?subject=Re: votre message BWR" style="display:inline-block;margin-top:8px;font-size:0.8rem;color:#166534;text-decoration:underline">↩ Répondre par email</a>
       </div>`;
     }).join('');
     list.querySelectorAll('.msg-delete-btn').forEach(btn => {
@@ -1158,7 +1169,7 @@ async function loadVisits() {
         <span style="font-size:1.1rem">${icon}</span>
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-            👤 ${e.userName || e.email || 'Utilisateur'}
+            👤 ${escapeHtml(e.userName || e.email || 'Utilisateur')}
           </div>
           <div style="font-size:0.75rem;color:#6b7280">${label} — 🕐 ${formatTime(e.timestamp)}</div>
         </div>
@@ -1237,7 +1248,7 @@ async function loadDebug() {
       html += `<div style="font-weight:700;font-size:0.82rem;color:#374151;margin-bottom:6px">🔬 Dernières activités (échantillon)</div>`;
       html += `<div style="display:flex;flex-direction:column;gap:3px">`;
       for (const v of data.eventSample) {
-        html += row(`${v.timestamp?.slice(0,16)} — ${v.userName || '?'}`, v.type === 'signup' ? '✨ compte' : '🔑 connexion');
+        html += row(`${escapeHtml(v.timestamp?.slice(0,16))} — ${escapeHtml(v.userName || '?')}`, v.type === 'signup' ? '✨ compte' : '🔑 connexion');
       }
       html += `</div>`;
     }
@@ -1266,17 +1277,19 @@ async function loadMembers() {
       const compedBadge = u.comped
         ? `<span style="font-size:0.75rem;color:#7c3aed">🎁 offert</span>`
         : '';
+      const uName = escapeHtml(u.name);
+      const uPlan = escapeHtml(u.plan);
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px">
         <div>
-          <div style="font-weight:600;font-size:0.9rem">${u.name}</div>
-          <div style="font-size:0.78rem;color:#6b7280">${u.email}</div>
-          <div style="margin-top:3px">${planIcon[u.plan] || '🌿'} <strong>${u.plan}</strong> ${expiry} ${compedBadge}</div>
+          <div style="font-weight:600;font-size:0.9rem">${uName}</div>
+          <div style="font-size:0.78rem;color:#6b7280">${escapeHtml(u.email)}</div>
+          <div style="margin-top:3px">${planIcon[u.plan] || '🌿'} <strong>${uPlan}</strong> ${expiry} ${compedBadge}</div>
         </div>
         ${u.role !== 'admin' ? `<div style="display:flex;gap:6px">
           <button class="btn-secondary member-plan-btn" style="width:auto;padding:6px 12px;font-size:0.8rem"
-            data-id="${u.id}" data-name="${u.name.replace(/"/g,'&quot;')}" data-plan="${u.plan}" data-base="${u.planBase||'free'}" data-comped="${u.comped ? '1' : ''}">Modifier plan</button>
+            data-id="${u.id}" data-name="${uName}" data-plan="${uPlan}" data-base="${escapeHtml(u.planBase||'free')}" data-comped="${u.comped ? '1' : ''}">Modifier plan</button>
           <button class="btn-secondary member-delete-btn" style="width:auto;padding:6px 12px;font-size:0.8rem;color:#dc2626;border-color:#fca5a5"
-            data-id="${u.id}" data-name="${u.name.replace(/"/g,'&quot;')}">Supprimer</button>
+            data-id="${u.id}" data-name="${uName}">Supprimer</button>
         </div>` : ''}
       </div>`;
     }).join('');

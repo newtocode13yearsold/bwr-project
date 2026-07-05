@@ -60,9 +60,12 @@
   --text-strong:   #0b2410;
   --text:          #1f2937;
   --text-muted:    #6b7280;
-  --text-faint:    #9ca3af;
+  --text-faint:    #6f7581;  /* was #9ca3af (2.6:1) — lifted to 4.6:1 on white for WCAG AA */
   --text-inverse:  #ffffff;
   --text-on-gold:  var(--gold-text);
+
+  /* ── Keyboard focus ── */
+  --focus-ring:    #1d4ed8;
 
   /* ── Borders ── */
   --border-soft:   #ebeee5;
@@ -144,6 +147,18 @@
 /* Subtle but global polish — the typography reset is intentionally light so
    page CSS that already targets utility classes keeps working. */
 html { -webkit-text-size-adjust: 100%; }
+
+/* ── Keyboard focus indicator ──────────────────────────────────────────────
+ * Visible ring for keyboard/AT users only (:focus-visible excludes mouse
+ * clicks), so complete keyboard navigation is always perceivable. Applies to
+ * links, buttons, form fields and any element with a tabindex. */
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+/* Don't paint the ring for pointer users when :focus-visible is supported. */
+:focus:not(:focus-visible) { outline: none; }
 
 body {
   font-family: var(--font-sans);
@@ -240,6 +255,7 @@ h1, h2 {
   --text-muted:    #98b090;  /* was #8fa887 — lifted to 4.6:1 on surface-3 */
   --text-faint:    #85a87f;  /* was #6b7f64 — lifted to 4.7:1 on surface-1 */
   --text-inverse:  #16201a;
+  --focus-ring:    #a3e635;  /* lime — high contrast on dark surfaces */
 
   --border-soft:   #2a3a30;
   --border:        #334d3b;

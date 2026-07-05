@@ -1,6 +1,11 @@
 import { listItems, effectivePlan } from '../kv.js';
 import { getUserFromToken, checkRateLimit } from '../auth-utils.js';
 
+// Escape untrusted text before interpolating it into an HTML email body.
+const escapeHtml = (str) => String(str ?? '').replace(/[&<>"']/g, (c) => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+));
+
 /**
  * OSM proxy, ORS routing proxy, news CRUD, and contact form.
  * @param {Request} request
@@ -341,12 +346,15 @@ export async function handleContent(request, env, { pathname, url, json, fail })
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
     if (!await checkRateLimit(env, 'contact', ip, 2, 3600))
       return fail('Trop de messages. Réessayez dans une heure.', 429);
-    const { name, email, message } = await request.json();
+    let { name, email, message } = await request.json();
     if (!name || !email || !message) return fail('Tous les champs sont obligatoires.');
+    name = String(name).trim().slice(0, 200);
+    email = String(email).trim().slice(0, 200);
+    message = String(message).slice(0, 2000);
 
     const id = crypto.randomUUID();
     await env.BWR_KV.put(`contact:${id}`, JSON.stringify({
-      id, name, email, message: message.slice(0, 2000), date: new Date().toISOString(),
+      id, name, email, message, date: new Date().toISOString(),
     }));
 
     const adminEmail = env.ADMIN_EMAIL;
@@ -366,10 +374,10 @@ export async function handleContent(request, env, { pathname, url, json, fail })
             from: env.RESEND_FROM || 'BWR <noreply@bwr.ciril8596.workers.dev>',
             to: adminEmail,
             subject: `BWR — Nouveau message de ${name}`,
-            html: `<p><strong>De :</strong> ${name} &lt;${email}&gt;</p>
+            html: `<p><strong>De :</strong> ${escapeHtml(name)} &lt;${escapeHtml(email)}&gt;</p>
 <p><strong>Date :</strong> ${new Date().toLocaleString('fr-FR')}</p>
 <hr/>
-<p>${message.replace(/\n/g, '<br/>')}</p>`,
+<p>${escapeHtml(message).replace(/\n/g, '<br/>')}</p>`,
           }),
         });
       } catch {}
