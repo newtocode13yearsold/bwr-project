@@ -63,8 +63,12 @@ test.describe('Planification d\'itinéraire (routes.html)', () => {
 
     await expect(page.locator('.leaflet-container')).toBeVisible({ timeout: 10_000 });
 
+    // Les préférences (dont la difficulté) sont dans l'accordéon « étape 2 »,
+    // replié par défaut — on l'ouvre avant de vérifier les boutons.
+    await page.locator('#step2Header').click();
+
     // Les boutons de difficulté doivent être rendus
-    const easyBtn = page.locator('button:has-text("Facile"), [data-difficulty="easy"]').first();
+    const easyBtn = page.locator('button:has-text("Facile"), [data-diff="easy"]').first();
     await expect(easyBtn).toBeVisible({ timeout: 5_000 });
   });
 

@@ -214,12 +214,13 @@ test.describe('Widget météo (profile.html — Gold)', () => {
     await expect(page.locator('#weatherIcon')).toContainText('❌', { timeout: 8_000 });
   });
 
-  test('weatherBlock est caché pour Silver', async ({ page }) => {
+  test('weatherBlock est visible pour Silver', async ({ page }) => {
+    // La météo est une fonctionnalité Silver+ (voir features.js : weather.silver = true).
     await mockAuthMe(page, 'silver');
     await injectSession(page, 'silver');
     await page.goto('/profile.html');
 
     await expect(page.locator('#premiumSection')).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('#weatherBlock')).toBeHidden({ timeout: 5_000 });
+    await expect(page.locator('#weatherBlock')).toBeVisible({ timeout: 5_000 });
   });
 });

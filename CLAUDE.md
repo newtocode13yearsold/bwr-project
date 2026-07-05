@@ -121,8 +121,8 @@ Route colors reflect difficulty (stored locally in localStorage):
 
 Three tiers gate different features:
 - Free: Basic route planning, view all paths, report issues, basic badges
-- Silver: plus daily wheel (random tips), custom route colors, additional badges
-- Gold: plus weather widget (Open-Meteo API), all badges
+- Silver: plus daily wheel (random tips), custom route colors, weather widget (Open-Meteo API), additional badges
+- Gold: plus all badges (gold-tier badges)
 
 Free-tier route quota: **3 generated routes per week**. The single source of truth
 for plan gating is `public/js/features.js` (`FEATURES.routes_per_week`). The weekly
