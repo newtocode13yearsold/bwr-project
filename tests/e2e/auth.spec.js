@@ -33,6 +33,25 @@ test.describe('Authentification', () => {
   });
 
   test('inscription puis connexion complète', async ({ page }) => {
+    // On mocke les endpoints d'auth : ce test valide le PARCOURS front-end,
+    // pas le worker live. L'inscription réelle est limitée à 5/h par IP
+    // (REGISTER_RATE_LIMIT) — la lancer à chaque run CI depuis les IP
+    // partagées de GitHub finit par être bloquée (429) et polluait la prod
+    // avec des comptes e2e_*@test.local. Le mock rend le test déterministe.
+    await page.route('**/api/auth/register', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Un email de vérification a été envoyé.' }),
+    }));
+    await page.route('**/api/auth/login', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'e2e-fake-token',
+        user: { id: 'e2e1', name: TEST_NAME, email: TEST_EMAIL, role: 'user', plan: 'free' },
+      }),
+    }));
+
     await page.goto('/login.html');
 
     // Inscription
@@ -46,7 +65,7 @@ test.describe('Authentification', () => {
     // Message de succès (compte créé, email de vérification envoyé)
     await expect(page.locator('#signupSuccess')).toBeVisible({ timeout: 10_000 });
 
-    // Connexion directe via l'API (bypass vérification email en local)
+    // Connexion via l'API (mockée) puis accès à une page protégée
     const res = await page.evaluate(async ({ email, password }) => {
       const r = await fetch('/api/auth/login', {
         method: 'POST',
@@ -56,20 +75,17 @@ test.describe('Authentification', () => {
       return { status: r.status, body: await r.json() };
     }, { email: TEST_EMAIL, password: TEST_PASSWORD });
 
-    // En local sans RESEND_API_KEY, le compte peut être directement actif
-    // (le worker saute la vérification si la clé est absente)
-    if (res.status === 200) {
-      await page.evaluate(({ token, user }) => {
-        localStorage.setItem('bwr_token', token);
-        localStorage.setItem('bwr_user', JSON.stringify(user));
-      }, res.body);
+    expect(res.status).toBe(200);
+    await page.evaluate(({ token, user }) => {
+      localStorage.setItem('bwr_token', token);
+      localStorage.setItem('bwr_user', JSON.stringify(user));
+    }, res.body);
 
-      await page.goto('/map.html');
-      await expect(page).toHaveURL(/map\.html/);
-    } else {
-      // Compte en attente de vérification — comportement attendu en prod
-      expect([200, 403]).toContain(res.status);
-    }
+    // Le site utilise des URL « propres » (/map.html redirige vers /map),
+    // donc on vérifie que la page carte s'est bien chargée plutôt que l'URL.
+    await page.goto('/map.html');
+    await expect(page).toHaveURL(/\/map(\.html)?(\?.*)?$/);
+    await expect(page.locator('.leaflet-container')).toBeVisible({ timeout: 10_000 });
   });
 
   test('map.html est accessible sans auth et affiche le lien Connexion', async ({ page }) => {
