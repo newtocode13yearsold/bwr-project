@@ -124,7 +124,7 @@ Three tiers gate different features:
 - Silver: plus daily wheel (random tips), custom route colors, weather widget (Open-Meteo API), additional badges
 - Gold: plus all badges (gold-tier badges)
 
-Free-tier route quota: **3 generated routes per week**. The single source of truth
+Free-tier route quota: **10 generated routes per week**. The single source of truth
 for plan gating is `public/js/features.js` (`FEATURES.routes_per_week`). The weekly
 counter is enforced server-side by `POST /api/auth/consume-route` (stored in
 `user.stats.weeklyRoutes` + `weekStart`); the client calls it before generating and
