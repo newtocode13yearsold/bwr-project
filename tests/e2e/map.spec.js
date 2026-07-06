@@ -13,6 +13,10 @@ async function injectSession(page, plan = 'free') {
       role: 'user',
       plan,
     }));
+    // Marque le tutoriel d'accueil comme déjà vu : sur un navigateur neuf
+    // (toujours le cas en CI) l'overlay « Bienvenue sur BWR » s'affiche sinon
+    // au-dessus de la carte et intercepte les clics (#toggleFilters, etc.).
+    localStorage.setItem('bwr_tutorial_seen', '1');
   }, plan);
 }
 
