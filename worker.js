@@ -60,6 +60,7 @@ export default {
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
       'Permissions-Policy': 'geolocation=(self)',
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
     };
 
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
