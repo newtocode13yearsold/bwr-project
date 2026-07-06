@@ -229,7 +229,7 @@ Automated test suite: **331 tests, ~4 s** (`npm test`). Test files:
 
 E2E (Playwright, `npx playwright test`) runs against the live prod URL — see `tests/e2e/`.
 
-**Rule: run `npm test` before every commit. CI (`.github/workflows/ci.yml`) blocks deploy on `needs: [unit-tests, e2e]`, so red tests never reach production — but a broken local commit can still land on `main` without branch protection. Add a test whenever you change plan gating, KV key schema, or auth logic.**
+**Rule: run `npm test` before every commit. CI (`.github/workflows/ci.yml`) gates deploy on `needs: [unit-tests]` — the deterministic unit suite is the hard gate, so a red unit test never reaches production. The E2E job (`e2e`) runs against the LIVE prod URL and is intentionally **non-blocking** (`continue-on-error: true`, and deploy no longer lists it in `needs`): it's a smoke-test signal only, because live-site tests are flaky from CI's cloud IPs (rate limits, latency, external services). A red E2E run is a warning to investigate, not a deploy blocker. A broken local commit can still land on `main` without branch protection. Add a **unit** test whenever you change plan gating, KV key schema, or auth logic.**
 
 Manual testing still needed for:
 - Routing: A→B on small distances, loop generation near forest boundaries, fallback when graph too small

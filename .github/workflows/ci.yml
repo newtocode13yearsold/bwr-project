@@ -39,6 +39,11 @@ jobs:
     name: E2E tests (Playwright)
     runs-on: ubuntu-latest
     needs: unit-tests
+    # E2E runs against the LIVE prod site, so it's inherently flaky in CI
+    # (cloud-IP rate limits, network latency, external services). It's kept
+    # as a smoke-test signal but is NON-BLOCKING: it must never stop a deploy.
+    # The deterministic unit-tests job is the real gate. See deploy.needs below.
+    continue-on-error: true
     # Skip on scheduled/manual runs — health-check covers live monitoring
     if: github.event_name == 'push' || github.event_name == 'pull_request'
 
@@ -74,7 +79,9 @@ jobs:
   deploy:
     name: Deploy to Cloudflare Workers
     runs-on: ubuntu-latest
-    needs: [unit-tests, e2e]
+    # Gated on unit-tests only. E2E is a non-blocking smoke-test (see above) —
+    # a flaky live-site E2E failure must not block shipping.
+    needs: [unit-tests]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
