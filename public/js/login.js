@@ -6,6 +6,17 @@ if (existingToken) {
     .catch(() => {});
 }
 
+// Show a notice if the user was redirected here (e.g. the planner requires an account)
+const loginNotice = sessionStorage.getItem('bwr_login_notice');
+if (loginNotice) {
+  sessionStorage.removeItem('bwr_login_notice');
+  const noticeEl = document.getElementById('loginNotice');
+  if (noticeEl) {
+    noticeEl.textContent = loginNotice;
+    noticeEl.classList.remove('hidden');
+  }
+}
+
 // Tab switching
 const tabLogin  = document.getElementById('tabLogin');
 const tabSignup = document.getElementById('tabSignup');

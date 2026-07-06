@@ -55,11 +55,13 @@ async function logout() {
   window.location.href = 'login';
 }
 
-// Redirects to login if not authenticated, or if requiredRole is set and user doesn't have it
-async function requireAuth(requiredRole = null) {
+// Redirects to login if not authenticated, or if requiredRole is set and user doesn't have it.
+// `notice` (optional) is shown on the login page to explain why the user was redirected.
+async function requireAuth(requiredRole = null, notice = null) {
   const user = await fetchCurrentUser();
   if (!user) {
     sessionStorage.setItem('bwr_redirect', window.location.href);
+    if (notice) sessionStorage.setItem('bwr_login_notice', notice);
     window.location.href = 'login';
     return null;
   }

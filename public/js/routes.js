@@ -41,7 +41,7 @@ let lastRoute = null;      // most recent computed route — used by save/share
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 (async () => {
-  currentUser = await requireAuth();
+  currentUser = await requireAuth(null, 'Le planificateur nécessite un compte gratuit.');
   if (!currentUser) return;
   initUserMenu();
   initMap();

@@ -52,6 +52,19 @@
   margin-top: -8px;
 }
 
+/* ── Redirect notice ── */
+.login-notice {
+  background: var(--forest-50, #eef6ea);
+  border: 1px solid var(--forest-200, #cfe6c2);
+  color: var(--forest-700, #2d6b1f);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+}
+
 /* ── Tabs ── */
 .tabs {
   display: flex;
