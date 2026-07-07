@@ -139,6 +139,31 @@ export async function handleForum(request, env, { pathname, json, fail }) {
     });
   }
 
+  // ── Edit topic (author or admin) ─────────────────────────────────────────────
+  if (topicMatch && request.method === 'PUT') {
+    const id = topicMatch[1];
+    const user = await getUserFromToken(env, request);
+    if (!user) return fail('Non authentifié.', 401);
+
+    const raw = await env.BWR_KV.get(`forum:topic:${id}`);
+    if (!raw) return fail('Sujet introuvable.', 404);
+    const topic = JSON.parse(raw);
+    if (user.role !== 'admin' && topic.userId !== user.id)
+      return fail('Tu ne peux modifier que tes propres sujets.', 403);
+
+    const body = await request.json().catch(() => ({}));
+    const title = String(body.title || '').trim();
+    const text  = String(body.body || '').trim();
+    if (title.length < 3) return fail('Le titre doit faire au moins 3 caractères.');
+    if (text.length < 1)  return fail('Le message ne peut pas être vide.');
+
+    topic.title = title.slice(0, TITLE_MAX);
+    topic.body  = text.slice(0, BODY_MAX);
+    topic.editedAt = new Date().toISOString();  // edits don't bump lastActivityAt (thread order stays put)
+    await env.BWR_KV.put(`forum:topic:${id}`, JSON.stringify(topic));
+    return json(topic);
+  }
+
   if (topicMatch && request.method === 'DELETE') {
     const id = topicMatch[1];
     const user = await getUserFromToken(env, request);
@@ -204,6 +229,32 @@ export async function handleForum(request, env, { pathname, json, fail }) {
 
   // /api/forum/topics/:id/replies/:replyId
   const replyMatch = pathname.match(/^\/api\/forum\/topics\/([^/]+)\/replies\/([^/]+)$/);
+
+  // ── Edit reply (author or admin) ─────────────────────────────────────────────
+  if (replyMatch && request.method === 'PUT') {
+    const [, topicId, replyId] = replyMatch;
+    const user = await getUserFromToken(env, request);
+    if (!user) return fail('Non authentifié.', 401);
+
+    const replyKeys = await listKeys(env, `forum:reply:${topicId}:`);
+    const key = replyKeys.find(k => k.name.endsWith(`:${replyId}`));
+    if (!key) return fail('Réponse introuvable.', 404);
+
+    const reply = JSON.parse(await env.BWR_KV.get(key.name));
+    if (user.role !== 'admin' && reply.userId !== user.id)
+      return fail('Tu ne peux modifier que tes propres réponses.', 403);
+
+    const body = await request.json().catch(() => ({}));
+    const text = String(body.body || '').trim();
+    if (text.length < 1) return fail('La réponse ne peut pas être vide.');
+
+    reply.body = text.slice(0, REPLY_MAX);
+    reply.editedAt = new Date().toISOString();
+    await env.BWR_KV.put(key.name, JSON.stringify(reply));  // same key → order preserved
+    const { topicId: _t, ...rest } = reply;
+    return json(rest);
+  }
+
   if (replyMatch && request.method === 'DELETE') {
     const [, topicId, replyId] = replyMatch;
     const user = await getUserFromToken(env, request);

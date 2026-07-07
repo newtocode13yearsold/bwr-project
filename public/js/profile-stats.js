@@ -205,14 +205,14 @@ async function renderRecentRoutes(plan) {
 
 // ── Forest trail health (Gold) ────────────────────────────────────────────────
 const REPORT_TYPE_LABELS = {
-  fallen_tree: ['🌲', 'Arbre tombé'],
-  flooded:     ['🌊', 'Inondé'],
-  muddy:       ['💧', 'Boueux'],
-  rutted:      ['🚧', 'Ornières'],
+  fallen_tree: ['🪵', 'Arbre tombé'],
+  flooded:     ['💧', 'Inondé'],
+  muddy:       ['🟤', 'Boueux'],
+  rutted:      ['🛞', 'Ornières'],
   broken_sign: ['🪧', 'Panneau cassé'],
-  closed:      ['⛔', 'Fermé'],
+  closed:      ['🚫', 'Fermé'],
   danger:      ['⚠️', 'Danger'],
-  other:       ['❓', 'Autre'],
+  other:       ['📝', 'Autre'],
 };
 
 async function renderTrailHealth() {

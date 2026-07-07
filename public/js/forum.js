@@ -5,6 +5,7 @@
 
 let currentUser = null;
 let canPost = false;          // server's verdict for the current user (silver/gold/admin)
+let editingTopicId = null;    // set while the modal is reused to edit an existing topic
 
 const root = () => document.getElementById('forumRoot');
 
@@ -110,11 +111,11 @@ async function renderDetail(id) {
   canPost = !!data.canPost;
 
   const op = postBlock(topic.authorName, topic.body, topic.createdAt, true,
-    canDelete(topic.userId, currentUserId, canModerate) ? `topic:${topic.id}` : null);
+    canDelete(topic.userId, currentUserId, canModerate) ? `topic:${topic.id}` : null, topic.editedAt);
 
   const replyBlocks = replies.map(rep =>
     postBlock(rep.authorName, rep.body, rep.createdAt, false,
-      canDelete(rep.userId, currentUserId, canModerate) ? `reply:${rep.id}` : null)
+      canDelete(rep.userId, currentUserId, canModerate) ? `reply:${rep.id}` : null, rep.editedAt)
   ).join('');
 
   const composer = canPost
@@ -142,21 +143,27 @@ async function renderDetail(id) {
   root().querySelectorAll('[data-del]').forEach(el =>
     el.addEventListener('click', () => onDelete(topic.id, el.dataset.del))
   );
+  root().querySelectorAll('[data-edit]').forEach(el =>
+    el.addEventListener('click', () => onEdit(topic, replies, el.dataset.edit, el.closest('.post')))
+  );
 }
 
-function postBlock(name, body, date, isOp, delRef) {
+function postBlock(name, body, date, isOp, delRef, editedAt) {
   const initial = (name || 'M').trim().charAt(0).toUpperCase();
-  const delBtn = delRef ? `<button class="post-delete" data-del="${escAttr(delRef)}">Supprimer</button>` : '';
-  return `<div class="post${isOp ? ' op' : ''}">
+  // Author/admin can edit or delete — both gated by the same `delRef`.
+  const editBtn = delRef ? `<button class="post-edit" data-edit="${escAttr(delRef)}">Modifier</button>` : '';
+  const delBtn  = delRef ? `<button class="post-delete" data-del="${escAttr(delRef)}">Supprimer</button>` : '';
+  const actions = delRef ? `<div class="post-actions">${editBtn}${delBtn}</div>` : '';
+  return `<div class="post${isOp ? ' op' : ''}"${delRef ? ` data-post="${escAttr(delRef)}"` : ''}>
     <div class="post-head">
       <div class="post-author">
         <div class="post-avatar">${escHtml(initial)}</div>
         <div>
           <div class="post-author-name">${escHtml(name || 'Membre')}</div>
-          <div class="post-date">${relTime(date)}</div>
+          <div class="post-date">${relTime(date)}${editedAt ? ' · modifié' : ''}</div>
         </div>
       </div>
-      ${delBtn}
+      ${actions}
     </div>
     <div class="post-body">${escHtml(body)}</div>
   </div>`;
@@ -202,15 +209,72 @@ async function onDelete(topicId, ref) {
   }
 }
 
-// ── New-topic modal ─────────────────────────────────────────────────────────
+// ── Edit ────────────────────────────────────────────────────────────────────
+function onEdit(topic, replies, ref, postEl) {
+  const [kind, id] = ref.split(':');
+  if (kind === 'topic') {
+    openModalForEdit(topic);
+  } else {
+    const reply = replies.find(rp => rp.id === id);
+    if (reply && postEl) startReplyEdit(topic.id, reply, postEl);
+  }
+}
+
+/** Swap a reply's body for an inline editor (Enregistrer / Annuler). */
+function startReplyEdit(topicId, reply, postEl) {
+  const bodyEl = postEl.querySelector('.post-body');
+  bodyEl.innerHTML = `
+    <textarea class="edit-textarea" maxlength="4000"></textarea>
+    <div class="composer-error edit-error"></div>
+    <div class="edit-actions">
+      <button type="button" class="btn-cancel edit-cancel">Annuler</button>
+      <button type="button" class="btn-save edit-save">Enregistrer</button>
+    </div>`;
+  const ta = bodyEl.querySelector('.edit-textarea');
+  ta.value = reply.body;               // set via value so raw text isn't parsed as HTML
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+
+  const errEl = bodyEl.querySelector('.edit-error');
+  bodyEl.querySelector('.edit-cancel').addEventListener('click', () => renderDetail(topicId));
+  bodyEl.querySelector('.edit-save').addEventListener('click', async () => {
+    const body = ta.value.trim();
+    errEl.textContent = '';
+    if (!body) { errEl.textContent = 'La réponse ne peut pas être vide.'; return; }
+    const saveBtn = bodyEl.querySelector('.edit-save');
+    saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement…';
+    try {
+      await api('PUT', `/api/forum/topics/${encodeURIComponent(topicId)}/replies/${encodeURIComponent(reply.id)}`, { body });
+      renderDetail(topicId);
+    } catch (err) {
+      errEl.textContent = err.message || 'Erreur.';
+      saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer';
+    }
+  });
+}
+
+// ── New-topic modal (also reused to edit an existing topic) ────────────────────
 function openModal() {
+  editingTopicId = null;
+  document.getElementById('modalTitle').textContent = 'Nouveau sujet';
+  document.getElementById('modalSave').textContent = 'Publier';
   document.getElementById('fieldTitle').value = '';
   document.getElementById('fieldBody').value = '';
   document.getElementById('modalError').textContent = '';
   document.getElementById('topicModal').classList.add('open');
   document.getElementById('fieldTitle').focus();
 }
-function closeModal() { document.getElementById('topicModal').classList.remove('open'); }
+function openModalForEdit(topic) {
+  editingTopicId = topic.id;
+  document.getElementById('modalTitle').textContent = 'Modifier le sujet';
+  document.getElementById('modalSave').textContent = 'Enregistrer';
+  document.getElementById('fieldTitle').value = topic.title || '';
+  document.getElementById('fieldBody').value = topic.body || '';
+  document.getElementById('modalError').textContent = '';
+  document.getElementById('topicModal').classList.add('open');
+  document.getElementById('fieldTitle').focus();
+}
+function closeModal() { editingTopicId = null; document.getElementById('topicModal').classList.remove('open'); }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 /** fetch wrapper: attaches the Bearer token, parses JSON, throws {status,message} on error. */
@@ -271,15 +335,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (title.length < 3) { errEl.textContent = 'Le titre doit faire au moins 3 caractères.'; return; }
     if (!body)            { errEl.textContent = 'Le message ne peut pas être vide.'; return; }
 
-    btn.disabled = true; btn.textContent = 'Publication…';
+    const editId = editingTopicId;
+    btn.disabled = true; btn.textContent = editId ? 'Enregistrement…' : 'Publication…';
     try {
-      const topic = await api('POST', '/api/forum/topics', { title, body });
-      closeModal();
-      location.hash = `#t/${encodeURIComponent(topic.id)}`;
+      if (editId) {
+        await api('PUT', `/api/forum/topics/${encodeURIComponent(editId)}`, { title, body });
+        closeModal();
+        renderDetail(editId);
+      } else {
+        const topic = await api('POST', '/api/forum/topics', { title, body });
+        closeModal();
+        location.hash = `#t/${encodeURIComponent(topic.id)}`;
+      }
     } catch (err) {
       errEl.textContent = err.message || 'Erreur.';
     } finally {
-      btn.disabled = false; btn.textContent = 'Publier';
+      btn.disabled = false; btn.textContent = editId ? 'Enregistrer' : 'Publier';
     }
   });
 

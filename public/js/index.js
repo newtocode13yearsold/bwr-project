@@ -197,7 +197,7 @@ try {
   }
 
   fetch(API_URL + '/api/paths')
-    .then(r => r.ok ? r.json() : [])
+    .then(r => { if (!r.ok) throw new Error('paths ' + r.status); return r.json(); })
     .then(paths => {
       if (!Array.isArray(paths)) return;
 
@@ -222,6 +222,10 @@ try {
         uniqueCount++;
         for (let i = 1; i < c.length; i++) totalKm += haversine(c[i - 1][0], c[i - 1][1], c[i][0], c[i][1]);
       }
+
+      // Only overwrite the static HTML fallback when we actually got real data.
+      // A slow/failed fetch or an empty response must keep the last-known numbers.
+      if (uniqueCount === 0) return;
 
       const kmEl = document.getElementById('heroStatKm');
       const pathsEl = document.getElementById('heroStatPaths');

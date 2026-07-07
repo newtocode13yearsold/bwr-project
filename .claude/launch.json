@@ -44,6 +44,12 @@
       "port": 8799
     },
     {
+      "name": "bwr-static",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "public", "-l", "4810"],
+      "port": 4810
+    },
+    {
       "name": "sonora",
       "runtimeExecutable": "npx",
       "runtimeArgs": ["-y", "serve", "C:\\Users\\TOM\\DOCUME~1\\PROJET~1\\SONORA~1", "-l", "4700"],

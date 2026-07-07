@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BWR — Promo Reel · Démo appli (l'app en action)</title>
+<meta name="robots" content="noindex" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&family=Fraunces:opsz,wght@9..144,700;9..144,900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest-900:#0b2410; --forest-700:#12351a; --forest-500:#2f6b25;
+    --lime:#a3e635; --lime-400:#bef264; --cream:#f4f7ee; --ink:#05140a;
+    --easy:#22c55e; --med:#f97316; --hard:#ef4444; --blocked:#9ca3af;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#05140a;overflow:hidden;font-family:Inter,sans-serif}
+  #page{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px}
+  #stage{
+    position:relative;width:calc(100vh * 9 / 16);max-width:96vw;aspect-ratio:9/16;
+    background:radial-gradient(120% 90% at 50% 18%, #14401e 0%, #0b2410 46%, #05140a 100%);
+    border-radius:22px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(163,230,53,.14);
+  }
+
+  /* soft moving light behind the phone */
+  #aura{position:absolute;inset:-20% -10%;z-index:1;pointer-events:none;opacity:.55;
+    background:radial-gradient(40% 30% at 30% 30%, rgba(163,230,53,.22), transparent 70%),
+               radial-gradient(45% 35% at 72% 66%, rgba(47,107,37,.35), transparent 72%);
+    animation:drift 12s ease-in-out infinite alternate}
+  @keyframes drift{to{transform:translate3d(0,-3%,0) scale(1.06)}}
+
+  /* ── headline caption (top) ── */
+  #cap{position:absolute;left:0;right:0;top:5.5%;z-index:40;text-align:center;padding:0 7%;
+       font:800 clamp(18px,4.4vh,40px)/1.18 Inter;color:var(--cream);
+       text-shadow:0 2px 18px rgba(0,0,0,.85);opacity:0;transform:translateY(-12px);
+       transition:opacity .5s ease, transform .55s cubic-bezier(.2,.9,.2,1)}
+  #cap.in{opacity:1;transform:none}
+  #cap .hl{color:var(--lime)}
+
+  /* ── phone mockup ── */
+  #phone{position:absolute;left:50%;bottom:6.5%;z-index:20;
+    width:60%;aspect-ratio:9/19;transform:translate(-50%,26%) scale(.92);
+    background:#04110a;border-radius:34px;padding:9px;
+    box-shadow:0 26px 60px rgba(0,0,0,.6), 0 0 0 2px rgba(163,230,53,.22), inset 0 0 0 2px #0a1f11;
+    opacity:0;transition:opacity .7s ease, transform .8s cubic-bezier(.2,.9,.2,1)}
+  #phone.in{opacity:1;transform:translate(-50%,0) scale(1)}
+  #screen{position:relative;width:100%;height:100%;border-radius:26px;overflow:hidden;background:#0e2a16}
+  #notch{position:absolute;top:6px;left:50%;transform:translateX(-50%);width:32%;height:14px;
+    background:#04110a;border-radius:0 0 12px 12px;z-index:8}
+
+  /* map svg fills screen */
+  #map{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .terrain{fill:#123d1f}
+  .clearing{fill:#1a5028}
+  .water{fill:#14607a;opacity:.9}
+  .trail{fill:none;stroke:#5f8f5a;stroke-width:2.4;stroke-linecap:round;opacity:.7}
+  .trail.dash{stroke-dasharray:4 6}
+  .blocked{fill:none;stroke:var(--blocked);stroke-width:2.4;stroke-linecap:round;opacity:.55}
+  .route{fill:none;stroke:var(--lime);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;
+    filter:drop-shadow(0 0 6px rgba(163,230,53,.85))}
+  .carre{fill:#0b2410;stroke:#7fae5f;stroke-width:1.4}
+
+  /* top search bar inside the screen */
+  #uiTop{position:absolute;top:22px;left:10px;right:10px;z-index:6;
+    display:flex;align-items:center;gap:7px;padding:8px 11px;border-radius:12px;
+    background:rgba(6,20,11,.82);border:1px solid rgba(163,230,53,.25);backdrop-filter:blur(4px);
+    color:#cde8bd;font:700 clamp(8px,1.5vh,13px)/1 Inter;
+    opacity:0;transform:translateY(-8px);transition:opacity .5s ease, transform .5s ease}
+  #uiTop.in{opacity:1;transform:none}
+  #uiTop .pin{color:var(--lime)}
+  #uiTop .cursor{display:inline-block;width:1.5px;height:1.1em;background:var(--lime);
+    margin-left:1px;animation:blink 1s steps(1) infinite;vertical-align:-2px}
+  @keyframes blink{50%{opacity:0}}
+
+  /* bottom sheet (mode + distance + stats) */
+  #sheet{position:absolute;left:8px;right:8px;bottom:10px;z-index:6;
+    padding:11px 12px 12px;border-radius:16px;
+    background:linear-gradient(180deg, rgba(6,20,11,.72), rgba(6,20,11,.92));
+    border:1px solid rgba(163,230,53,.22);backdrop-filter:blur(6px);
+    opacity:0;transform:translateY(18px);transition:opacity .5s ease, transform .55s cubic-bezier(.2,.9,.2,1)}
+  #sheet.in{opacity:1;transform:none}
+  .modes{display:flex;gap:6px;margin-bottom:9px}
+  .mode{flex:1;text-align:center;padding:7px 0;border-radius:9px;font:800 clamp(8px,1.6vh,13px)/1 Inter;
+    color:#9dbb86;background:rgba(163,230,53,.06);border:1px solid rgba(163,230,53,.16);transition:all .35s ease}
+  .mode.on{color:var(--ink);background:linear-gradient(120deg,var(--lime),var(--lime-400));border-color:transparent}
+  .distrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;
+    color:#cde8bd;font:800 clamp(8px,1.6vh,13px)/1 Inter}
+  .distrow b{color:var(--lime);font:900 clamp(11px,2.3vh,19px)/1 Inter}
+  .track{position:relative;height:7px;border-radius:99px;background:rgba(163,230,53,.14);overflow:hidden}
+  .fill{position:absolute;inset:0 100% 0 0;background:linear-gradient(90deg,var(--forest-500),var(--lime));
+    transition:right .1s linear}
+  .knob{position:absolute;top:50%;width:15px;height:15px;border-radius:50%;background:#fff;
+    transform:translate(-50%,-50%);box-shadow:0 2px 8px rgba(0,0,0,.5);transition:left .1s linear}
+
+  /* stats chips that appear after routing */
+  #stats{display:flex;gap:6px;margin-top:10px;opacity:0;transform:translateY(6px);
+    transition:opacity .45s ease, transform .45s ease}
+  #stats.in{opacity:1;transform:none}
+  .chip{flex:1;text-align:center;padding:6px 3px;border-radius:9px;background:rgba(163,230,53,.08);
+    border:1px solid rgba(163,230,53,.16);color:#e8f6db;font:800 clamp(7px,1.4vh,12px)/1.25 Inter}
+  .chip .v{display:block;color:var(--lime);font:900 clamp(10px,2vh,16px)/1.1 Inter;margin-bottom:2px}
+
+  /* elevation sparkline overlay (appears on the map lower third) */
+  #elev{position:absolute;left:8px;right:8px;bottom:118px;z-index:5;height:52px;
+    border-radius:12px;background:rgba(6,20,11,.7);border:1px solid rgba(163,230,53,.2);
+    padding:6px 8px;opacity:0;transform:translateY(8px);transition:opacity .5s ease, transform .5s ease}
+  #elev.in{opacity:1;transform:none}
+  #elev .lbl{color:#9dbb86;font:800 8px/1 Inter;letter-spacing:.08em;text-transform:uppercase}
+  #elevsvg{position:absolute;inset:14px 8px 6px;width:calc(100% - 16px);height:auto}
+
+  /* export badges pop */
+  #exports{position:absolute;top:56px;right:12px;z-index:7;display:flex;flex-direction:column;gap:7px;align-items:flex-end}
+  .badge{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:99px;
+    background:rgba(6,20,11,.9);border:1px solid rgba(163,230,53,.4);color:var(--cream);
+    font:800 clamp(8px,1.5vh,13px)/1 Inter;opacity:0;transform:translateX(16px) scale(.9);
+    box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  .badge.in{opacity:1;transform:none;transition:opacity .4s ease, transform .45s cubic-bezier(.2,1.4,.3,1)}
+  .badge .d{width:8px;height:8px;border-radius:50%;background:var(--lime)}
+
+  /* ── CTA end card ── */
+  #cta{position:absolute;inset:0;z-index:80;display:flex;flex-direction:column;
+       align-items:center;justify-content:center;text-align:center;padding:0 8%;
+       background:radial-gradient(120% 90% at 50% 40%, rgba(20,64,30,.6), rgba(5,20,10,.96));
+       opacity:0;transition:opacity .7s ease}
+  #cta.in{opacity:1}
+  .logo{font:900 clamp(52px,15vh,150px)/1 Fraunces;color:#fff;letter-spacing:.02em;text-shadow:0 6px 40px rgba(0,0,0,.8)}
+  .logo b{color:var(--lime)}
+  .tagline{font:700 clamp(15px,3.4vh,30px)/1.3 Inter;color:var(--cream);margin-top:2vh;max-width:22ch;text-shadow:0 2px 16px rgba(0,0,0,.85)}
+  .cta-btn{margin-top:3.2vh;font:900 clamp(15px,3.4vh,28px)/1 Inter;color:var(--ink);
+           background:linear-gradient(120deg,var(--lime),var(--lime-400));border-radius:999px;padding:15px 30px;
+           text-decoration:none;display:inline-block;pointer-events:auto;box-shadow:0 14px 40px rgba(163,230,53,.4)}
+  .url{margin-top:2.2vh;font:800 clamp(13px,2.8vh,24px)/1 Inter;color:var(--lime-400);letter-spacing:.05em}
+
+  #prog{position:absolute;top:0;left:0;height:4px;width:0;z-index:90;
+        background:linear-gradient(90deg,var(--forest-500),var(--lime));box-shadow:0 0 10px var(--lime)}
+
+  body.bare #page{padding:0;gap:0;height:100vh}
+  body.bare #stage{width:100vw;height:100vh;max-width:none;aspect-ratio:auto;border-radius:0;box-shadow:none}
+  body.bare #controls,body.bare #gate{display:none!important}
+
+  #gate{position:absolute;inset:0;z-index:700;background:rgba(4,12,7,.94);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:0 10%}
+  #gate .logo{font-size:clamp(48px,13vh,120px)}
+  #gate p{color:#cfe8c2;font:600 clamp(13px,2.6vh,20px)/1.45 Inter;max-width:32ch}
+  #gate button{cursor:pointer;border:none}
+  .play{font:900 clamp(17px,4vh,30px)/1 Inter;color:var(--ink);background:linear-gradient(120deg,var(--lime),var(--lime-400));
+        border-radius:999px;padding:17px 34px;box-shadow:0 14px 40px rgba(163,230,53,.45)}
+
+  #controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;color:#9dbb86;font:600 13px/1.4 Inter;max-width:96vw}
+  #controls button,#controls label,#controls a{cursor:pointer;border:1px solid rgba(163,230,53,.3);
+    background:rgba(163,230,53,.08);color:#d8efc7;border-radius:10px;padding:9px 14px;font:700 13px Inter;text-decoration:none}
+  #controls button:hover,#controls label:hover{background:rgba(163,230,53,.18)}
+  #controls .hint{border:none;background:none;color:#7f9a6c;max-width:64ch;text-align:center}
+  input[type=file]{display:none}
+</style>
+</head>
+<body>
+<div id="page">
+  <div id="stage">
+    <div id="aura"></div>
+    <div id="prog"></div>
+    <div id="cap"></div>
+
+    <div id="phone">
+      <div id="screen">
+        <div id="notch"></div>
+        <svg id="map" viewBox="0 0 300 620" preserveAspectRatio="xMidYMid slice">
+          <rect class="terrain" x="0" y="0" width="300" height="620"/>
+          <path class="clearing" d="M40 120 Q120 60 210 120 T260 260 Q220 330 150 320 T50 250 Z"/>
+          <path class="clearing" d="M150 400 Q230 380 270 460 Q250 560 160 550 Q90 520 110 450 Z"/>
+          <path class="water" d="M-10 470 Q60 450 110 495 T240 500 Q290 520 320 495 L320 620 L-10 620 Z" opacity=".85"/>
+          <!-- background trail network -->
+          <path class="trail" d="M20 90 Q110 130 160 90 T290 150"/>
+          <path class="trail dash" d="M60 30 Q90 160 150 210 T250 340"/>
+          <path class="trail" d="M30 300 Q120 260 180 320 T280 300"/>
+          <path class="trail dash" d="M40 430 Q140 400 200 450 T300 430"/>
+          <path class="trail" d="M90 560 Q150 500 230 540"/>
+          <!-- a blocked path (avoided) -->
+          <path class="blocked" d="M210 200 Q240 250 210 300"/>
+          <!-- carrefour dots -->
+          <circle class="carre" cx="150" cy="210" r="4"/>
+          <circle class="carre" cx="180" cy="320" r="4"/>
+          <circle class="carre" cx="110" cy="450" r="4"/>
+          <!-- the generated loop route (animated) -->
+          <path id="routePath" class="route"
+            d="M150 300
+               Q90 250 95 180
+               Q110 120 175 120
+               Q245 128 250 205
+               Q252 290 195 330
+               Q235 380 220 450
+               Q205 520 135 515
+               Q75 505 92 440
+               Q105 385 150 360
+               Q170 335 150 300 Z"/>
+          <!-- start marker -->
+          <g id="startPin" opacity="0">
+            <circle cx="150" cy="300" r="9" fill="var(--lime)"/>
+            <circle cx="150" cy="300" r="4" fill="#05140a"/>
+          </g>
+        </svg>
+
+        <div id="uiTop">
+          <span class="pin">◎</span><span id="searchTxt">Forêt de Compiègne</span><span class="cursor"></span>
+        </div>
+
+        <div id="exports">
+          <div class="badge" id="bGarmin"><span class="d"></span>Export Garmin</div>
+          <div class="badge" id="bStrava"><span class="d"></span>Strava · GPX</div>
+          <div class="badge" id="bOff"><span class="d"></span>Hors-ligne ✓</div>
+        </div>
+
+        <div id="elev">
+          <span class="lbl">Dénivelé · <span id="elevGain">+180 m</span></span>
+          <svg id="elevsvg" viewBox="0 0 260 30" preserveAspectRatio="none">
+            <path id="elevPath" fill="none" stroke="var(--lime)" stroke-width="2.5"
+              d="M0 24 L26 20 L52 22 L78 12 L104 15 L130 5 L156 9 L182 3 L208 11 L234 8 L260 14"/>
+          </svg>
+        </div>
+
+        <div id="sheet">
+          <div class="modes">
+            <div class="mode" id="mAtoB">A → B</div>
+            <div class="mode" id="mLoop">Boucle</div>
+          </div>
+          <div class="distrow"><span>Distance</span><b id="distVal">2 km</b></div>
+          <div class="track"><div class="fill" id="fill"></div><div class="knob" id="knob" style="left:0"></div></div>
+          <div id="stats">
+            <div class="chip"><span class="v" id="sDist">8,2 km</span>distance</div>
+            <div class="chip"><span class="v" id="sTime">2 h 05</span>durée</div>
+            <div class="chip"><span class="v">Facile</span>difficulté</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="cta">
+      <div class="logo">B<b>W</b>R</div>
+      <div class="tagline">Ta boucle sur mesure, en 3 gestes.</div>
+      <a class="cta-btn" href="https://bwrmaps.com" target="_blank" rel="noopener">Trace ta rando →</a>
+      <div class="url">bwrmaps.com · gratuit</div>
+    </div>
+
+    <div id="gate">
+      <div class="logo">B<b>W</b>R</div>
+      <button class="play" id="playBtn">▶ Lancer le reel</button>
+      <p>Musique incluse 🎵 — monte le volume. Plein écran conseillé pour enregistrer.</p>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button id="rec">⏺ Enregistrer la vidéo</button>
+    <button id="replay">↻ Rejouer</button>
+    <button id="fs">⛶ Plein écran</button>
+    <label for="audio">🎵 Remplacer par ma musique</label>
+    <input type="file" id="audio" accept="audio/*" />
+    <div class="hint">Reel « démo » : l'appli en action — recherche, mode Boucle, distance, la <b>boucle qui se trace toute seule</b> sur la carte, dénivelé + export Garmin/Strava. Motion-graphics (pas de photos), musique marimba douce générée dans le navigateur. « Remplacer par ma musique » charge ton fichier. Format 9:16, ~29&nbsp;s.</div>
+  </div>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────
+   BWR promo reel — « démo appli ». A product-demo reel: a phone
+   shows BWR working — type a start, pick "Boucle", drag the
+   distance, and the loop DRAWS ITSELF on the map (SVG stroke),
+   then elevation + export badges. Pure motion-graphics (no photo
+   b-roll), a bright marimba bed (kick + hat, no heavy EDM) — a
+   different animal from promo-voix (calm doc) and promo-hype (EDM).
+   All audio is WebAudio so screen-recording captures it; the shared
+   renderMusicWav() lets a make-*.mjs export the exact same track.
+   ───────────────────────────────────────────────────────────── */
+const $ = s=>document.querySelector(s);
+const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+let abort=false;
+
+if(location.search.includes('bare')) document.body.classList.add('bare');
+
+function cap(html){ const el=$('#cap'); el.classList.remove('in'); void el.offsetWidth;
+  el.innerHTML=html||''; if(html) el.classList.add('in'); }
+
+// type text into the search bar
+async function typeSearch(text){
+  const el=$('#searchTxt'); el.textContent='';
+  for(let i=0;i<text.length;i++){ if(abort)return; el.textContent=text.slice(0,i+1); await sleep(45); }
+}
+
+// animate the distance slider + km readout to a target (0..1 of a 2..15km range)
+async function slideDistance(toKm){
+  const knob=$('#knob'), fill=$('#fill'), val=$('#distVal');
+  const min=2,max=15; const t=(toKm-min)/(max-min);
+  const steps=34; for(let i=0;i<=steps;i++){ if(abort)return;
+    const p=(i/steps)*t; const km=(min+(max-min)*p);
+    knob.style.left=(p*100)+'%'; fill.style.right=((1-p)*100)+'%';
+    val.textContent=km.toFixed(0)+' km'; await sleep(26); }
+}
+
+// draw the SVG loop route by animating stroke-dashoffset.
+// Time-based (setInterval) so it advances even if the tab isn't the focused
+// one — requestAnimationFrame is throttled/paused in background tabs, which
+// would otherwise hang the whole timeline here.
+function drawRoute(ms){
+  const path=$('#routePath'); const len=path.getTotalLength();
+  path.style.strokeDasharray=len; path.style.strokeDashoffset=len;
+  $('#startPin').style.transition='opacity .4s ease'; $('#startPin').style.opacity='1';
+  return new Promise(res=>{ const start=Date.now();
+    const id=setInterval(()=>{ if(abort){ clearInterval(id); return res(); }
+      const p=Math.min(1,(Date.now()-start)/ms); const eased=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+      path.style.strokeDashoffset=len*(1-eased);
+      if(p>=1){ clearInterval(id); res(); } }, 16); });
+}
+
+// draw elevation sparkline (time-based, same rationale as drawRoute)
+function drawElev(ms){
+  const path=$('#elevPath'); const len=path.getTotalLength();
+  path.style.strokeDasharray=len; path.style.strokeDashoffset=len;
+  const start=Date.now();
+  const id=setInterval(()=>{ if(abort){ clearInterval(id); return; }
+    const p=Math.min(1,(Date.now()-start)/ms); path.style.strokeDashoffset=len*(1-p);
+    if(p>=1) clearInterval(id); }, 16);
+}
+
+function runProgress(total){ const el=$('#prog'); const start=Date.now();
+  const id=setInterval(()=>{ if(abort){ clearInterval(id); return; }
+    const p=Math.min(1,(Date.now()-start)/total); el.style.width=(p*100)+'%';
+    if(p>=1) clearInterval(id); }, 33); }
+
+/* ── bright marimba bed (WebAudio) — pluck + soft kick + hat, no EDM drop ── */
+// Progression: C – Am – F – G (bright, forward-moving), ~102 BPM.
+let audioCtx=null, musicStop=null, musicMaster=null, userAudioEl=null;
+function buildMusicGraph(ac, t0, dur){
+  const master=ac.createGain();
+  master.gain.setValueAtTime(0,t0); master.gain.linearRampToValueAtTime(0.5,t0+1.6);
+
+  const delay=ac.createDelay(1.0); delay.delayTime.value=0.23;
+  const fb=ac.createGain(); fb.gain.value=0.22; const wet=ac.createGain(); wet.gain.value=0.18;
+  delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(master);
+
+  // noise buffer for hats
+  const nbuf=ac.createBuffer(1, Math.ceil(ac.sampleRate*0.2), ac.sampleRate);
+  const nd=nbuf.getChannelData(0); for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1;
+
+  const bpm=102, beat=60/bpm, bars=Math.ceil(dur/(4*beat))+1;
+  const C4=261.63,E4=329.63,G4=392.00,A3=220.00,F3=174.61,G3=196.00,B3=246.94,D4=293.66,C5=523.25,E5=659.25,G5=783.99,A4=440;
+  const chords=[ [C4,E4,G4], [A3,C4,E4], [F3,A3,C4], [G3,B3,D4] ]; // C Am F G
+  const tops  =[ G5,          E5,          C5,          D4*2      ];
+
+  // marimba-ish pluck: two detuned sines, fast decay
+  function marimba(f,s,d,gain){ [0,0.4].forEach((det,k)=>{ const o=ac.createOscillator(); o.type='sine';
+    o.frequency.value=f*(k?1.005:1)+det; const g=ac.createGain();
+    g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(gain*(k?0.5:1),s+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+d);
+    o.connect(g); g.connect(master); if(!k) g.connect(delay); o.start(s); o.stop(s+d+0.05); }); }
+  function pad(freqs,s,d){ freqs.forEach(f=>{ const o=ac.createOscillator(); o.type='sine'; o.frequency.value=f/2;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(0.03,s+0.6);
+    g.gain.setValueAtTime(0.03,Math.max(s+0.6,s+d-0.6)); g.gain.linearRampToValueAtTime(0,s+d);
+    o.connect(g); g.connect(master); o.start(s); o.stop(s+d+0.06); }); }
+  function kick(s){ const o=ac.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(125,s); o.frequency.exponentialRampToValueAtTime(45,s+0.12);
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(0.13,s+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+0.2); o.connect(g); g.connect(master); o.start(s); o.stop(s+0.26); }
+  function hat(s,gain){ const src=ac.createBufferSource(); src.buffer=nbuf;
+    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=6800;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(gain,s+0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+0.06); src.connect(hp); hp.connect(g); g.connect(master);
+    src.start(s); src.stop(s+0.09); }
+
+  for(let bar=0;bar<bars;bar++){ const bs=t0+bar*4*beat; const ch=chords[bar%4];
+    pad(ch, bs, 4*beat);
+    const arp=[ ch[0], ch[2], ch[1], ch[2]*2, ch[0]*2, ch[2], ch[1], ch[2]*2 ];
+    for(let i=0;i<8;i++) marimba(arp[i], bs+i*0.5*beat, 0.7*beat, 0.075);
+    if(bar>0){ for(let q=0;q<4;q++){ kick(bs+q*beat); hat(bs+q*beat+0.5*beat, q%2?0.05:0.03); } }
+    if(bar>1) marimba(tops[bar%4], bs, 1.6*beat, 0.05);
+  }
+  master.gain.setValueAtTime(0.5, t0+dur-2); master.gain.linearRampToValueAtTime(0, t0+dur);
+  return master;
+}
+function startMusic(){ stopMusic();
+  if(userAudioEl){ userAudioEl.currentTime=0; userAudioEl.play().catch(()=>{}); return; }
+  const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+  const ac=new AC(); audioCtx=ac; musicMaster=buildMusicGraph(ac, ac.currentTime+0.1, 42);
+  musicMaster.connect(ac.destination); musicStop=()=>{ try{ac.close();}catch(e){} audioCtx=null; musicMaster=null; }; }
+window.renderMusicWav = async function(seconds){ seconds=seconds||42;
+  const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext; if(!OAC) return null;
+  const sr=44100; const oac=new OAC(2, Math.ceil(sr*seconds), sr);
+  const master=buildMusicGraph(oac,0,seconds); master.connect(oac.destination);
+  const buf=await oac.startRendering(); return bufferToWavBase64(buf); };
+function bufferToWavBase64(buf){ const numCh=buf.numberOfChannels, len=buf.length, sr=buf.sampleRate;
+  const blockAlign=numCh*2, dataLen=len*blockAlign; const ab=new ArrayBuffer(44+dataLen); const dv=new DataView(ab);
+  const wr=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
+  wr(0,'RIFF'); dv.setUint32(4,36+dataLen,true); wr(8,'WAVE'); wr(12,'fmt ');
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,numCh,true);
+  dv.setUint32(24,sr,true); dv.setUint32(28,sr*blockAlign,true); dv.setUint16(32,blockAlign,true);
+  dv.setUint16(34,16,true); wr(36,'data'); dv.setUint32(40,dataLen,true);
+  const chans=[]; for(let c=0;c<numCh;c++) chans.push(buf.getChannelData(c));
+  let off=44; for(let i=0;i<len;i++){ for(let c=0;c<numCh;c++){ let s=Math.max(-1,Math.min(1,chans[c][i]));
+    dv.setInt16(off, s<0? s*0x8000 : s*0x7FFF, true); off+=2; } }
+  let bin=''; const bytes=new Uint8Array(ab); const CH=0x8000;
+  for(let i=0;i<bytes.length;i+=CH) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+CH));
+  return btoa(bin); }
+function fadeMusic(sec=1.4){ if(userAudioEl){ const a=userAudioEl; const step=a.volume/(sec*20||1);
+    const id=setInterval(()=>{ a.volume=Math.max(0,a.volume-step); if(a.volume<=0.001){clearInterval(id);a.pause();a.volume=1;} },50); return; }
+  if(musicMaster&&audioCtx){ try{ const now=audioCtx.currentTime;
+    musicMaster.gain.cancelScheduledValues(now); musicMaster.gain.setValueAtTime(musicMaster.gain.value,now);
+    musicMaster.gain.linearRampToValueAtTime(0, now+sec);}catch(e){} } }
+function stopMusic(){ if(userAudioEl){ try{userAudioEl.pause();}catch(e){} } if(musicStop){musicStop();musicStop=null;} }
+
+// ── timeline ──
+// Matches the real sum of the scene sleeps below (~20 s). Keep in sync if you
+// retime scenes: it drives the progress bar and the record auto-stop.
+const TOTAL = 20000;
+function resetUI(){
+  ['uiTop','sheet','stats','elev','phone','cap','cta'].forEach(id=>$('#'+id).classList.remove('in'));
+  $('#mAtoB').classList.remove('on'); $('#mLoop').classList.remove('on');
+  ['bGarmin','bStrava','bOff'].forEach(id=>$('#'+id).classList.remove('in'));
+  $('#startPin').style.opacity='0';
+  const rp=$('#routePath'); const l=rp.getTotalLength(); rp.style.strokeDasharray=l; rp.style.strokeDashoffset=l;
+  $('#knob').style.left='0'; $('#fill').style.right='100%'; $('#distVal').textContent='2 km';
+  $('#searchTxt').textContent='';
+}
+async function play(){
+  abort=false; resetUI(); $('#prog').style.width='0'; runProgress(TOTAL);
+
+  // 1 — hook + phone rises
+  cap("Trouver une rando à la<br><span class='hl'>bonne distance</span>, c'est galère.");
+  await sleep(700); if(abort)return;
+  $('#phone').classList.add('in');
+  await sleep(1900); if(abort)return;
+
+  // 2 — search
+  cap("Dis juste <span class='hl'>où tu pars</span>.");
+  $('#uiTop').classList.add('in'); await sleep(350);
+  await typeSearch('Forêt de Compiègne'); if(abort)return;
+  await sleep(500); if(abort)return;
+
+  // 3 — sheet + pick Boucle + drag distance
+  cap("Choisis ton <span class='hl'>mode</span> et ta distance.");
+  $('#sheet').classList.add('in'); await sleep(500); if(abort)return;
+  $('#mAtoB').classList.add('on'); await sleep(450); $('#mAtoB').classList.remove('on');
+  $('#mLoop').classList.add('on'); await sleep(400); if(abort)return;
+  await slideDistance(8); if(abort)return;
+  await sleep(500); if(abort)return;
+
+  // 4 — the loop draws itself
+  cap("BWR trace ta <span class='hl'>boucle</span>.<br>Sentiers vérifiés sur le terrain.");
+  await drawRoute(2600); if(abort)return;
+  $('#stats').classList.add('in');
+  await sleep(1500); if(abort)return;
+
+  // 5 — elevation
+  cap("Dénivelé, difficulté :<br><span class='hl'>tout est là</span>.");
+  $('#elev').classList.add('in'); drawElev(1100);
+  await sleep(2100); if(abort)return;
+
+  // 6 — exports + offline
+  cap("Export <span class='hl'>Garmin / Strava</span>.<br>Même hors-ligne.");
+  $('#elev').classList.remove('in');
+  $('#bGarmin').classList.add('in'); await sleep(300);
+  $('#bStrava').classList.add('in'); await sleep(300);
+  $('#bOff').classList.add('in'); await sleep(1900); if(abort)return;
+
+  // 7 — CTA
+  cap('');
+  $('#cta').classList.add('in');
+  await sleep(4200); if(abort)return;
+  fadeMusic(1.6);
+}
+function stopAll(){ abort=true; stopMusic(); }
+
+// ── controls ──
+$('#playBtn').addEventListener('click',()=>{ $('#gate').style.display='none'; startMusic(); play(); });
+$('#replay').addEventListener('click',async()=>{ stopAll(); await sleep(80); abort=false; startMusic(); play(); });
+$('#fs').addEventListener('click',()=>{ const s=$('#stage'); if(!document.fullscreenElement) s.requestFullscreen?.(); else document.exitFullscreen?.(); });
+$('#audio').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return;
+  if(userAudioEl) userAudioEl.pause(); userAudioEl=new Audio(URL.createObjectURL(f)); userAudioEl.loop=false; });
+$('#rec').addEventListener('click',async()=>{
+  if(!navigator.mediaDevices?.getDisplayMedia){ alert('Ton navigateur ne supporte pas l’enregistrement.'); return; }
+  let stream; try{ stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:true,preferCurrentTab:true}); }catch(e){ return; }
+  const mime = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4'
+            : MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+  const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:9000000});
+  const chunks=[]; rec.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+  rec.onstop=()=>{ const blob=new Blob(chunks,{type:mime}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='bwr-reel-demo'+(mime.includes('mp4')?'.mp4':'.webm');
+    document.body.appendChild(a); a.click(); a.remove(); stream.getTracks().forEach(t=>t.stop());
+    $('#rec').textContent='⏺ Enregistrer la vidéo'; };
+  $('#rec').textContent='● Enregistrement…'; $('#gate').style.display='none';
+  stopAll(); await sleep(100); abort=false;
+  rec.start(); startMusic(); play();
+  setTimeout(()=>{ try{ rec.stop(); }catch(e){} }, TOTAL+4000);
+});
+</script>
+<script src="../js/track.js"></script>
+</body>
+</html>

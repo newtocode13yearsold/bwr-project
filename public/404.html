@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BWR — Page introuvable (404)</title>
+  <meta name="description" content="Cette page n'existe pas ou a été déplacée. Retournez à l'accueil de BWR." />
+  <meta name="robots" content="noindex, follow" />
+  <meta name="theme-color" content="#1e4d14" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css" />
+  <script src="js/theme.js"></script>
+  <style>
+    :root { --nf-brand: var(--forest-700, #1e4d14); --nf-on-brand: #fff; }
+    :root[data-theme="dark"] { --nf-brand: var(--lime-500, #a3e635); --nf-on-brand: #0b2410; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--surface-1, #fafbf7);
+      color: var(--text, #1f2937);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem 1.25rem;
+      line-height: 1.5;
+    }
+    .nf-logo {
+      font-weight: 900;
+      font-size: 1.5rem;
+      letter-spacing: 0.05em;
+      color: var(--nf-brand);
+      text-decoration: none;
+      margin-bottom: 2.5rem;
+    }
+    .nf-code {
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 700;
+      font-size: clamp(5rem, 22vw, 9rem);
+      line-height: 1;
+      color: var(--nf-brand);
+      opacity: 0.9;
+    }
+    .nf-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 600;
+      font-size: clamp(1.5rem, 5vw, 2.25rem);
+      margin: 0.75rem 0 0.75rem;
+    }
+    .nf-text {
+      max-width: 34rem;
+      color: var(--text-muted, #6b7280);
+      font-size: 1.05rem;
+      margin-bottom: 2rem;
+    }
+    .nf-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+    .nf-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .nf-btn:hover { transform: translateY(-2px); }
+    .nf-btn-primary {
+      background: var(--nf-brand);
+      color: var(--nf-on-brand);
+      box-shadow: 0 6px 18px rgba(30, 77, 20, 0.28);
+    }
+    .nf-btn-ghost {
+      background: transparent;
+      color: var(--nf-brand);
+      border: 1.5px solid var(--nf-brand);
+    }
+  </style>
+</head>
+<body>
+  <a href="/" class="nf-logo">BWR</a>
+  <div class="nf-code">404</div>
+  <h1 class="nf-title">Cette page s'est perdue en forêt</h1>
+  <p class="nf-text">La page que vous cherchez n'existe pas ou a été déplacée. Le lien est peut-être ancien ou mal recopié. Reprenons le bon chemin.</p>
+  <div class="nf-actions">
+    <a href="/" class="nf-btn nf-btn-primary">← Retour à l'accueil</a>
+    <a href="/map" class="nf-btn nf-btn-ghost">Ouvrir la carte</a>
+  </div>
+</body>
+</html>

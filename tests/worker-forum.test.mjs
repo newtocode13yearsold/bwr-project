@@ -186,6 +186,106 @@ describe('POST /api/forum/topics/:id/replies', () => {
   });
 });
 
+// ── Editing ───────────────────────────────────────────────────────────────────
+
+describe('PUT /api/forum/topics/:id', () => {
+  test('author can edit own topic title + body', async () => {
+    const { env, kv } = freshEnv();
+    const id = (await (await createTopic(env, 'tok-silver', 'Titre original', 'Corps original')).json()).id;
+
+    const res = await worker.fetch(
+      authed('PUT', `/api/forum/topics/${id}`, 'tok-silver', { title: 'Titre corrigé', body: 'Corps corrigé' }), env);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.title, 'Titre corrigé');
+    assert.equal(data.body, 'Corps corrigé');
+    assert.ok(data.editedAt);
+
+    const stored = JSON.parse(kv.store.get(`forum:topic:${id}`));
+    assert.equal(stored.title, 'Titre corrigé');
+    assert.equal(stored.replyCount, 0);          // untouched fields preserved
+  });
+
+  test('admin can edit any topic', async () => {
+    const { env } = freshEnv();
+    const id = (await (await createTopic(env, 'tok-silver', 'Titre original')).json()).id;
+    const res = await worker.fetch(
+      authed('PUT', `/api/forum/topics/${id}`, 'tok-admin', { title: 'Corrigé admin', body: 'ok' }), env);
+    assert.equal(res.status, 200);
+  });
+
+  test('non-author cannot edit someone else topic', async () => {
+    const { env } = freshEnv();
+    const id = (await (await createTopic(env, 'tok-silver', 'Pas touche')).json()).id;
+    const res = await worker.fetch(
+      authed('PUT', `/api/forum/topics/${id}`, 'tok-gold', { title: 'Pirate', body: 'x' }), env);
+    assert.equal(res.status, 403);
+  });
+
+  test('rejects too-short title', async () => {
+    const { env } = freshEnv();
+    const id = (await (await createTopic(env, 'tok-silver', 'Titre original')).json()).id;
+    const res = await worker.fetch(
+      authed('PUT', `/api/forum/topics/${id}`, 'tok-silver', { title: 'ab', body: 'x' }), env);
+    assert.equal(res.status, 400);
+  });
+
+  test('404 for unknown topic', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(
+      authed('PUT', '/api/forum/topics/nope', 'tok-silver', { title: 'Titre', body: 'x' }), env);
+    assert.equal(res.status, 404);
+  });
+});
+
+describe('PUT /api/forum/topics/:id/replies/:replyId', () => {
+  async function seedReply(env, token = 'tok-gold') {
+    const id = (await (await createTopic(env, 'tok-silver', 'Sujet avec reponse')).json()).id;
+    const replyId = (await (await worker.fetch(
+      authed('POST', `/api/forum/topics/${id}/replies`, token, { body: 'texte original' }), env)).json()).id;
+    return { id, replyId };
+  }
+
+  test('author can edit own reply', async () => {
+    const { env } = freshEnv();
+    const { id, replyId } = await seedReply(env);
+    const res = await worker.fetch(
+      authed('PUT', `/api/forum/topics/${id}/replies/${replyId}`, 'tok-gold', { body: 'texte corrigé' }), env);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.body, 'texte corrigé');
+    assert.ok(data.editedAt);
+
+    const detail = await (await worker.fetch(authed('GET', `/api/forum/topics/${id}`, 'tok-silver'), env)).json();
+    assert.equal(detail.replies[0].body, 'texte corrigé');
+    assert.equal(detail.topic.replyCount, 1);    // still one reply, no dupes
+  });
+
+  test('non-author cannot edit someone else reply', async () => {
+    const { env } = freshEnv();
+    const { id, replyId } = await seedReply(env);
+    const res = await worker.fetch(
+      authed('PUT', `/api/forum/topics/${id}/replies/${replyId}`, 'tok-silver', { body: 'pirate' }), env);
+    assert.equal(res.status, 403);
+  });
+
+  test('admin can edit any reply', async () => {
+    const { env } = freshEnv();
+    const { id, replyId } = await seedReply(env);
+    const res = await worker.fetch(
+      authed('PUT', `/api/forum/topics/${id}/replies/${replyId}`, 'tok-admin', { body: 'corrigé admin' }), env);
+    assert.equal(res.status, 200);
+  });
+
+  test('empty reply rejected', async () => {
+    const { env } = freshEnv();
+    const { id, replyId } = await seedReply(env);
+    const res = await worker.fetch(
+      authed('PUT', `/api/forum/topics/${id}/replies/${replyId}`, 'tok-gold', { body: '   ' }), env);
+    assert.equal(res.status, 400);
+  });
+});
+
 // ── Deletion / moderation ─────────────────────────────────────────────────────
 
 describe('DELETE forum content', () => {

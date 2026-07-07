@@ -209,7 +209,7 @@ document.getElementById('btnEditPaths')?.addEventListener('click', async () => {
 });
 
 // ── Path popup & report flow ──────────────────────────────────────────────────
-const REPORT_ICONS  = { fallen_tree:'🌲', flooded:'💧', muddy:'🟤', rutted:'🛞', broken_sign:'🪧', closed:'🚫', danger:'⚠️', other:'📝' };
+const REPORT_ICONS  = { fallen_tree:'🪵', flooded:'💧', muddy:'🟤', rutted:'🛞', broken_sign:'🪧', closed:'🚫', danger:'⚠️', other:'📝' };
 const REPORT_LABELS = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', muddy:'Boueux', rutted:'Ornières', broken_sign:'Carrefour cassé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
 
 function openPathPopup(path, latlng) {
@@ -268,7 +268,7 @@ function openPathPopup(path, latlng) {
         ${path.notes ? `<p class="popup-notes">${path.notes}</p>` : ''}
         ${difficultyHTML}
         <div class="popup-report-section">
-          <button class="popup-fallen-btn" id="openFallenTree-${path.id}">🌲 Arbre tombé ici</button>
+          <button class="popup-fallen-btn" id="openFallenTree-${path.id}">🪵 Arbre tombé ici</button>
           <button class="popup-fallen-btn" id="openFlooded-${path.id}">💧 Chemin inondé</button>
           <button class="popup-fallen-btn" id="openMuddy-${path.id}">🟤 Boueux ici</button>
           <button class="popup-fallen-btn" id="openRutted-${path.id}">🛞 Ornières ici</button>

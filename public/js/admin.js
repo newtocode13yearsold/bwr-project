@@ -34,7 +34,7 @@ function escapeHtml(str) {
   ));
 }
 
-const REPORT_ICONS  = { fallen_tree:'🌲', flooded:'💧', muddy:'🟤', rutted:'🛞', broken_sign:'🪧', closed:'🚫', danger:'⚠️', other:'📝' };
+const REPORT_ICONS  = { fallen_tree:'🪵', flooded:'💧', muddy:'🟤', rutted:'🛞', broken_sign:'🪧', closed:'🚫', danger:'⚠️', other:'📝' };
 const REPORT_LABELS_ADMIN = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', muddy:'Boueux', rutted:'Ornières', broken_sign:'Carrefour cassé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
 
 let currentUser = null;
@@ -838,7 +838,7 @@ function openColorPopup(path, latlng) {
           </div>`;
         })()}
         <div class="admin-quick-actions">
-          <button class="popup-fallen-btn" id="adminFallenTree-${path.id}">🌲 Arbre tombé ici</button>
+          <button class="popup-fallen-btn" id="adminFallenTree-${path.id}">🪵 Arbre tombé ici</button>
           <button class="popup-fallen-btn" id="adminMuddy-${path.id}">🟤 Boueux ici</button>
           <button class="popup-fallen-btn" id="adminRutted-${path.id}">🛞 Ornières ici</button>
           <button class="popup-fallen-btn" id="adminBrokenSign-${path.id}">🪧 Carrefour cassé</button>
@@ -877,7 +877,7 @@ function openColorPopup(path, latlng) {
         const report = await res.json();
         allReports.push(report);
         renderReportMarkers();
-        showStatus('🌲 Arbre tombé signalé !');
+        showStatus('🪵 Arbre tombé signalé !');
       } else {
         showStatus('Erreur lors du signalement.', true);
       }

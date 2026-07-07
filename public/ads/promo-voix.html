@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BWR — Promo Reel · Témoignage (musique douce)</title>
+<meta name="robots" content="noindex" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&family=Fraunces:opsz,wght@9..144,700;9..144,900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* calm forest palette — grounded, not neon. Opposite of promo-hype. */
+    --forest-900:#0b2410; --forest-700:#1e4d14; --forest-500:#4a8a32;
+    --lime:#a3e635; --lime-400:#bef264; --cream:#f4f7ee; --ink:#05140a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#05140a;overflow:hidden;font-family:Inter,sans-serif}
+  #page{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px}
+  #stage{
+    position:relative;width:calc(100vh * 9 / 16);max-width:96vw;aspect-ratio:9/16;
+    background:#05140a;border-radius:22px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(163,230,53,.14);
+  }
+
+  /* ── photo b-roll layer — slow, filmic Ken-Burns ── */
+  #photos{position:absolute;inset:0;z-index:10}
+  .ph{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;
+      transform:scale(1.06);will-change:transform,opacity;
+      transition:opacity 1s ease}
+  .ph.show{opacity:1}
+  .ph.kb{animation:kenburns var(--kb,6s) ease-out both}
+  @keyframes kenburns{from{transform:scale(1.04)}to{transform:scale(1.16)}}
+
+  /* warm documentary grade + vignette */
+  #grade{position:absolute;inset:0;z-index:20;pointer-events:none;mix-blend-mode:soft-light;
+    background:linear-gradient(160deg,rgba(163,230,53,.22),transparent 55%,rgba(11,36,16,.5))}
+  #vignette{position:absolute;inset:0;z-index:21;pointer-events:none;
+    background:
+      radial-gradient(120% 82% at 50% 40%, transparent 46%, rgba(3,14,7,.66) 100%),
+      linear-gradient(180deg, rgba(3,14,7,.5) 0%, transparent 24%, transparent 54%, rgba(3,14,7,.9) 100%);}
+
+  /* ── subtitle band (85% watch muted — subs carry the story) ── */
+  #subs{position:absolute;left:0;right:0;bottom:12.5%;z-index:45;padding:0 8%;
+        display:flex;justify-content:center;pointer-events:none}
+  #subtxt{font:800 clamp(17px,4vh,36px)/1.28 Inter;color:var(--cream);text-align:center;max-width:20ch;
+          text-shadow:0 2px 16px rgba(0,0,0,.9);opacity:0;transform:translateY(14px);
+          transition:opacity .45s ease, transform .5s cubic-bezier(.2,.9,.2,1)}
+  #subtxt.in{opacity:1;transform:none}
+  #subtxt .hl{color:var(--lime)}
+
+  /* opening kicker */
+  #kick{position:absolute;left:0;right:0;top:12%;z-index:45;text-align:center;padding:0 8%;
+        font:800 clamp(13px,3.2vh,28px)/1 Inter;letter-spacing:.22em;text-transform:uppercase;
+        color:var(--lime);text-shadow:0 2px 16px rgba(0,0,0,.8);
+        opacity:0;transition:opacity .6s ease}
+  #kick.in{opacity:1}
+
+  /* ── logo / CTA end card ── */
+  #cta{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;
+       align-items:center;justify-content:center;gap:0;text-align:center;padding:0 8%;
+       opacity:0;transition:opacity .7s ease}
+  #cta.in{opacity:1}
+  .logo{font:900 clamp(52px,15vh,150px)/1 Fraunces;color:#fff;letter-spacing:.02em;
+        text-shadow:0 6px 40px rgba(0,0,0,.8)}
+  .logo b{color:var(--lime)}
+  .tagline{font:700 clamp(15px,3.4vh,30px)/1.3 Inter;color:var(--cream);margin-top:2vh;max-width:22ch;
+           text-shadow:0 2px 16px rgba(0,0,0,.85)}
+  .cta-btn{margin-top:3.2vh;font:900 clamp(15px,3.4vh,28px)/1 Inter;color:var(--ink);
+           background:linear-gradient(120deg,var(--lime),var(--lime-400));border-radius:999px;padding:15px 30px;
+           text-decoration:none;display:inline-block;pointer-events:auto;box-shadow:0 14px 40px rgba(163,230,53,.4)}
+  .url{margin-top:2.2vh;font:800 clamp(13px,2.8vh,24px)/1 Inter;color:var(--lime-400);letter-spacing:.05em}
+
+  #prog{position:absolute;top:0;left:0;height:4px;width:0;z-index:60;
+        background:linear-gradient(90deg,var(--forest-500),var(--lime));box-shadow:0 0 10px var(--lime)}
+
+  /* bare capture mode (?bare): stage fills the viewport */
+  body.bare #page{padding:0;gap:0;height:100vh}
+  body.bare #stage{width:100vw;height:100vh;max-width:none;aspect-ratio:auto;border-radius:0;box-shadow:none}
+  body.bare #controls{display:none!important}
+  body.bare #gate{display:none!important}
+
+  #gate{position:absolute;inset:0;z-index:700;background:rgba(4,12,7,.94);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+        text-align:center;padding:0 10%}
+  #gate .logo{font-size:clamp(48px,13vh,120px)}
+  #gate p{color:#cfe8c2;font:600 clamp(13px,2.6vh,20px)/1.45 Inter;max-width:32ch}
+  #gate button{cursor:pointer;border:none}
+  .play{font:900 clamp(17px,4vh,30px)/1 Inter;color:var(--ink);background:linear-gradient(120deg,var(--lime),var(--lime-400));
+        border-radius:999px;padding:17px 34px;box-shadow:0 14px 40px rgba(163,230,53,.45)}
+
+  #controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;
+            color:#9dbb86;font:600 13px/1.4 Inter;max-width:96vw}
+  #controls button,#controls label,#controls a{cursor:pointer;border:1px solid rgba(163,230,53,.3);
+    background:rgba(163,230,53,.08);color:#d8efc7;border-radius:10px;padding:9px 14px;font:700 13px Inter;text-decoration:none}
+  #controls button:hover,#controls label:hover{background:rgba(163,230,53,.18)}
+  #controls .hint{border:none;background:none;color:#7f9a6c;max-width:64ch;text-align:center}
+  input[type=file]{display:none}
+</style>
+</head>
+<body>
+<div id="page">
+  <div id="stage">
+    <div id="photos"></div>
+    <div id="grade"></div>
+    <div id="vignette"></div>
+    <div id="prog"></div>
+
+    <div id="kick">Forêt de Compiègne</div>
+    <div id="subs"><div id="subtxt"></div></div>
+
+    <div id="cta">
+      <div class="logo">B<b>W</b>R</div>
+      <div class="tagline">Les cartes qui te simplifient la balade.</div>
+      <a class="cta-btn" href="https://bwrmaps.com" target="_blank" rel="noopener">Explore la forêt →</a>
+      <div class="url">bwrmaps.com · gratuit</div>
+    </div>
+
+    <div id="gate">
+      <div class="logo">B<b>W</b>R</div>
+      <button class="play" id="playBtn">▶ Lancer le reel</button>
+      <p>Musique douce incluse 🎵 — monte le volume. Plein écran conseillé pour enregistrer.</p>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button id="rec">⏺ Enregistrer la vidéo</button>
+    <button id="replay">↻ Rejouer</button>
+    <button id="fs">⛶ Plein écran</button>
+    <label for="audio">🎵 Remplacer par ma musique</label>
+    <input type="file" id="audio" accept="audio/*" />
+    <div class="hint">Reel « témoignage » : b-roll lent, sous-titres qui racontent l'histoire et <b>musique douce</b> (nappe + arpège acoustique, sans batterie) générée dans le navigateur — captée à l'enregistrement. Envie d'un vrai morceau ? « Remplacer par ma musique » charge ton fichier à la place. Format 9:16, ~30&nbsp;s.</div>
+  </div>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────
+   BWR promo reel — « témoignage » (musique douce, sans voix).
+   Realist, grounded counterpart to promo-hype: no beat drops, no
+   neon, no robotic TTS. Slow Ken-Burns b-roll + subtitles that tell
+   the story, carried by a gentle synthesized acoustic bed (warm pad
+   + soft arpeggio, no drums). All audio is WebAudio, so it is
+   captured when you screen-record the tab. Load your own track with
+   the "Remplacer par ma musique" control to swap the bed.
+   ───────────────────────────────────────────────────────────── */
+
+const PHOTOS = ['p01','p02','p03','p04','p05','p06','p07','p08','p09','p10','p11','p12']
+  .map(n=>`../promo-broll/${n}.jpg`);
+
+// Each scene: photo index, subtitle (the story beat), and how long to hold.
+const SCENES = [
+  { p:0,  ms:2500, sub:"Chaque week-end,<br>je marchais en forêt." },
+  { p:2,  ms:2300, sub:"…sans savoir<br>où j'allais." },
+  { p:3,  ms:2500, sub:"Chemin barré ?<br><span class='hl'>Demi-tour.</span>" },
+  { p:4,  ms:2200, sub:"Puis j'ai découvert <span class='hl'>BWR</span>." },
+  { p:5,  ms:2700, sub:"Tous les sentiers,<br>vérifiés sur le terrain." },
+  { p:6,  ms:2700, sub:"Une distance →<br><span class='hl'>ta boucle sur mesure.</span>" },
+  { p:7,  ms:2600, sub:"Dénivelé + export<br>Garmin / Strava." },
+  { p:9,  ms:2600, sub:"<span class='hl'>Hors-ligne</span> ?<br>La carte reste là." },
+  { p:10, ms:2600, sub:"Je ne pars plus<br>au hasard." },
+];
+
+const $ = s=>document.querySelector(s);
+const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+let abort=false, photoEls=[];
+
+if(location.search.includes('bare')) document.body.classList.add('bare');
+
+// ── photos ──
+function buildPhotos(){
+  const box=$('#photos'); box.innerHTML=''; photoEls=[];
+  PHOTOS.forEach(src=>{
+    const d=document.createElement('div'); d.className='ph';
+    d.style.backgroundImage=`url(${src})`; box.appendChild(d); photoEls.push(d);
+    const img=new Image(); img.src=src; // warm cache
+  });
+}
+let curPhoto=-1;
+function showPhoto(i,kbSeconds=6){
+  const n=i%photoEls.length;
+  if(n===curPhoto) return;
+  if(curPhoto>=0){ const p=photoEls[curPhoto]; p.classList.remove('show','kb'); }
+  curPhoto=n;
+  const el=photoEls[curPhoto];
+  el.style.setProperty('--kb', kbSeconds+'s');
+  el.classList.remove('kb'); void el.offsetWidth;
+  el.classList.add('show','kb');
+}
+
+function setSub(html){
+  const el=$('#subtxt');
+  el.classList.remove('in'); void el.offsetWidth;
+  el.innerHTML = html||'';
+  if(html) el.classList.add('in');
+}
+
+// progress bar over the whole reel
+function runProgress(total){
+  const el=$('#prog'); const start=performance.now();
+  (function tick(now){ if(abort)return; const p=Math.min(1,(now-start)/total);
+    el.style.width=(p*100)+'%'; if(p<1) requestAnimationFrame(tick); })(performance.now());
+}
+
+// ── gentle music bed (WebAudio) — warm pad + soft arpeggio, no drums ──
+// Progression: C – G – Am – F (the classic warm, hopeful loop), ~82 BPM.
+let audioCtx=null, musicStop=null, musicMaster=null, userAudioEl=null;
+
+// Build the whole music bed into an (online OR offline) AudioContext, from
+// time t0, lasting `dur` seconds. Returns the master gain (caller connects it
+// to the destination). Shared by live playback and offline WAV rendering, so
+// the exported MP4 (make-temoignage.mjs) carries this exact soft track.
+function buildMusicGraph(ac, t0, dur){
+  const master=ac.createGain();
+  master.gain.setValueAtTime(0,t0); master.gain.linearRampToValueAtTime(0.5,t0+2.2);
+
+  // light "air" — a short feedback delay for space (a hint of reverb)
+  const delay=ac.createDelay(1.0); delay.delayTime.value=0.30;
+  const fb=ac.createGain(); fb.gain.value=0.26; const wet=ac.createGain(); wet.gain.value=0.22;
+  delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(master);
+
+  // very soft wind bed underneath the music
+  const wbuf=ac.createBuffer(1, Math.ceil(ac.sampleRate*3), ac.sampleRate); const wd=wbuf.getChannelData(0);
+  let last=0; for(let i=0;i<wd.length;i++){ const w=Math.random()*2-1; wd[i]=(last+0.02*w)/1.02; last=wd[i]; wd[i]*=2.4; }
+  const wsrc=ac.createBufferSource(); wsrc.buffer=wbuf; wsrc.loop=true;
+  const wlp=ac.createBiquadFilter(); wlp.type='lowpass'; wlp.frequency.value=480;
+  const wg=ac.createGain(); wg.gain.value=0.05; wsrc.connect(wlp); wlp.connect(wg); wg.connect(master); wsrc.start(t0);
+
+  const bpm=82, beat=60/bpm, bars=Math.ceil(dur/(4*beat))+1;
+  const C4=261.63,E4=329.63,G4=392.00,B3=246.94,D4=293.66,A3=220,F3=174.61,G3=196.00,C5=523.25,E5=659.25,G5=783.99;
+  const chords=[ [C4,E4,G4], [G3,B3,D4], [A3,C4,E4], [F3,A3,C4] ];  // C  G  Am  F
+  const bells =[ G5,          D4*2,       E5,          C5        ];  // gentle top note per chord
+
+  function pluck(f,s,d,gain,ty){ const o=ac.createOscillator(); o.type=ty||'triangle'; o.frequency.value=f;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(gain,s+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+d);
+    o.connect(g); g.connect(master); g.connect(delay); o.start(s); o.stop(s+d+0.05); }
+  function pad(freqs,s,d){ freqs.forEach(f=>{ const o=ac.createOscillator(); o.type='sine'; o.frequency.value=f;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(0.045,s+0.7);
+    g.gain.setValueAtTime(0.045,Math.max(s+0.7,s+d-0.7)); g.gain.linearRampToValueAtTime(0,s+d);
+    o.connect(g); g.connect(master); o.start(s); o.stop(s+d+0.06); }); }
+
+  for(let bar=0;bar<bars;bar++){ const bs=t0+bar*4*beat; const ch=chords[bar%4];
+    pad(ch, bs, 4*beat);
+    // soft fingerpicked arpeggio across the bar (eighth notes), gentle swell
+    const arp=[ ch[0], ch[1], ch[2], ch[1], ch[0]*2, ch[2], ch[1], ch[2] ];
+    for(let i=0;i<8;i++) pluck(arp[i], bs+i*0.5*beat, 0.85*beat, 0.085);
+    // a single warm bell on the downbeat
+    if(bar>0) pluck(bells[bar%4], bs, 2.2*beat, 0.05, 'sine');
+  }
+  master.gain.setValueAtTime(0.5, t0+dur-2); master.gain.linearRampToValueAtTime(0, t0+dur);
+  return master;
+}
+
+function startMusic(){
+  stopMusic();
+  if(userAudioEl){ userAudioEl.currentTime=0; userAudioEl.play().catch(()=>{}); return; }
+  const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+  const ac=new AC(); audioCtx=ac;
+  musicMaster=buildMusicGraph(ac, ac.currentTime+0.1, 42);
+  musicMaster.connect(ac.destination);
+  musicStop=()=>{ try{ac.close();}catch(e){} audioCtx=null; musicMaster=null; };
+}
+
+// Offline render of the exact music bed → 16-bit PCM WAV (base64). Used by
+// scripts/promo/make-temoignage.mjs to give the exported MP4 its audio, since
+// Playwright doesn't capture live WebAudio.
+window.renderMusicWav = async function(seconds){
+  seconds = seconds || 42;
+  const OAC = window.OfflineAudioContext||window.webkitOfflineAudioContext; if(!OAC) return null;
+  const sr = 44100; const oac = new OAC(2, Math.ceil(sr*seconds), sr);
+  const master = buildMusicGraph(oac, 0, seconds); master.connect(oac.destination);
+  const buf = await oac.startRendering();
+  return bufferToWavBase64(buf);
+};
+function bufferToWavBase64(buf){
+  const numCh=buf.numberOfChannels, len=buf.length, sr=buf.sampleRate;
+  const blockAlign=numCh*2, dataLen=len*blockAlign;
+  const ab=new ArrayBuffer(44+dataLen); const dv=new DataView(ab);
+  const wr=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
+  wr(0,'RIFF'); dv.setUint32(4,36+dataLen,true); wr(8,'WAVE'); wr(12,'fmt ');
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,numCh,true);
+  dv.setUint32(24,sr,true); dv.setUint32(28,sr*blockAlign,true); dv.setUint16(32,blockAlign,true);
+  dv.setUint16(34,16,true); wr(36,'data'); dv.setUint32(40,dataLen,true);
+  const chans=[]; for(let c=0;c<numCh;c++) chans.push(buf.getChannelData(c));
+  let off=44; for(let i=0;i<len;i++){ for(let c=0;c<numCh;c++){ let s=Math.max(-1,Math.min(1,chans[c][i]));
+    dv.setInt16(off, s<0? s*0x8000 : s*0x7FFF, true); off+=2; } }
+  let bin=''; const bytes=new Uint8Array(ab); const CH=0x8000;
+  for(let i=0;i<bytes.length;i+=CH) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+CH));
+  return btoa(bin);
+}
+function fadeMusic(sec=1.4){
+  if(userAudioEl){ const a=userAudioEl; const step=a.volume/(sec*20||1);
+    const id=setInterval(()=>{ a.volume=Math.max(0,a.volume-step); if(a.volume<=0.001){clearInterval(id);a.pause();a.volume=1;} },50); return; }
+  if(musicMaster&&audioCtx){ try{ const now=audioCtx.currentTime;
+    musicMaster.gain.cancelScheduledValues(now); musicMaster.gain.setValueAtTime(musicMaster.gain.value,now);
+    musicMaster.gain.linearRampToValueAtTime(0, now+sec);}catch(e){} }
+}
+function stopMusic(){ if(userAudioEl){ try{userAudioEl.pause();}catch(e){} } if(musicStop){musicStop();musicStop=null;} }
+
+// ── timeline ──
+const TOTAL = 30000;
+async function play(){
+  abort=false; $('#prog').style.width='0'; $('#cta').classList.remove('in');
+  setSub(''); curPhoto=-1; photoEls.forEach(p=>p.classList.remove('show','kb'));
+  runProgress(TOTAL);
+
+  // intro kicker over first slow photo
+  showPhoto(SCENES[0].p, 8);
+  $('#kick').classList.add('in');
+  await sleep(1700); if(abort)return;
+  $('#kick').classList.remove('in');
+  await sleep(320); if(abort)return;
+
+  // narrated-by-subtitles scenes: photo + story beat, gentle pacing
+  for(const sc of SCENES){
+    if(abort)return;
+    showPhoto(sc.p, Math.max(6, sc.ms/1000 + 4));
+    setSub(sc.sub);
+    await sleep(sc.ms);
+  }
+  if(abort)return;
+
+  // CTA end card
+  setSub('');
+  showPhoto(11, 8);
+  $('#cta').classList.add('in');
+  await sleep(4200); if(abort)return;
+  fadeMusic(1.6);
+}
+
+function stopAll(){ abort=true; stopMusic(); }
+
+// ── controls ──
+$('#playBtn').addEventListener('click',()=>{ $('#gate').style.display='none'; startMusic(); play(); });
+$('#replay').addEventListener('click',async()=>{ stopAll(); await sleep(80); abort=false; startMusic(); play(); });
+$('#fs').addEventListener('click',()=>{ const s=$('#stage'); if(!document.fullscreenElement) s.requestFullscreen?.(); else document.exitFullscreen?.(); });
+$('#audio').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return;
+  if(userAudioEl) userAudioEl.pause(); userAudioEl=new Audio(URL.createObjectURL(f)); userAudioEl.loop=false; });
+$('#rec').addEventListener('click',async()=>{
+  if(!navigator.mediaDevices?.getDisplayMedia){ alert('Ton navigateur ne supporte pas l’enregistrement.'); return; }
+  let stream; try{ stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:true,preferCurrentTab:true}); }catch(e){ return; }
+  const mime = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4'
+            : MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+  const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:9000000});
+  const chunks=[]; rec.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+  rec.onstop=()=>{ const blob=new Blob(chunks,{type:mime}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='bwr-reel-temoignage'+(mime.includes('mp4')?'.mp4':'.webm');
+    document.body.appendChild(a); a.click(); a.remove(); stream.getTracks().forEach(t=>t.stop());
+    $('#rec').textContent='⏺ Enregistrer la vidéo'; };
+  $('#rec').textContent='● Enregistrement…'; $('#gate').style.display='none';
+  stopAll(); await sleep(100); abort=false;
+  rec.start(); startMusic(); play();
+  setTimeout(()=>{ try{ rec.stop(); }catch(e){} }, TOTAL+4000);
+});
+
+buildPhotos();
+</script>
+<script src="../js/track.js"></script>
+</body>
+</html>

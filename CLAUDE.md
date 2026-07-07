@@ -14,7 +14,7 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
-Run all automated tests (331 tests, ~4 s):
+Run all automated tests (333 tests, ~4 s):
   npm test
 
 Run tests in watch mode (re-runs on file save):
@@ -52,7 +52,7 @@ Main endpoint groups:
 - Analytics: POST /api/track/visit (public — counts one unique anonymous visitor per month, called by `public/js/track.js` only after > 1 min of presence so bots/bounces are excluded), GET /api/analytics/events (admin — recent login/signup events + `totalLogins`/`totalSignups` + `monthlyVisits`/`visitsThisMonth`)
 - Saved routes (Silver+): POST /api/savedroutes, GET /api/savedroutes, GET /api/savedroutes/:id, DELETE /api/savedroutes/:id
 - Share route (public): GET /api/savedroutes/share/:token — returns route by share token, no auth required
-- Forum (community): GET /api/forum/topics (list — reading is public, but free accounts only get the 5 most recent topics unlocked; older ones come back `locked:true` with no body), GET /api/forum/topics/:id (topic + replies — free users get 403 on a locked topic), POST /api/forum/topics (create — Silver/Gold/admin only), POST /api/forum/topics/:id/replies (reply — Silver/Gold/admin only), DELETE /api/forum/topics/:id + DELETE /api/forum/topics/:id/replies/:replyId (author or admin). The free-tier visible count is `FREE_VISIBLE_TOPICS` in `worker/handlers/forum.js`, mirrored by `FEATURES.forum_topics_visible` / `forum_post` in `public/js/features.js`. Frontend: `public/forum.html` + `public/js/forum.js` (single page; list ↔ detail swapped via the `#t/:id` URL hash).
+- Forum (community): GET /api/forum/topics (list — reading is public, but free accounts only get the 5 most recent topics unlocked; older ones come back `locked:true` with no body), GET /api/forum/topics/:id (topic + replies — free users get 403 on a locked topic), POST /api/forum/topics (create — Silver/Gold/admin only), POST /api/forum/topics/:id/replies (reply — Silver/Gold/admin only), PUT /api/forum/topics/:id (edit topic title/body) + PUT /api/forum/topics/:id/replies/:replyId (edit reply body) — author or admin, stamps `editedAt` and keeps thread order (no `lastActivityAt` bump), DELETE /api/forum/topics/:id + DELETE /api/forum/topics/:id/replies/:replyId (author or admin). The free-tier visible count is `FREE_VISIBLE_TOPICS` in `worker/handlers/forum.js`, mirrored by `FEATURES.forum_topics_visible` / `forum_post` in `public/js/features.js`. Frontend: `public/forum.html` + `public/js/forum.js` (single page; list ↔ detail swapped via the `#t/:id` URL hash).
 
 Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - user:{id} — JSON user object
@@ -214,7 +214,7 @@ Cloudflare Config (wrangler.jsonc):
 
 ## Testing Notes
 
-Automated test suite: **331 tests, ~4 s** (`npm test`). Test files:
+Automated test suite: **333 tests, ~4 s** (`npm test`). Test files:
 
 | File | What it covers | Style |
 |------|---------------|-------|
@@ -224,7 +224,7 @@ Automated test suite: **331 tests, ~4 s** (`npm test`). Test files:
 | `tests/worker-admin.test.mjs` | Admin endpoints (user/plan management, data wipe, content) | ESM |
 | `tests/worker-paths.test.mjs` | Path CRUD + OSM proxy behaviour | ESM |
 | `tests/worker-savedroutes.test.mjs` | Saved-route CRUD and share-token endpoints | ESM |
-| `tests/worker-forum.test.mjs` | Forum topics/replies — Silver+ posting, free-tier 5-topic read limit, locked detail, author/admin deletion | ESM |
+| `tests/worker-forum.test.mjs` | Forum topics/replies — Silver+ posting, free-tier 5-topic read limit, locked detail, author/admin edit + deletion | ESM |
 | `tests/sw.test.js` | Service-worker cache-version sync | CJS |
 
 E2E (Playwright, `npx playwright test`) runs against the live prod URL — see `tests/e2e/`.

@@ -1,6 +1,8 @@
 /* PWA install prompt — Android (beforeinstallprompt) + iOS manual guide */
 (function () {
   const DISMISS_KEY = 'bwr_install_dismissed';
+  const VISITS_KEY = 'bwr_install_visits';
+  const DWELL_MS = 60 * 1000; // engagement threshold — same > 1 min as analytics
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
   const isIOSSafari = isIOS && !/CriOS|FxiOS|OPiOS|EdgiOS/i.test(navigator.userAgent);
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
@@ -96,6 +98,43 @@
     }
   }
 
+  // ── Engagement gate ───────────────────────────────────────────────────────
+  // Don't interrupt a visitor's very first page view: the sheet covers the
+  // bottom half of the screen (hides the map legend, the /plans table, etc.).
+  // Only auto-open once the visitor has shown engagement — either they're on a
+  // return visit, or they've stayed > 1 min on this one (the same dwell the
+  // analytics tracker treats as a real visit).
+  function recentlyDismissed() {
+    const dismissed = localStorage.getItem(DISMISS_KEY);
+    return dismissed && Date.now() - Number(dismissed) < 7 * 24 * 3600 * 1000;
+  }
+
+  // Count this page view as a visit (once per page load).
+  function bumpVisits() {
+    let n = 0;
+    try {
+      n = (Number(localStorage.getItem(VISITS_KEY)) || 0) + 1;
+      localStorage.setItem(VISITS_KEY, String(n));
+    } catch (_) { /* storage disabled — treat as first visit */ }
+    return n;
+  }
+
+  // Show `fn` only after engagement, unless recently dismissed.
+  function autoShowWhenEngaged(fn) {
+    if (recentlyDismissed()) return;
+    const visits = bumpVisits();
+    if (visits >= 2) {
+      // Return visitor — safe to surface shortly after load.
+      setTimeout(fn, 2500);
+      return;
+    }
+    // First visit — wait for > 1 min of presence, cancel if they leave early.
+    const timer = setTimeout(function () {
+      if (!recentlyDismissed()) fn();
+    }, DWELL_MS);
+    window.addEventListener('pagehide', function () { clearTimeout(timer); }, { once: true });
+  }
+
   // ── Public trigger (called by the header button) ──────────────────────────
   async function trigger() {
     if (isIOS) {
@@ -125,11 +164,9 @@
     // Show button on iOS so the user can tap for the manual guide
     document.addEventListener('DOMContentLoaded', showInstallBtn);
 
-    // Also auto-show the banner after a delay unless recently dismissed
-    const dismissed = localStorage.getItem(DISMISS_KEY);
-    if (!dismissed || Date.now() - Number(dismissed) >= 7 * 24 * 3600 * 1000) {
-      setTimeout(showIOSBanner, 2500);
-    }
+    // Auto-show the sheet only after engagement (return visit or > 1 min dwell),
+    // never on the visitor's very first paint where it covers page content.
+    autoShowWhenEngaged(showIOSBanner);
     return;
   }
 
@@ -139,32 +176,29 @@
     deferredPrompt = e;
     showInstallBtn();
 
-    // Also auto-show banner after short delay unless recently dismissed
-    const dismissed = localStorage.getItem(DISMISS_KEY);
-    if (!dismissed || Date.now() - Number(dismissed) >= 7 * 24 * 3600 * 1000) {
-      setTimeout(() => {
-        if (!document.getElementById('pwa-install-banner')) {
-          const banner = document.createElement('div');
-          banner.id = 'pwa-install-banner';
-          banner.setAttribute('role', 'banner');
-          banner.setAttribute('aria-label', 'Installer l\'application');
-          banner.innerHTML = `
-            <div class="pwa-banner-content">
-              <img src="icons/icon.svg" class="pwa-banner-icon" alt="" aria-hidden="true" />
-              <div class="pwa-banner-text">
-                <strong>Installer BWR</strong>
-                <span>Accès rapide, fonctionne hors-ligne</span>
-              </div>
-              <button class="pwa-banner-install" aria-label="Installer l'application">Installer</button>
-              <button class="pwa-banner-dismiss" aria-label="Fermer">✕</button>
-            </div>`;
-          document.body.appendChild(banner);
-          requestAnimationFrame(() => banner.classList.add('pwa-banner-visible'));
-          banner.querySelector('.pwa-banner-dismiss').addEventListener('click', dismissBanner);
-          banner.querySelector('.pwa-banner-install').addEventListener('click', trigger);
-        }
-      }, 1500);
-    }
+    // Auto-show banner only after engagement (return visit or > 1 min dwell).
+    autoShowWhenEngaged(() => {
+      if (!document.getElementById('pwa-install-banner')) {
+        const banner = document.createElement('div');
+        banner.id = 'pwa-install-banner';
+        banner.setAttribute('role', 'banner');
+        banner.setAttribute('aria-label', 'Installer l\'application');
+        banner.innerHTML = `
+          <div class="pwa-banner-content">
+            <img src="icons/icon.svg" class="pwa-banner-icon" alt="" aria-hidden="true" />
+            <div class="pwa-banner-text">
+              <strong>Installer BWR</strong>
+              <span>Accès rapide, fonctionne hors-ligne</span>
+            </div>
+            <button class="pwa-banner-install" aria-label="Installer l'application">Installer</button>
+            <button class="pwa-banner-dismiss" aria-label="Fermer">✕</button>
+          </div>`;
+        document.body.appendChild(banner);
+        requestAnimationFrame(() => banner.classList.add('pwa-banner-visible'));
+        banner.querySelector('.pwa-banner-dismiss').addEventListener('click', dismissBanner);
+        banner.querySelector('.pwa-banner-install').addEventListener('click', trigger);
+      }
+    });
   });
 
   window.addEventListener('appinstalled', hideInstallBtn);
