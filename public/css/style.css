@@ -62,6 +62,25 @@ body {
   background-size: 180px 180px;
 }
 
+/* Installed desktop PWA: reclaim the OS title bar so Chrome no longer draws
+   the white URL/title strip above the header. The green header fills that
+   space instead. Requires "window-controls-overlay" in manifest display_override. */
+@media (display-mode: window-controls-overlay) {
+  .header {
+    /* keep the header buttons clear of the OS min/max/close controls */
+    padding-right: max(20px, calc(100vw - env(titlebar-area-width, 100vw) - env(titlebar-area-x, 0px)));
+    -webkit-app-region: drag;
+  }
+  .header a,
+  .header button,
+  .header input,
+  .header .user-menu,
+  .header .notif-bell-wrap,
+  .header .header-nav-links {
+    -webkit-app-region: no-drag;
+  }
+}
+
 .header-left { display: flex; align-items: center; gap: 12px; }
 
 /* Horizontal nav links — desktop only, collapsed on mobile */
@@ -218,6 +237,9 @@ body {
   font-size: 0.85rem;
 }
 
+/* Collapse toggle — hidden on desktop, shown on small screens */
+.legend-toggle { display: none; }
+
 .legend-title {
   font-weight: 700;
   margin-bottom: 8px;
@@ -233,6 +255,26 @@ body {
   gap: 8px;
   margin: 4px 0;
   white-space: nowrap;
+}
+
+.legend-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+/* Explanatory caption row (e.g. base-map symbols) — allowed to wrap, muted */
+.legend-note {
+  align-items: flex-start;
+  white-space: normal;
+  max-width: 190px;
+  font-size: 0.78rem;
+  color: #6b7280;
+  line-height: 1.25;
 }
 
 /* ── Status dots ── */
@@ -1489,6 +1531,32 @@ body {
   .legend-title { font-size: 0.7rem; }
   .legend-item { gap: 5px; }
 
+  /* Collapse the legend behind a "Légende" toggle so it doesn't cover the map */
+  .legend { padding: 0; }
+  .legend-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--forest-700);
+  }
+  .legend-caret { transition: transform 0.15s ease; font-size: 0.8rem; }
+  .legend.open .legend-caret { transform: rotate(90deg); }
+  .legend-body { display: none; padding: 0 12px 10px; }
+  .legend.open .legend-body { display: block; }
+  /* Hide the redundant "Légende" heading inside the body (the toggle shows it) */
+  .legend-body .legend-title:first-child { display: none; }
+
   /* Contact chip — hide on mobile to save space */
   .contact-chip { display: none; }
 
@@ -1549,6 +1617,10 @@ body {
     max-width: none !important;
     transform: none !important;
   }
+
+  /* Push the Leaflet zoom controls below the full-width search bar so the
+     "+" button no longer sits under the search input on narrow screens. */
+  .leaflet-top.leaflet-left { top: 62px; }
 
 
   /* Locate toast — push above the bottom nav on mobile */
@@ -2116,7 +2188,9 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
 /* ── Legend ── */
 [data-theme="dark"] .legend              { background: #16201a; box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
 [data-theme="dark"] .legend-title        { color: var(--lime-500); }
+[data-theme="dark"] .legend-toggle       { color: var(--lime-500); }
 [data-theme="dark"] .legend-item         { color: #c8dcc0; }
+[data-theme="dark"] .legend-note         { color: #8ba087; }
 
 /* ── Filter panel ── */
 [data-theme="dark"] .filter-panel        { background: #16201a; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }

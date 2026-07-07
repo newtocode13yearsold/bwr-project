@@ -9,7 +9,7 @@
   <title>BWR — Carte interactive de l'Oise</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
   <link rel="stylesheet" href="lib/leaflet.css" />
   <link rel="preload" href="lib/leaflet.js" as="script" />
   <link rel="prefetch" href="js/graph-router.js" />
@@ -170,7 +170,11 @@
     </div>
   </div>
 
-  <div class="legend">
+  <div class="legend" id="mapLegend">
+    <button type="button" class="legend-toggle" id="legendToggle" aria-expanded="false" aria-controls="legendBody">
+      <span>Légende</span><span class="legend-caret" aria-hidden="true">▸</span>
+    </button>
+    <div class="legend-body" id="legendBody">
     <div class="legend-title">Légende</div>
     <div class="legend-item"><span class="dot easy"></span> Facile</div>
     <div class="legend-item"><span class="dot medium"></span> Moyen</div>
@@ -179,7 +183,33 @@
     <div class="legend-item"><span class="dot no_bike"></span> Vélo interdit</div>
     <hr style="border:none;border-top:1px solid #d1d5db;margin:5px 0">
     <div class="legend-item"><span class="legend-dash deployed-dash"></span> Section déployée</div>
+    <hr style="border:none;border-top:1px solid #d1d5db;margin:5px 0">
+    <div class="legend-title">Signalements</div>
+    <div class="legend-item"><span class="legend-emoji">🪵</span> Arbre tombé</div>
+    <div class="legend-item"><span class="legend-emoji">💧</span> Chemin inondé</div>
+    <div class="legend-item"><span class="legend-emoji">🟤</span> Boueux</div>
+    <div class="legend-item"><span class="legend-emoji">🛞</span> Ornières</div>
+    <div class="legend-item"><span class="legend-emoji">🪧</span> Carrefour cassé</div>
+    <div class="legend-item"><span class="legend-emoji">🚫</span> Chemin fermé</div>
+    <div class="legend-item"><span class="legend-emoji">⚠️</span> Danger</div>
+    <div class="legend-item"><span class="legend-emoji">📝</span> Autre</div>
+    <hr style="border:none;border-top:1px solid #d1d5db;margin:5px 0">
+    <div class="legend-title">Fond de carte</div>
+    <div class="legend-item legend-note"><span class="legend-emoji">🌲</span> Forêts &amp; points de vue (symboles OpenTopoMap)</div>
+    </div>
   </div>
+  <script>
+    (function () {
+      var toggle = document.getElementById('legendToggle');
+      var legend = document.getElementById('mapLegend');
+      if (toggle && legend) {
+        toggle.addEventListener('click', function () {
+          var open = legend.classList.toggle('open');
+          toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+      }
+    })();
+  </script>
 
 
   <button class="contact-chip" id="btnOpenContact">✉ Contact</button>
