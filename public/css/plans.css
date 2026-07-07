@@ -733,7 +733,18 @@
 }
 
 @media (max-width: 720px) {
-  .compare-table-wrap { overflow-x: auto; }
+  .compare-table-wrap {
+    overflow-x: auto;
+    /* Scroll-hint shadows: the edge covers (var(--surface-0)) are pinned to the
+       content via background-attachment:local, so the radial shadows underneath
+       them only show when there is more table to scroll in that direction. */
+    background:
+      linear-gradient(to right, var(--surface-0) 30%, transparent) left center / 34px 100% no-repeat local,
+      linear-gradient(to left,  var(--surface-0) 30%, transparent) right center / 34px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%,   rgba(0, 0, 0, 0.16), transparent) left center / 16px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.16), transparent) right center / 16px 100% no-repeat scroll;
+    background-color: var(--surface-0);
+  }
   .compare-table { min-width: 640px; }
 }
 
