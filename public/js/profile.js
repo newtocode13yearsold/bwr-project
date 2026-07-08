@@ -133,7 +133,7 @@ function showMsg(id, text, type = 'error') {
   populatePage(currentUser);
   buildColorSwatches(currentUser);
   renderAvatar(currentUser, getAvatarColor(currentUser.id));
-  loadPathCount();
+  renderActivityStats();
 })();
 
 function initUserMenu() {

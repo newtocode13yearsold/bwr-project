@@ -183,6 +183,9 @@ function renderPlanAndProgress(user) {
     </div>`;
   }).join('');
 
+  // Next-badge progress teaser (closest accessible, not-yet-earned badge)
+  renderNextBadge(stats, plan);
+
   // Locked badges hint
   const lockedHint = document.getElementById('badgesLockedHint');
   if (plan === 'free') {
@@ -458,25 +461,70 @@ async function renderPushAlerts() {
   });
 }
 
-async function loadPathCount() {
-  try {
-    const res = await fetch(`${API_URL}/api/paths`);
-    const paths = await res.json();
-    const statPaths = document.getElementById('statPaths');
-    statPaths.classList.remove('skeleton');
-    statPaths.textContent = paths.length;
-  } catch {
-    document.getElementById('statPaths').classList.remove('skeleton');
+// ── Next-badge progress teaser ────────────────────────────────────────────────
+// Finds the accessible badge the member is closest to unlocking and shows a
+// progress bar toward it. Numeric thresholds are read from each badge's `test`
+// source (e.g. `s => s.routes >= 25`), so no threshold data has to be duplicated;
+// badges whose test isn't a simple numeric comparison (e.g. wheel badges) are
+// skipped.
+const TIER_VISIBLE = { free: ['free'], silver: ['free', 'silver'], gold: ['free', 'silver', 'gold'] };
+
+function renderNextBadge(stats, plan) {
+  const box = document.getElementById('nextBadge');
+  if (!box) return;
+
+  const parseThreshold = fn => {
+    const m = /s\.(routes|km|streak)\s*>=\s*([\d.]+)/.exec(fn.toString());
+    return m ? { metric: m[1], goal: parseFloat(m[2]) } : null;
+  };
+
+  let best = null;
+  for (const b of BADGES) {
+    if (!TIER_VISIBLE[plan].includes(b.tier)) continue;
+    if (b.test(stats)) continue;                       // already earned
+    const t = parseThreshold(b.test);
+    if (!t || !(t.goal > 0)) continue;
+    const cur = stats[t.metric] || 0;
+    if (cur >= t.goal) continue;
+    const pct = cur / t.goal;
+    if (!best || pct > best.pct) best = { badge: b, cur, goal: t.goal, metric: t.metric, pct };
   }
-  const serverRoutes = (currentUser?.stats?.routes) || 0;
-  const serverKm     = (currentUser?.stats?.km) || 0;
-  const routes = Math.max(serverRoutes, parseInt(localStorage.getItem('bwr_route_count') || '0'));
-  const km     = Math.max(serverKm, parseFloat(localStorage.getItem('bwr_km_total') || '0'));
+
+  if (!best) { box.style.display = 'none'; return; }
+
+  const fmtVal = v => best.metric === 'km' ? fmtKm(v) : best.metric === 'streak' ? `${v} j` : `${v}`;
+  box.style.display = '';
+  box.innerHTML = `
+    <span class="nb-icon">${best.badge.icon}</span>
+    <div class="nb-body">
+      <div class="nb-top">
+        <span class="nb-label">Prochain badge · <strong>${escapeHtml(best.badge.label)}</strong></span>
+        <span class="nb-count">${fmtVal(best.cur)} / ${fmtVal(best.goal)}</span>
+      </div>
+      <div class="xp-bar"><div class="xp-fill" style="width:${Math.min(100, best.pct * 100)}%"></div></div>
+      <span class="nb-desc">${escapeHtml(best.badge.desc)}</span>
+    </div>`;
+}
+
+// "Mon activité" summary — four personal KPIs read straight from the user's
+// stats + the locally cached badge set (no network needed). Server stats are
+// authoritative; localStorage is a cache, so take the max where both exist.
+function renderActivityStats() {
+  const s = (currentUser && currentUser.stats) || {};
+  const routes       = Math.max(s.routes || 0, parseInt(localStorage.getItem('bwr_route_count') || '0'));
   const earnedBadges = JSON.parse(localStorage.getItem('bwr_earned_badges') || '[]').length;
-  const statRoutes = document.getElementById('statRoutes');
-  const statKm     = document.getElementById('statKm');
-  statRoutes.classList.remove('skeleton');
-  statKm.classList.remove('skeleton');
-  statRoutes.textContent = routes;
-  statKm.textContent     = earnedBadges > 0 ? `${earnedBadges} / ${BADGES.length}` : '—';
+  const streak       = s.streak || 0;
+  // Contribution points — same formula as the leaderboard / XP (report=2, grade=1)
+  const points       = (s.reports || 0) * 2 + (s.pathGrades || 0);
+
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('skeleton');
+    el.textContent = val;
+  };
+  set('statRoutes', routes);
+  set('statBadges', `${earnedBadges} / ${BADGES.length}`);
+  set('statStreak', streak > 0 ? `${streak} j` : '—');
+  set('statPoints', points);
 }

@@ -179,16 +179,24 @@
         </div>
         <div class="stats-grid">
           <div class="stat-block">
+            <span class="stat-ico">🧭</span>
             <span class="stat-num skeleton" id="statRoutes"></span>
             <span class="stat-lbl">Trajets planifiés</span>
           </div>
           <div class="stat-block">
-            <span class="stat-num skeleton" id="statKm"></span>
+            <span class="stat-ico">🏅</span>
+            <span class="stat-num skeleton" id="statBadges"></span>
             <span class="stat-lbl">Badges débloqués</span>
           </div>
           <div class="stat-block">
-            <span class="stat-num skeleton" id="statPaths"></span>
-            <span class="stat-lbl">Chemins disponibles</span>
+            <span class="stat-ico">🔥</span>
+            <span class="stat-num skeleton" id="statStreak"></span>
+            <span class="stat-lbl">Série actuelle</span>
+          </div>
+          <div class="stat-block">
+            <span class="stat-ico">⭐</span>
+            <span class="stat-num skeleton" id="statPoints"></span>
+            <span class="stat-lbl">Points contribution</span>
           </div>
         </div>
       </div>
@@ -269,6 +277,7 @@
 
         <div class="badges-section">
           <h3 class="badges-title">🏅 Mes badges</h3>
+          <div class="next-badge" id="nextBadge" style="display:none"></div>
           <div class="badges-grid" id="badgesGrid"></div>
           <p class="badges-locked-hint" id="badgesLockedHint" style="display:none"></p>
         </div>
