@@ -231,14 +231,37 @@ body {
   right: max(12px, env(safe-area-inset-right));
   background: white;
   border-radius: 10px;
-  padding: 12px 16px;
+  padding: 0;
   z-index: 1000;
   box-shadow: 0 2px 12px rgba(0,0,0,0.2);
   font-size: 0.85rem;
 }
 
-/* Collapse toggle — hidden on desktop, shown on small screens */
-.legend-toggle { display: none; }
+/* Collapse toggle — retractable legend on every screen size.
+   The body is hidden by default and revealed when .legend has .open. */
+.legend-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--forest-700);
+}
+.legend-caret { transition: transform 0.15s ease; font-size: 0.85rem; }
+.legend.open .legend-caret { transform: rotate(90deg); }
+.legend-body { display: none; padding: 0 16px 12px; }
+.legend.open .legend-body { display: block; }
+/* Hide the redundant "Légende" heading inside the body (the toggle shows it) */
+.legend-body .legend-title:first-child { display: none; }
 
 .legend-title {
   font-weight: 700;
@@ -1188,6 +1211,38 @@ body {
   height: 42px;
 }
 
+/* Floating tile-layer switcher (mirrors the planner page) */
+.map-layers {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  display: flex;
+  gap: 4px;
+  background: rgba(255,255,255,0.92);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  backdrop-filter: blur(4px);
+}
+.layer-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.layer-btn:hover { background: #f3f4f6; }
+.layer-btn.active { background: var(--forest-700, #166534); color: white; }
+@media (max-width: 768px) {
+  .map-layers { top: 8px; right: 8px; }
+  .layer-btn { padding: 5px 9px; font-size: 0.72rem; }
+}
+
 .map-search-icon { font-size: 1rem; color: var(--text-faint); flex-shrink: 0; }
 
 .map-search-input {
@@ -1524,38 +1579,18 @@ body {
   .legend {
     bottom: 12px;
     right: 8px;
-    padding: 7px 10px;
+    padding: 0;
     font-size: 0.72rem;
     border-radius: 10px;
   }
   .legend-title { font-size: 0.7rem; }
   .legend-item { gap: 5px; }
 
-  /* Collapse the legend behind a "Légende" toggle so it doesn't cover the map */
-  .legend { padding: 0; }
-  .legend-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    width: 100%;
-    padding: 8px 12px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font: inherit;
-    font-weight: 700;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--forest-700);
-  }
-  .legend-caret { transition: transform 0.15s ease; font-size: 0.8rem; }
-  .legend.open .legend-caret { transform: rotate(90deg); }
-  .legend-body { display: none; padding: 0 12px 10px; }
-  .legend.open .legend-body { display: block; }
-  /* Hide the redundant "Légende" heading inside the body (the toggle shows it) */
-  .legend-body .legend-title:first-child { display: none; }
+  /* Legend collapse is defined in the base styles; just tighten the spacing
+     on small screens so the toggle sits snugly in the corner. */
+  .legend-toggle { padding: 8px 12px; font-size: 0.72rem; }
+  .legend-caret { font-size: 0.8rem; }
+  .legend-body { padding: 0 12px 10px; }
 
   /* Contact chip — hide on mobile to save space */
   .contact-chip { display: none; }
