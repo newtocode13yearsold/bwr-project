@@ -1,6 +1,18 @@
 let currentUser = null;
 let allNews = [];
 let pendingImageDataUri = '';
+let activeFilter = 'all';
+
+// Category catalogue — keep slugs in sync with NEWS_CATEGORIES in worker/handlers/content.js.
+const NEWS_CATEGORIES = {
+  foret:     { label: 'Forêt',          icon: '🌲' },
+  evenement: { label: 'Événement',      icon: '📅' },
+  faune:     { label: 'Faune & flore',  icon: '🦌' },
+  securite:  { label: 'Sécurité',       icon: '⚠️' },
+  travaux:   { label: 'Travaux',        icon: '🚧' },
+  app:       { label: 'App BWR',        icon: '📱' },
+};
+const catOf = (item) => NEWS_CATEGORIES[item.category] ? item.category : 'foret';
 
 async function init() {
   // Try to detect logged-in user (non-blocking — page works without auth)
@@ -43,13 +55,36 @@ async function loadNews() {
   }
 }
 
+function renderFilters() {
+  const bar = document.getElementById('newsFilters');
+  if (!bar) return;
+  // Only show categories that actually have at least one article.
+  const present = new Set(allNews.map(catOf));
+  if (!allNews.length) { bar.innerHTML = ''; return; }
+
+  const chips = [`<button class="news-chip ${activeFilter === 'all' ? 'active' : ''}" data-filter="all">Tout</button>`];
+  for (const [slug, cat] of Object.entries(NEWS_CATEGORIES)) {
+    if (!present.has(slug)) continue;
+    chips.push(
+      `<button class="news-chip ${activeFilter === slug ? 'active' : ''}" data-filter="${slug}">${cat.icon} ${cat.label}</button>`
+    );
+  }
+  bar.innerHTML = chips.join('');
+}
+
 function renderFeed() {
   const feed = document.getElementById('newsFeed');
+  renderFilters();
   if (!allNews.length) {
     feed.innerHTML = '<div class="news-empty">Aucune actualité pour l\'instant.</div>';
     return;
   }
-  feed.innerHTML = allNews.map(item => newsCard(item)).join('');
+  const items = activeFilter === 'all' ? allNews : allNews.filter(n => catOf(n) === activeFilter);
+  if (!items.length) {
+    feed.innerHTML = '<div class="news-empty">Aucune actualité dans cette catégorie.</div>';
+    return;
+  }
+  feed.innerHTML = items.map(item => newsCard(item)).join('');
   attachFadeObserver();
 }
 
@@ -105,6 +140,7 @@ function newsCard(item) {
       ${imgHtml}
       <div class="news-meta">
         <span class="news-date">${date}</span>
+        <span class="news-cat-badge">${NEWS_CATEGORIES[catOf(item)].icon} ${escHtml(NEWS_CATEGORIES[catOf(item)].label)}</span>
       </div>
       <h2 class="news-title">${escHtml(item.title)}</h2>
       ${item.content ? `<p class="news-content">${escHtml(item.content).replace(/\n/g, '<br>')}</p>` : ''}
@@ -183,6 +219,7 @@ function openEdit(id) {
 function openModal(item) {
   document.getElementById('modalTitle').textContent = item ? 'Modifier l\'actualité' : 'Nouvelle actualité';
   document.getElementById('fieldTitle').value = item?.title || '';
+  document.getElementById('fieldCategory').value = item ? catOf(item) : 'foret';
   document.getElementById('fieldContent').value = item?.content || '';
   document.getElementById('fieldUrl').value = item?.url || '';
   document.getElementById('fieldUrlLabel').value = item?.urlLabel || '';
@@ -234,6 +271,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
+  // Category filter chips.
+  document.getElementById('newsFilters').addEventListener('click', e => {
+    const chip = e.target.closest('button[data-filter]');
+    if (!chip) return;
+    activeFilter = chip.dataset.filter;
+    renderFeed();
+  });
+
   // Event delegation for dynamically rendered cards (reactions + admin controls).
   document.getElementById('newsFeed').addEventListener('click', e => {
     const btn = e.target.closest('button[data-react-id], button[data-edit-id], button[data-delete-id]');
@@ -265,6 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const id = document.getElementById('modalEditId').value;
     const payload = {
       title:        document.getElementById('fieldTitle').value.trim(),
+      category:     document.getElementById('fieldCategory').value,
       content:      document.getElementById('fieldContent').value.trim(),
       url:          document.getElementById('fieldUrl').value.trim(),
       urlLabel:     document.getElementById('fieldUrlLabel').value.trim(),

@@ -64,7 +64,7 @@
     }
 
     .news-card {
-      background: #fff;
+      background: var(--surface-0, #fff);
       border: 1px solid var(--border-soft, #ebeee5);
       border-radius: 16px;
       padding: 32px;
@@ -75,7 +75,57 @@
     .news-card:hover { box-shadow: 0 8px 24px -8px rgba(11,36,16,0.14); }
 
     .news-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
       margin-bottom: 10px;
+    }
+
+    /* ── Category chips (filter bar) & badges ── */
+    .news-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 760px;
+      margin: -32px auto 0;
+      padding: 0 24px;
+    }
+    .news-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface-0, #fff);
+      border: 1.5px solid var(--border-soft, #ebeee5);
+      border-radius: 999px;
+      padding: 7px 15px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text, #1f2937);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s;
+      user-select: none;
+    }
+    .news-chip:hover { transform: translateY(-1px); border-color: var(--forest-300, #b9d8a4); }
+    .news-chip.active {
+      background: var(--forest-700, #1e4d14);
+      border-color: var(--forest-700, #1e4d14);
+      color: #fff;
+    }
+    .news-cat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--forest-100, #f0f7ec);
+      color: var(--forest-700, #1e4d14);
+      border: 1px solid var(--forest-300, #b9d8a4);
+      border-radius: 999px;
+      padding: 3px 11px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
     }
     .news-date {
       font-size: 0.8rem;
@@ -237,7 +287,7 @@
     .modal-backdrop.open { display: flex; }
 
     .modal-box {
-      background: #fff;
+      background: var(--surface-0, #fff);
       border-radius: 20px;
       padding: 36px;
       width: 100%;
@@ -285,7 +335,8 @@
     }
     .form-label span { color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
     .form-input,
-    .form-textarea {
+    .form-textarea,
+    .form-select {
       width: 100%;
       border: 1.5px solid var(--border, #e2e8da);
       border-radius: 10px;
@@ -293,13 +344,15 @@
       font-size: 0.97rem;
       font-family: var(--font-sans);
       color: var(--text, #1f2937);
-      background: #fff;
+      background: var(--surface-0, #fff);
       outline: none;
       transition: border-color 0.15s;
     }
     .form-input:focus,
-    .form-textarea:focus { border-color: var(--forest-600, #2d6b1f); }
+    .form-textarea:focus,
+    .form-select:focus { border-color: var(--forest-600, #2d6b1f); }
     .form-textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+    .form-select { cursor: pointer; }
 
     .modal-error {
       color: #b91c1c;
@@ -368,10 +421,10 @@
       text-align: center;
       cursor: pointer;
       transition: border-color 0.15s, background 0.15s;
-      background: #fafbf7;
+      background: var(--surface-1, #fafbf7);
       position: relative;
     }
-    .img-upload-area:hover { border-color: var(--forest-600, #2d6b1f); background: #f0f7ec; }
+    .img-upload-area:hover { border-color: var(--forest-600, #2d6b1f); background: var(--forest-100, #f0f7ec); }
     .img-upload-area input[type="file"] {
       position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
     }
@@ -496,6 +549,9 @@
     <p>Informations, articles et nouveautés sélectionnés par l'équipe BWR.</p>
   </div>
 
+  <!-- ── Category filter chips ── -->
+  <div class="news-filters" id="newsFilters"></div>
+
   <!-- ── News feed ── -->
   <section class="news-section">
     <div id="newsFeed"></div>
@@ -517,6 +573,18 @@
         <div class="form-group">
           <label class="form-label" for="fieldTitle">Titre</label>
           <input type="text" id="fieldTitle" class="form-input" placeholder="Titre de l'actualité" required maxlength="200" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="fieldCategory">Catégorie</label>
+          <select id="fieldCategory" class="form-select">
+            <option value="foret">🌲 Forêt</option>
+            <option value="evenement">📅 Événement</option>
+            <option value="faune">🦌 Faune &amp; flore</option>
+            <option value="securite">⚠️ Sécurité</option>
+            <option value="travaux">🚧 Travaux</option>
+            <option value="app">📱 App BWR</option>
+          </select>
         </div>
 
         <div class="form-group">

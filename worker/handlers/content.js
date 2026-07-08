@@ -6,6 +6,10 @@ const escapeHtml = (str) => String(str ?? '').replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
 ));
 
+// Allowed news categories (slugs). Keep in sync with NEWS_CATEGORIES in public/js/news.js.
+const NEWS_CATEGORIES = ['foret', 'evenement', 'faune', 'securite', 'travaux', 'app'];
+const sanitizeCategory = (c) => (NEWS_CATEGORIES.includes(c) ? c : 'foret');
+
 /**
  * OSM proxy, ORS routing proxy, news CRUD, and contact form.
  * @param {Request} request
@@ -177,6 +181,7 @@ export async function handleContent(request, env, { pathname, url, json, fail })
       id,
       title: body.title.trim().slice(0, 200),
       content: (body.content || '').trim().slice(0, 5000),
+      category: sanitizeCategory((body.category || '').trim()),
       url: (body.url || '').trim().slice(0, 500),
       urlLabel: (body.urlLabel || '').trim().slice(0, 100),
       imageDataUri: imageDataUri || '',
@@ -206,6 +211,7 @@ export async function handleContent(request, env, { pathname, url, json, fail })
       ...existing,
       title: body.title.trim().slice(0, 200),
       content: (body.content || '').trim().slice(0, 5000),
+      category: sanitizeCategory((body.category ?? existing.category ?? '').trim()),
       url: (body.url || '').trim().slice(0, 500),
       urlLabel: (body.urlLabel || '').trim().slice(0, 100),
       imageDataUri: imageDataUri,
