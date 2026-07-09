@@ -1270,7 +1270,17 @@ async function loadMembers() {
     const users = await res.json();
     if (!res.ok) { list.innerHTML = `<p style="color:red">${users.error}</p>`; return; }
     const planIcon = { free: '🌿', visitor: '🎫', silver: '🥈', gold: '🥇' };
+    // Oldest sign-ups first (top), newest last (bottom); accounts with no date go last.
+    users.sort((a, b) => {
+      if (!a.createdAt && !b.createdAt) return 0;
+      if (!a.createdAt) return 1;
+      if (!b.createdAt) return -1;
+      return new Date(a.createdAt) - new Date(b.createdAt);
+    });
     list.innerHTML = users.map(u => {
+      const joined = u.createdAt
+        ? `<span style="font-size:0.75rem;color:#6b7280">📅 inscrit le ${new Date(u.createdAt).toLocaleDateString('fr-FR')}</span>`
+        : '';
       const expiry = u.planExpiresAt
         ? `<span style="font-size:0.75rem;color:#f97316">⏳ expire le ${new Date(u.planExpiresAt).toLocaleDateString('fr-FR')}</span>`
         : '';
@@ -1284,6 +1294,7 @@ async function loadMembers() {
           <div style="font-weight:600;font-size:0.9rem">${uName}</div>
           <div style="font-size:0.78rem;color:#6b7280">${escapeHtml(u.email)}</div>
           <div style="margin-top:3px">${planIcon[u.plan] || '🌿'} <strong>${uPlan}</strong> ${expiry} ${compedBadge}</div>
+          ${joined ? `<div style="margin-top:2px">${joined}</div>` : ''}
         </div>
         ${u.role !== 'admin' ? `<div style="display:flex;gap:6px">
           <button class="btn-secondary member-plan-btn" style="width:auto;padding:6px 12px;font-size:0.8rem"
@@ -1578,7 +1589,9 @@ async function loadRevenue() {
     const res = await fetch(`${API_URL}/api/users`, { headers: authHeader() });
     const data = await res.json();
     if (!res.ok) { kpis.innerHTML = `<p style="color:red;grid-column:1/-1">${data.error || 'Erreur'}</p>`; return; }
-    _revenueUsers = data;
+    // Revenue dashboard treats every member as a free user, so all revenue counts
+    // read zero and the distribution chart shows everyone in the grey "Gratuit" band.
+    _revenueUsers = data.map(u => u.role === 'admin' ? u : { ...u, plan: 'free', comped: false });
 
     const counts = { free: 0, silver: 0, gold: 0 };
     const comped = { silver: 0, gold: 0 }; // abonnements offerts → exclus du CA
