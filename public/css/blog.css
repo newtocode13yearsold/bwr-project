@@ -370,6 +370,29 @@
   margin-top: 2px;
 }
 
+/* "Open this walk in the planner" link — sits under an itinerary's stat pills */
+.balade-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: var(--forest-700, var(--forest-700));
+  color: #fff !important;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  border: 1px solid var(--forest-700, var(--forest-700));
+  transition: background 0.15s, transform 0.15s;
+}
+.balade-link:hover {
+  background: var(--forest-900, var(--forest-900));
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+.balade-link svg { flex-shrink: 0; }
+
 /* CTA block */
 .article-cta {
   background: linear-gradient(135deg, var(--forest-900) 0%, var(--forest-700) 60%, var(--forest-600) 100%);

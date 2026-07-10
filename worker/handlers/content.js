@@ -112,11 +112,17 @@ export async function handleContent(request, env, { pathname, url, json, fail })
 
     const locations = body.locations.slice(0, 100); // honour same 100-point cap as client
 
+    // opentopodata expects locations as a pipe-delimited "lat,lng|lat,lng" string,
+    // NOT an array of {latitude, longitude} objects (that returns INVALID_REQUEST).
+    const locString = locations
+      .map(l => `${l.latitude},${l.longitude}`)
+      .join('|');
+
     try {
       const res = await fetch('https://api.opentopodata.org/v1/srtm30m', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ locations }),
+        body: JSON.stringify({ locations: locString }),
       });
       if (!res.ok) return fail('Elevation API error', 502);
       const data = await res.json();

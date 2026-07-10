@@ -136,10 +136,11 @@ function applyOsmSurfaceWeights(paths) {
 // orange-graded trails wherever possible. OSM paths have no admin grade, so we
 // approximate their toughness from surface/highway roughness instead.
 const DIFF_RANK = { easy: 0, medium: 1, hard: 2 };
-// Cost multiplier added per grade-level of mismatch. 0.9 → a one-level mismatch
-// costs 1.9×, two levels 2.8×: a strong preference that still lets the router use
-// a mismatched path when no graded alternative exists (so routes never fail).
-const DIFF_PENALTY = 0.9;
+// Cost multiplier added per grade-level of mismatch. 2.5 → a one-level mismatch
+// costs 3.5×, two levels 6×: a strong preference so an orange pick almost always
+// routes over orange-graded trails, while still letting the router fall back to a
+// mismatched path when no graded alternative exists (so routes never fail).
+const DIFF_PENALTY = 2.5;
 
 function pathDifficultyRank(p) {
   // Admin-graded path → trust its status directly.
