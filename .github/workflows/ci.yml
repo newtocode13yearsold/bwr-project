@@ -6,8 +6,7 @@ on:
   pull_request:
     branches: ["**"]
   schedule:
-    - cron: "0 5 * * *"       # every day at 07:00 Paris time (CEST, UTC+2)
-    - cron: "0 14 * * *"      # every day at 16:00 Paris time (CEST, UTC+2)
+    - cron: "0 5 * * *"       # once a day at 07:00 Paris time (CEST, UTC+2)
   workflow_dispatch:           # lets you trigger a run manually from GitHub UI
 
 jobs:
