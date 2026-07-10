@@ -6,3 +6,6 @@ dist/
 # Generated Instagram promo videos
 scripts/promo/out/
 scripts/promo/.raw/
+
+# Stray generation log
+gen.log

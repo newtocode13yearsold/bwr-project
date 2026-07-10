@@ -128,9 +128,9 @@ function escapeHtml(s) {
 // generated route length. Filters out GPS noise via accuracy, min-move,
 // and max-speed thresholds.
 const GpsTracker = (() => {
-  const MIN_ACCURACY_M = 25;   // discard fixes with accuracy worse than 25 m
+  const MIN_ACCURACY_M = 40;   // discard fixes worse than 40 m (forest canopy is noisy)
   const MIN_MOVE_KM    = 0.005; // 5 m minimum displacement — filters GPS jitter
-  const MAX_SPEED_KMH  = 22;   // max realistic walking/biking speed; discards jumps
+  const MAX_SPEED_KMH  = 50;   // reject only teleport/noise spikes (covers fast cycling)
 
   let watchId    = null;
   let lastPos    = null;
@@ -177,11 +177,16 @@ const GpsTracker = (() => {
     const dist = haversine(lastPos.lat, lastPos.lng, latitude, longitude);
     const kmh  = dtH > 0 ? dist / dtH : 0;
 
-    if (dist >= MIN_MOVE_KM && kmh <= MAX_SPEED_KMH) {
-      sessionKm += dist;
-      const el = document.getElementById('trackerKm');
-      if (el) el.textContent = sessionKm.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' km';
-    }
+    // Teleport/noise spike: ignore the fix but KEEP lastPos so we don't jump the
+    // anchor to a bad point (which would then corrupt the next segment).
+    if (kmh > MAX_SPEED_KMH) return;
+    // Below the jitter floor: don't count AND don't advance lastPos, so slow
+    // walking accumulates across several fixes instead of being lost each tick.
+    if (dist < MIN_MOVE_KM) return;
+
+    sessionKm += dist;
+    const el = document.getElementById('trackerKm');
+    if (el) el.textContent = sessionKm.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' km';
     lastPos = { lat: latitude, lng: longitude, t: pos.timestamp };
   }
 

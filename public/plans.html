@@ -69,6 +69,10 @@
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>
         <span>Classement</span>
       </a>
+      <a href="quests" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+        <span>Quêtes</span>
+      </a>
       <a href="forum" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
         <span>Forum</span>
@@ -157,7 +161,7 @@
           <p class="pc-tag">Pour découvrir sans s'engager</p>
         </header>
         <div class="pc-price">
-          <span class="pc-amount">1,10€</span>
+          <span class="pc-amount">0,99€</span>
           <span class="pc-period">/ 7 jours</span>
         </div>
         <ul class="pc-features">
@@ -172,9 +176,10 @@
           <li class="pf yes"><span class="pf-icon">✓</span> Roue quotidienne</li>
           <li class="pf yes"><span class="pf-icon">✓</span> Signalement d'obstacles</li>
           <li class="pf no"><span class="pf-icon">×</span> Pas d'abonnement reconduit</li>
+          <li class="pf no"><span class="pf-icon">×</span> 2 passes consécutifs maximum</li>
         </ul>
         <button class="pc-cta cta-visitor" data-plan="visitor">Obtenir le passe 7 jours</button>
-        <p class="pc-footnote">Accès immédiat · Paiement unique · Sans engagement</p>
+        <p class="pc-footnote">Accès immédiat · Paiement unique · Sans engagement · Limité à 2 passes de suite</p>
       </article>
 
       <!-- SILVER (popular) -->
@@ -428,6 +433,10 @@
           <p>Non. Une fois un badge gagné, il reste à vie sur votre profil. Seul leur affichage dépend de votre plan : les badges Argent et Or restent visibles uniquement avec le plan correspondant.</p>
         </details>
         <details class="faq-item">
+          <summary>C'est quoi, un fichier GPX ?</summary>
+          <p>Le GPX (<em>GPS Exchange Format</em>) est le format universel des traces GPS : un simple fichier qui contient la suite des points (latitude, longitude, altitude) de votre itinéraire. C'est le « langage commun » compris par la quasi-totalité des montres, applis et logiciels de rando ou de vélo. Concrètement, vous générez un trajet sur BWR, vous l'exportez en GPX, puis vous l'importez dans Garmin Connect, Strava, Komoot… pour le suivre sur le terrain.</p>
+        </details>
+        <details class="faq-item">
           <summary>L'export GPX fonctionne avec ma montre Garmin ?</summary>
           <p>Oui. Notre GPX respecte le standard 1.1 et fonctionne avec Garmin Connect, Strava, Komoot, Suunto, Wahoo, ou n'importe quel logiciel cartographique. Le format KML (Or) est compatible Google Earth.</p>
         </details>
@@ -637,7 +646,7 @@
         <label>
           <span class="af-label">Plan choisi</span>
           <select id="afPlan" required>
-            <option value="visitor">🎫 Visiteur · 1,10€ / 7 jours</option>
+            <option value="visitor">🎫 Visiteur · 0,99€ / 7 jours</option>
             <option value="silver">🥈 Argent · 2,99€/mois</option>
             <option value="gold" disabled>🥇 Or · 6,99€/mois (bientôt disponible)</option>
           </select>

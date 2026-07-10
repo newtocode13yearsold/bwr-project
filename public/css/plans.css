@@ -195,6 +195,16 @@
   margin-bottom: 64px;
 }
 
+/* Annual tab hides the one-time Visitor pass — balance the grid on 3 cards.
+   Only on the wide (4-col) layout; the responsive 2-/1-col breakpoints below
+   already handle 3 cards fine, so don't let this override them. */
+@media (min-width: 1201px) {
+  .plans-grid.annual { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* A [hidden] card must stay hidden even though .plan-card sets display:flex. */
+.plan-card[hidden] { display: none; }
+
 @media (max-width: 1200px) {
   .plans-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
   .plan-silver.popular,

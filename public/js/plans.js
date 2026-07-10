@@ -18,6 +18,14 @@ billingToggles.forEach(btn => {
     document.querySelectorAll('.pc-annual-note').forEach(el => {
       el.textContent = currentPeriod === 'annual' ? (el.dataset.annual || '') : '';
     });
+
+    // The Visitor pass is a one-time 7-day (weekly) purchase — it has no annual
+    // price, so hide it on the "Annuel" tab and drop the grid to 3 columns.
+    const annual = currentPeriod === 'annual';
+    const visitorCard = document.querySelector('.plan-visitor');
+    if (visitorCard) visitorCard.hidden = annual;
+    const grid = document.querySelector('.plans-grid');
+    if (grid) grid.classList.toggle('annual', annual);
   });
 });
 
@@ -104,7 +112,7 @@ document.getElementById('activationForm').addEventListener('submit', async e => 
   btn.textContent = 'Envoi…';
   btn.disabled = true;
 
-  const planLabel   = plan === 'visitor' ? 'Visiteur (1,10€ / 7 jours)' : plan === 'gold' ? 'Or (6,99€/mois)' : 'Argent (2,99€/mois)';
+  const planLabel   = plan === 'visitor' ? 'Visiteur (0,99€ / 7 jours)' : plan === 'gold' ? 'Or (6,99€/mois)' : 'Argent (2,99€/mois)';
   const periodLabel = plan === 'visitor' ? 'paiement unique' : period === 'annual' ? 'annuel (-25 %)' : 'mensuel';
   const formatted = `=== Demande d'activation BWR ===
 Plan : ${planLabel}

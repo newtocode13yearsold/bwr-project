@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1e4d14" />
+  <title>Quêtes — BWR · Oise</title>
+  <meta name="description" content="Quêtes du jour, de la semaine, du mois et hauts faits à débloquer une seule fois dans la forêt de Compiègne." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/home.css" />
+  <script src="js/theme.js"></script>
+  <style>
+    html, body { height: auto !important; overflow: auto !important; }
+    body { background: var(--surface-1, #fafbf7); }
+
+    .page-hero {
+      padding: 52px 24px 44px;
+      text-align: center;
+      background: linear-gradient(160deg, #0b2410 0%, #1e4d14 55%, #2d6b1f 100%);
+      color: #fff;
+    }
+    .page-hero-badge {
+      display: inline-block;
+      background: rgba(163, 230, 53, 0.18);
+      color: #a3e635;
+      border: 1px solid rgba(163, 230, 53, 0.35);
+      border-radius: 999px;
+      padding: 4px 16px;
+      font-size: 0.82rem; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    .page-hero h1 { font-family: var(--font-display, 'Fraunces', serif); font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; margin: 0 0 12px; }
+    .page-hero p { max-width: 640px; margin: 0 auto; opacity: 0.9; font-size: 1.05rem; }
+
+    .wrap { max-width: 1080px; margin: 40px auto 80px; padding: 0 20px; }
+
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; background: var(--surface-2, #eef2e6); padding: 6px; border-radius: 16px; margin-bottom: 8px; }
+    .tab { border: none; background: transparent; padding: 10px 18px; border-radius: 12px; font-weight: 600; font-size: 0.92rem; cursor: pointer; color: var(--text-2, #4b5563); }
+    .tab.active { background: var(--surface-1, #fff); color: var(--brand-700, #1e4d14); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+    .subtitle { font-size: 0.92rem; color: var(--text-2, #6b7280); margin: 16px 2px 16px; }
+
+    .quest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+    .quest {
+      background: var(--surface-1, #fff);
+      border: 1px solid var(--border, #e5e7eb);
+      border-radius: 14px; padding: 15px 16px;
+      display: flex; gap: 13px; align-items: flex-start;
+      transition: border-color .15s ease, transform .15s ease;
+    }
+    .quest.collected { border-color: rgba(34,197,94,0.5); background: rgba(34,197,94,0.06); }
+    .q-check {
+      width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0; margin-top: 2px;
+      border: 2px solid var(--border, #cbd5e1); display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; color: #fff; background: transparent;
+    }
+    .quest.collected .q-check { background: #22c55e; border-color: #22c55e; }
+    .q-emoji { font-size: 1.5rem; line-height: 1; flex-shrink: 0; }
+    .q-body { flex: 1; min-width: 0; }
+    .q-title { font-weight: 700; font-size: 0.98rem; color: var(--text-1, #111827); }
+    .q-desc { font-size: 0.85rem; color: var(--text-2, #6b7280); margin-top: 3px; }
+
+    .q-progress { margin-top: 10px; display: flex; align-items: center; gap: 9px; }
+    .q-bar { flex: 1; height: 7px; border-radius: 999px; background: var(--surface-2, #e5e7eb); overflow: hidden; }
+    .q-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #22c55e, #a3e635); transition: width .4s ease; }
+    .quest.collected .q-fill { background: #22c55e; }
+    .q-prog-txt { font-size: 0.78rem; font-weight: 700; color: var(--text-2, #6b7280); white-space: nowrap; }
+    .q-locked { font-size: 0.8rem; color: var(--text-2, #9ca3af); }
+
+    .q-reward {
+      display: inline-block; margin-top: 9px; font-size: 0.8rem; font-weight: 700;
+      padding: 3px 10px; border-radius: 999px;
+    }
+    .q-reward.xp   { color: #b45309; background: rgba(245, 158, 11, 0.14); }
+    .q-reward.perk { color: #166534; background: rgba(34, 197, 94, 0.15); }
+
+    .hall-hint {
+      background: linear-gradient(135deg, rgba(30,77,20,0.06), rgba(163,230,53,0.10));
+      border: 1px solid var(--border, #e5e7eb); border-radius: 14px;
+      padding: 14px 16px; font-size: 0.9rem; color: var(--text-2, #4b5563); margin-bottom: 18px;
+    }
+
+    @media (max-width: 560px) { .tab { flex: 1 1 auto; text-align: center; } }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-left">
+      <a href="/" class="logo" style="text-decoration:none">BWR</a>
+      <nav class="header-nav-links">
+        <a href="map">Carte</a>
+        <a href="routes">Planifier</a>
+        <a href="quests" class="active">Quêtes</a>
+        <a href="forum">Forum</a>
+        <a href="plans">Plans</a>
+      </nav>
+    </div>
+    <div class="header-right">
+      <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
+    </div>
+  </header>
+
+  <section class="page-hero">
+    <span class="page-hero-badge">Quêtes BWR</span>
+    <h1>Tes défis en forêt</h1>
+    <p>Progression suivie automatiquement à partir de tes vraies sorties — pas besoin de cocher quoi que ce soit. Marche, roule, note des chemins : les quêtes se valident toutes seules.</p>
+  </section>
+
+  <div class="wrap">
+    <div class="tabs">
+      <button class="tab active" data-scope="daily">☀️ Du jour</button>
+      <button class="tab" data-scope="weekly">📆 De la semaine</button>
+      <button class="tab" data-scope="monthly">📅 Du mois</button>
+      <button class="tab" data-scope="oneTime">🏆 Hauts faits</button>
+    </div>
+    <div class="subtitle" id="subtitle"></div>
+    <div id="hallHint" class="hall-hint" style="display:none">
+      🏅 Les hauts faits se débloquent <strong>automatiquement</strong> quand ton total atteint l'objectif. La récompense (Gold, Silver, badge) est ensuite créditée par l'équipe.
+    </div>
+    <div class="quest-grid" id="questGrid"></div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/quests.js"></script>
+</body>
+</html>

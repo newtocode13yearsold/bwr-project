@@ -1,4 +1,4 @@
-const CACHE = 'bwr-v49';
+const CACHE = 'bwr-v51';
 // Tiles live in two separate caches:
 //   • TILE_CACHE — forests the user explicitly downloaded ("Cartes hors-ligne").
 //     Permanent: never expired, never evicted, so a downloaded forest stays
@@ -28,12 +28,14 @@ const APP_SHELL = [
   'plans',
   'news',
   'forum',
+  'quests',
   'verify',
   'reset',
   'changelog',
   'leaderboard',
   'guide',
   'manifest.json',
+  'data/quests.json',
   'icons/icon.svg',
   'icons/icon-180.png',
   'icons/icon-192.png',
@@ -63,6 +65,7 @@ const APP_SHELL = [
   'js/exporters.js',
   'js/news.js',
   'js/forum.js',
+  'js/quests.js',
   'js/install.js',
   'js/theme.js',
   'js/forests.js',

@@ -113,22 +113,37 @@ document.querySelectorAll('.filter-check').forEach(cb => {
   });
 });
 
-document.querySelectorAll('input[name="tileLayer"]').forEach(radio => {
-  radio.addEventListener('change', () => {
-    const wanted = radio.value;
-    const plan = _userPlan;
-    // Gate satellite — show upsell instead of switching.
-    if (wanted === 'satellite' && !BWR.can('satellite_tiles', plan)) {
-      radio.checked = false;
-      document.querySelector(`input[name="tileLayer"][value="${currentLayer}"]`).checked = true;
-      showUpgradeToast('La vue satellite', BWR.requiredTier('satellite_tiles'));
-      return;
-    }
-    map.removeLayer(TILE_LAYERS[currentLayer]);
-    currentLayer = wanted;
-    map.setMaxZoom(LAYER_MAX_ZOOM[currentLayer]);
-    TILE_LAYERS[currentLayer].addTo(map);
+// Shared tile-layer switch, driven by both the Filtres radios and the floating
+// .layer-btn buttons on the map. Keeps both UIs in sync and gates satellite.
+function switchTileLayer(wanted) {
+  if (wanted === currentLayer || !TILE_LAYERS[wanted]) { syncLayerControls(); return; }
+  // Gate satellite — show upsell instead of switching.
+  if (wanted === 'satellite' && !BWR.can('satellite_tiles', _userPlan)) {
+    showUpgradeToast('La vue satellite', BWR.requiredTier('satellite_tiles'));
+    syncLayerControls();
+    return;
+  }
+  map.removeLayer(TILE_LAYERS[currentLayer]);
+  currentLayer = wanted;
+  map.setMaxZoom(LAYER_MAX_ZOOM[currentLayer]);
+  TILE_LAYERS[currentLayer].addTo(map);
+  syncLayerControls();
+}
+
+// Reflect currentLayer on both the radios and the floating buttons.
+function syncLayerControls() {
+  const radio = document.querySelector(`input[name="tileLayer"][value="${currentLayer}"]`);
+  if (radio) radio.checked = true;
+  document.querySelectorAll('.layer-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.layer === currentLayer);
   });
+}
+
+document.querySelectorAll('input[name="tileLayer"]').forEach(radio => {
+  radio.addEventListener('change', () => switchTileLayer(radio.value));
+});
+document.querySelectorAll('.layer-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTileLayer(btn.dataset.layer));
 });
 
 // Visual lock badge next to gated tile-layer options

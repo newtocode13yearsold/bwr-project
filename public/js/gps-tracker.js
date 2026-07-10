@@ -11,9 +11,9 @@
   const btn = document.getElementById('btnGpsTracker');
   if (!btn) return;
 
-  const MIN_ACCURACY_M = 25;    // discard fixes with accuracy worse than 25 m
+  const MIN_ACCURACY_M = 40;    // discard fixes worse than 40 m (forest canopy is noisy)
   const MIN_MOVE_KM    = 0.005; // 5 m minimum displacement — filters GPS jitter
-  const MAX_SPEED_KMH  = 22;    // max realistic walking/biking speed; discards jumps
+  const MAX_SPEED_KMH  = 50;    // reject only teleport/noise spikes (covers fast cycling)
 
   let watchId    = null;
   let lastPos    = null;
@@ -85,10 +85,14 @@
     const dist = haversine(lastPos.lat, lastPos.lng, latitude, longitude);
     const kmh  = dtH > 0 ? dist / dtH : 0;
 
-    if (dist >= MIN_MOVE_KM && kmh <= MAX_SPEED_KMH) {
-      sessionKm += dist;
-      setLabel();
-    }
+    // Teleport/noise spike: ignore but keep lastPos anchored to the last good fix.
+    if (kmh > MAX_SPEED_KMH) return;
+    // Below the jitter floor: keep lastPos so slow walking accumulates across
+    // fixes instead of being discarded (and lost) on every tick.
+    if (dist < MIN_MOVE_KM) return;
+
+    sessionKm += dist;
+    setLabel();
     lastPos = { lat: latitude, lng: longitude, t: pos.timestamp };
   }
 

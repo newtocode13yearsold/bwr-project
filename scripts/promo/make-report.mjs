@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────────
-//  BWR Instagram reel — "Démo appli" (l'app en action, marimba bed, no voice)
+//  BWR Instagram reel — "Signalements" (la carte vivante, marimba bed, no voice)
 //
-//  Records the self-contained reel page `public/ads/promo-demo.html`, which
-//  plays its own ~20 s motion-graphics timeline (phone mockup: search → Boucle →
-//  distance → the loop draws itself → dénivelé/export). Steps mirror the other
-//  make-*.mjs scripts:
+//  Records the self-contained reel page `public/ads/promo-report.html`, which
+//  plays its own ~21 s motion-graphics timeline (phone mockup: "Signaler" →
+//  type + photo → my pin drops → the community's live pins bloom → counter).
+//  Steps mirror make-demo.mjs / the other make-*.mjs scripts:
 //    1. open the page headlessly in bare mode (no controls/frame),
 //    2. render the page's OWN synth music offline to a WAV (Playwright doesn't
 //       capture live WebAudio, so we ask the page via window.renderMusicWav()),
@@ -15,9 +15,9 @@
 //
 //  Usage (a server must serve /public — the bwr-static preview on :4810 works,
 //  or `npm run dev:worker` on :8787):
-//    PROMO_BASE_URL=http://localhost:4810 node scripts/promo/make-demo.mjs
-//    node scripts/promo/make-demo.mjs --encode-only   # re-use last recording
-//    node scripts/promo/make-demo.mjs --only=9x16       # one format only
+//    PROMO_BASE_URL=http://localhost:4810 node scripts/promo/make-report.mjs
+//    node scripts/promo/make-report.mjs --encode-only   # re-use last recording
+//    node scripts/promo/make-report.mjs --only=9x16       # one format only
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { chromium } from '@playwright/test';
@@ -30,17 +30,23 @@ import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(__dirname, 'out');
-const RAW_DIR = join(__dirname, '.raw-demo');
-const MASTER = join(OUT_DIR, 'bwr-demo-master.webm');
-const LOOP   = join(OUT_DIR, 'bwr-demo-loop.wav'); // exact synth bed from the page
-const BED    = join(OUT_DIR, 'bwr-demo-bed.m4a');  // trimmed/faded/normalized bed
+// --feed renders a "feed-safe" variant: the page's #content group is scaled
+// toward the centre (body.feed) so the whole reel survives Instagram's 4:5
+// feed crop of a 9:16. Outputs get a -feed suffix and only the 9x16 is built
+// (the 1x1 / 4x5 blur-pad exports are already crop-safe).
+const FEED = process.argv.includes('--feed');
+const SUF = FEED ? '-feed' : '';
+const RAW_DIR = join(__dirname, '.raw-report' + SUF);
+const MASTER = join(OUT_DIR, 'bwr-report' + SUF + '-master.webm');
+const LOOP   = join(OUT_DIR, 'bwr-report-loop.wav'); // exact synth bed from the page
+const BED    = join(OUT_DIR, 'bwr-report-bed.m4a');  // trimmed/faded/normalized bed
 // final drop folder shared with the other BWR ads
 const DROP   = join(__dirname, '..', '..', '..', 'add');
 
 const BASE_URL = process.env.PROMO_BASE_URL || 'http://localhost:4810';
-const PAGE = '/ads/promo-demo.html?bare=1';
+const PAGE = '/ads/promo-report.html?bare=1';
 
-// The page's own timeline length (kept in sync with TOTAL + CTA tail in promo-demo.html).
+// The page's own timeline length (kept in sync with TOTAL + CTA tail in promo-report.html).
 const REEL_MS = 20500;
 const AUDIO_SECONDS = 24; // render a little longer than the reel; ffmpeg trims to fit
 const FINAL_SEC = 20.5;
@@ -94,10 +100,11 @@ async function record() {
   // Force full-bleed capture mode + hide the gate. We set the class explicitly
   // rather than trust ?bare in the URL, because the static `serve` host strips
   // the query string on its clean-URL redirect (bare mode would never activate).
-  await page.evaluate(() => {
+  await page.evaluate((feed) => {
     document.body.classList.add('bare');
+    if (feed) document.body.classList.add('feed');
     const g = document.getElementById('gate'); if (g) g.style.display = 'none';
-  });
+  }, FEED);
   await page.waitForFunction(() => typeof play === 'function');
   await page.waitForTimeout(1000); // let fonts + the first frame paint
   await page.evaluate(() => play());
@@ -143,11 +150,12 @@ async function encode() {
   if (!existsSync(MASTER)) throw new Error(`master not found (${MASTER}) — run without --encode-only first`);
   if (!existsSync(BED)) throw new Error(`music bed not found (${BED})`);
   await mkdir(DROP, { recursive: true });
-  const targets = ONLY ? FORMATS.filter(f => f.id === ONLY) : FORMATS;
+  let targets = ONLY ? FORMATS.filter(f => f.id === ONLY) : FORMATS;
+  if (FEED) targets = targets.filter(f => f.id === '9x16'); // feed variant is 9x16 only
   if (!targets.length) throw new Error(`unknown --only value: ${ONLY}`);
 
   for (const f of targets) {
-    const out = join(OUT_DIR, `bwr-demo-${f.id}.mp4`);
+    const out = join(OUT_DIR, `bwr-report${SUF}-${f.id}.mp4`);
     const common = [
       '-c:v', 'libx264', '-preset', 'medium', '-crf', '20',
       '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-level', '4.0',
@@ -171,9 +179,9 @@ async function encode() {
         `[bgb][fgs]overlay=(W-w)/2:(H-h)/2[v]`,
         '-map', '[v]', '-map', '1:a', ...common];
     }
-    process.stdout.write(`▶ encoding ${f.id} (${f.w}×${f.h}) … `);
+    process.stdout.write(`▶ encoding ${f.id}${SUF} (${f.w}×${f.h}) … `);
     await run(a);
-    const drop = join(DROP, `BWR-pub-demo-${f.id}.mp4`);
+    const drop = join(DROP, `BWR-pub-report${SUF}-${f.id}.mp4`);
     await copyFile(out, drop);
     console.log('done →', drop);
   }
@@ -184,9 +192,9 @@ async function encode() {
     if (!ENCODE_ONLY) await record();
     if (!ENCODE_ONLY || !existsSync(BED)) await buildMusic(FINAL_SEC);
     await encode();
-    console.log('\n✅ Démo reel ready in ../add/ — BWR-pub-demo-9x16.mp4 drops straight into Instagram.');
+    console.log('\n✅ Signalements reel ready in ../add/ — BWR-pub-report-9x16.mp4 drops straight into Instagram.');
   } catch (e) {
-    console.error('\n❌ démo reel build failed:', e.message);
+    console.error('\n❌ signalements reel build failed:', e.message);
     process.exit(1);
   }
 })();
