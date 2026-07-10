@@ -171,14 +171,18 @@ function _pathAtClick(latlng) {
   return best;
 }
 
-// Bounding box of the Oise (60) deployment zone — whole department + margin
-const OISE_BOUNDS = L.latLngBounds(
-  L.latLng(49.00, 1.60),
-  L.latLng(49.80, 3.25)
-);
+// Deployment zones — a path can only be selected/graded inside one of these boxes.
+// Add a new L.latLngBounds here to open up another area.
+const DEPLOYED_ZONES = [
+  // Oise (60) — whole department + margin
+  L.latLngBounds(L.latLng(49.00, 1.60), L.latLng(49.80, 3.25)),
+  // Côte d'Opale (Boulogne-sur-Mer / Wimereux / Marquise, Pas-de-Calais 62)
+  L.latLngBounds(L.latLng(50.40, 1.50), L.latLng(51.00, 2.10)),
+];
+const inDeployedZone = latlng => DEPLOYED_ZONES.some(b => b.contains(latlng));
 
 map.on('click', e => {
-  if (!OISE_BOUNDS.contains(e.latlng)) {
+  if (!inDeployedZone(e.latlng)) {
     showToast('Désolé, nous n\'avons pas encore déployé à cet endroit.');
     return;
   }
