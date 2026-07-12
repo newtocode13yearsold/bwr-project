@@ -48,6 +48,9 @@
     custom_goals:        { free: false, visitor: false,    silver: true,     gold: true     },
     weather:             { free: false, visitor: false,    silver: true,     gold: true     },
     custom_route_color:  { free: false, visitor: false,    silver: true,     gold: true     },
+    // "Sur mesure" planner mode: build a route via an ordered list of stops /
+    // carrefours the user picks themselves. See public/js/routes-planner.js.
+    custom_route_builder: { free: false, visitor: false,   silver: true,     gold: true     },
 
     /* — Badges & progression — */
     badges_free:         { free: true,  visitor: true,     silver: true,     gold: true     },

@@ -296,3 +296,68 @@ async function routeLoop(sLat, sLng, targetKm) {
   // 3. OSRM trip — always works; rotate its waypoint ring by the daily seed
   return osrmLoopWithRetry(sLat, sLng, targetKm, seed);
 }
+
+// ── Custom "Sur mesure" route — user-chosen ordered stops ─────────────────────
+// waypoints: [{ lat, lng }, …] with length ≥ 2, in the order the user placed them.
+// Builds ONE combined admin + OSM graph over the bbox of all stops (so we fetch
+// OSM once, not per leg) then routes each consecutive pair on that shared graph
+// with Dijkstra and concatenates the legs. Any leg the forest graph can't connect
+// falls back to a direct OSRM route for just that leg, so the whole route never
+// fails outright. Honors the current difficulty/surface/path-type preferences via
+// the same weighting helpers the other engines use.
+async function routeCustom(waypoints) {
+  if (!Array.isArray(waypoints) || waypoints.length < 2) {
+    throw new Error('Ajoute au moins deux points pour un trajet sur mesure');
+  }
+
+  // 1. bbox over every stop + a pad, fetch OSM forest paths once (cached server + client).
+  const lats = waypoints.map(w => w.lat);
+  const lngs = waypoints.map(w => w.lng);
+  const pad = 0.05;
+  const osmPaths = await fetchOsmPathsForBbox(
+    Math.min(...lats) - pad, Math.min(...lngs) - pad,
+    Math.max(...lats) + pad, Math.max(...lngs) + pad,
+  );
+
+  // 2. Same weighting the forest A→B engine uses: surface preference, then difficulty bias.
+  const weightedOsm = applyDifficultyWeights(applyOsmSurfaceWeights(osmPaths));
+  const admin = applyDifficultyWeights(savedPaths.length ? filterPaths(savedPaths) : []);
+
+  // 3. One stitched graph for every leg (admin primary, OSM weighted gap-fill).
+  const combined = [...admin, ...tagOsmGapFill(weightedOsm)];
+  let nodes = null, adj = null;
+  if (combined.length) {
+    try {
+      ({ nodes, adj } = buildGraph(combined));
+    } catch (e) { console.warn('routeCustom buildGraph:', e.message); }
+  }
+
+  // 4. Route each consecutive pair; concat coords (dropping the duplicated shared node).
+  let coords = [];
+  let meters = 0;
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const a = waypoints[i], b = waypoints[i + 1];
+    let leg = null;
+    if (nodes && adj) {
+      try {
+        const s = nearestNode(nodes, a.lat, a.lng);
+        const e = nearestNode(nodes, b.lat, b.lng);
+        if (s && e) {
+          const { prev } = dijkstra(adj, s.k, e.k);
+          const keys = rebuildPath(prev, s.k, e.k);
+          if (keys) leg = graphToResult(nodes, keys, transportMode);
+        }
+      } catch (err) { console.warn(`routeCustom leg ${i} graph:`, err.message); }
+    }
+    // Per-leg fallback: a direct OSRM route so a single unconnected pair never
+    // sinks the whole custom route.
+    if (!leg) {
+      leg = await osrmRoute([{ lat: a.lat, lon: a.lng }, { lat: b.lat, lon: b.lng }]);
+    }
+    coords = coords.length ? coords.concat(leg.coords.slice(1)) : leg.coords.slice();
+    meters += leg.meters;
+  }
+
+  const speed = transportMode === 'bike' ? 4.17 : 1.11; // m/s (mirror graphToResult)
+  return { coords, meters, seconds: meters / speed };
+}

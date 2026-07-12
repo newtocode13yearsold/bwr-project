@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BWR — map capture harness</title>
+<!--
+  Headless capture harness for the promo reels. Renders the SAME Leaflet map
+  the app uses (real IGN ortho / OpenTopoMap tiles of the Compiègne forest, real
+  admin path geometry) so the reels embed genuine screenshots of the user's map
+  instead of a stylised SVG. Driven by scripts/promo/capture-map.mjs, which loads
+  Leaflet + the route/path JSON and calls window.render(payload). The page sets
+  window.__ready=true once every visible tile has finished loading, so the driver
+  can screenshot a fully-painted frame.
+-->
+<link rel="stylesheet" href="LEAFLET_CSS" />
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#0e2a16}
+  #map{width:100%;height:100%}
+  /* hide Leaflet chrome — the reel supplies its own UI over the screenshot */
+  .leaflet-control-container,.leaflet-control-attribution{display:none!important}
+  /* route line glow */
+  .route-halo{filter:drop-shadow(0 0 6px rgba(163,230,53,.9))}
+  #startdot{
+    width:26px;height:26px;border-radius:50%;
+    background:#a3e635;border:4px solid #06140a;
+    box-shadow:0 0 0 4px rgba(163,230,53,.4),0 6px 16px rgba(0,0,0,.5);
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script src="LEAFLET_JS"></script>
+<script>
+const STATUS_COLORS = {
+  easy:'#22c55e', medium:'#f97316', hard:'#ef4444',
+  not_passable:'#9ca3af', no_bike:'#a16207',
+};
+const TILES = {
+  satellite: {
+    url:'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
+    opts:{ maxNativeZoom:19, maxZoom:19 },
+  },
+  topo: {
+    url:'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    opts:{ maxNativeZoom:15, maxZoom:17, subdomains:['a','b','c'] },
+  },
+};
+
+let map, tileLayer;
+let pendingTiles = 0, tileSettleTimer = null;
+
+function markBusy(){ window.__ready = false; if(tileSettleTimer){clearTimeout(tileSettleTimer);tileSettleTimer=null;} }
+function markMaybeReady(){
+  if(tileSettleTimer) clearTimeout(tileSettleTimer);
+  // give the map a beat after the last tile lands before declaring ready
+  tileSettleTimer = setTimeout(()=>{ if(pendingTiles<=0) window.__ready = true; }, 450);
+}
+
+// payload = { base:'satellite'|'topo', center:[lat,lng], zoom, routes:[{coords,color,weight,halo}], paths:[{coordinates,status}], start:[lat,lng] }
+window.render = function(payload){
+  window.__ready = false;
+  if(map){ map.remove(); map = null; }
+  pendingTiles = 0;
+
+  map = L.map('map', {
+    zoomControl:false, attributionControl:false,
+    zoomSnap:0.1, fadeAnimation:false, preferCanvas:false,
+  }).setView(payload.center || [49.35, 2.90], payload.zoom ?? 13);
+
+  const t = TILES[payload.base] || TILES.satellite;
+  tileLayer = L.tileLayer(t.url, { ...t.opts, keepBuffer:6, updateWhenIdle:false });
+  tileLayer.on('loading', ()=>{ markBusy(); });
+  tileLayer.on('tileloadstart', ()=>{ pendingTiles++; markBusy(); });
+  tileLayer.on('tileload', ()=>{ pendingTiles = Math.max(0,pendingTiles-1); markMaybeReady(); });
+  tileLayer.on('tileerror', ()=>{ pendingTiles = Math.max(0,pendingTiles-1); markMaybeReady(); });
+  tileLayer.on('load', ()=>{ pendingTiles = 0; markMaybeReady(); });
+  tileLayer.addTo(map);
+
+  // faint full network underneath (context) — thin, low opacity
+  if(payload.paths){
+    for(const p of payload.paths){
+      if(!p.coordinates || p.coordinates.length<2) continue;
+      const col = payload.grade ? (STATUS_COLORS[p.status]||'#9ca3af') : '#cbe6b0';
+      // dark casing for legibility on any base, then the coloured line
+      const gw = payload.gradeWeight || 4.5;
+      L.polyline(p.coordinates, { color:'#06140a', weight:(payload.grade?gw+3:3), opacity:payload.grade?0.6:0.0, lineCap:'round', lineJoin:'round' }).addTo(map);
+      L.polyline(p.coordinates, {
+        color: col,
+        weight: payload.grade ? gw : 2,
+        opacity: payload.grade ? 0.98 : 0.35,
+        lineCap:'round', lineJoin:'round',
+      }).addTo(map);
+    }
+  }
+
+  // highlighted route(s) on top
+  if(payload.routes){
+    for(const r of payload.routes){
+      // casing
+      L.polyline(r.coords, { color:'#06140a', weight:(r.weight||7)+5, opacity:0.6, lineCap:'round', lineJoin:'round' }).addTo(map);
+      const line = L.polyline(r.coords, {
+        color: r.color || '#a3e635',
+        weight: r.weight || 7,
+        opacity: 1, lineCap:'round', lineJoin:'round',
+      }).addTo(map);
+      if(r.halo) line.getElement()?.classList.add('route-halo');
+    }
+  }
+
+  // start marker
+  if(payload.start){
+    const icon = L.divIcon({ className:'', html:'<div id="startdot"></div>', iconSize:[26,26], iconAnchor:[13,13] });
+    L.marker(payload.start, { icon, interactive:false }).addTo(map);
+  }
+
+  // if a route/paths bbox fit is requested instead of fixed center/zoom
+  if(payload.fit){
+    const pts = [];
+    (payload.routes||[]).forEach(r=>r.coords.forEach(c=>pts.push(c)));
+    (payload.paths||[]).forEach(p=>(p.coordinates||[]).forEach(c=>pts.push(c)));
+    if(pts.length){ map.fitBounds(L.latLngBounds(pts).pad(payload.fitPad ?? 0.12)); }
+  }
+
+  map.whenReady(()=>{ markMaybeReady(); });
+};
+window.__ready = false;
+</script>
+</body>
+</html>

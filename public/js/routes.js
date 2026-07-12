@@ -27,6 +27,7 @@ function loadScript(src) {
   return _scriptCache[src];
 }
 const _loadElevation  = () => loadScript('js/elevation.js');
+const _loadBreakdown  = () => loadScript('js/route-breakdown.js');
 const _loadRouteSave  = () => loadScript('js/route-save.js');
 let routingPriority = 'forest';
 let surfaceFilter = 'any';
@@ -37,6 +38,8 @@ let savedPathsLayer = null;
 let savedPaths = [];       // raw paths array — used by the graph router
 let pickingPoint = null;
 let lastRoute = null;      // most recent computed route — used by save/share
+let waypoints = [];        // custom "Sur mesure" mode: ordered [{lat,lng,marker,name}]
+let loopVias = [];         // loop "reshape": carrefours the boucle must pass through
 
 
 // ── Auth ──────────────────────────────────────────────────────────────────────

@@ -166,6 +166,11 @@
             <strong>Point A → B</strong>
             <small>D'un endroit à un autre</small>
           </button>
+          <button class="mode-card" data-mode="custom">
+            <span class="mode-icon">🧭</span>
+            <strong>Sur mesure</strong>
+            <small>Choisis tes carrefours, étape par étape</small>
+          </button>
         </div>
       </div>
 
@@ -255,6 +260,21 @@
 
         <p class="step-hint" id="step3Hint">Ou clique directement sur la carte.</p>
         <div id="pointStatus" class="point-status"></div>
+
+        <!-- Custom "Sur mesure" builder — ordered list of stops (hidden unless custom mode) -->
+        <div id="customBuilder" class="custom-builder hidden">
+          <div class="cb-carrefour-wrap">
+            <input type="text" id="carrefourInput" class="input-field cb-carrefour-input"
+              placeholder="Ajouter un carrefour…" autocomplete="off" />
+            <div class="cb-carrefour-results hidden" id="carrefourResults"></div>
+          </div>
+          <ol class="cb-stops" id="cbStops"></ol>
+          <p class="cb-empty" id="cbEmpty">Clique sur la carte ou cherche un carrefour pour ajouter des étapes (2 minimum).</p>
+          <label class="cb-loop-toggle">
+            <input type="checkbox" id="cbReturnStart" />
+            <span>↩ Revenir au départ (boucle)</span>
+          </label>
+        </div>
       </div>
 
       <!-- Step 4: Generate -->
@@ -315,9 +335,33 @@
           <div id="elevationChart"></div>
         </div>
 
+        <div class="route-breakdown hidden" id="breakdownWrap"></div>
+
         <div class="result-badges" id="resultBadges"></div>
         <div class="route-resume" id="routeResume"></div>
         <div id="distanceWarning" class="distance-warning hidden"></div>
+
+        <!-- Loop "reshape": add carrefours the boucle must pass through (Silver+) -->
+        <div class="loop-personalize hidden" id="loopPersonalize">
+          <div class="lp-head">🧭 Personnaliser cette boucle</div>
+          <div id="lpPicker">
+            <p class="lp-hint">Ajoute des carrefours que ta boucle doit traverser, puis regénère-la.</p>
+            <div class="cb-carrefour-wrap">
+              <input type="text" id="loopViaInput" class="input-field cb-carrefour-input"
+                placeholder="Passer par un carrefour…" autocomplete="off" />
+              <div class="cb-carrefour-results hidden" id="loopViaResults"></div>
+            </div>
+            <ol class="cb-stops" id="loopViaList"></ol>
+            <div class="lp-actions">
+              <button type="button" class="lp-map-btn" id="btnAddViaMap">＋ Ajouter sur la carte</button>
+              <button type="button" class="lp-regen-btn" id="btnRegenLoop">🔄 Regénérer la boucle</button>
+            </div>
+          </div>
+          <div id="lpLocked" class="lp-locked hidden">
+            <p>🔒 Personnalise ta boucle — choisis les carrefours qu'elle doit traverser — avec le plan Argent.</p>
+            <a href="plans" class="lp-cta">Débloquer avec Argent →</a>
+          </div>
+        </div>
 
         <div class="result-actions">
           <button class="btn-gpx" id="btnGPX">⬇ GPX</button>

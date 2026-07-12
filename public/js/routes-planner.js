@@ -248,7 +248,11 @@ function initStep2Collapse() {
 function applyPlanGates() {
   const plan = currentUser?.plan || 'free';
 
-  // Lock multi-stop (visual hint only — there is no button yet)
+  // Lock the "Sur mesure" custom-route builder for free/visitor tiers.
+  if (!BWR.can('custom_route_builder', plan)) {
+    const customCard = document.querySelector('.mode-card[data-mode="custom"]');
+    if (customCard) markCardLocked(customCard, BWR.requiredTier('custom_route_builder'), 'Le trajet sur mesure');
+  }
 
   // Lock Hard difficulty
   if (!BWR.can('difficulty_hard', plan)) {
@@ -374,20 +378,27 @@ document.querySelectorAll('.mode-card').forEach(card => {
 
     document.getElementById('distanceGroup').style.display = mode === 'loop' ? '' : 'none';
     // "Priorité" (Forestier / Plus court) only affects A→B routing — a fixed-distance
-    // loop has no "shortest" variant — so hide it in loop mode to avoid a dead control.
-    document.getElementById('priorityGroup').style.display = mode === 'loop' ? 'none' : '';
+    // loop and the leg-by-leg custom builder have no "shortest" variant — so show it
+    // in A→B mode only to avoid a dead control.
+    document.getElementById('priorityGroup').style.display = mode === 'atob' ? '' : 'none';
+    // Custom "Sur mesure" builder (ordered stop list) only in custom mode.
+    document.getElementById('customBuilder')?.classList.toggle('hidden', mode !== 'custom');
 
     document.getElementById('step3Title').textContent =
-      mode === 'loop' ? 'Point de départ' : 'Points de départ et arrivée';
+      mode === 'loop' ? 'Point de départ'
+      : mode === 'custom' ? 'Tes étapes'
+      : 'Points de départ et arrivée';
     document.getElementById('step3Hint').textContent =
       mode === 'loop'
         ? 'Clique sur la carte pour placer le point de départ de ta boucle.'
+        : mode === 'custom'
+        ? 'Clique sur la carte ou cherche un carrefour pour ajouter des étapes dans l\'ordre.'
         : 'Clique d\'abord pour le départ (A), puis pour l\'arrivée (B).';
 
     unlock('step2');
     unlock('step3');
     resetPoints();
-    pickingPoint = 'start';
+    pickingPoint = mode === 'custom' ? 'waypoint' : 'start';
     map.getContainer().style.cursor = 'crosshair';
   });
 });
@@ -452,6 +463,18 @@ function onMapClick(e) {
   if (!mode || !pickingPoint) return;
   const { lat, lng } = e.latlng;
 
+  // Custom "Sur mesure": every click appends the next ordered stop.
+  if (mode === 'custom') {
+    addWaypoint(lat, lng);
+    return;
+  }
+
+  // Loop "reshape": when adding via-points on the map, every click appends one.
+  if (mode === 'loop' && pickingPoint === 'via') {
+    addLoopVia(lat, lng);
+    return;
+  }
+
   if (pickingPoint === 'start') {
     if (startMarker) map.removeLayer(startMarker);
     startMarker = L.marker([lat, lng], { icon: pinIcon('A', '#1e4d14') }).addTo(map);
@@ -482,6 +505,225 @@ function pinIcon(label, color) {
   });
 }
 
+// ── Custom "Sur mesure" waypoints ─────────────────────────────────────────────
+function customPinIcon(n) {
+  return L.divIcon({
+    html: `<div style="background:#6d28d9;color:white;width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.35)"><span style="transform:rotate(45deg);font-weight:800;font-size:0.8rem">${n}</span></div>`,
+    iconSize: [30, 30], iconAnchor: [15, 30], className: '',
+  });
+}
+
+function addWaypoint(lat, lng, name = '') {
+  waypoints.push({ lat, lng, name, marker: null });
+  renderWaypoints();
+}
+
+function removeWaypoint(i) {
+  const wp = waypoints[i];
+  if (wp && wp.marker) map.removeLayer(wp.marker);
+  waypoints.splice(i, 1);
+  renderWaypoints();
+}
+
+function moveWaypoint(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= waypoints.length) return;
+  [waypoints[i], waypoints[j]] = [waypoints[j], waypoints[i]];
+  renderWaypoints();
+}
+
+// Redraw all markers (numbers change on reorder/remove) + the ordered stop list,
+// and gate the Generate button on having ≥ 2 stops.
+function renderWaypoints() {
+  waypoints.forEach((wp, idx) => {
+    if (wp.marker) map.removeLayer(wp.marker);
+    wp.marker = L.marker([wp.lat, wp.lng], { icon: customPinIcon(idx + 1) })
+      .addTo(map)
+      .bindTooltip(wp.name || `Étape ${idx + 1}`);
+  });
+
+  const listEl = document.getElementById('cbStops');
+  if (listEl) {
+    listEl.innerHTML = waypoints.map((wp, idx) => `
+      <li class="cb-stop">
+        <span class="cb-stop-num">${idx + 1}</span>
+        <span class="cb-stop-name">${escapeHtml(wp.name || `Point (${wp.lat.toFixed(4)}, ${wp.lng.toFixed(4)})`)}</span>
+        <span class="cb-stop-actions">
+          <button type="button" class="cb-stop-btn" data-act="up" data-i="${idx}" title="Monter" ${idx === 0 ? 'disabled' : ''}>↑</button>
+          <button type="button" class="cb-stop-btn" data-act="down" data-i="${idx}" title="Descendre" ${idx === waypoints.length - 1 ? 'disabled' : ''}>↓</button>
+          <button type="button" class="cb-stop-btn cb-stop-del" data-act="del" data-i="${idx}" title="Supprimer">✕</button>
+        </span>
+      </li>`).join('');
+    listEl.querySelectorAll('.cb-stop-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = parseInt(btn.dataset.i, 10);
+        const act = btn.dataset.act;
+        if (act === 'del') removeWaypoint(i);
+        else if (act === 'up') moveWaypoint(i, -1);
+        else moveWaypoint(i, 1);
+      });
+    });
+  }
+  document.getElementById('cbEmpty')?.classList.toggle('hidden', waypoints.length > 0);
+
+  if (waypoints.length >= 1) unlock('step4');
+  const gen = document.getElementById('btnGenerate');
+  if (gen) gen.disabled = waypoints.length < 2;
+}
+
+// Searchable carrefour picker — appends a named forest junction as the next stop.
+function initCarrefourPicker() {
+  const input = document.getElementById('carrefourInput');
+  const results = document.getElementById('carrefourResults');
+  if (!input || !results) return;
+  const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const hide = () => results.classList.add('hidden');
+
+  input.addEventListener('input', () => {
+    if (typeof CARREFOURS === 'undefined') return;
+    const q = norm(input.value.trim());
+    if (q.length < 2) { hide(); return; }
+    const matches = CARREFOURS.filter(c => norm(c.name).includes(q)).slice(0, 8);
+    if (!matches.length) { hide(); return; }
+    results.innerHTML = matches.map(c =>
+      `<div class="cb-carrefour-item" data-lat="${c.lat}" data-lon="${c.lon}" data-name="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div>`
+    ).join('');
+    results.classList.remove('hidden');
+    results.querySelectorAll('.cb-carrefour-item').forEach(item => {
+      // mousedown fires before the input's blur so the pick isn't lost.
+      item.addEventListener('mousedown', () => {
+        const lat = parseFloat(item.dataset.lat), lon = parseFloat(item.dataset.lon);
+        addWaypoint(lat, lon, item.dataset.name);
+        input.value = '';
+        hide();
+        map.panTo([lat, lon]);
+      });
+    });
+  });
+  input.addEventListener('blur', () => setTimeout(hide, 200));
+}
+initCarrefourPicker();
+
+// ── Loop "reshape" via-points (Silver) ────────────────────────────────────────
+// After a loop is generated the user can add carrefours the loop MUST pass
+// through, then regenerate. Rendered with the same cb-stop UI as custom stops.
+function viaPinIcon(n) {
+  return L.divIcon({
+    html: `<div style="background:#f97316;color:white;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.35)"><span style="transform:rotate(45deg);font-weight:800;font-size:0.75rem">${n}</span></div>`,
+    iconSize: [28, 28], iconAnchor: [14, 28], className: '',
+  });
+}
+
+function addLoopVia(lat, lng, name = '') {
+  loopVias.push({ lat, lng, name, marker: null });
+  renderLoopVias();
+}
+
+function removeLoopVia(i) {
+  const v = loopVias[i];
+  if (v && v.marker) map.removeLayer(v.marker);
+  loopVias.splice(i, 1);
+  renderLoopVias();
+}
+
+function moveLoopVia(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= loopVias.length) return;
+  [loopVias[i], loopVias[j]] = [loopVias[j], loopVias[i]];
+  renderLoopVias();
+}
+
+function renderLoopVias() {
+  loopVias.forEach((v, idx) => {
+    if (v.marker) map.removeLayer(v.marker);
+    v.marker = L.marker([v.lat, v.lng], { icon: viaPinIcon(idx + 1) })
+      .addTo(map)
+      .bindTooltip(v.name || `Passage ${idx + 1}`);
+  });
+  const listEl = document.getElementById('loopViaList');
+  if (listEl) {
+    listEl.innerHTML = loopVias.map((v, idx) => `
+      <li class="cb-stop">
+        <span class="cb-stop-num cb-stop-num-via">${idx + 1}</span>
+        <span class="cb-stop-name">${escapeHtml(v.name || `Point (${v.lat.toFixed(4)}, ${v.lng.toFixed(4)})`)}</span>
+        <span class="cb-stop-actions">
+          <button type="button" class="cb-stop-btn" data-act="up" data-i="${idx}" title="Monter" ${idx === 0 ? 'disabled' : ''}>↑</button>
+          <button type="button" class="cb-stop-btn" data-act="down" data-i="${idx}" title="Descendre" ${idx === loopVias.length - 1 ? 'disabled' : ''}>↓</button>
+          <button type="button" class="cb-stop-btn cb-stop-del" data-act="del" data-i="${idx}" title="Supprimer">✕</button>
+        </span>
+      </li>`).join('');
+    listEl.querySelectorAll('.cb-stop-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = parseInt(btn.dataset.i, 10);
+        const act = btn.dataset.act;
+        if (act === 'del') removeLoopVia(i);
+        else if (act === 'up') moveLoopVia(i, -1);
+        else moveLoopVia(i, 1);
+      });
+    });
+  }
+}
+
+function clearLoopVias() {
+  loopVias.forEach(v => { if (v.marker) map.removeLayer(v.marker); });
+  loopVias = [];
+  const listEl = document.getElementById('loopViaList');
+  if (listEl) listEl.innerHTML = '';
+}
+
+// "＋ Ajouter sur la carte" toggle: arm/disarm map clicks to drop via-points.
+function toggleAddViaOnMap() {
+  const btn = document.getElementById('btnAddViaMap');
+  if (pickingPoint === 'via') {
+    pickingPoint = null;
+    map.getContainer().style.cursor = '';
+    btn?.classList.remove('active');
+    if (btn) btn.textContent = '＋ Ajouter sur la carte';
+  } else {
+    pickingPoint = 'via';
+    map.getContainer().style.cursor = 'crosshair';
+    btn?.classList.add('active');
+    if (btn) btn.textContent = '✓ Clique sur la carte…';
+  }
+}
+
+// Searchable carrefour picker for loop via-points.
+function initLoopViaPicker() {
+  const input = document.getElementById('loopViaInput');
+  const results = document.getElementById('loopViaResults');
+  if (!input || !results) return;
+  const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const hide = () => results.classList.add('hidden');
+
+  input.addEventListener('input', () => {
+    if (typeof CARREFOURS === 'undefined') return;
+    const q = norm(input.value.trim());
+    if (q.length < 2) { hide(); return; }
+    const matches = CARREFOURS.filter(c => norm(c.name).includes(q)).slice(0, 8);
+    if (!matches.length) { hide(); return; }
+    results.innerHTML = matches.map(c =>
+      `<div class="cb-carrefour-item" data-lat="${c.lat}" data-lon="${c.lon}" data-name="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div>`
+    ).join('');
+    results.classList.remove('hidden');
+    results.querySelectorAll('.cb-carrefour-item').forEach(item => {
+      item.addEventListener('mousedown', () => {
+        const lat = parseFloat(item.dataset.lat), lon = parseFloat(item.dataset.lon);
+        addLoopVia(lat, lon, item.dataset.name);
+        input.value = '';
+        hide();
+        map.panTo([lat, lon]);
+      });
+    });
+  });
+  input.addEventListener('blur', () => setTimeout(hide, 200));
+}
+initLoopViaPicker();
+document.getElementById('btnAddViaMap')?.addEventListener('click', toggleAddViaOnMap);
+document.getElementById('btnRegenLoop')?.addEventListener('click', () => {
+  if (pickingPoint === 'via') toggleAddViaOnMap(); // disarm map-add before regenerating
+  document.getElementById('btnGenerate')?.click();
+});
+
 function updatePointStatus() {
   const el = document.getElementById('pointStatus');
   if (mode === 'loop') {
@@ -500,6 +742,18 @@ function resetPoints() {
   if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
   if (endMarker)   { map.removeLayer(endMarker);   endMarker = null; }
   if (routeLayer)  { map.removeLayer(routeLayer);  routeLayer = null; }
+  // Custom "Sur mesure" stops
+  if (waypoints.length) {
+    waypoints.forEach(wp => { if (wp.marker) map.removeLayer(wp.marker); });
+    waypoints = [];
+    renderWaypoints();
+  }
+  // Loop reshape via-points
+  if (loopVias.length) clearLoopVias();
+  if (pickingPoint === 'via') { pickingPoint = null; map.getContainer().style.cursor = ''; }
+  const btnAddVia = document.getElementById('btnAddViaMap');
+  if (btnAddVia) { btnAddVia.classList.remove('active'); btnAddVia.textContent = '＋ Ajouter sur la carte'; }
+  document.getElementById('loopPersonalize')?.classList.add('hidden');
   document.getElementById('pointStatus').innerHTML = '';
   document.getElementById('routeResult').classList.add('hidden');
   document.getElementById('btnGenerate').disabled = true;
@@ -569,16 +823,36 @@ async function generateRoute() {
   btn.classList.add('loading');
   btn.disabled = true;
 
-  const sLat = startMarker.getLatLng().lat;
-  const sLng = startMarker.getLatLng().lng;
   let result = null;
   let distanceKm = 10;
 
   try {
-    if (mode === 'loop') {
+    if (mode === 'custom') {
+      // Ordered stops the user placed; optionally close the loop back to stop 1.
+      const pts = waypoints.map(w => ({ lat: w.lat, lng: w.lng }));
+      if (document.getElementById('cbReturnStart')?.checked && pts.length >= 2) {
+        pts.push({ lat: pts[0].lat, lng: pts[0].lng });
+      }
+      result = await routeCustom(pts);
+    } else if (mode === 'loop') {
+      const sLat = startMarker.getLatLng().lat;
+      const sLng = startMarker.getLatLng().lng;
       distanceKm = parseFloat(document.getElementById('distanceInput').value) || 10;
-      result = await routeLoop(sLat, sLng, distanceKm);
+      if (loopVias.length) {
+        // Personalized loop: must pass through every via-point, then back to start.
+        // Distance becomes a soft target (a warning shows if it lands far off).
+        const pts = [
+          { lat: sLat, lng: sLng },
+          ...loopVias.map(v => ({ lat: v.lat, lng: v.lng })),
+          { lat: sLat, lng: sLng },
+        ];
+        result = await routeCustom(pts);
+      } else {
+        result = await routeLoop(sLat, sLng, distanceKm);
+      }
     } else {
+      const sLat = startMarker.getLatLng().lat;
+      const sLng = startMarker.getLatLng().lng;
       const eLat = endMarker.getLatLng().lat;
       const eLng = endMarker.getLatLng().lng;
       result = await routeAtob(sLat, sLng, eLat, eLng);
@@ -658,7 +932,9 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   const badgeDiff = { easy: 'Facile', medium: 'Moyen', hard: 'Difficile' }[difficulty];
   const badgeTypeMap = { foot: '🌲 Forestier', bike: '🚴 Cyclable', champs: '🌾 Champs', mix: '🗺️ Mix' };
   const badgeCssMap  = { foot: 'foot', bike: 'bike', champs: 'foot', mix: 'foot' };
-  const badgeMode    = mode === 'loop' ? '🔄 Boucle' : '➡️ A → B';
+  const badgeMode    = mode === 'loop' ? '🔄 Boucle'
+    : mode === 'custom' ? `🧭 Sur mesure · ${waypoints.length} étapes`
+    : '➡️ A → B';
   document.getElementById('resultBadges').innerHTML = `
     <span class="badge ${difficulty}">${badgeDiff}</span>
     <span class="badge ${badgeCssMap[pathType]}">${badgeTypeMap[pathType]}</span>
@@ -684,14 +960,20 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
     ? `${Math.round(meters)} mètres`
     : `${(meters / 1000).toFixed(2)} km (${Math.round(meters).toLocaleString('fr-FR')} mètres)`;
   const resumeEl = document.getElementById('routeResume');
+  const modeLabel = mode === 'loop' ? 'Boucle' : mode === 'custom' ? 'Trajet sur mesure' : 'Trajet A → B';
+  const modeDesc = mode === 'loop'
+    ? (loopVias.length
+        ? `Le départ et l\'arrivée sont au même point, en passant par tes ${loopVias.length} carrefour${loopVias.length > 1 ? 's' : ''}.`
+        : 'Le départ et l\'arrivée sont au même point.')
+    : mode === 'custom'
+      ? `Le trajet passe par tes ${waypoints.length} étapes, dans l\'ordre choisi.`
+      : 'Le trajet relie ton point de départ à ton point d\'arrivée.';
   resumeEl.innerHTML = `
     <p><strong>📋 Résumé</strong></p>
     <p>
-      ${mode === 'loop' ? 'Boucle' : 'Trajet A → B'} de <strong>${distLabel}</strong>
+      ${modeLabel} de <strong>${distLabel}</strong>
       en <strong>${typeLabel}</strong>, niveau <strong>${diffLabel}</strong>.
-      ${mode === 'loop'
-        ? 'Le départ et l\'arrivée sont au même point.'
-        : 'Le trajet relie ton point de départ à ton point d\'arrivée.'}
+      ${modeDesc}
     </p>
     <p>Durée estimée : <strong>${document.getElementById('statDuration').textContent}</strong>. ${typeDescMap[pathType]}</p>
   `;
@@ -716,6 +998,21 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   // Elevation stat placeholder while loading
   document.getElementById('statAscent').textContent = '…';
   document.getElementById('elevationWrap').classList.add('hidden');
+  document.getElementById('breakdownWrap')?.classList.add('hidden');
+
+  // Loop "reshape" panel: only for boucles. Silver+ get the carrefour picker;
+  // free users get a locked upsell card.
+  const lpPanel = document.getElementById('loopPersonalize');
+  if (lpPanel) {
+    if (mode === 'loop') {
+      const canReshape = BWR.can('custom_route_builder', plan);
+      document.getElementById('lpPicker')?.classList.toggle('hidden', !canReshape);
+      document.getElementById('lpLocked')?.classList.toggle('hidden', canReshape);
+      lpPanel.classList.remove('hidden');
+    } else {
+      lpPanel.classList.add('hidden');
+    }
+  }
 
   document.getElementById('routeResult').classList.remove('hidden');
   document.getElementById('routeResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -771,6 +1068,11 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
       btnStrava.onclick = (e) => { e.preventDefault(); showUpgradeModal(BWR.requiredTier('strava_komoot_push'), 'Le push Strava'); };
     }
   }
+
+  // Way-types & surfaces breakdown — lazy-loaded, available to everyone.
+  _loadBreakdown()
+    .then(() => renderRouteBreakdown(coords))
+    .catch(() => document.getElementById('breakdownWrap')?.classList.add('hidden'));
 
   // Elevation profile — only for Silver+ (lazy-loaded)
   if (BWR.can('elevation_profile', plan)) {

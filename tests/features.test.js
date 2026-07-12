@@ -78,6 +78,12 @@ describe('can', () => {
   test('weather: silver → true',  () => assert.equal(can('weather', 'silver'), true));
   test('weather: gold → true',    () => assert.equal(can('weather', 'gold'),   true));
 
+  // Custom route builder ("Sur mesure"): silver+
+  test('custom_route_builder: free → false',    () => assert.equal(can('custom_route_builder', 'free'),    false));
+  test('custom_route_builder: visitor → false', () => assert.equal(can('custom_route_builder', 'visitor'), false));
+  test('custom_route_builder: silver → true',   () => assert.equal(can('custom_route_builder', 'silver'),  true));
+  test('custom_route_builder: gold → true',     () => assert.equal(can('custom_route_builder', 'gold'),    true));
+
   // Gold badges remain gold-only
   test('badges_gold: silver → false', () => assert.equal(can('badges_gold', 'silver'), false));
   test('badges_gold: gold → true',    () => assert.equal(can('badges_gold', 'gold'),   true));
@@ -118,6 +124,7 @@ describe('requiredTier', () => {
   test('kml_export → silver',        () => assert.equal(requiredTier('kml_export'),        'silver'));
   test('weather → silver',           () => assert.equal(requiredTier('weather'),           'silver'));
   test('custom_route_color → silver',() => assert.equal(requiredTier('custom_route_color'), 'silver'));
+  test('custom_route_builder → silver',() => assert.equal(requiredTier('custom_route_builder'), 'silver'));
   test('badges_gold → gold',         () => assert.equal(requiredTier('badges_gold'),       'gold'));
   test('unknown feature → null',     () => assert.equal(requiredTier('nonexistent'), null));
 });
