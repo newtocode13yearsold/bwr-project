@@ -370,21 +370,11 @@
           <div class="th-list" id="thList"></div>
         </div>
 
-        <!-- Push alerts (Gold only) -->
+        <!-- Push alerts (Silver+) -->
         <div class="feature-block" id="pushAlertsBlock" style="display:none">
-          <h3 class="feature-title">🔔 Alertes chemins en temps réel</h3>
-          <p class="feature-desc">Reçois une notification sur ton téléphone dès qu'un chemin change de statut.</p>
+          <h3 class="feature-title">🔔 Alertes obstacles sur mes trajets</h3>
+          <p class="feature-desc">Reçois une notification dès qu'un obstacle (arbre tombé, chemin inondé…) est signalé à proximité de l'un de tes trajets sauvegardés.</p>
           <div id="pushAlertsStatus" class="push-status"></div>
-          <div id="pushAlertsSetup" class="push-setup-box" style="display:none">
-            <p class="push-setup-label">Ton canal de notification :</p>
-            <code id="ntfyChannel" class="ntfy-channel">—</code>
-            <p class="push-setup-instructions">
-              1. Installe l'app <strong>ntfy.sh</strong> (gratuit) sur ton téléphone<br>
-              2. Abonne-toi au canal ci-dessus<br>
-              3. Tu recevras les alertes automatiquement
-            </p>
-            <a href="https://ntfy.sh" target="_blank" rel="noopener" class="btn-save btn-save--small">📲 Télécharger ntfy</a>
-          </div>
           <button class="btn-save" id="btnToggleAlerts">🔔 Activer les alertes</button>
         </div>
 
@@ -497,6 +487,7 @@
   <script defer src="js/features.js"></script>
   <script defer src="js/profile-stats.js"></script>
   <script defer src="js/profile-wheel.js"></script>
+  <script defer src="js/push.js"></script>
   <script defer src="js/profile-plan.js"></script>
   <script defer src="js/profile.js"></script>
   <script defer src="js/install.js"></script>

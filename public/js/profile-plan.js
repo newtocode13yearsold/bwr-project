@@ -143,18 +143,10 @@ function renderPlanAndProgress(user) {
   const accessibleBadges = BADGES.filter(b => tierVisible[plan].includes(b.tier));
   const nowEarned = new Set(accessibleBadges.filter(b => b.test(stats)).map(b => b.id));
   const prevEarned = new Set(JSON.parse(localStorage.getItem('bwr_earned_badges') || '[]'));
-  const cachedForPush = getCachedUser();
   accessibleBadges.forEach(b => {
     if (nowEarned.has(b.id) && !prevEarned.has(b.id)) {
       showBadgeToast(b);
       localStorage.setItem(`bwr_badge_date_${b.id}`, new Date().toISOString());
-      if (cachedForPush?.alertsEnabled && cachedForPush?.alertsChannel) {
-        fetch(`https://ntfy.sh/${cachedForPush.alertsChannel}`, {
-          method: 'POST',
-          headers: { Title: 'BWR — Badge débloqué !', Tags: 'trophy', 'Content-Type': 'text/plain; charset=utf-8' },
-          body: `${b.icon} ${b.label} — ${b.desc}`,
-        }).catch(() => {});
-      }
     }
   });
   localStorage.setItem('bwr_earned_badges', JSON.stringify([...nowEarned]));
@@ -406,29 +398,31 @@ async function renderWeather() {
   }
 }
 
-// ── Push alerts via ntfy.sh ───────────────────────────────────────────────────
+// ── Web Push alerts (native browser notifications) ────────────────────────────
+// Fires when a new hazard report lands within ~150 m of one of the member's
+// saved routes. Uses the Push API via js/push.js (BWRPush); the server-side
+// subscription state also flips user.alertsEnabled, but the browser
+// subscription is the source of truth we render from.
 async function renderPushAlerts() {
   const block  = document.getElementById('pushAlertsBlock');
   const status = document.getElementById('pushAlertsStatus');
-  const setup  = document.getElementById('pushAlertsSetup');
   const btn    = document.getElementById('btnToggleAlerts');
-  const chanEl = document.getElementById('ntfyChannel');
   if (!block || !btn) return;
 
-  // Read current state from cached user
-  const cached = getCachedUser();
-  let alertsEnabled = !!(cached?.alertsEnabled);
-  let alertsChannel = cached?.alertsChannel || null;
+  if (!window.BWRPush || !BWRPush.SUPPORTED) {
+    status.innerHTML = `<span style="color:#6b7280">Notifications non supportées sur cet appareil.</span>`;
+    btn.style.display = 'none';
+    return;
+  }
+
+  let st = await BWRPush.status().catch(() => ({ subscribed: false }));
 
   function render() {
-    if (alertsEnabled && alertsChannel) {
+    if (st.subscribed) {
       status.innerHTML = `<span style="color:#16a34a;font-weight:600">🔔 Alertes activées</span>`;
-      chanEl.textContent = alertsChannel;
-      setup.style.display = '';
       btn.textContent = '🔕 Désactiver les alertes';
     } else {
       status.innerHTML = `<span style="color:#6b7280">Alertes désactivées</span>`;
-      setup.style.display = 'none';
       btn.textContent = '🔔 Activer les alertes';
     }
   }
@@ -438,22 +432,10 @@ async function renderPushAlerts() {
   btn.addEventListener('click', async () => {
     btn.disabled = true;
     try {
-      if (alertsEnabled) {
-        const res = await fetch(`${API_URL}/api/push/unsubscribe`, { method: 'POST', headers: authHeader() });
-        if (!res.ok) throw new Error();
-        alertsEnabled = false;
-        alertsChannel = null;
-        const c = getCachedUser();
-        setSession(localStorage.getItem('bwr_token'), { ...c, alertsEnabled: false, alertsChannel: null });
-      } else {
-        const res  = await fetch(`${API_URL}/api/push/subscribe`, { method: 'POST', headers: authHeader() });
-        if (!res.ok) throw new Error((await res.json()).error || 'Erreur');
-        const data = await res.json();
-        alertsEnabled = true;
-        alertsChannel = data.channel;
-        const c = getCachedUser();
-        setSession(localStorage.getItem('bwr_token'), { ...c, alertsEnabled: true, alertsChannel: data.channel });
-      }
+      if (st.subscribed) { await BWRPush.disable(); st = { subscribed: false }; }
+      else               { await BWRPush.enable();  st = { subscribed: true  }; }
+      const c = getCachedUser();
+      if (c) setSession(localStorage.getItem('bwr_token'), { ...c, alertsEnabled: st.subscribed });
       render();
     } catch (err) {
       status.innerHTML = `<span style="color:#dc2626">Erreur : ${err.message || 'réessaye'}</span>`;

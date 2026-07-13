@@ -895,6 +895,58 @@ async function generateRoute() {
 }
 
 // ── Display route ─────────────────────────────────────────────────────────────
+// ── GPX import — bring a Strava/Garmin route onto the graded BWR map ───────────
+// Open to every tier (acquisition hook). Reuses displayRoute via mode==='import',
+// so imported tracks get the same stats, elevation, save/share and re-export UI.
+let importedRouteName = null;
+
+function initGpxImport() {
+  const card  = document.getElementById('importGpxCard');
+  const btn   = document.getElementById('btnImportGpx');
+  const input = document.getElementById('gpxFileInput');
+  if (!card || !btn || !input) return;
+
+  // Gate by plan (currently everyone) so future tightening only touches features.js.
+  const plan = currentUser?.plan || 'free';
+  if (!BWR.can('gpx_import', plan)) { card.classList.add('hidden'); return; }
+
+  btn.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => {
+    const file = input.files && input.files[0];
+    if (file) handleGpxFile(file);
+    input.value = ''; // allow re-importing the same file
+  });
+}
+
+async function handleGpxFile(file) {
+  const btn = document.getElementById('btnImportGpx');
+  const original = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Lecture…'; }
+  try {
+    const text = await file.text();
+    const { coords, name } = parseGPX(text);
+
+    // Total length from the track geometry (haversineM is global via graph-router.js).
+    let meters = 0;
+    for (let i = 1; i < coords.length; i++) {
+      meters += haversineM(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+    }
+    // Rough duration estimate from the transport mode (imported tracks carry no timing).
+    const speed = transportMode === 'bike' ? 4.2 : 1.33; // m/s (~15 / ~4.8 km/h)
+    const seconds = meters / speed;
+
+    mode = 'import';
+    importedRouteName = String(name).replace(/[^a-z0-9_\- ]+/gi, '_').replace(/\s+/g, '_').slice(0, 60) || 'BWR_import';
+    displayRoute({ coords, meters, seconds }, null);
+    showToast(`« ${name} » importé — ${(meters / 1000).toFixed(1)} km sur la carte`);
+  } catch (err) {
+    console.error('GPX import error:', err);
+    showToast(err && err.message ? err.message : 'Impossible de lire ce fichier GPX.', 3200);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = original; }
+  }
+}
+
 function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   if (routeLayer) map.removeLayer(routeLayer);
 
@@ -934,6 +986,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   const badgeCssMap  = { foot: 'foot', bike: 'bike', champs: 'foot', mix: 'foot' };
   const badgeMode    = mode === 'loop' ? '🔄 Boucle'
     : mode === 'custom' ? `🧭 Sur mesure · ${waypoints.length} étapes`
+    : mode === 'import' ? '📥 Importé'
     : '➡️ A → B';
   document.getElementById('resultBadges').innerHTML = `
     <span class="badge ${difficulty}">${badgeDiff}</span>
@@ -960,14 +1013,19 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
     ? `${Math.round(meters)} mètres`
     : `${(meters / 1000).toFixed(2)} km (${Math.round(meters).toLocaleString('fr-FR')} mètres)`;
   const resumeEl = document.getElementById('routeResume');
-  const modeLabel = mode === 'loop' ? 'Boucle' : mode === 'custom' ? 'Trajet sur mesure' : 'Trajet A → B';
+  const modeLabel = mode === 'loop' ? 'Boucle'
+    : mode === 'custom' ? 'Trajet sur mesure'
+    : mode === 'import' ? 'Trajet importé'
+    : 'Trajet A → B';
   const modeDesc = mode === 'loop'
     ? (loopVias.length
         ? `Le départ et l\'arrivée sont au même point, en passant par tes ${loopVias.length} carrefour${loopVias.length > 1 ? 's' : ''}.`
         : 'Le départ et l\'arrivée sont au même point.')
     : mode === 'custom'
       ? `Le trajet passe par tes ${waypoints.length} étapes, dans l\'ordre choisi.`
-      : 'Le trajet relie ton point de départ à ton point d\'arrivée.';
+      : mode === 'import'
+        ? 'Tracé importé depuis ton fichier GPX (Strava, Garmin…), affiché sur la carte BWR.'
+        : 'Le trajet relie ton point de départ à ton point d\'arrivée.';
   resumeEl.innerHTML = `
     <p><strong>📋 Résumé</strong></p>
     <p>
@@ -1019,7 +1077,9 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
 
   // Export buttons — gated by plan
   const typeLabelShort = { foot: 'forestier', bike: 'cyclable', champs: 'champs', mix: 'mix' }[pathType];
-  const routeName = `BWR_${mode === 'loop' ? 'boucle' : 'atob'}_${typeLabelShort}_${new Date().toISOString().slice(0,10)}`;
+  const routeName = mode === 'import'
+    ? (importedRouteName || 'BWR_import')
+    : `BWR_${mode === 'loop' ? 'boucle' : 'atob'}_${typeLabelShort}_${new Date().toISOString().slice(0,10)}`;
 
   const btnGPX = document.getElementById('btnGPX');
   if (btnGPX) {

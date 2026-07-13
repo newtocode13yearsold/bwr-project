@@ -6,6 +6,7 @@ import { handleContent }    from './worker/handlers/content.js';
 import { handleSavedRoutes } from './worker/handlers/savedroutes.js';
 import { handleSocial }     from './worker/handlers/social.js';
 import { handleForum }      from './worker/handlers/forum.js';
+import { handlePush }       from './worker/handlers/push.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://bwrmaps.com',
@@ -21,6 +22,7 @@ const isAllowedOrigin = o => ALLOWED_ORIGINS.has(o) || /^https:\/\/[^.]+\.pages\
  * @typedef {{ BWR_KV: KVNamespace, ORS_KEY?: string, ANTHROPIC_API_KEY?: string,
  *             RESEND_API_KEY?: string, RESEND_FROM?: string,
  *             ADMIN_NAME?: string, ADMIN_EMAIL?: string, AI?: Ai,
+ *             VAPID_PUBLIC_KEY?: string, VAPID_PRIVATE_KEY?: string, VAPID_SUBJECT?: string,
  *             ASSETS: Fetcher }} Env
  */
 
@@ -30,9 +32,10 @@ export default {
    * Each handler returns a Response or null; first non-null wins.
    * @param {Request} request
    * @param {Env} env
+   * @param {ExecutionContext} [execCtx]
    * @returns {Promise<Response>}
    */
-  async fetch(request, env) {
+  async fetch(request, env, execCtx) {
     const url      = new URL(request.url);
 
     // Canonical host: 301 every non-primary host (www + the legacy workers.dev
@@ -73,7 +76,14 @@ export default {
     const fail = (msg, status = 400) =>
       new Response(JSON.stringify({ error: msg }), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
-    const ctx = { pathname, url, json, fail, cors };
+    // waitUntil lets handlers run best-effort background work (e.g. the hazard
+    // push fan-out) without blocking the response. Falls back to detached
+    // execution when no ExecutionContext is provided (e.g. unit tests).
+    const waitUntil = execCtx && execCtx.waitUntil
+      ? p => execCtx.waitUntil(p)
+      : p => { Promise.resolve(p).catch(() => {}); };
+
+    const ctx = { pathname, url, json, fail, cors, waitUntil };
 
     const apiResponse =
       await handleAdmin(request, env, ctx)      ??
@@ -83,7 +93,8 @@ export default {
       await handleContent(request, env, ctx)     ??
       await handleSavedRoutes(request, env, ctx) ??
       await handleSocial(request, env, ctx)      ??
-      await handleForum(request, env, ctx);
+      await handleForum(request, env, ctx)       ??
+      await handlePush(request, env, ctx);
 
     if (apiResponse) return apiResponse;
 

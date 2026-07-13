@@ -1136,6 +1136,10 @@
   cursor: not-allowed;
 }
 
+/* Import GPX card — reuses the tracker card shell with a distinct button accent. */
+.btn-import-gpx { background: #2563eb; }
+.btn-import-gpx:hover { background: #1d4ed8; }
+
 /* ── Custom "Sur mesure" builder ── */
 .custom-builder {
   margin-top: 12px;

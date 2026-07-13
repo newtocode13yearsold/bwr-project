@@ -119,24 +119,8 @@ export async function handleSocial(request, env, { pathname, url, json, fail }) 
     return json(entries);
   }
 
-  if (pathname === '/api/push/subscribe' && request.method === 'POST') {
-    const user = await getUserFromToken(env, request);
-    if (!user) return fail('Non authentifié.', 401);
-    const plan = effectivePlan(user);
-    if (plan !== 'gold' && plan !== 'silver') return fail('Les alertes push sont disponibles avec le plan Argent.', 403);
-
-    const channel = `bwr-u-${user.id.slice(0, 8)}`;
-    await putUser(env, { ...user, alertsEnabled: true, alertsChannel: channel });
-    return json({ channel });
-  }
-
-  if (pathname === '/api/push/unsubscribe' && request.method === 'POST') {
-    const user = await getUserFromToken(env, request);
-    if (!user) return fail('Non authentifié.', 401);
-
-    await putUser(env, { ...user, alertsEnabled: false });
-    return json({ success: true });
-  }
+  // Push subscription endpoints (/api/push/*) now live in worker/handlers/push.js
+  // — real Web Push replaced the earlier ntfy-channel stub.
 
   // ── AI tip — used by the daily-wheel "Conseil sentier" prize ──
   if (pathname === '/api/ai-tip' && request.method === 'POST') {

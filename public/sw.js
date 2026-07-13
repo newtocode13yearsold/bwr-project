@@ -1,4 +1,8 @@
-const CACHE = 'bwr-v51';
+// Offline report outbox (IndexedDB) — shared with the map page. Loaded here so
+// the `sync` handler below can drain queued reports even when no page is open.
+importScripts('/js/outbox.js');
+
+const CACHE = 'bwr-v52';
 // Tiles live in two separate caches:
 //   • TILE_CACHE — forests the user explicitly downloaded ("Cartes hors-ligne").
 //     Permanent: never expired, never evicted, so a downloaded forest stays
@@ -50,6 +54,7 @@ const APP_SHELL = [
   'js/map-paths.js',
   'js/map-locate.js',
   'js/map-sync.js',
+  'js/outbox.js',
   'js/admin.js',
   'js/routes.js',
   'js/routes-engine.js',
@@ -70,6 +75,7 @@ const APP_SHELL = [
   'js/theme.js',
   'js/forests.js',
   'js/notif.js',
+  'js/push.js',
   'js/ui-shared.js',
   'js/onboarding.js',
   'js/map-offline.js',
@@ -127,6 +133,73 @@ self.addEventListener('activate', e => {
       Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE && k !== BROWSE_TILE_CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
+});
+
+// ── Web Push ──────────────────────────────────────────────────────────────────
+// The server sends an aes128gcm-encrypted JSON payload { title, body, url, tag }.
+// Show it as a native notification; a click focuses an open tab on `url` or
+// opens a new one.
+self.addEventListener('push', e => {
+  let data = {};
+  try { data = e.data ? e.data.json() : {}; }
+  catch { data = { body: e.data ? e.data.text() : '' }; }
+
+  const title = data.title || 'BWR — Balades en forêt';
+  const options = {
+    body:  data.body || '',
+    icon:  data.icon  || '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    tag:   data.tag   || 'bwr',
+    data:  { url: data.url || '/map' },
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const target = (e.notification.data && e.notification.data.url) || '/map';
+  e.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) {
+      if (c.url.includes(target) && 'focus' in c) return c.focus();
+    }
+    if (self.clients.openWindow) return self.clients.openWindow(target);
+  })());
+});
+
+// Background Sync — replay queued hazard reports once connectivity returns, even
+// if the page that queued them is closed. The page registers the 'bwr-sync-reports'
+// tag (see requestReportSync in js/map-sync.js); the browser fires this event when
+// online and retries automatically if we reject the waitUntil promise.
+async function replayReportOutbox() {
+  const records = await bwrOutbox.all();
+  if (!records.length) return;
+  let failed = 0;
+  for (const rec of records) {
+    try {
+      const res = await fetch(rec.url || '/api/reports', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, rec.auth || {}),
+        body: JSON.stringify(rec.payload),
+      });
+      // Drop on success, or on a permanent client error (bad/duplicate) — a retry
+      // wouldn't help. Keep on 5xx / 429 / network error so the sync retries.
+      if (res.ok || (res.status >= 400 && res.status < 500 && res.status !== 429)) {
+        await bwrOutbox.delete(rec._id);
+      } else {
+        failed++;
+      }
+    } catch { failed++; }
+  }
+  // Nudge any open page to refresh its reports layer + clear the pending banner.
+  const clients = await self.clients.matchAll({ includeUncontrolled: true });
+  clients.forEach(c => c.postMessage({ type: 'reports-synced' }));
+  // Rejecting tells the browser to reschedule the sync (backoff) for what's left.
+  if (failed > 0) throw new Error(`report outbox: ${failed} still pending`);
+}
+
+self.addEventListener('sync', e => {
+  if (e.tag === 'bwr-sync-reports') e.waitUntil(replayReportOutbox());
 });
 
 // Fetch — network first for HTML/JS/CSS, cache fallback when offline

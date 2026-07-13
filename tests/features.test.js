@@ -68,6 +68,12 @@ describe('can', () => {
   test('gpx_export: free → false',   () => assert.equal(can('gpx_export', 'free'),   false));
   test('gpx_export: silver → true',  () => assert.equal(can('gpx_export', 'silver'), true));
 
+  // GPX import: open to everyone (acquisition hook)
+  test('gpx_import: free → true',    () => assert.equal(can('gpx_import', 'free'),    true));
+  test('gpx_import: visitor → true', () => assert.equal(can('gpx_import', 'visitor'), true));
+  test('gpx_import: silver → true',  () => assert.equal(can('gpx_import', 'silver'),  true));
+  test('gpx_import: gold → true',    () => assert.equal(can('gpx_import', 'gold'),    true));
+
   // KML export: silver+
   test('kml_export: free → false',   () => assert.equal(can('kml_export', 'free'),   false));
   test('kml_export: silver → true',  () => assert.equal(can('kml_export', 'silver'), true));
@@ -120,6 +126,7 @@ describe('requiredTier', () => {
   test('loop_mode → free',           () => assert.equal(requiredTier('loop_mode'),         'free'));
   test('elevation_profile → silver', () => assert.equal(requiredTier('elevation_profile'), 'silver'));
   test('gpx_export → silver',        () => assert.equal(requiredTier('gpx_export'),        'silver'));
+  test('gpx_import → free',          () => assert.equal(requiredTier('gpx_import'),        'free'));
   test('satellite_tiles → silver',   () => assert.equal(requiredTier('satellite_tiles'),   'silver'));
   test('kml_export → silver',        () => assert.equal(requiredTier('kml_export'),        'silver'));
   test('weather → silver',           () => assert.equal(requiredTier('weather'),           'silver'));

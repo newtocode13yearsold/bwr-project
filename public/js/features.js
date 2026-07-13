@@ -31,6 +31,9 @@
     /* — Trip analysis & export — */
     elevation_profile:   { free: false, visitor: true,     silver: true,     gold: true     },
     gpx_export:          { free: false, visitor: true,     silver: true,     gold: true     },
+    // GPX import is deliberately open to everyone (incl. free/visitor) — it's an
+    // acquisition hook: bring a Strava/Garmin route onto the graded BWR map.
+    gpx_import:          { free: true,  visitor: true,     silver: true,     gold: true     },
     kml_export:          { free: false, visitor: false,    silver: true,     gold: true     },
     strava_komoot_push:  { free: false, visitor: false,    silver: true,     gold: true     },
     offline_cache:       { free: 0,     visitor: 1,        silver: 20,       gold: 20       },

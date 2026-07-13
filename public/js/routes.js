@@ -50,6 +50,7 @@ let loopVias = [];         // loop "reshape": carrefours the boucle must pass th
   initMap();
   initAiPlanner();
   initQuickStart();
+  initGpxImport();
   initStep2Collapse();
   if (new URLSearchParams(location.search).has('lat')) {
     handleBestTourParam();

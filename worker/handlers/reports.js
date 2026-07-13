@@ -1,5 +1,6 @@
 import { listItems, getPath, putReport, putUser, patchLeaderboardCache, addPeriodXp } from '../kv.js';
 import { getUserFromToken } from '../auth-utils.js';
+import { notifyHazard } from './push.js';
 
 const TYPE_LABELS = {
   fallen_tree: 'Arbre tombé', flooded: 'Chemin inondé', muddy: 'Boueux',
@@ -14,7 +15,7 @@ const TYPE_LABELS = {
  * @param {{ pathname: string, json: Function, fail: Function, cors: Object }} ctx
  * @returns {Promise<Response|null>}
  */
-export async function handleReports(request, env, { pathname, json, fail, cors }) {
+export async function handleReports(request, env, { pathname, json, fail, cors, waitUntil }) {
   if (pathname === '/api/reports' && request.method === 'GET') {
     const reports = await listItems(env, 'report:');
     return json(reports.map(({ userId: _, ...r }) => r));
@@ -87,6 +88,13 @@ export async function handleReports(request, env, { pathname, json, fail, cors }
         body: `${TYPE_LABELS[report.type] || report.type} sur "${pathName}"${report.note ? '\n' + report.note : ''}`,
       });
     } catch {}
+
+    // Web Push fan-out: alert Silver+ users whose saved route passes near this
+    // hazard. Best-effort, off the response path, and only when push is
+    // configured (VAPID secrets present) and the report is geolocated.
+    if (report.lat != null && report.lon != null && env.VAPID_PRIVATE_KEY && waitUntil) {
+      waitUntil(notifyHazard(env, report).catch(() => {}));
+    }
 
     return json(report, 201);
   }

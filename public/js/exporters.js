@@ -98,6 +98,49 @@ ${trkpts}
 </kml>`;
   }
 
+  /**
+   * Parse a GPX file (Strava / Garmin / Komoot export) into a BWR route.
+   * Reads track points (<trkpt>) first, falling back to route points (<rtept>).
+   * Multiple <trkseg> segments are concatenated in document order.
+   *
+   * @param {string} xml  Raw GPX XML text.
+   * @returns {{ coords: Array<[number, number]>, elevations: number[]|null, name: string }}
+   * @throws {Error} if the file isn't valid GPX or has no usable points.
+   */
+  function parseGPX(xml) {
+    if (typeof DOMParser === 'undefined') throw new Error('DOMParser indisponible');
+    const doc = new DOMParser().parseFromString(String(xml), 'application/xml');
+    if (doc.querySelector('parsererror')) throw new Error('Fichier GPX illisible.');
+    if (doc.documentElement.nodeName.toLowerCase() !== 'gpx') {
+      throw new Error('Ce fichier n\'est pas un GPX.');
+    }
+
+    let pts = Array.from(doc.getElementsByTagName('trkpt'));
+    if (!pts.length) pts = Array.from(doc.getElementsByTagName('rtept'));
+    if (!pts.length) pts = Array.from(doc.getElementsByTagName('wpt'));
+
+    const coords = [];
+    const elevations = [];
+    let hasEle = false;
+    for (const p of pts) {
+      const lat = parseFloat(p.getAttribute('lat'));
+      const lon = parseFloat(p.getAttribute('lon'));
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+      coords.push([lat, lon]);
+      const eleEl = p.getElementsByTagName('ele')[0];
+      const ele = eleEl ? parseFloat(eleEl.textContent) : NaN;
+      if (Number.isFinite(ele)) { elevations.push(ele); hasEle = true; }
+      else { elevations.push(null); }
+    }
+
+    if (coords.length < 2) throw new Error('Ce GPX ne contient pas de tracé exploitable.');
+
+    const nameEl = doc.querySelector('trk > name') || doc.querySelector('metadata > name') || doc.querySelector('name');
+    const name = (nameEl && nameEl.textContent.trim()) || 'Trajet importé';
+
+    return { coords, elevations: hasEle ? elevations : null, name };
+  }
+
   /** Trigger a browser download for a generated text payload. */
   function downloadFile(content, filename, mime = 'application/octet-stream') {
     const blob = new Blob([content], { type: mime });
@@ -141,6 +184,7 @@ ${trkpts}
   }
 
   global.routeToGPX   = routeToGPX;
+  global.parseGPX     = parseGPX;
   global.routeToKML   = routeToKML;
   global.downloadFile = downloadFile;
   global.downloadGPX  = downloadGPX;

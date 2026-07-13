@@ -27,6 +27,18 @@ const swSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'sw.js'), 
 function makeSWContext() {
   const handlers = {};
 
+  // In-memory stand-in for the IndexedDB report outbox (js/outbox.js). sw.js
+  // pulls it in via importScripts, which we stub below to a no-op and hand this
+  // mock to the vm context instead.
+  const outboxStore = [];
+  const mockOutbox = {
+    all:    async () => outboxStore.map(r => ({ ...r })),
+    delete: async (id) => { const i = outboxStore.findIndex(r => r._id === id); if (i >= 0) outboxStore.splice(i, 1); },
+    count:  async () => outboxStore.length,
+    add:    async (r) => { const _id = outboxStore.length + 1; outboxStore.push({ ...r, _id }); return _id; },
+  };
+  const clientMessages = [];
+
   // Per-cache store: cacheName → Map<string, Response>
   const cacheStores = new Map();
 
@@ -61,7 +73,10 @@ function makeSWContext() {
   const mockSelf = {
     addEventListener: (event, handler) => { handlers[event] = handler; },
     skipWaiting: () => Promise.resolve(),
-    clients: { claim: () => Promise.resolve() },
+    clients: {
+      claim: () => Promise.resolve(),
+      matchAll: async () => [{ postMessage: (m) => clientMessages.push(m) }],
+    },
     location: { origin: 'https://bwrmaps.com' },
   };
 
@@ -69,6 +84,9 @@ function makeSWContext() {
   const ctx = vm.createContext({
     self: mockSelf,
     caches: mockCaches,
+    // importScripts('/js/outbox.js') is a no-op here; bwrOutbox is injected below.
+    importScripts: () => {},
+    bwrOutbox: mockOutbox,
     // fetch is mocked per-test via the context — start with a simple stub
     fetch: () => Promise.reject(new Error('offline')),
     Request: globalThis.Request,
@@ -90,7 +108,7 @@ function makeSWContext() {
     return { event, getResponse: () => respondWithPromise };
   }
 
-  return { handlers, mockCaches, ctx, makeFetchEvent };
+  return { handlers, mockCaches, ctx, makeFetchEvent, outboxStore, clientMessages };
 }
 
 // ── Constants extracted from sw.js ────────────────────────────────────────────
@@ -376,6 +394,58 @@ describe('fetch handler: cross-origin assets → not intercepted', () => {
   });
 });
 
+// ── Background Sync: report outbox replay ────────────────────────────────────
+
+describe('sync handler: report outbox replay', () => {
+  function fireSync(handlers, tag = 'bwr-sync-reports') {
+    let waitUntilPromise;
+    const event = { tag, waitUntil: (p) => { waitUntilPromise = p; } };
+    handlers.sync(event);
+    return waitUntilPromise;
+  }
+
+  test('successful POST drops the record and notifies open clients', async () => {
+    const { handlers, ctx, outboxStore, clientMessages } = makeSWContext();
+    outboxStore.push({ _id: 1, url: 'https://bwrmaps.com/api/reports', auth: { Authorization: 'Bearer t' }, payload: { type: 'tree' } });
+
+    let posted = null;
+    ctx.fetch = (url, opts) => { posted = { url, opts }; return Promise.resolve(new Response('{}', { status: 200 })); };
+
+    await fireSync(handlers);
+
+    assert.equal(outboxStore.length, 0, 'sent report must be removed from the outbox');
+    assert.equal(posted.url, 'https://bwrmaps.com/api/reports');
+    assert.equal(posted.opts.method, 'POST');
+    assert.ok(posted.opts.headers.Authorization === 'Bearer t', 'stored auth header must be replayed');
+    assert.ok(clientMessages.some(m => m.type === 'reports-synced'), 'open clients must be told to refresh');
+  });
+
+  test('server error (5xx) keeps the record and rejects so the browser retries', async () => {
+    const { handlers, ctx, outboxStore } = makeSWContext();
+    outboxStore.push({ _id: 1, url: 'https://bwrmaps.com/api/reports', payload: { type: 'flood' } });
+
+    ctx.fetch = () => Promise.resolve(new Response('err', { status: 500 }));
+
+    await assert.rejects(fireSync(handlers), /still pending/);
+    assert.equal(outboxStore.length, 1, '5xx report must stay queued for retry');
+  });
+
+  test('permanent client error (4xx, not 429) drops the record', async () => {
+    const { handlers, ctx, outboxStore } = makeSWContext();
+    outboxStore.push({ _id: 1, url: 'https://bwrmaps.com/api/reports', payload: { type: 'bad' } });
+
+    ctx.fetch = () => Promise.resolve(new Response('bad', { status: 400 }));
+
+    await fireSync(handlers);
+    assert.equal(outboxStore.length, 0, 'unretryable 4xx must be dropped, not looped forever');
+  });
+
+  test('unrelated sync tag is ignored', () => {
+    const { handlers } = makeSWContext();
+    assert.doesNotThrow(() => fireSync(handlers, 'some-other-tag'));
+  });
+});
+
 // ── Activate: old caches deleted ─────────────────────────────────────────────
 
 describe('activate handler: old caches deleted', () => {
@@ -384,7 +454,7 @@ describe('activate handler: old caches deleted', () => {
 
     // Seed old + current caches
     await mockCaches.open('bwr-v1');           // old → must be deleted
-    await mockCaches.open('bwr-v51');          // current CACHE → keep
+    await mockCaches.open('bwr-v52');          // current CACHE → keep
     await mockCaches.open('bwr-offline-tiles'); // TILE_CACHE → keep
 
     let waitUntilPromise;
@@ -394,7 +464,7 @@ describe('activate handler: old caches deleted', () => {
 
     const remaining = await mockCaches.keys();
     assert.ok(!remaining.includes('bwr-v1'), 'old cache bwr-v1 must be deleted');
-    assert.ok(remaining.includes('bwr-v51'), 'current CACHE must be kept');
+    assert.ok(remaining.includes('bwr-v52'), 'current CACHE must be kept');
     assert.ok(remaining.includes('bwr-offline-tiles'), 'TILE_CACHE must be kept');
   });
 });

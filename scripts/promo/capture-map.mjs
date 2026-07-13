@@ -43,6 +43,7 @@ async function main() {
   const paths = await readJSON(join(OUT, 'real-paths.json'));
   const loop1 = await readJSON(join(OUT, 'loop-route.json'));
   const loop2 = await readJSON(join(OUT, 'loop-route-2.json'));
+  const routeAb = await readJSON(join(OUT, 'route-ab.json'));
 
   // grades: only draw the paths near the graded cluster so red/orange are visible
   const gradeStatuses = new Set(['easy', 'medium', 'hard', 'no_bike', 'not_passable']);
@@ -97,6 +98,23 @@ async function main() {
   await shot('grades-zoom.png', {
     base: 'topo', grade: true, gradeWeight: 6, paths: gradedPaths, center: [49.3405, 2.9605], zoom: 13.8,
   }, 2200);
+
+  // ── Reel #3 (A→B) — satellite, a real point-to-point forest route with A & B markers ──
+  await shot('route-ab.png', {
+    base: 'satellite', routes: [{ coords: routeAb.coords, color: '#a3e635', weight: 7, halo: true }],
+    start: routeAb.coords[0], end: routeAb.coords[routeAb.coords.length - 1], fit: true, fitPad: 0.2,
+  });
+  // the SAME A→B on a road map, to imply "your GPS would drag you onto the road"
+  await shot('route-ab-road.png', {
+    base: 'topo', routes: [{ coords: routeAb.coords, color: '#a3e635', weight: 6, halo: true }],
+    start: routeAb.coords[0], end: routeAb.coords[routeAb.coords.length - 1], fit: true, fitPad: 0.2,
+  }, 2200);
+
+  // ── Reel #4 (signalements) — a clean satellite trail area as the pin backdrop ──
+  await shot('report-map.png', {
+    base: 'satellite', paths: paths.filter(p => p.coordinates?.length > 1),
+    center: [49.377, 2.872], zoom: 15.4,
+  });
 
   await browser.close();
 

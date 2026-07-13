@@ -12,15 +12,15 @@ function getMapPatches() {
 }
 function saveMapPatches(q) { localStorage.setItem('bwr_map_patches', JSON.stringify(q)); }
 
-function getMapReports() {
-  try { return JSON.parse(localStorage.getItem('bwr_map_reports') || '[]'); } catch { return []; }
-}
-function saveMapReports(q) { localStorage.setItem('bwr_map_reports', JSON.stringify(q)); }
+// Reports queue lives in IndexedDB (js/outbox.js), not localStorage, so the
+// service worker can replay it via a Background Sync `sync` event while the page
+// is closed. Patches stay in localStorage (admin-only, no closed-app replay need).
 
-function updateMapSyncBanner() {
+async function updateMapSyncBanner() {
   const banner = document.getElementById('mapSyncBanner');
   if (!banner) return;
-  const total = getMapPatches().length + getMapReports().length;
+  const reports = await bwrOutbox.count().catch(() => 0);
+  const total = getMapPatches().length + reports;
   if (total === 0) { banner.style.display = 'none'; return; }
   banner.style.display = 'flex';
   banner.querySelector('.sync-count').textContent =
@@ -35,18 +35,33 @@ function queueMapPatch(pathId, newStatus) {
   updateMapSyncBanner();
 }
 
-function queueMapReport(data) {
-  const q = getMapReports();
-  if (q.length >= 20) { showToast('⚠️ File hors-ligne pleine (20 signalements max).'); return; }
-  q.push({ ...data, queuedAt: Date.now() });
+async function queueMapReport(data) {
+  const count = await bwrOutbox.count().catch(() => 0);
+  if (count >= 20) { showToast('⚠️ File hors-ligne pleine (20 signalements max).'); return; }
+  // Snapshot the auth header + full URL now: the service worker replays this with
+  // no page context, so it can't call authHeader() or read API_URL itself.
+  const record = { url: `${API_URL}/api/reports`, auth: authHeader(), payload: data, queuedAt: Date.now() };
   try {
-    saveMapReports(q);
+    await bwrOutbox.add(record);
   } catch {
-    // localStorage full — retry without photo
-    q[q.length - 1].photo = null;
-    try { saveMapReports(q); } catch {}
+    // Storage full (usually the base64 photo) — retry without the photo.
+    record.payload = { ...data, photo: null };
+    try { await bwrOutbox.add(record); } catch {}
   }
+  requestReportSync();
   updateMapSyncBanner();
+}
+
+// Ask the browser to fire a `sync` event (tag 'bwr-sync-reports') as soon as it
+// has connectivity — even if the page is closed by then. The SW handler in sw.js
+// drains the outbox. Where Background Sync is unavailable (Safari/Firefox), this
+// is a no-op and the `online` listener below is the fallback path.
+function requestReportSync() {
+  if ('serviceWorker' in navigator && 'SyncManager' in self) {
+    navigator.serviceWorker.ready
+      .then(reg => reg.sync.register('bwr-sync-reports'))
+      .catch(() => {});
+  }
 }
 
 async function replayMapPatches() {
@@ -73,26 +88,31 @@ async function replayMapPatches() {
   }
 }
 
+// Page-side replay: the fallback for browsers without Background Sync, and what
+// the manual "Synchroniser" button triggers. The SW `sync` handler shares the
+// same outbox, so whichever fires first drains it and the other finds it empty.
 async function replayMapReports() {
-  const q = getMapReports();
-  if (q.length === 0) return;
+  const records = await bwrOutbox.all().catch(() => []);
+  if (records.length === 0) return;
   document.getElementById('mapSyncBanner')?.classList.add('syncing');
-  let remaining = [];
-  for (const item of q) {
+  let sent = 0;
+  for (const rec of records) {
     try {
-      const { queuedAt, ...payload } = item;
-      const res = await fetch(`${API_URL}/api/reports`, {
+      const res = await fetch(rec.url || `${API_URL}/api/reports`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader() },
-        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json', ...(rec.auth || {}) },
+        body: JSON.stringify(rec.payload),
       });
-      if (!res.ok) remaining.push(item);
-    } catch { remaining.push(item); }
+      // Drop on success, or on a permanent client error (retrying won't help).
+      if (res.ok || (res.status >= 400 && res.status < 500 && res.status !== 429)) {
+        await bwrOutbox.delete(rec._id);
+        if (res.ok) sent++;
+      }
+    } catch { /* offline again — leave it queued */ }
   }
-  saveMapReports(remaining);
   document.getElementById('mapSyncBanner')?.classList.remove('syncing');
-  updateMapSyncBanner();
-  if (remaining.length === 0 && q.length > 0) {
+  await updateMapSyncBanner();
+  if (sent > 0 && (await bwrOutbox.count().catch(() => 0)) === 0) {
     showToast('✅ Synchronisation terminée — signalements envoyés !');
     loadReports();
   }
@@ -264,13 +284,42 @@ document.getElementById('mapContactForm').addEventListener('submit', async e => 
   });
 })();
 
+// One-time migration of any reports still queued in the old localStorage store
+// into IndexedDB, so users mid-upgrade don't lose pending offline reports.
+async function migrateLegacyReports() {
+  let legacy = [];
+  try { legacy = JSON.parse(localStorage.getItem('bwr_map_reports') || '[]'); } catch {}
+  if (!legacy.length) return;
+  for (const item of legacy) {
+    const { queuedAt, ...payload } = item;
+    try {
+      await bwrOutbox.add({ url: `${API_URL}/api/reports`, auth: authHeader(), payload, queuedAt: queuedAt || Date.now() });
+    } catch {}
+  }
+  localStorage.removeItem('bwr_map_reports');
+}
+
+// When the service worker drains the outbox (via a Background Sync `sync` event,
+// possibly while this tab was backgrounded), it messages open clients so the
+// map refreshes its reports layer and clears the pending banner.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'reports-synced') {
+      updateMapSyncBanner();
+      if (typeof loadReports === 'function') loadReports();
+    }
+  });
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 initUserMenu();
 restoreSearchAddress();
 loadPaths();
 loadReports();
-if (navigator.onLine) { replayMapPatches(); replayMapReports(); }
-updateMapSyncBanner();
+migrateLegacyReports().then(() => {
+  if (navigator.onLine) { replayMapPatches(); replayMapReports(); }
+  updateMapSyncBanner();
+});
 
 const btnMapSync = document.getElementById('btnMapSync');
 if (btnMapSync) btnMapSync.addEventListener('click', function () { replayMapPatches(); replayMapReports(); });

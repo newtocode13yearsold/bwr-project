@@ -308,6 +308,19 @@
         <button class="btn-gps-track" id="btnTracker">▶ Démarrer ma balade</button>
       </div>
 
+      <!-- Import GPX (Strava / Garmin / Komoot) -->
+      <div class="gps-tracker-card import-gpx-card" id="importGpxCard">
+        <div class="gps-tracker-header">
+          <span class="gps-tracker-icon">📥</span>
+          <div>
+            <strong>Importer un GPX</strong>
+            <p class="gps-tracker-sub">Ton tracé Strava / Garmin sur la carte BWR</p>
+          </div>
+        </div>
+        <input type="file" id="gpxFileInput" accept=".gpx,application/gpx+xml,application/xml,text/xml" hidden />
+        <button class="btn-gps-track btn-import-gpx" id="btnImportGpx">📥 Choisir un fichier GPX</button>
+      </div>
+
       <!-- Contact -->
       <div class="sidebar-contact">
         <a href="mailto:ciril8596@gmail.com">✉ ciril8596@gmail.com</a>
