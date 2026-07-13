@@ -307,8 +307,19 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       planBase: updated.planBase || null,
       visitorPlanCount: updated.visitorPlanCount || 0,
       silverTrialUsed: !!updated.silverTrialUsed,
+      emailNotifications: updated.emailNotifications !== false, // default on
       stats: updated.stats || { routes: 0, km: 0, weeklyRoutes: 0, weekStart: isoMonday() },
     });
+  }
+
+  // Toggle notification emails (forum replies + route-hazard alerts). Absent flag
+  // means opted-in; the email senders check `emailNotifications !== false`.
+  if (pathname === '/api/auth/notifications' && request.method === 'PUT') {
+    const user = await getUserFromToken(env, request);
+    if (!user) return fail('Non authentifié.', 401);
+    const { emailNotifications } = await request.json().catch(() => ({}));
+    await putUser(env, { ...user, emailNotifications: emailNotifications !== false });
+    return json({ emailNotifications: emailNotifications !== false });
   }
 
   if (pathname.startsWith('/api/auth/plan/') && request.method === 'PUT') {

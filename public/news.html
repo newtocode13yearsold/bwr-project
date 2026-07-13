@@ -150,6 +150,31 @@
       margin-bottom: 18px;
       white-space: pre-line;
     }
+    /* Collapsed long articles: clamp height + fade the cut-off edge. */
+    .news-content.collapsed {
+      max-height: 12.5em;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(180deg, #000 68%, transparent 100%);
+              mask-image: linear-gradient(180deg, #000 68%, transparent 100%);
+      margin-bottom: 8px;
+    }
+    .news-readmore {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: none;
+      border: none;
+      padding: 4px 0;
+      margin-bottom: 16px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--forest-700, #1e4d14);
+    }
+    .news-readmore:hover { text-decoration: underline; }
+    .news-readmore .chev { transition: transform 0.2s; }
+    .news-readmore.open .chev { transform: rotate(180deg); }
     .news-link {
       display: inline-flex;
       align-items: center;

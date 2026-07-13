@@ -1145,9 +1145,12 @@ async function loadVisits() {
       statCard("Aujourd'hui", today, '#d1fae5') +
       statCard('Cette semaine', week, '#fef3c7') +
       `<div style="display:flex;gap:6px;width:100%;margin-top:6px">
-         <button onclick="loadDebug()" style="flex:1;padding:7px 10px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#374151">🔍 Diagnostic KV</button>
-         <button onclick="resetActivity()" style="flex:1;padding:7px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#b91c1c">🗑️ Réinitialiser</button>
+         <button id="btnDebugKV" style="flex:1;padding:7px 10px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#374151">🔍 Diagnostic KV</button>
+         <button id="btnResetActivity" style="flex:1;padding:7px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#b91c1c">🗑️ Réinitialiser</button>
        </div>`;
+    // CSP blocks inline onclick, so wire the buttons after they're in the DOM.
+    document.getElementById('btnDebugKV')?.addEventListener('click', loadDebug);
+    document.getElementById('btnResetActivity')?.addEventListener('click', resetActivity);
 
     if (events.length === 0) {
       itemsEl.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Aucune activité enregistrée pour l\'instant.</p>';
@@ -1254,9 +1257,11 @@ async function loadDebug() {
     }
 
     html += `<div style="margin-top:10px;font-size:0.72rem;color:#9ca3af">Généré le ${data.timestamp} · worker v${data.workerVersion}</div>`;
-    html += `<button onclick="loadVisits()" style="margin-top:8px;width:100%;padding:6px;background:#e0e7ff;border:1px solid #c7d2fe;border-radius:7px;font-size:0.8rem;cursor:pointer">← Retour à l'activité</button>`;
+    html += `<button id="btnBackToVisits" style="margin-top:8px;width:100%;padding:6px;background:#e0e7ff;border:1px solid #c7d2fe;border-radius:7px;font-size:0.8rem;cursor:pointer">← Retour à l'activité</button>`;
 
     itemsEl.innerHTML = html;
+    // CSP blocks inline onclick, so wire the button after it's in the DOM.
+    document.getElementById('btnBackToVisits')?.addEventListener('click', loadVisits);
   } catch {
     itemsEl.innerHTML = '<p style="color:red">Erreur réseau lors du diagnostic</p>';
   }

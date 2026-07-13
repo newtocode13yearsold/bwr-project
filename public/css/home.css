@@ -397,6 +397,13 @@ body {
   width: 100%;
   height: 240px;
   display: block;
+  /* On-brand forest base so slow/rate-limited OpenTopoMap tiles never flash
+     Leaflet's default grey. The real graded paths (SVG from /api/paths) draw
+     on top of this regardless of tile state, so the hero always reads as a map. */
+  background:
+    radial-gradient(120% 90% at 25% 15%, #d9e7c4 0%, rgba(217,231,196,0) 55%),
+    radial-gradient(130% 100% at 80% 90%, #b9d29a 0%, rgba(185,210,154,0) 60%),
+    linear-gradient(160deg, #cfe0b4 0%, #b6cf95 100%);
 }
 
 .mockup-legend {

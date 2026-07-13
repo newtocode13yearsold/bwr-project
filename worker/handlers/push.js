@@ -2,6 +2,7 @@ import { listItems, listKeys, getUser, putUser, effectivePlan } from '../kv.js';
 import { getUserFromToken } from '../auth-utils.js';
 import { distanceToPolylineMeters } from '../geo.js';
 import { sendPush } from '../webpush.js';
+import { notifyRouteHazardEmail } from '../notify.js';
 
 // A report counts as "on" a saved route when it lands within this many metres of
 // the route polyline.
@@ -116,9 +117,15 @@ export async function notifyHazard(env, report, sendFn = sendPush) {
   const label = TYPE_LABELS[report.type] || TYPE_LABELS.other;
   for (const [userId, routeName] of matched) {
     const user = await getUser(env, userId);
-    if (!user || !user.alertsEnabled) continue;
+    if (!user) continue;
     const plan = effectivePlan(user);
     if (plan !== 'silver' && plan !== 'gold') continue;
+
+    // Email is a separate channel from push — send it to matched Silver+ owners
+    // whether or not they have a push subscription (respects the opt-out inside).
+    await notifyRouteHazardEmail(env, user, routeName, report);
+
+    if (!user.alertsEnabled) continue; // push below requires an active subscription
 
     const payload = {
       title: '🌲 Nouvel obstacle sur votre trajet',

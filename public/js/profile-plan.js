@@ -230,6 +230,7 @@ function renderPlanAndProgress(user) {
     if (BWR.can('custom_goals', plan)) renderGoals();
     if (BWR.can('weather', plan)) renderWeather();
     if (BWR.can('path_alerts', plan)) renderPushAlerts();
+    renderEmailNotif();
     if (isGold) renderTrailHealth();
   } else {
     document.getElementById('premiumSection').style.display = 'none';
@@ -441,6 +442,52 @@ async function renderPushAlerts() {
       status.innerHTML = `<span style="color:#dc2626">Erreur : ${err.message || 'réessaye'}</span>`;
     } finally { btn.disabled = false; }
   });
+}
+
+// ── Email notification preference ─────────────────────────────────────────────
+// Server-side flag (user.emailNotifications, default on) gating the forum-reply
+// and route-hazard notification emails. Independent of the push toggle above —
+// email is a separate channel that works without a push subscription.
+async function renderEmailNotif() {
+  const block  = document.getElementById('emailNotifBlock');
+  const status = document.getElementById('emailNotifStatus');
+  const btn    = document.getElementById('btnToggleEmailNotif');
+  if (!block || !btn) return;
+
+  let enabled = true;
+  try {
+    const res = await fetch(`${API_URL}/api/auth/me`, { headers: { ...authHeader() } });
+    const me = await res.json();
+    enabled = me.emailNotifications !== false;
+  } catch { /* keep optimistic default */ }
+
+  function render() {
+    if (enabled) {
+      status.innerHTML = `<span style="color:#16a34a;font-weight:600">✉️ Emails activés</span>`;
+      btn.textContent = '🔕 Désactiver les emails';
+    } else {
+      status.innerHTML = `<span style="color:#6b7280">Emails désactivés</span>`;
+      btn.textContent = '✉️ Activer les emails';
+    }
+  }
+  render();
+
+  btn.onclick = async () => {
+    btn.disabled = true;
+    const next = !enabled;
+    try {
+      const res = await fetch(`${API_URL}/api/auth/notifications`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ emailNotifications: next }),
+      });
+      if (!res.ok) throw new Error();
+      enabled = next;
+      render();
+    } catch {
+      status.innerHTML = `<span style="color:#dc2626">Erreur — réessaye.</span>`;
+    } finally { btn.disabled = false; }
+  };
 }
 
 // ── Next-badge progress teaser ────────────────────────────────────────────────

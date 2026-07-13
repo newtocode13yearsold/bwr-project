@@ -1,5 +1,6 @@
 import { listItems, listKeys, effectivePlan } from '../kv.js';
 import { getUserFromToken, checkRateLimit } from '../auth-utils.js';
+import { notifyForumReply } from '../notify.js';
 
 // Free accounts may read only the most recent N discussion topics; the rest are
 // locked behind an upsell. Silver/Gold (and admins) see everything and can post.
@@ -40,7 +41,7 @@ function isUnlockedForFree(index) {
  * @param {{ pathname: string, url: URL, json: Function, fail: Function }} ctx
  * @returns {Promise<Response|null>}
  */
-export async function handleForum(request, env, { pathname, json, fail }) {
+export async function handleForum(request, env, { pathname, json, fail, waitUntil }) {
   if (!pathname.startsWith('/api/forum/')) return null;
 
   // ── List topics ─────────────────────────────────────────────────────────────
@@ -223,6 +224,10 @@ export async function handleForum(request, env, { pathname, json, fail }) {
       env.BWR_KV.put(`forum:reply:${topicId}:${String(Date.now()).padStart(13, '0')}:${id}`, JSON.stringify(reply)),
       env.BWR_KV.put(`forum:topic:${topicId}`, JSON.stringify(topic)),
     ]);
+
+    // Email the topic author (best-effort, off the response path). Skips itself
+    // when the replier is the author, and when the author opted out of emails.
+    if (waitUntil) waitUntil(notifyForumReply(env, { topic, reply }).catch(() => {}));
 
     return json(reply, 201);
   }

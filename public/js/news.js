@@ -103,6 +103,21 @@ function newsCard(item) {
     ? `<img class="news-img" src="${escHtml(imgSrc)}" alt="${escHtml(item.title)}" loading="lazy" />`
     : `<div class="news-img-placeholder">${FOREST_PLACEHOLDERS[Math.abs(item.id?.charCodeAt(0) ?? 0) % FOREST_PLACEHOLDERS.length]}</div>`;
 
+  // Article body — long articles start collapsed with a "Voir tout" toggle.
+  const LONG_CHARS = 420;
+  let contentHtml = '';
+  if (item.content) {
+    const body = escHtml(item.content).replace(/\n/g, '<br>');
+    const isLong = item.content.length > LONG_CHARS;
+    contentHtml = isLong
+      ? `<p class="news-content collapsed" data-content-id="${item.id}">${body}</p>
+         <button class="news-readmore" data-more-id="${item.id}">
+           <span class="news-readmore-label">Voir tout</span>
+           <span class="chev">▾</span>
+         </button>`
+      : `<p class="news-content">${body}</p>`;
+  }
+
   const linkHtml = item.url
     ? canLink
       ? `<a href="${escHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="news-link">
@@ -143,7 +158,7 @@ function newsCard(item) {
         <span class="news-cat-badge">${NEWS_CATEGORIES[catOf(item)].icon} ${escHtml(NEWS_CATEGORIES[catOf(item)].label)}</span>
       </div>
       <h2 class="news-title">${escHtml(item.title)}</h2>
-      ${item.content ? `<p class="news-content">${escHtml(item.content).replace(/\n/g, '<br>')}</p>` : ''}
+      ${contentHtml}
       ${linkHtml}
       ${reactHtml}
       ${adminControls}
@@ -181,6 +196,15 @@ async function reactToNews(id, reaction) {
     else localStorage.removeItem(`bwr_news_react_${id}`);
     applyReactionState(id, current || null);
   }
+}
+
+function toggleContent(btn) {
+  const id = btn.dataset.moreId;
+  const p = document.querySelector(`.news-content[data-content-id="${id}"]`);
+  if (!p) return;
+  const collapsed = p.classList.toggle('collapsed');
+  btn.classList.toggle('open', !collapsed);
+  btn.querySelector('.news-readmore-label').textContent = collapsed ? 'Voir tout' : 'Réduire';
 }
 
 function applyReactionState(id, reaction) {
@@ -281,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event delegation for dynamically rendered cards (reactions + admin controls).
   document.getElementById('newsFeed').addEventListener('click', e => {
-    const btn = e.target.closest('button[data-react-id], button[data-edit-id], button[data-delete-id]');
+    const btn = e.target.closest('button[data-react-id], button[data-edit-id], button[data-delete-id], button[data-more-id]');
     if (!btn) return;
     if (btn.dataset.reactId) {
       reactToNews(btn.dataset.reactId, btn.dataset.reactType);
@@ -289,6 +313,8 @@ document.addEventListener('DOMContentLoaded', () => {
       openEdit(btn.dataset.editId);
     } else if (btn.dataset.deleteId) {
       deleteItem(btn.dataset.deleteId);
+    } else if (btn.dataset.moreId) {
+      toggleContent(btn);
     }
   });
 

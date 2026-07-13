@@ -99,6 +99,36 @@ export const RESEND_COOLDOWN = 300; // 5 minutes between resend requests
 export const RESET_TTL = 3600; // 1 hour — password-reset link lifetime
 export const RESET_COOLDOWN = 300; // 5 minutes between forgot-password emails per address
 
+/**
+ * Sends a generic email via Resend. Silently no-ops if RESEND_API_KEY is unset (dev).
+ * Throws on a Resend error so callers can log it — wrap in try/catch for
+ * fire-and-forget notification emails that must never break the request.
+ * @param {import('./kv.js').Env} env
+ * @param {{ to: string, subject: string, html: string, headers?: Record<string,string> }} msg
+ */
+export async function sendEmail(env, { to, subject, html, headers }) {
+  if (!env.RESEND_API_KEY) return; // skip in dev if key not set
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: env.RESEND_FROM || 'BWR <noreply@bwr.ciril8596.workers.dev>',
+      to,
+      subject,
+      html,
+      ...(headers ? { headers } : {}),
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    console.error(`Resend email failed for ${to}: ${res.status} ${body}`);
+    throw new Error(`Resend error ${res.status}: ${body}`);
+  }
+}
+
 /** Sends the account-activation email via Resend. Silently no-ops if RESEND_API_KEY is unset (dev). */
 export async function sendVerificationEmail(env, origin, email, name, token) {
   if (!env.RESEND_API_KEY) return; // skip in dev if key not set

@@ -100,7 +100,7 @@ async function renderDetail(id) {
     data = await api('GET', `/api/forum/topics/${encodeURIComponent(id)}`);
   } catch (err) {
     const locked = err.status === 403;
-    root().innerHTML = `<button class="detail-back" onclick="location.hash=''">← Retour</button>
+    root().innerHTML = `<button class="detail-back">← Retour</button>
       <div class="forum-empty">${locked
         ? '🔒 Ce sujet est réservé aux membres Argent et Or.<br><br><a class="lock-pill" href="plans">Voir les abonnements →</a>'
         : 'Sujet introuvable.'}</div>`;
@@ -129,7 +129,7 @@ async function renderDetail(id) {
        </div></div>`;
 
   root().innerHTML = `
-    <button class="detail-back" onclick="location.hash=''">← Tous les sujets</button>
+    <button class="detail-back">← Tous les sujets</button>
     <div class="detail-head"><h1 class="detail-title">${escHtml(topic.title)}</h1></div>
     ${op}
     <div class="replies-title">${replies.length} réponse${replies.length > 1 ? 's' : ''}</div>
@@ -319,8 +319,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('topicModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-  // Topic cards are rendered dynamically — delegate clicks from the root.
+  // Content is rendered dynamically — delegate clicks from the root.
+  // (Inline onclick handlers are blocked by the page CSP, so wire them here.)
   root().addEventListener('click', e => {
+    if (e.target.closest('.detail-back')) { location.hash = ''; return; }
     const card = e.target.closest('.topic-card[data-id]');
     if (card) location.hash = `#t/${encodeURIComponent(card.dataset.id)}`;
   });
