@@ -233,6 +233,8 @@ function openDifficultyPopup(path, latlng) {
 }
 
 // ── Report popup ──────────────────────────────────────────────────────────────
+let _reportPopup = null; // only one report popup may be open at a time
+
 function openReportPopup(path, latlng, defaultType = 'fallen_tree') {
   // `path` may be null when the user reports an exact GPS spot off any known path.
   const pid = path?.id || 'here';
@@ -241,7 +243,14 @@ function openReportPopup(path, latlng, defaultType = 'fallen_tree') {
     `<button class="rtype-inline-btn" data-type="${id}">${REPORT_ICONS[id]} ${label}</button>`
   ).join('');
 
-  L.popup({ maxWidth: 290, autoClose: false, closeOnClick: false })
+  // autoClose:false keeps the popup open while the file/camera picker steals focus,
+  // but it also means a second open would leave the first popup lingering in the DOM
+  // with duplicate element IDs. Close any previous report popup ourselves so there is
+  // never more than one, and scope every lookup below to THIS popup's own container
+  // (never document.getElementById, which resolves duplicate IDs to the wrong popup).
+  if (_reportPopup) { map.closePopup(_reportPopup); _reportPopup = null; }
+
+  const popup = L.popup({ maxWidth: 290, autoClose: false, closeOnClick: false })
     .setLatLng(latlng)
     .setContent(`
       <div class="popup">
@@ -262,16 +271,27 @@ function openReportPopup(path, latlng, defaultType = 'fallen_tree') {
     `)
     .openOn(map);
 
+  _reportPopup = popup;
+
   setTimeout(() => {
     let selectedType = defaultType;
     let photoData    = null;
+    let submitting   = false; // guards against a tap firing more than one POST
 
-    const defaultBtn = document.querySelector(`#rtypes-${pid} .rtype-inline-btn[data-type="${defaultType}"]`);
+    // Scope every lookup to THIS popup's container. document.getElementById would
+    // resolve duplicate IDs (from any lingering popup) to the wrong element and
+    // could bind the submit handler to another popup's button → duplicate reports.
+    const root = popup.getElement();
+    if (!root) return;
+    const $  = sel => root.querySelector(sel);
+    const $$ = sel => root.querySelectorAll(sel);
+
+    const defaultBtn = $(`.rtype-inline-btn[data-type="${defaultType}"]`);
     if (defaultBtn) defaultBtn.classList.add('active');
 
-    document.querySelectorAll(`#rtypes-${pid} .rtype-inline-btn`).forEach(btn => {
+    $$('.rtype-inline-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll(`#rtypes-${pid} .rtype-inline-btn`).forEach(b => b.classList.remove('active'));
+        $$('.rtype-inline-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         selectedType = btn.dataset.type;
       });
@@ -282,23 +302,27 @@ function openReportPopup(path, latlng, defaultType = 'fallen_tree') {
     // double-fires the input and makes the picker open then instantly close on
     // mobile webviews (the "photo button does nothing" bug).
 
-    document.getElementById(`rphoto-${pid}`)?.addEventListener('change', async e => {
+    $(`#rphoto-${pid}`)?.addEventListener('change', async e => {
       const file = e.target.files[0];
       if (!file) return;
       photoData = await resizeImage(file);
-      const preview = document.getElementById(`rphoto-preview-${pid}`);
+      const preview = $(`#rphoto-preview-${pid}`);
       if (preview) { preview.src = photoData; preview.classList.remove('hidden'); }
-      const label = document.getElementById(`photoLabel-${pid}`);
+      const label = $(`#photoLabel-${pid}`);
       if (label) label.textContent = '✅ Photo ajoutée';
     });
 
-    document.getElementById(`rsubmit-${pid}`)?.addEventListener('click', async () => {
-      const note = document.getElementById(`rnote-${pid}`)?.value.trim() || '';
-      map.closePopup();
+    $(`#rsubmit-${pid}`)?.addEventListener('click', async ev => {
+      if (submitting) return;
+      submitting = true;
+      ev.currentTarget.disabled = true;
+      const note = $(`#rnote-${pid}`)?.value.trim() || '';
+      _reportPopup = null;
+      map.closePopup(popup);
       await submitReport(path, selectedType, note, photoData, latlng);
     });
 
-    document.getElementById(`rcancel-${pid}`)?.addEventListener('click', () => map.closePopup());
+    $(`#rcancel-${pid}`)?.addEventListener('click', () => { _reportPopup = null; map.closePopup(popup); });
   }, 50);
 }
 

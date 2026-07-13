@@ -225,7 +225,10 @@ function openPathPopup(path, latlng) {
       }).join('')}</div>` : '';
 
   const canEdit = BWR.can('path_difficulty_edit', _userPlan);
-  const deleteHTML = canEdit
+  // Deletion is admin-only server-side (DELETE /api/paths/:id). Only show the
+  // button to admins so non-admins don't get a button that always 403s.
+  const isAdmin = _cachedUser?.role === 'admin';
+  const deleteHTML = isAdmin
     ? `<button class="popup-delete-path-btn" id="deletePath-${path.id}">🗑 Supprimer ce chemin</button>`
     : '';
 
@@ -348,7 +351,7 @@ function openPathPopup(path, latlng) {
     document.getElementById(`openMuddy-${path.id}`)?.addEventListener('click', () => guardReport('muddy'));
     document.getElementById(`openRutted-${path.id}`)?.addEventListener('click', () => guardReport('rutted'));
     document.getElementById(`openBrokenSign-${path.id}`)?.addEventListener('click', () => guardReport('broken_sign'));
-    document.getElementById(`openReport-${path.id}`)?.addEventListener('click', () => guardReport('fallen_tree'));
+    document.getElementById(`openReport-${path.id}`)?.addEventListener('click', () => guardReport('other'));
 
     document.getElementById(`deletePath-${path.id}`)?.addEventListener('click', async () => {
       if (!confirm(`Supprimer "${path.name || 'ce chemin'}" ?`)) return;

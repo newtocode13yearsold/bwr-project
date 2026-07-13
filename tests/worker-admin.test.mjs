@@ -259,9 +259,18 @@ describe('DELETE /api/paths/:id', () => {
     assert.equal(res.status, 403);
   });
 
-  test('silver user deletes path → 200, KV entry removed', async () => {
+  test('silver (non-admin) user cannot delete path → 403, KV entry kept', async () => {
     const { env, kv, seedSilver, seedPath } = freshEnv();
     const { token } = seedSilver();
+    seedPath({ id: 'p1', name: 'X', status: 'easy' });
+    const res = await worker.fetch(authed('DELETE', '/api/paths/p1', token), env);
+    assert.equal(res.status, 403);
+    assert.equal(kv.store.has('path:p1'), true);
+  });
+
+  test('admin deletes path → 200, KV entry removed', async () => {
+    const { env, kv, seedAdmin, seedPath } = freshEnv();
+    const { token } = seedAdmin();
     seedPath({ id: 'p1', name: 'X', status: 'easy' });
     const res = await worker.fetch(authed('DELETE', '/api/paths/p1', token), env);
     assert.equal(res.status, 200);

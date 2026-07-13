@@ -164,9 +164,7 @@ export async function handlePaths(request, env, { pathname, json, fail }) {
 
   if (pathname.startsWith('/api/paths/') && request.method === 'DELETE') {
     const user = await getUserFromToken(env, request);
-    if (!user) return fail('Connexion requise.', 401);
-    const plan = effectivePlan(user);
-    if (plan !== 'gold' && plan !== 'silver') return fail('Abonnement Argent requis.', 403);
+    if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
 
     const id = pathname.split('/')[3];
     await env.BWR_KV.delete(`path:${id}`);

@@ -179,8 +179,16 @@ describe('DELETE /api/paths/:id', () => {
     assert.equal(res.status, 403);
   });
 
-  test('removes path from KV for silver+ user', async () => {
+  test('rejects non-admin silver+ users', async () => {
     const { env, token, kv } = freshEnv('user', 'silver');
+    kv.store.set('path:p-del', JSON.stringify({ id: 'p-del', coordinates: sampleCoords }));
+    const res = await worker.fetch(authed('DELETE', '/api/paths/p-del', token), env);
+    assert.equal(res.status, 403);
+    assert.ok(kv.store.has('path:p-del'));
+  });
+
+  test('removes path from KV for admin', async () => {
+    const { env, token, kv } = freshEnv('admin', 'gold');
     kv.store.set('path:p-del', JSON.stringify({ id: 'p-del', coordinates: sampleCoords }));
     const res = await worker.fetch(authed('DELETE', '/api/paths/p-del', token), env);
     assert.equal(res.status, 200);

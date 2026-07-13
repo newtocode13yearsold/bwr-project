@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BWR — Promo Reel · Alertes obstacle (un arbre sur TON parcours ? tu le sais avant)</title>
+<meta name="robots" content="noindex" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&family=Fraunces:opsz,wght@9..144,700;9..144,900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest-900:#0b2410; --forest-700:#12351a; --forest-500:#2f6b25;
+    --lime:#a3e635; --lime-400:#bef264; --cream:#f4f7ee; --ink:#05140a;
+    --tree:#f97316; --barr:#ef4444; --sky:#38bdf8;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#05140a;overflow:hidden;font-family:Inter,sans-serif}
+  #page{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px}
+  #stage{
+    position:relative;width:calc(100vh * 9 / 16);max-width:96vw;aspect-ratio:9/16;
+    background:radial-gradient(120% 90% at 50% 18%, #14401e 0%, #0b2410 46%, #05140a 100%);
+    border-radius:22px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(163,230,53,.14);
+  }
+  #aura{position:absolute;inset:-20% -10%;z-index:1;pointer-events:none;opacity:.55;
+    background:radial-gradient(40% 30% at 30% 30%, rgba(163,230,53,.22), transparent 70%),
+               radial-gradient(45% 35% at 72% 66%, rgba(47,107,37,.35), transparent 72%);
+    animation:drift 12s ease-in-out infinite alternate}
+  @keyframes drift{to{transform:translate3d(0,-3%,0) scale(1.06)}}
+
+  #cap{position:absolute;left:0;right:0;top:9.5%;z-index:40;text-align:center;padding:0 7%;
+       font:800 clamp(16px,4vh,34px)/1.18 Inter;color:var(--cream);
+       text-shadow:0 2px 18px rgba(0,0,0,.85);opacity:0;transform:translateY(-12px);
+       transition:opacity .5s ease, transform .55s cubic-bezier(.2,.9,.2,1)}
+  #cap.in{opacity:1;transform:none}
+  #cap .hl{color:var(--lime)} #cap .tree{color:var(--tree)}
+
+  #content{position:absolute;inset:0;z-index:20;transition:transform .3s ease}
+  body.feed #content{transform:scale(.8)}
+
+  #phone{position:absolute;left:50%;top:46%;z-index:20;
+    width:48%;aspect-ratio:9/18;transform:translate(-50%,-42%) scale(.9);
+    background:#04110a;border-radius:34px;padding:9px;
+    box-shadow:0 26px 60px rgba(0,0,0,.6), 0 0 0 2px rgba(163,230,53,.22), inset 0 0 0 2px #0a1f11;
+    opacity:0;transition:opacity .7s ease, transform .8s cubic-bezier(.2,.9,.2,1)}
+  #phone.in{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  #phone.buzz{animation:buzz .5s ease}
+  @keyframes buzz{0%,100%{transform:translate(-50%,-50%) scale(1)}
+    20%{transform:translate(-51.5%,-50%) scale(1)}40%{transform:translate(-48.5%,-50%) scale(1)}
+    60%{transform:translate(-51%,-50%) scale(1)}80%{transform:translate(-49%,-50%) scale(1)}}
+  #screen{position:relative;width:100%;height:100%;border-radius:26px;overflow:hidden;background:#0e2a16}
+  #notch{position:absolute;top:6px;left:50%;transform:translateX(-50%);width:32%;height:14px;
+    background:#04110a;border-radius:0 0 12px 12px;z-index:8}
+
+  /* REAL screenshot: a saved route (graph-router loop) drawn on the real IGN
+     ortho of the Compiègne forest — lime line, green start dot, red end pin.
+     Captured by scripts/promo/capture-map.mjs. */
+  .mapimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+
+  /* saved-route header chip */
+  #route{position:absolute;top:22px;left:10px;right:10px;z-index:6;
+    display:flex;align-items:center;gap:7px;padding:8px 11px;border-radius:12px;
+    background:rgba(6,20,11,.84);border:1px solid rgba(163,230,53,.28);backdrop-filter:blur(4px);
+    color:var(--cream);font:800 clamp(8px,1.6vh,13px)/1.05 Inter;
+    opacity:0;transform:translateY(-8px);transition:opacity .5s ease, transform .5s ease}
+  #route.in{opacity:1;transform:none}
+  #route .star{color:var(--lime);font-size:1.05em}
+  #route small{display:block;color:#9dbb86;font-weight:700;font-size:.82em;margin-top:2px}
+  #route .km{margin-left:auto;color:var(--ink);background:linear-gradient(120deg,var(--lime),var(--lime-400));
+    padding:4px 9px;border-radius:999px;font:900 clamp(7px,1.4vh,11px)/1 Inter;white-space:nowrap}
+
+  /* obstacle pin that drops ON the route line */
+  #obst{position:absolute;left:33.5%;top:46%;z-index:5;width:46px;height:46px;
+    transform:translate(-50%,-100%);opacity:0}
+  #obst.in{opacity:1;animation:drop .6s cubic-bezier(.2,1.5,.35,1) both}
+  @keyframes drop{0%{opacity:0;transform:translate(-50%,-100%) translateY(-22px) scale(.4)}
+    60%{opacity:1}100%{opacity:1;transform:translate(-50%,-100%) translateY(0) scale(1)}}
+  #obst svg{display:block;width:100%;height:100%;filter:drop-shadow(0 4px 7px rgba(0,0,0,.55))}
+  #obst .halo{position:absolute;left:50%;bottom:7px;width:28px;height:28px;border-radius:50%;
+    transform:translate(-50%,50%);background:var(--tree);opacity:.5}
+  #obst.in .halo{animation:pulse 1.5s ease-out infinite}
+  @keyframes pulse{0%{transform:translate(-50%,50%) scale(.6);opacity:.55}100%{transform:translate(-50%,50%) scale(2.5);opacity:0}}
+
+  /* push notification banner (iOS-style) sliding from the top of the screen */
+  #push{position:absolute;top:10px;left:8px;right:8px;z-index:9;
+    display:flex;align-items:flex-start;gap:9px;padding:11px 12px;border-radius:16px;
+    background:rgba(244,247,238,.97);box-shadow:0 12px 30px rgba(0,0,0,.45);
+    opacity:0;transform:translateY(-130%);transition:opacity .45s ease, transform .55s cubic-bezier(.2,1.1,.3,1)}
+  #push.in{opacity:1;transform:none}
+  #push .app{flex:none;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#12351a,#2f6b25);box-shadow:inset 0 0 0 1px rgba(163,230,53,.4)}
+  #push .app b{font:900 clamp(11px,2vh,16px)/1 Fraunces;color:#fff}
+  #push .app b i{color:var(--lime);font-style:normal}
+  #push .body{min-width:0}
+  #push .row1{display:flex;align-items:center;gap:6px;color:#3d5233;font:800 clamp(7px,1.3vh,11px)/1 Inter;letter-spacing:.02em}
+  #push .row1 .bell{color:var(--tree)}
+  #push .row1 .when{margin-left:auto;color:#8a9c7e;font-weight:700}
+  #push .title{color:#0b2410;font:900 clamp(10px,1.9vh,15px)/1.15 Inter;margin-top:3px}
+  #push .sub{color:#42563a;font:700 clamp(8px,1.55vh,12px)/1.25 Inter;margin-top:2px}
+  #push .sub b{color:#1c4d17}
+
+  #cta{position:absolute;inset:0;z-index:80;display:flex;flex-direction:column;
+       align-items:center;justify-content:center;text-align:center;padding:0 8%;
+       background:radial-gradient(120% 90% at 50% 40%, rgba(20,64,30,.6), rgba(5,20,10,.96));
+       opacity:0;transition:opacity .7s ease}
+  #cta.in{opacity:1}
+  .logo{font:900 clamp(52px,15vh,150px)/1 Fraunces;color:#fff;letter-spacing:.02em;text-shadow:0 6px 40px rgba(0,0,0,.8)}
+  .logo b{color:var(--lime)}
+  .tagline{font:700 clamp(15px,3.4vh,30px)/1.3 Inter;color:var(--cream);margin-top:2vh;max-width:22ch;text-shadow:0 2px 16px rgba(0,0,0,.85)}
+  .cta-btn{margin-top:3.2vh;font:900 clamp(15px,3.4vh,28px)/1 Inter;color:var(--ink);
+           background:linear-gradient(120deg,var(--lime),var(--lime-400));border-radius:999px;padding:15px 30px;
+           text-decoration:none;display:inline-block;pointer-events:auto;box-shadow:0 14px 40px rgba(163,230,53,.4)}
+  .url{margin-top:2.2vh;font:800 clamp(13px,2.8vh,24px)/1 Inter;color:var(--lime-400);letter-spacing:.05em}
+
+  #prog{position:absolute;top:0;left:0;height:4px;width:0;z-index:90;
+        background:linear-gradient(90deg,var(--forest-500),var(--lime));box-shadow:0 0 10px var(--lime)}
+
+  body.bare #page{padding:0;gap:0;height:100vh}
+  body.bare #stage{width:100vw;height:100vh;max-width:none;aspect-ratio:auto;border-radius:0;box-shadow:none}
+  body.bare #controls,body.bare #gate{display:none!important}
+
+  #gate{position:absolute;inset:0;z-index:700;background:rgba(4,12,7,.94);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:0 10%}
+  #gate .logo{font-size:clamp(48px,13vh,120px)}
+  #gate p{color:#cfe8c2;font:600 clamp(13px,2.6vh,20px)/1.45 Inter;max-width:32ch}
+  #gate button{cursor:pointer;border:none}
+  .play{font:900 clamp(17px,4vh,30px)/1 Inter;color:var(--ink);background:linear-gradient(120deg,var(--lime),var(--lime-400));
+        border-radius:999px;padding:17px 34px;box-shadow:0 14px 40px rgba(163,230,53,.45)}
+
+  #controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;color:#9dbb86;font:600 13px/1.4 Inter;max-width:96vw}
+  #controls button,#controls label,#controls a{cursor:pointer;border:1px solid rgba(163,230,53,.3);
+    background:rgba(163,230,53,.08);color:#d8efc7;border-radius:10px;padding:9px 14px;font:700 13px Inter;text-decoration:none}
+  #controls button:hover,#controls label:hover{background:rgba(163,230,53,.18)}
+  #controls .hint{border:none;background:none;color:#7f9a6c;max-width:64ch;text-align:center}
+  input[type=file]{display:none}
+</style>
+</head>
+<body>
+<div id="page">
+  <div id="stage">
+    <div id="aura"></div>
+    <div id="prog"></div>
+
+    <div id="content">
+    <div id="cap"></div>
+
+    <div id="phone">
+      <div id="screen">
+        <div id="notch"></div>
+        <img class="mapimg" src="img/route-ab.png" alt="">
+
+        <div id="route">
+          <span class="star">★</span>
+          <span>Boucle des Beaux Monts<small>ton parcours enregistré</small></span>
+          <span class="km">8,2 km</span>
+        </div>
+
+        <!-- fallen-tree obstacle, dropped ON the route line -->
+        <div id="obst"><span class="halo"></span>
+          <svg viewBox="0 0 46 46"><path d="M23 3 C33 3 39 10 39 19 C39 30 23 43 23 43 C23 43 7 30 7 19 C7 10 13 3 23 3 Z" fill="var(--tree)" stroke="#fff" stroke-width="2.6"/>
+            <path d="M23 11 L30 25 L16 25 Z" fill="#04110a"/><rect x="21.6" y="16" width="2.8" height="5.5" rx="1.4" fill="var(--tree)"/><circle cx="23" cy="23.2" r="1.5" fill="var(--tree)"/></svg></div>
+
+        <!-- the push notification -->
+        <div id="push">
+          <div class="app"><b>B<i>W</i>R</b></div>
+          <div class="body">
+            <div class="row1"><span class="bell">🔔</span><span>BWR</span><span class="when">maintenant</span></div>
+            <div class="title">Arbre tombé sur ton parcours</div>
+            <div class="sub">« Boucle des Beaux Monts » · signalé il y a 6 min</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div><!-- /#content -->
+
+    <div id="cta">
+      <div class="logo">B<b>W</b>R</div>
+      <div class="tagline">Tes parcours veillent sur toi — même la nuit.</div>
+      <a class="cta-btn" href="https://bwrmaps.com" target="_blank" rel="noopener">Enregistre ton parcours →</a>
+      <div class="url">bwrmaps.com · gratuit</div>
+    </div>
+
+    <div id="gate">
+      <div class="logo">B<b>W</b>R</div>
+      <button class="play" id="playBtn">▶ Lancer le reel</button>
+      <p>Musique incluse 🎵 — monte le volume. Plein écran conseillé pour enregistrer.</p>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button id="rec">⏺ Enregistrer la vidéo</button>
+    <button id="replay">↻ Rejouer</button>
+    <button id="fs">⛶ Plein écran</button>
+    <label for="audio">🎵 Remplacer par ma musique</label>
+    <input type="file" id="audio" accept="audio/*" />
+    <div class="hint">Reel « alertes obstacle » (vraie carte) : tu enregistres ton parcours, quelqu'un signale un arbre tombé <b>pile dessus</b>, et BWR te <b>notifie avant que tu partes</b>. Vrai fond IGN de Compiègne + vraie boucle du graph-router. Marimba douce. Format 9:16, ~20&nbsp;s.</div>
+  </div>
+</div>
+
+<script>
+const $ = s=>document.querySelector(s);
+const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+let abort=false;
+
+if(location.search.includes('bare')) document.body.classList.add('bare');
+if(location.search.includes('feed')) document.body.classList.add('feed');
+
+function cap(html){ const el=$('#cap'); el.classList.remove('in'); void el.offsetWidth;
+  el.innerHTML=html||''; if(html) el.classList.add('in'); }
+
+function runProgress(total){ const el=$('#prog'); const start=Date.now();
+  const id=setInterval(()=>{ if(abort){ clearInterval(id); return; }
+    const p=Math.min(1,(Date.now()-start)/total); el.style.width=(p*100)+'%';
+    if(p>=1) clearInterval(id); }, 33); }
+
+/* ── warm marimba bed (WebAudio) — the "alerte" family track: a bright,
+   reassuring G – D – Em – C so it feels watchful but calm, not anxious. */
+let audioCtx=null, musicStop=null, musicMaster=null, userAudioEl=null;
+function buildMusicGraph(ac, t0, dur){
+  const master=ac.createGain();
+  master.gain.setValueAtTime(0,t0); master.gain.linearRampToValueAtTime(0.5,t0+1.6);
+
+  const delay=ac.createDelay(1.0); delay.delayTime.value=0.24;
+  const fb=ac.createGain(); fb.gain.value=0.24; const wet=ac.createGain(); wet.gain.value=0.19;
+  delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(master);
+
+  const nbuf=ac.createBuffer(1, Math.ceil(ac.sampleRate*0.2), ac.sampleRate);
+  const nd=nbuf.getChannelData(0); for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1;
+
+  const bpm=96, beat=60/bpm, bars=Math.ceil(dur/(4*beat))+1;
+  const G3=196.00,B3=246.94,D4=293.66,Fs4=369.99,A4=440.00,E4=329.63,G4=392.00,B4=493.88,
+        C4=261.63,C5=523.25,D5=587.33,E5=659.25,Fs5=739.99;
+  const chords=[ [G3,B3,D4], [D4,Fs4,A4], [E4,G4,B4], [C4,E4,G4] ]; // G D Em C
+  const tops  =[ D5,          Fs5,         B4,          E5        ];
+
+  function marimba(f,s,d,gain){ [0,0.4].forEach((det,k)=>{ const o=ac.createOscillator(); o.type='sine';
+    o.frequency.value=f*(k?1.005:1)+det; const g=ac.createGain();
+    g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(gain*(k?0.5:1),s+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+d);
+    o.connect(g); g.connect(master); if(!k) g.connect(delay); o.start(s); o.stop(s+d+0.05); }); }
+  function pad(freqs,s,d){ freqs.forEach(f=>{ const o=ac.createOscillator(); o.type='sine'; o.frequency.value=f/2;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(0.032,s+0.6);
+    g.gain.setValueAtTime(0.032,Math.max(s+0.6,s+d-0.6)); g.gain.linearRampToValueAtTime(0,s+d);
+    o.connect(g); g.connect(master); o.start(s); o.stop(s+d+0.06); }); }
+  function kick(s){ const o=ac.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(125,s); o.frequency.exponentialRampToValueAtTime(45,s+0.12);
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(0.13,s+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+0.2); o.connect(g); g.connect(master); o.start(s); o.stop(s+0.26); }
+  function hat(s,gain){ const src=ac.createBufferSource(); src.buffer=nbuf;
+    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=6800;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(gain,s+0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+0.06); src.connect(hp); hp.connect(g); g.connect(master);
+    src.start(s); src.stop(s+0.09); }
+
+  for(let bar=0;bar<bars;bar++){ const bs=t0+bar*4*beat; const ch=chords[bar%4];
+    pad(ch, bs, 4*beat);
+    const arp=[ ch[0], ch[2], ch[1], ch[2]*2, ch[0]*2, ch[2], ch[1], ch[2]*2 ];
+    for(let i=0;i<8;i++) marimba(arp[i], bs+i*0.5*beat, 0.7*beat, 0.075);
+    if(bar>0){ for(let q=0;q<4;q++){ kick(bs+q*beat); hat(bs+q*beat+0.5*beat, q%2?0.05:0.03); } }
+    if(bar>1) marimba(tops[bar%4], bs, 1.6*beat, 0.05);
+  }
+  master.gain.setValueAtTime(0.5, t0+dur-2); master.gain.linearRampToValueAtTime(0, t0+dur);
+  return master;
+}
+function startMusic(){ stopMusic();
+  if(userAudioEl){ userAudioEl.currentTime=0; userAudioEl.play().catch(()=>{}); return; }
+  const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+  const ac=new AC(); audioCtx=ac; musicMaster=buildMusicGraph(ac, ac.currentTime+0.1, 42);
+  musicMaster.connect(ac.destination); musicStop=()=>{ try{ac.close();}catch(e){} audioCtx=null; musicMaster=null; }; }
+window.renderMusicWav = async function(seconds){ seconds=seconds||42;
+  const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext; if(!OAC) return null;
+  const sr=44100; const oac=new OAC(2, Math.ceil(sr*seconds), sr);
+  const master=buildMusicGraph(oac,0,seconds); master.connect(oac.destination);
+  const buf=await oac.startRendering(); return bufferToWavBase64(buf); };
+function bufferToWavBase64(buf){ const numCh=buf.numberOfChannels, len=buf.length, sr=buf.sampleRate;
+  const blockAlign=numCh*2, dataLen=len*blockAlign; const ab=new ArrayBuffer(44+dataLen); const dv=new DataView(ab);
+  const wr=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
+  wr(0,'RIFF'); dv.setUint32(4,36+dataLen,true); wr(8,'WAVE'); wr(12,'fmt ');
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,numCh,true);
+  dv.setUint32(24,sr,true); dv.setUint32(28,sr*blockAlign,true); dv.setUint16(32,blockAlign,true);
+  dv.setUint16(34,16,true); wr(36,'data'); dv.setUint32(40,dataLen,true);
+  const chans=[]; for(let c=0;c<numCh;c++) chans.push(buf.getChannelData(c));
+  let off=44; for(let i=0;i<len;i++){ for(let c=0;c<numCh;c++){ let s=Math.max(-1,Math.min(1,chans[c][i]));
+    dv.setInt16(off, s<0? s*0x8000 : s*0x7FFF, true); off+=2; } }
+  let bin=''; const bytes=new Uint8Array(ab); const CH=0x8000;
+  for(let i=0;i<bytes.length;i+=CH) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+CH));
+  return btoa(bin); }
+function fadeMusic(sec=1.4){ if(userAudioEl){ const a=userAudioEl; const step=a.volume/(sec*20||1);
+    const id=setInterval(()=>{ a.volume=Math.max(0,a.volume-step); if(a.volume<=0.001){clearInterval(id);a.pause();a.volume=1;} },50); return; }
+  if(musicMaster&&audioCtx){ try{ const now=audioCtx.currentTime;
+    musicMaster.gain.cancelScheduledValues(now); musicMaster.gain.setValueAtTime(musicMaster.gain.value,now);
+    musicMaster.gain.linearRampToValueAtTime(0, now+sec);}catch(e){} } }
+function stopMusic(){ if(userAudioEl){ try{userAudioEl.pause();}catch(e){} } if(musicStop){musicStop();musicStop=null;} }
+
+// ── timeline (~20 s). Keep TOTAL in sync with the scene sleeps below. ──
+const TOTAL = 20000;
+function resetUI(){
+  ['route','obst','push','phone','cap','cta'].forEach(id=>$('#'+id).classList.remove('in'));
+  $('#phone').classList.remove('buzz');
+}
+async function play(){
+  abort=false; resetUI(); $('#prog').style.width='0'; runProgress(TOTAL);
+
+  // 1 — hook: your saved route rises on the real map
+  cap("Ton parcours du dimanche.<br>Enregistré. <span class='hl'>★</span>");
+  await sleep(700); if(abort)return;
+  $('#phone').classList.add('in');
+  $('#route').classList.add('in');
+  await sleep(2400); if(abort)return;
+
+  // 2 — the twist: a tree falls right on it
+  cap("Cette nuit, un <span class='tree'>arbre</span> est tombé…<br><span class='tree'>pile sur ton chemin.</span>");
+  await sleep(600);
+  $('#obst').classList.add('in'); await sleep(2400); if(abort)return;
+
+  // 3 — the magic: BWR pushes you the alert (phone buzzes, banner drops)
+  cap("Sauf que BWR te <span class='hl'>prévient.</span>");
+  await sleep(500);
+  $('#phone').classList.add('buzz');
+  $('#push').classList.add('in');
+  await sleep(400); $('#phone').classList.remove('buzz');
+  await sleep(2600); if(abort)return;
+
+  // 4 — payoff line (the humour)
+  cap("Tu l'aurais découvert à 4 km.<br>Là, tu le sais du <span class='hl'>canapé.</span>");
+  $('#push').classList.remove('in');
+  await sleep(3100); if(abort)return;
+
+  // 5 — reassurance
+  cap("Un chemin bloqué&nbsp;?<br>Tu changes <span class='hl'>avant</span> de partir.");
+  await sleep(2500); if(abort)return;
+
+  // 6 — CTA
+  cap('');
+  $('#obst').classList.remove('in'); $('#route').classList.remove('in');
+  $('#cta').classList.add('in');
+  await sleep(4400); if(abort)return;
+  fadeMusic(1.6);
+}
+function stopAll(){ abort=true; stopMusic(); }
+
+// ── controls ──
+$('#playBtn').addEventListener('click',()=>{ $('#gate').style.display='none'; startMusic(); play(); });
+$('#replay').addEventListener('click',async()=>{ stopAll(); await sleep(80); abort=false; startMusic(); play(); });
+$('#fs').addEventListener('click',()=>{ const s=$('#stage'); if(!document.fullscreenElement) s.requestFullscreen?.(); else document.exitFullscreen?.(); });
+$('#audio').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return;
+  if(userAudioEl) userAudioEl.pause(); userAudioEl=new Audio(URL.createObjectURL(f)); userAudioEl.loop=false; });
+$('#rec').addEventListener('click',async()=>{
+  if(!navigator.mediaDevices?.getDisplayMedia){ alert('Ton navigateur ne supporte pas l’enregistrement.'); return; }
+  let stream; try{ stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:true,preferCurrentTab:true}); }catch(e){ return; }
+  const mime = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4'
+            : MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+  const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:9000000});
+  const chunks=[]; rec.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+  rec.onstop=()=>{ const blob=new Blob(chunks,{type:mime}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='bwr-reel-alerte'+(mime.includes('mp4')?'.mp4':'.webm');
+    document.body.appendChild(a); a.click(); a.remove(); stream.getTracks().forEach(t=>t.stop());
+    $('#rec').textContent='⏺ Enregistrer la vidéo'; };
+  $('#rec').textContent='● Enregistrement…'; $('#gate').style.display='none';
+  stopAll(); await sleep(100); abort=false;
+  rec.start(); startMusic(); play();
+  setTimeout(()=>{ try{ rec.stop(); }catch(e){} }, TOTAL+4000);
+});
+</script>
+<script src="../js/track.js"></script>
+</body>
+</html>
