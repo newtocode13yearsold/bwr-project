@@ -18,11 +18,17 @@
   <link rel="stylesheet" href="css/login.css" />
   <script src="js/theme.js"></script>
   <style>
-    /* The shared admin layout locks the page to the viewport for the full-screen
-       map. The dashboard is a normal scrolling document, so undo that here. */
-    body { height: auto; min-height: 100dvh; overflow-y: auto; overflow-x: hidden; }
-    #adminPanel { overflow: visible; min-height: 0; }
-    #adminPanel .header { position: sticky; top: 0; z-index: 500; }
+    /* The shared admin shell (body + #adminPanel) stays locked to the viewport —
+       that's what the full-screen map needs. Instead of fighting it, the dashboard
+       is the scroll region: it fills the space under the header and scrolls its own
+       content, the same way #map fills the rest of the map page. */
+    #adminDashboard {
+      flex: 1 1 auto;
+      min-height: 0;          /* let the flex child shrink so overflow can scroll */
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
 
     /* ── Admin dashboard landing ──────────────────────────────────────────── */
     .admin-dashboard {
