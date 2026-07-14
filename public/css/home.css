@@ -1674,6 +1674,7 @@ textarea.cf-input { resize: vertical; min-height: 100px; }
   border-left: 3px solid transparent;
   transition: background 0.12s, color 0.12s;
 }
+.nav-drawer-item.hidden { display: none; }
 .nav-drawer-item:hover { background: #f0f4ec; color: var(--forest-700); }
 .nav-drawer-item.active {
   color: var(--forest-700);

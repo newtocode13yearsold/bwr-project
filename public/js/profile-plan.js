@@ -180,6 +180,26 @@ function renderPlanAndProgress(user) {
     </div>`;
   }).join('');
 
+  // Title carries the earned count; a long list collapses behind a toggle so it
+  // no longer scrolls forever.
+  const badgesTitle = document.getElementById('badgesTitle');
+  if (badgesTitle) badgesTitle.innerHTML = `🏅 Mes badges <span class="badges-count">${nowEarned.size} / ${BADGES.length}</span>`;
+
+  const badgesToggle = document.getElementById('badgesToggle');
+  if (badgesToggle) {
+    const COLLAPSE_AT = 12;
+    if (BADGES.length > COLLAPSE_AT) {
+      grid.classList.add('clamped');
+      badgesToggle.style.display = '';
+      const setLabel = () => { badgesToggle.textContent = grid.classList.contains('clamped') ? `Voir les ${BADGES.length} badges ▾` : 'Réduire ▴'; };
+      setLabel();
+      badgesToggle.onclick = () => { grid.classList.toggle('clamped'); setLabel(); };
+    } else {
+      badgesToggle.style.display = 'none';
+      grid.classList.remove('clamped');
+    }
+  }
+
   // Next-badge progress teaser (closest accessible, not-yet-earned badge)
   renderNextBadge(stats, plan);
 
@@ -334,39 +354,28 @@ function renderRewardLadder(level, prog) {
     }
   }
 
-  // Progression track: a bar with a milestone dot per palier, filled up to the
-  // current level (+ the fraction of XP earned inside it).
+  // Unified horizontal timeline — one scrollable strip that replaces the old
+  // (redundant) dot-rail + full card grid. Each palier is a compact node
+  // connected by a rail that fills up to the current level; the segment leading
+  // into the next palier fills by the fraction of XP already earned in it.
   const track = document.getElementById('rewardsTrack');
-  if (track) {
-    const rewards = BWR.LEVEL_REWARDS;
-    const maxLv = rewards[rewards.length - 1].level;
-    // Continuous position from level 1 → maxLv, including partial in-level XP.
-    const pos = Math.min(1, Math.max(0, ((level - 1) + prog.pct / 100) / (maxLv - 1)));
-    const dots = rewards.map(r => {
-      const done = r.level <= level;
-      const isNext = r.level === level + 1;
-      const at = ((r.level - 1) / (maxLv - 1)) * 100;
-      return `<div class="rt-dot ${done ? 'done' : ''}${isNext ? ' is-next' : ''}" style="left:${at}%" title="Niv. ${r.level} — ${r.label}">
-        <span class="rt-ic">${done ? r.icon : '🔒'}</span>
-      </div>`;
-    }).join('');
-    track.innerHTML =
-      `<div class="rt-rail"><div class="rt-fill" style="width:${pos * 100}%"></div>${dots}</div>`;
-  }
+  if (track) track.innerHTML = ''; // legacy container — timeline below carries progress now
 
-  // Full ladder grid
   const ladder = document.getElementById('rewardsLadder');
   if (!ladder) return;
-  ladder.innerHTML = BWR.LEVEL_REWARDS.map(r => {
-    const unlocked = r.level <= level;
-    const isNext   = r.level === level + 1;
-    return `<div class="reward-item ${unlocked ? 'unlocked' : 'locked'}${isNext ? ' is-next' : ''}${r.frame ? ' reward-frame-' + r.frame : ''}">
-      <span class="reward-lv">Niv. ${r.level}</span>
-      <span class="reward-icon">${unlocked ? r.icon : '🔒'}</span>
-      <span class="reward-label">${r.label}</span>
-      <span class="reward-desc">${r.desc}</span>
+  const nodes = BWR.LEVEL_REWARDS.map(r => {
+    const done   = r.level <= level;
+    const isNext = r.level === level + 1;
+    const state  = done ? 'done' : (isNext ? 'is-next' : 'locked');
+    const frame  = done && r.frame ? ` rl-frame-${r.frame}` : '';
+    const fill   = isNext ? ` style="--rl-fill:${Math.round(prog.pct)}%"` : '';
+    return `<div class="rl-node ${state}${frame}"${fill} title="Niv. ${r.level} — ${r.label} · ${r.desc}">
+      <span class="rl-dot">${done ? r.icon : '🔒'}</span>
+      <span class="rl-lv">Niv. ${r.level}</span>
+      <span class="rl-name">${r.label}</span>
     </div>`;
   }).join('');
+  ladder.innerHTML = `<div class="rl-timeline">${nodes}</div>`;
 }
 
 // ── Goals ─────────────────────────────────────────────────────────────────────

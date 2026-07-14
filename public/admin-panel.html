@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1e4d14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <title>BWR — Panneau Admin | Oise</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/login.css" />
+  <script src="js/theme.js"></script>
+  <style>
+    /* ── Admin dashboard landing ──────────────────────────────────────────── */
+    .admin-dashboard {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 20px 16px 72px;
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      align-items: start;
+    }
+    .admin-dash-head {
+      grid-column: 1 / -1;
+      margin: 8px 2px 0;
+    }
+    .admin-dash-head h1 {
+      font-family: 'Fraunces', serif;
+      font-size: 1.7rem;
+      margin: 0 0 4px;
+      color: var(--text-strong);
+    }
+    .admin-dash-head p { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
+    .admin-card {
+      background: var(--surface-0);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      min-width: 0;
+    }
+    .admin-card.span-2 { grid-column: 1 / -1; }
+    .admin-card > h2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 14px;
+      font-size: 1.05rem;
+      color: var(--text-strong);
+    }
+    .admin-card.danger { border-color: rgba(220,38,38,0.35); }
+    .admin-card.danger h2 { color: #dc2626; }
+  </style>
+</head>
+<body>
+
+  <div id="adminPanel">
+
+    <header class="header">
+      <div class="header-left">
+        <a href="/" class="logo" style="text-decoration:none">BWR</a>
+        <span class="admin-tag">Admin</span>
+        <nav class="header-nav-links">
+          <a href="admin">Carte admin</a>
+          <a href="news">Actualités</a>
+          <a href="plans">Plans</a>
+        </nav>
+      </div>
+      <div class="header-right">
+        <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
+        <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
+        <a class="btn-icon" href="admin" title="Carte admin — chemins et couleurs"><span class="btn-emoji">🗺</span><span class="btn-label">Carte</span></a>
+        <div class="user-menu" id="userMenu"></div>
+      </div>
+    </header>
+
+    <!-- Nav drawer -->
+    <div class="nav-drawer-overlay hidden" id="navDrawerOverlay"></div>
+    <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
+      <div class="nav-drawer-header">
+        <span class="nav-drawer-logo">BWR</span>
+        <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+      </div>
+      <nav class="nav-drawer-links">
+        <a href="map" class="nav-drawer-item">
+          <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
+          <span>Carte</span>
+        </a>
+        <a href="routes" class="nav-drawer-item">
+          <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
+          <span>Planifier un trajet</span>
+        </a>
+        <a href="profile" class="nav-drawer-item">
+          <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+          <span>Mon profil</span>
+        </a>
+        <a href="leaderboard" class="nav-drawer-item">
+          <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>
+          <span>Classement</span>
+        </a>
+        <a href="forum" class="nav-drawer-item">
+          <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+          <span>Forum</span>
+        </a>
+        <a href="admin" class="nav-drawer-item">
+          <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
+          <span>Carte admin</span>
+        </a>
+        <a href="admin-panel" class="nav-drawer-item active">
+          <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+          <span>Panneau admin</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- ── Dashboard ─────────────────────────────────────────────────────── -->
+    <div id="adminDashboard" class="admin-dashboard">
+
+      <div class="admin-dash-head">
+        <h1>Panneau admin</h1>
+        <p>Messages, membres, revenus et défis. Pour dessiner et colorer les chemins, ouvre la <a href="admin">carte admin</a>.</p>
+      </div>
+
+      <!-- Messages -->
+      <section class="admin-card">
+        <h2>📬 Messages de contact</h2>
+        <div id="messagesList" style="display:flex;flex-direction:column;gap:10px"></div>
+      </section>
+
+      <!-- Défis mensuels -->
+      <section class="admin-card">
+        <h2>🗓 Défi du mois <span style="font-size:0.8rem;font-weight:400;color:var(--text-muted)" id="chlMonthLabel"></span></h2>
+
+        <!-- Current challenge preview -->
+        <div id="chlPreview" style="display:none;margin:0 0 14px;padding:14px;border-radius:12px;background:#f0fdf4;border:1.5px solid #86efac">
+          <div style="font-size:0.72rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Défi actuel</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span id="chlPreviewIcon" style="font-size:1.8rem"></span>
+            <div>
+              <div id="chlPreviewName" style="font-weight:700;color:#1e293b"></div>
+              <div id="chlPreviewTarget" style="font-size:0.8rem;color:#6b7280"></div>
+            </div>
+          </div>
+          <div id="chlPreviewDesc" style="margin-top:8px;font-size:0.85rem;color:#374151;white-space:pre-wrap;display:none"></div>
+        </div>
+
+        <form id="challengeForm" style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <label style="font-size:0.75rem;font-weight:600;color:#6b7280">Icône</label>
+              <input type="text" id="chlIcon" class="input-field" placeholder="🗓" maxlength="4"
+                     style="width:64px;text-align:center;font-size:1.5rem;padding:8px 4px">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:140px">
+              <label style="font-size:0.75rem;font-weight:600;color:#6b7280">Titre du défi</label>
+              <input type="text" id="chlName" class="input-field" placeholder="Ex : Longues journées" maxlength="60">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <label style="font-size:0.75rem;font-weight:600;color:#6b7280">Objectif (km)</label>
+              <input type="number" id="chlTarget" class="input-field" placeholder="50" min="1" max="9999" step="1" style="width:96px">
+            </div>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;font-weight:600;color:#374151;display:block;margin-bottom:4px">Message pour les utilisateurs</label>
+            <textarea id="chlDesc" class="input-field" rows="5"
+              placeholder="Écris ici tout ce que tu veux dire aux randonneurs ce mois-ci — conseils, motivation, itinéraires conseillés, anecdotes sur la forêt…"
+              style="resize:vertical;font-size:0.88rem;line-height:1.5"></textarea>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button type="submit" class="btn-primary" style="flex:1">📢 Publier le défi</button>
+            <button type="button" class="btn-secondary" id="btnChlReset" style="width:auto;padding:8px 14px">Réinitialiser</button>
+          </div>
+          <p id="chlMsg" style="margin:0;font-size:0.82rem;min-height:1em"></p>
+        </form>
+
+        <details style="margin-top:18px">
+          <summary style="font-size:0.82rem;color:#6b7280;cursor:pointer;user-select:none">Modifier un autre mois</summary>
+          <select id="chlMonth" class="input-field" style="margin-top:8px;width:100%"></select>
+        </details>
+      </section>
+
+      <!-- Membres & activité -->
+      <section class="admin-card span-2">
+        <h2 id="membersPanelTitle">👥 Gestion des membres</h2>
+        <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px">
+          <button class="btn-secondary members-tab active" data-tab="members" style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">👥 Membres</button>
+          <button class="btn-secondary members-tab" data-tab="visits" style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">📊 Activité</button>
+        </div>
+        <div id="membersList" data-panel="members" style="display:flex;flex-direction:column;gap:10px"></div>
+        <div id="visitsList" data-panel="visits" style="display:none;flex-direction:column;gap:0">
+          <div id="visitsStats" style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap"></div>
+          <div id="visitsItems" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+      </section>
+
+      <!-- Revenus -->
+      <section class="admin-card span-2">
+        <h2>💰 Tableau de bord revenus</h2>
+        <!-- KPI cards -->
+        <div id="revenueKPIs" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px"></div>
+        <!-- Plan distribution donut -->
+        <div style="margin-bottom:24px">
+          <div style="font-weight:700;font-size:0.82rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Répartition des membres</div>
+          <canvas id="chartPlans" height="200"></canvas>
+        </div>
+        <!-- MRR breakdown bar -->
+        <div style="margin-bottom:24px">
+          <div style="font-weight:700;font-size:0.82rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">MRR par plan (€/mois)</div>
+          <canvas id="chartMRR" height="150"></canvas>
+        </div>
+        <!-- Time period tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:16px;border-top:1px solid var(--border);padding-top:16px">
+          <button class="btn-secondary rev-tab active" data-period="day"   style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">Jour</button>
+          <button class="btn-secondary rev-tab"        data-period="week"  style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">Semaine</button>
+          <button class="btn-secondary rev-tab"        data-period="month" style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">Mois</button>
+          <button class="btn-secondary rev-tab"        data-period="year"  style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">Année</button>
+        </div>
+        <!-- Time-based charts -->
+        <div style="display:flex;flex-direction:column;gap:24px">
+          <div>
+            <div id="revNewLabel" style="font-weight:700;font-size:0.82rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Nouveaux membres</div>
+            <canvas id="chartNew" height="180"></canvas>
+          </div>
+          <div>
+            <div id="revRevLabel" style="font-weight:700;font-size:0.82rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Revenus estimés (€)</div>
+            <canvas id="chartRevTime" height="160"></canvas>
+          </div>
+        </div>
+
+        <!-- AI Revenue Forecast -->
+        <div style="border-top:1px solid var(--border);margin-top:28px;padding-top:24px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#0a1f0d;border-radius:8px;font-size:0.9rem">🤖</span>
+            <div>
+              <div style="font-weight:800;font-size:0.95rem;color:var(--text-strong)">Prévisions IA</div>
+              <div style="font-size:0.72rem;color:#6b7280">Données réelles · Propulsé par Llama 3.1</div>
+            </div>
+          </div>
+          <div id="aifDataStatus" style="font-size:0.75rem;color:#6b7280;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;margin-bottom:16px">⏳ En attente du chargement…</div>
+          <div style="margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <label style="font-size:0.82rem;font-weight:600;color:#374151">Objectif MRR</label>
+              <span style="font-size:0.82rem;font-weight:700;color:#15803d" id="aifTargetVal">200 €</span>
+            </div>
+            <input type="range" id="aifTarget" min="50" max="5000" step="50" value="200" style="width:100%;accent-color:#15803d">
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:1rem;font-weight:800;color:#15803d" id="aifMRR">—</div>
+              <div style="font-size:0.65rem;color:#6b7280;font-weight:500">MRR projeté</div>
+            </div>
+            <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:1rem;font-weight:800;color:#0284c7" id="aifSubs">—</div>
+              <div style="font-size:0.65rem;color:#6b7280;font-weight:500">Abonnés estimés</div>
+            </div>
+            <div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:1rem;font-weight:800;color:#9333ea" id="aifProb">—</div>
+              <div style="font-size:0.65rem;color:#6b7280;font-weight:500">Prob. objectif</div>
+            </div>
+          </div>
+          <div style="margin-bottom:16px">
+            <div style="font-size:0.72rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Prévision MRR · 6 mois</div>
+            <canvas id="aifChart" height="160"></canvas>
+          </div>
+          <div id="aifInsight" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start">
+            <span style="font-size:1rem;flex-shrink:0">🤖</span>
+            <p id="aifInsightText" style="margin:0;font-size:0.8rem;color:#166534;line-height:1.55">Les données réelles sont chargées automatiquement. Cliquez sur Analyser pour obtenir une analyse IA.</p>
+          </div>
+          <button id="aifAnalyseBtn" style="width:100%;padding:13px;background:linear-gradient(135deg,#16a34a,#15803d);border:none;border-radius:10px;color:white;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(22,163,74,0.3);transition:opacity 0.2s">
+            <span>✨</span> Analyser avec l'IA
+          </button>
+        </div>
+      </section>
+
+      <!-- Danger zone -->
+      <section class="admin-card danger">
+        <h2>⚠️ Zone sensible</h2>
+        <p style="margin:0 0 14px;font-size:0.88rem;color:var(--text-muted)">Remet à zéro les kilomètres parcourus de tous les membres. Action irréversible.</p>
+        <button class="btn-danger" id="btnResetKm" style="width:auto;padding:10px 18px"><span class="btn-label">Reset km</span></button>
+      </section>
+
+    </div>
+
+    <!-- Member plan modal -->
+    <div class="modal-overlay hidden" id="memberPlanModal" role="dialog" aria-modal="true" aria-labelledby="memberPlanTitle">
+      <div class="modal-box" style="min-width:300px">
+        <h3 class="modal-title" id="memberPlanTitle">Modifier le plan</h3>
+        <input type="hidden" id="memberPlanUserId">
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+          <label style="font-size:0.88rem;font-weight:600;color:#374151">Plan
+            <select id="memberPlanSelect" class="input-field" style="margin-top:4px">
+              <option value="free">🌿 Gratuit</option>
+              <option value="visitor">🎫 Visiteur (7j)</option>
+              <option value="silver">🥈 Argent</option>
+              <option value="gold">🥇 Or</option>
+            </select>
+          </label>
+          <label style="font-size:0.88rem;font-weight:600;color:#374151">Expiration (optionnel)
+            <input type="date" id="memberPlanExpiry" class="input-field" style="margin-top:4px">
+          </label>
+          <label style="font-size:0.88rem;font-weight:600;color:#374151">Plan de base (après expiration)
+            <select id="memberPlanBase" class="input-field" style="margin-top:4px">
+              <option value="free">🌿 Gratuit</option>
+              <option value="visitor">🎫 Visiteur (7j)</option>
+              <option value="silver">🥈 Argent</option>
+              <option value="gold">🥇 Or</option>
+            </select>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;font-weight:600;color:#374151;cursor:pointer">
+            <input type="checkbox" id="memberPlanComped" style="width:auto;margin:0">
+            🎁 Abonnement offert (exclu du chiffre d'affaires)
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-modal-cancel" id="btnCancelMemberPlan">Annuler</button>
+          <button class="btn-modal-confirm" id="btnSaveMemberPlan">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="adminStatus" class="admin-status"></div>
+
+  </div>
+
+  <script src="lib/chart.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/admin.js"></script>
+  <script defer src="js/ui-shared.js"></script>
+</body>
+</html>

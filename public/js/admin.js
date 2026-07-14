@@ -54,14 +54,32 @@ let splitTargetPath = null;
 let editModeActive = false;
 
 // ── Auth check ────────────────────────────────────────────────────────────────
+// admin.js is shared by two pages: admin.html (the map) and admin-panel.html (the
+// dashboard). Each page only contains the DOM for its half, so we boot whichever
+// half is actually present. Every top-level element wiring below uses `?.` so the
+// missing half is a silent no-op rather than a crash.
 (async () => {
   currentUser = await requireAuth('admin');
   if (!currentUser) return;
   initUserMenu();
-  initMap();
-  await loadPaths();
-  await loadReports();
+  if (document.getElementById('map')) {
+    initMap();
+    await loadPaths();
+    await loadReports();
+  }
+  if (document.getElementById('adminDashboard')) {
+    await initDashboard();
+  }
 })();
+
+// Populate the always-visible dashboard sections (admin-panel.html).
+async function initDashboard() {
+  await loadMessages();
+  await loadMembers();
+  await loadRevenue();
+  if (window.__wireRevenueForecast) window.__wireRevenueForecast();
+  await loadChallenges();
+}
 
 function initUserMenu() {
   const menuEl = document.getElementById('userMenu');
@@ -172,7 +190,7 @@ function updatePathWeights() {
 }
 
 // ── Select mode — click an OSM path ──────────────────────────────────────────
-document.getElementById('btnSelectPath').addEventListener('click', async () => {
+document.getElementById('btnSelectPath')?.addEventListener('click', async () => {
   if (selectModeActive) {
     exitSelectMode();
     return;
@@ -262,7 +280,7 @@ function exitEditMode() {
   showStatus('');
 }
 
-document.getElementById('btnEditMode').addEventListener('click', () => {
+document.getElementById('btnEditMode')?.addEventListener('click', () => {
   if (editModeActive) { exitEditMode(); return; }
   enterEditMode();
 });
@@ -536,9 +554,9 @@ async function saveNewPath(name, status, coordinates, pathType = 'foot', conditi
 }
 
 // ── Draw mode (manual) ────────────────────────────────────────────────────────
-document.getElementById('btnSplitCancel').addEventListener('click', () => exitSplitMode());
+document.getElementById('btnSplitCancel')?.addEventListener('click', () => exitSplitMode());
 
-document.getElementById('btnDrawPath').addEventListener('click', () => {
+document.getElementById('btnDrawPath')?.addEventListener('click', () => {
   if (!map) return;
   exitSelectMode();
   map.closePopup();
@@ -547,14 +565,14 @@ document.getElementById('btnDrawPath').addEventListener('click', () => {
   showStatus('Clique sur la carte pour tracer. Double-clique pour terminer.');
 });
 
-document.getElementById('btnCancelPath').addEventListener('click', () => {
+document.getElementById('btnCancelPath')?.addEventListener('click', () => {
   drawnItems.clearLayers();
   drawnCoordinates = null;
   document.getElementById('pathForm').classList.add('hidden');
   showStatus('');
 });
 
-document.getElementById('btnSavePath').addEventListener('click', async () => {
+document.getElementById('btnSavePath')?.addEventListener('click', async () => {
   if (!drawnCoordinates) return;
   const res = await fetch(`${API_URL}/api/paths`, {
     method: 'POST',
@@ -971,11 +989,11 @@ function openEditForm(path) {
   form.classList.remove('hidden');
 }
 
-document.getElementById('btnCancelEdit').addEventListener('click', () => {
+document.getElementById('btnCancelEdit')?.addEventListener('click', () => {
   document.getElementById('editForm').classList.add('hidden');
 });
 
-document.getElementById('btnUpdatePath').addEventListener('click', async () => {
+document.getElementById('btnUpdatePath')?.addEventListener('click', async () => {
   const id = document.getElementById('editForm').dataset.pathId;
   const res = await fetch(`${API_URL}/api/paths/${id}`, {
     method: 'PUT',
@@ -997,7 +1015,7 @@ document.getElementById('btnUpdatePath').addEventListener('click', async () => {
   }
 });
 
-document.getElementById('btnDeletePath').addEventListener('click', async () => {
+document.getElementById('btnDeletePath')?.addEventListener('click', async () => {
   const id = document.getElementById('editForm').dataset.pathId;
   const name = document.getElementById('editName').value;
   if (!confirm(`Supprimer "${name || 'ce chemin'}" ?`)) return;
@@ -1013,7 +1031,7 @@ async function deletePath(id) {
 
 // ── Members panel ─────────────────────────────────────────────────────────────
 // ── Messages panel ────────────────────────────────────────────────────────────
-document.getElementById('btnMessages').addEventListener('click', async () => {
+document.getElementById('btnMessages')?.addEventListener('click', async () => {
   document.getElementById('pathForm').classList.add('hidden');
   document.getElementById('editForm').classList.add('hidden');
   document.getElementById('membersPanel').classList.add('hidden');
@@ -1023,7 +1041,7 @@ document.getElementById('btnMessages').addEventListener('click', async () => {
   if (!panel.classList.contains('hidden')) await loadMessages();
 });
 
-document.getElementById('btnCloseMessagesPanel').addEventListener('click', () => {
+document.getElementById('btnCloseMessagesPanel')?.addEventListener('click', () => {
   document.getElementById('messagesPanel').classList.add('hidden');
 });
 
@@ -1035,8 +1053,10 @@ async function loadMessages() {
     const messages = await res.json();
     if (!res.ok) { list.innerHTML = `<p style="color:red">${messages.error}</p>`; return; }
     const badge = document.getElementById('msgBadge');
-    if (messages.length > 0) { badge.textContent = messages.length; badge.style.display = ''; }
-    else badge.style.display = 'none';
+    if (badge) {
+      if (messages.length > 0) { badge.textContent = messages.length; badge.style.display = ''; }
+      else badge.style.display = 'none';
+    }
     if (messages.length === 0) { list.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Aucun message.</p>'; return; }
     list.innerHTML = messages.map(m => {
       const date = new Date(m.date).toLocaleString('fr-FR');
@@ -1073,11 +1093,11 @@ async function loadMessages() {
     if (!res.ok) return;
     const msgs = await res.json();
     const badge = document.getElementById('msgBadge');
-    if (msgs.length > 0) { badge.textContent = msgs.length; badge.style.display = ''; }
+    if (badge && msgs.length > 0) { badge.textContent = msgs.length; badge.style.display = ''; }
   } catch {}
 })();
 
-document.getElementById('btnMembers').addEventListener('click', async () => {
+document.getElementById('btnMembers')?.addEventListener('click', async () => {
   document.getElementById('pathForm').classList.add('hidden');
   document.getElementById('editForm').classList.add('hidden');
   document.getElementById('challengePanel').classList.add('hidden');
@@ -1091,7 +1111,7 @@ document.getElementById('btnMembers').addEventListener('click', async () => {
   }
 });
 
-document.getElementById('btnCloseMembersPanel').addEventListener('click', () => {
+document.getElementById('btnCloseMembersPanel')?.addEventListener('click', () => {
   document.getElementById('membersPanel').classList.add('hidden');
 });
 
@@ -1374,10 +1394,10 @@ function closeMemberPlan() {
   if (_memberPlanTrigger) { _memberPlanTrigger.focus(); _memberPlanTrigger = null; }
 }
 
-document.getElementById('btnCancelMemberPlan').addEventListener('click', closeMemberPlan);
-document.getElementById('memberPlanModal').addEventListener('keydown', e => { if (e.key === 'Escape') closeMemberPlan(); });
+document.getElementById('btnCancelMemberPlan')?.addEventListener('click', closeMemberPlan);
+document.getElementById('memberPlanModal')?.addEventListener('keydown', e => { if (e.key === 'Escape') closeMemberPlan(); });
 
-document.getElementById('btnSaveMemberPlan').addEventListener('click', async () => {
+document.getElementById('btnSaveMemberPlan')?.addEventListener('click', async () => {
   const userId  = document.getElementById('memberPlanUserId').value;
   const plan    = document.getElementById('memberPlanSelect').value;
   let   expiry  = document.getElementById('memberPlanExpiry').value;
@@ -1421,7 +1441,7 @@ const PLAN_PRICE_ANNUAL  = { free: 0, silver: 2.24, gold: 5.24 };
 let _revenueCharts = {};
 let _revenueUsers  = null;
 
-document.getElementById('btnRevenue').addEventListener('click', async () => {
+document.getElementById('btnRevenue')?.addEventListener('click', async () => {
   document.getElementById('pathForm').classList.add('hidden');
   document.getElementById('editForm').classList.add('hidden');
   document.getElementById('messagesPanel').classList.add('hidden');
@@ -1433,7 +1453,7 @@ document.getElementById('btnRevenue').addEventListener('click', async () => {
   if (wasHidden) { _revenueUsers = null; await loadRevenue(); }
 });
 
-document.getElementById('btnCloseRevenuePanel').addEventListener('click', () => {
+document.getElementById('btnCloseRevenuePanel')?.addEventListener('click', () => {
   document.getElementById('revenuePanel').classList.add('hidden');
   _revenueUsers = null;
 });
@@ -1901,18 +1921,18 @@ async function loadRevenue() {
     });
   }
 
-  const btnRevenue = document.getElementById('btnRevenue');
-  if (btnRevenue) {
-    let wired = false;
-    btnRevenue.addEventListener('click', () => {
-      if (!wired) { wireInputs(); wireAnalyseBtn(); wired = true; }
-    });
-  }
+  let wired = false;
+  function wireForecast() { if (!wired) { wireInputs(); wireAnalyseBtn(); wired = true; } }
+  // The map page opens revenue via a toggle button; the dashboard shows it inline
+  // and calls this from initDashboard() once the section is on the page.
+  window.__wireRevenueForecast = wireForecast;
+  document.getElementById('btnRevenue')?.addEventListener('click', wireForecast);
 })();
 
 // ── Status bar ────────────────────────────────────────────────────────────────
 function showStatus(msg, isError = false) {
   const el = document.getElementById('adminStatus');
+  if (!el) return;
   el.textContent = msg;
   el.className = 'admin-status' + (isError ? ' error' : (msg ? ' success' : ''));
   if (msg) setTimeout(() => { el.textContent = ''; el.className = 'admin-status'; }, 4000);
@@ -2158,7 +2178,7 @@ async function loadChallenges() {
   _loadFormForMonth(new Date().getUTCMonth());
 }
 
-document.getElementById('btnChallenge').addEventListener('click', async () => {
+document.getElementById('btnChallenge')?.addEventListener('click', async () => {
   document.getElementById('pathForm').classList.add('hidden');
   document.getElementById('editForm').classList.add('hidden');
   document.getElementById('messagesPanel').classList.add('hidden');
@@ -2170,11 +2190,11 @@ document.getElementById('btnChallenge').addEventListener('click', async () => {
   if (wasHidden) await loadChallenges();
 });
 
-document.getElementById('btnCloseChallengePanel').addEventListener('click', () => {
+document.getElementById('btnCloseChallengePanel')?.addEventListener('click', () => {
   document.getElementById('challengePanel').classList.add('hidden');
 });
 
-document.getElementById('btnChlReset').addEventListener('click', async () => {
+document.getElementById('btnChlReset')?.addEventListener('click', async () => {
   if (!_challengeData[_activeMonth]) return;
   if (!confirm(`Réinitialiser le défi de ${MONTH_NAMES_FR[_activeMonth]} au défaut ?`)) return;
   try {
@@ -2188,7 +2208,7 @@ document.getElementById('btnChlReset').addEventListener('click', async () => {
   } catch { alert('Erreur lors de la réinitialisation.'); }
 });
 
-document.getElementById('challengeForm').addEventListener('submit', async e => {
+document.getElementById('challengeForm')?.addEventListener('submit', async e => {
   e.preventDefault();
   const month  = _activeMonth;
   const icon   = document.getElementById('chlIcon').value.trim();

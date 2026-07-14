@@ -69,6 +69,10 @@ try {
       mobileLogin.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Mon profil';
       mobileLogin.href = 'profile';
     }
+    // Reveal the admin entry in the nav drawer for admins (mirrors map.js)
+    if (user.role === 'admin') {
+      document.querySelectorAll('.nav-drawer-admin').forEach(el => el.classList.remove('hidden'));
+    }
   }
 } catch {}
 
@@ -344,6 +348,43 @@ try {
     hideBanner();
     deferredPrompt = null;
   });
+})();
+
+/* ── "Installer l'application" entry in the nav drawer (mirrors map menu) ── */
+(function () {
+  var btn = document.getElementById('btnInstallApp');
+  if (!btn) return;
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var isStandalone = window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+  if (isStandalone) return; // already installed — leave the entry hidden
+  var iosModal = document.getElementById('iosGuideModal');
+  var deferred = null;
+
+  function reveal() { btn.style.display = ''; }
+
+  // iOS can't fire beforeinstallprompt — show the entry and the manual guide.
+  if (isIOS) reveal();
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferred = e;
+    reveal();
+  });
+
+  btn.addEventListener('click', function () {
+    if (deferred) {
+      deferred.prompt();
+      deferred.userChoice.then(function () { deferred = null; btn.style.display = 'none'; });
+    } else if (isIOS && iosModal) {
+      iosModal.removeAttribute('hidden');
+      iosModal.style.opacity = '0';
+      requestAnimationFrame(function () { iosModal.style.opacity = '1'; });
+      document.body.style.overflow = 'hidden';
+    }
+  });
+
+  window.addEventListener('appinstalled', function () { btn.style.display = 'none'; });
 })();
 
 /* ── Contact form submission ─────────────────────────────────────────── */

@@ -182,8 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (userMenu && user) {
     userMenu.innerHTML = `<a href="profile" class="btn-icon" style="text-decoration:none"><span class="btn-emoji">👤</span><span class="btn-label">${escHtml(user.name.split(' ')[0])}</span></a>`;
     if (user.role === 'admin') {
-      const navAdmin = document.getElementById('navDrawerAdmin');
-      if (navAdmin) navAdmin.classList.remove('hidden');
+      document.querySelectorAll('.nav-drawer-admin').forEach(el => el.classList.remove('hidden'));
     }
   }
 

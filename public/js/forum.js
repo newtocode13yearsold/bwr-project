@@ -25,8 +25,8 @@ async function init() {
 }
 
 function updateNav() {
-  const adminLink = document.getElementById('navDrawerAdmin');
-  if (adminLink && currentUser?.role === 'admin') adminLink.classList.remove('hidden');
+  if (currentUser?.role === 'admin')
+    document.querySelectorAll('.nav-drawer-admin').forEach(el => el.classList.remove('hidden'));
 }
 
 function route() {

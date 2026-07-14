@@ -82,7 +82,8 @@ Pages (all require authentication except login.html):
 - map.html + js/map.js: Browse all paths, filter by status (easy/medium/hard/blocked), report issues, view carrefours (named junctions)
 - routes.html + js/routes.js: Core UX—interactive route planner with mode selection (A→B or loop), difficulty picker, address search
 - profile.html + js/profile.js: User stats, achievements/badges, daily wheel (random hiking tips), custom goals, weather (gold tier only), avatar color picker
-- admin.html + js/admin.js: Path management (draw, import from OSM, split, edit, delete), report triage, color/status updates
+- admin.html + js/admin.js: **Carte admin** — map-only workspace: path management (draw, import from OSM, split, edit, delete), report triage, color/status updates
+- admin-panel.html + js/admin.js: **Panneau admin** — dashboard landing (messages, members/activity, revenue + AI forecast, monthly challenges, reset-km). Shares `js/admin.js` with admin.html: the boot IIFE runs the map half only when `#map` exists and the dashboard half (`initDashboard()`) only when `#adminDashboard` exists; every top-level element wiring uses `?.` so the absent half is a silent no-op. The two pages are reached via two menu entries ("Carte admin" / "Panneau admin") in the header, nav drawer, and per-page user dropdowns (revealed to admins via the shared `.nav-drawer-admin` class).
 - forum.html + js/forum.js: Community forum (threads + replies). Reading is open (free tier sees the 5 most recent topics); Silver/Gold/admin create topics and reply. List and topic detail are one page, swapped via the `#t/:id` hash.
 - login.html + js/login.js: Registration and login forms
 

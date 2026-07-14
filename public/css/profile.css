@@ -536,8 +536,8 @@
   margin: 0 0 12px;
   line-height: 1.4;
 }
-/* ── Progression track (milestone bar) ── */
-.rewards-track { margin: 0 0 20px; padding: 22px 14px 8px; }
+/* ── Progression track (milestone bar) — legacy, replaced by .rl-timeline ── */
+.rewards-track { display: none; }
 .rt-rail {
   position: relative;
   height: 6px;
@@ -575,10 +575,91 @@
 }
 .rt-ic { line-height: 1; }
 
-.rewards-ladder {
+/* ── Reward paliers — one compact horizontal timeline ── */
+.rewards-ladder { display: block; }
+.rl-timeline {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  padding: 6px 4px 12px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.rl-node {
+  position: relative;
+  flex: 0 0 auto;
+  width: 82px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 5px;
+  padding-top: 2px;
+}
+/* Connecting rail sits behind the dots; each node draws the segment on its left,
+   coloured when the run of levels up to it is reached. */
+.rl-node::before {
+  content: "";
+  position: absolute;
+  top: 22px;                 /* vertical centre of the 40px dot */
+  right: 50%;
+  width: 100%;
+  height: 3px;
+  background: #e6e9ec;
+  z-index: 0;
+}
+.rl-node:first-child::before { display: none; }
+.rl-node.done::before { background: linear-gradient(90deg, #4ea24e, #84cc16); }
+.rl-node.is-next::before {
+  background: linear-gradient(90deg, #84cc16 var(--rl-fill, 0%), #e6e9ec var(--rl-fill, 0%));
+}
+.rl-dot {
+  position: relative;
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
+  place-items: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  background: #f1f3f5;
+  border: 2px solid #d5d9dd;
+  transition: transform 0.15s;
+}
+.rl-node.done .rl-dot { background: #f0fdf4; border-color: #84cc16; }
+.rl-node.is-next .rl-dot {
+  border-color: #84cc16;
+  box-shadow: 0 0 0 4px rgba(132, 204, 22, 0.22);
+  animation: rl-pulse 2s ease-in-out infinite;
+}
+.rl-node.locked .rl-dot { opacity: 0.75; }
+@keyframes rl-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(132, 204, 22, 0.22); }
+  50%      { box-shadow: 0 0 0 6px rgba(132, 204, 22, 0.10); }
+}
+.rl-lv {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.rl-name {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #374151;
+  line-height: 1.15;
+}
+.rl-node.locked .rl-name { color: var(--text-muted); }
+/* Frame accents on unlocked cosmetic paliers */
+.rl-node.rl-frame-bronze .rl-dot { border-color: #d9a066; background: #fdf5ec; }
+.rl-node.rl-frame-silver .rl-dot { border-color: #b8c0c8; background: #f4f6f8; }
+.rl-node.rl-frame-gold .rl-dot {
+  border-color: #f4c430;
+  background: #fffbe8;
+  box-shadow: 0 0 0 2px rgba(244, 196, 48, 0.3);
+  animation: reward-shine 1.8s ease-in-out infinite;
 }
 .reward-item {
   display: flex;
@@ -631,17 +712,44 @@
   color: #374151;
   margin-bottom: 12px;
 }
+.badges-count {
+  font-weight: 800;
+  color: var(--forest-700);
+  font-variant-numeric: tabular-nums;
+}
 .badges-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
 }
+/* Long badge lists collapse to ~2 rows behind the "Voir tout" toggle */
+.badges-grid.clamped {
+  max-height: 196px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent);
+  mask-image: linear-gradient(180deg, #000 72%, transparent);
+}
+.badges-toggle {
+  display: block;
+  margin: 10px auto 0;
+  padding: 6px 16px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--forest-700);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.badges-toggle:hover { background: var(--forest-100); border-color: var(--forest-300); }
 .badge-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 10px 6px;
+  padding: 8px 5px;
   background: #f9fafb;
   border: 1.5px solid #e5e7eb;
   border-radius: 10px;
@@ -654,7 +762,7 @@
   box-shadow: 0 2px 8px rgba(245,158,11,0.15);
 }
 .badge-item.locked { opacity: 0.4; filter: grayscale(0.6); }
-.badge-icon { font-size: 1.6rem; line-height: 1; }
+.badge-icon { font-size: 1.5rem; line-height: 1; }
 .badge-label { font-size: 0.7rem; font-weight: 600; color: #374151; }
 .badge-desc {
   display: none;
@@ -1047,18 +1155,22 @@
 [data-theme="dark"] .level-num                   { color: #a3e635; }
 [data-theme="dark"] .level-xp                    { color: #8fa887; }
 [data-theme="dark"] .xp-bar                      { background: #2a3a30; }
-[data-theme="dark"] .rt-rail                     { background: #2a3a30; }
-[data-theme="dark"] .rt-dot                      { background: #1c2a20; border-color: #2a3a30; }
-[data-theme="dark"] .rt-dot.done                 { background: #14301f; border-color: #6fae2f; }
 [data-theme="dark"] .rewards-title               { color: #e5e7eb; }
-[data-theme="dark"] .reward-label                { color: #e5e7eb; }
-[data-theme="dark"] .reward-item                 { background: #1c2a20; border-color: #2a3a30; }
-[data-theme="dark"] .reward-item.unlocked        { background: #14301f; border-color: #2f6b43; }
-[data-theme="dark"] .reward-item.unlocked.reward-frame-bronze { background: #2a2016; border-color: #7a5a34; }
-[data-theme="dark"] .reward-item.unlocked.reward-frame-silver { background: #202730; border-color: #6b7684; }
-[data-theme="dark"] .reward-item.unlocked.reward-frame-gold   { background: #2a2510; border-color: #a8871f; }
+/* Reward paliers timeline */
+[data-theme="dark"] .rl-node::before             { background: #2a3a30; }
+[data-theme="dark"] .rl-node.done::before        { background: linear-gradient(90deg, #4ea24e, #84cc16); }
+[data-theme="dark"] .rl-node.is-next::before     { background: linear-gradient(90deg, #84cc16 var(--rl-fill, 0%), #2a3a30 var(--rl-fill, 0%)); }
+[data-theme="dark"] .rl-dot                      { background: #1c2a20; border-color: #2a3a30; }
+[data-theme="dark"] .rl-node.done .rl-dot        { background: #14301f; border-color: #6fae2f; }
+[data-theme="dark"] .rl-name                     { color: #c8dcc0; }
+[data-theme="dark"] .rl-node.rl-frame-bronze .rl-dot { background: #2a2016; border-color: #7a5a34; }
+[data-theme="dark"] .rl-node.rl-frame-silver .rl-dot { background: #202730; border-color: #6b7684; }
+[data-theme="dark"] .rl-node.rl-frame-gold .rl-dot   { background: #2a2510; border-color: #a8871f; }
 
 [data-theme="dark"] .badges-title                { color: #c8dcc0; }
+[data-theme="dark"] .badges-count                { color: #a3e635; }
+[data-theme="dark"] .badges-toggle               { color: #a3e635; border-color: #334d3b; }
+[data-theme="dark"] .badges-toggle:hover         { background: #1c2a20; border-color: #4a6852; }
 [data-theme="dark"] .badge-item                  { background: #1c2a20; border-color: #2a3a30; }
 [data-theme="dark"] .badge-item.earned           { background: linear-gradient(135deg, #3a2600, #512f00); }
 [data-theme="dark"] .badge-item.tier-silver.earned { background: linear-gradient(135deg, #1e2a24, #2d3f38); border-color: #475569; }

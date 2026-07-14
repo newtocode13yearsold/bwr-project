@@ -107,7 +107,7 @@ async function initUserMenu() {
   }
 
   if (user.role === 'admin') {
-    document.getElementById('navDrawerAdmin')?.classList.remove('hidden');
+    document.querySelectorAll('.nav-drawer-admin').forEach(el => el.classList.remove('hidden'));
   }
 
   const initials = user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
@@ -120,7 +120,7 @@ async function initUserMenu() {
       <span class="dropdown-name">${user.name}</span>
       <a href="/">🏠 Accueil</a>
       <a href="profile">👤 Mon profil</a>
-      ${user.role === 'admin' ? '<a href="admin">⚙️ Panneau admin</a>' : ''}
+      ${user.role === 'admin' ? '<a href="admin">🗺 Carte admin</a><a href="admin-panel">⚙️ Panneau admin</a>' : ''}
       <button class="dropdown-logout" id="btnLogout">Se déconnecter</button>
     </div>
   `;

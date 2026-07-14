@@ -282,6 +282,13 @@ document.getElementById('mapContactForm').addEventListener('submit', async e => 
     await _loadMapOffline();
     openOfflineZonePicker();
   });
+  // Deep link from the home-page menu ("Cartes hors-ligne" → map?offline=1):
+  // open the zone picker automatically once the map is ready.
+  try {
+    if (new URLSearchParams(location.search).get('offline') === '1') {
+      window.addEventListener('load', () => setTimeout(() => btn.click(), 400));
+    }
+  } catch {}
 })();
 
 // One-time migration of any reports still queued in the old localStorage store
