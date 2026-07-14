@@ -536,6 +536,45 @@
   margin: 0 0 12px;
   line-height: 1.4;
 }
+/* ── Progression track (milestone bar) ── */
+.rewards-track { margin: 0 0 20px; padding: 22px 14px 8px; }
+.rt-rail {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: #e6e9ec;
+}
+.rt-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4ea24e, #84cc16);
+  transition: width 0.5s ease;
+}
+.rt-dot {
+  position: absolute;
+  top: 50%;
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: #f1f3f5;
+  border: 2px solid #d5d9dd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  transition: transform 0.15s;
+}
+.rt-dot.done { background: #f0fdf4; border-color: #84cc16; }
+.rt-dot.is-next {
+  border-color: #84cc16;
+  box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.25);
+  transform: translateY(-50%) scale(1.15);
+}
+.rt-ic { line-height: 1; }
+
 .rewards-ladder {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -1008,6 +1047,9 @@
 [data-theme="dark"] .level-num                   { color: #a3e635; }
 [data-theme="dark"] .level-xp                    { color: #8fa887; }
 [data-theme="dark"] .xp-bar                      { background: #2a3a30; }
+[data-theme="dark"] .rt-rail                     { background: #2a3a30; }
+[data-theme="dark"] .rt-dot                      { background: #1c2a20; border-color: #2a3a30; }
+[data-theme="dark"] .rt-dot.done                 { background: #14301f; border-color: #6fae2f; }
 [data-theme="dark"] .rewards-title               { color: #e5e7eb; }
 [data-theme="dark"] .reward-label                { color: #e5e7eb; }
 [data-theme="dark"] .reward-item                 { background: #1c2a20; border-color: #2a3a30; }

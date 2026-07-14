@@ -331,6 +331,26 @@ function renderRewardLadder(level, prog) {
     }
   }
 
+  // Progression track: a bar with a milestone dot per palier, filled up to the
+  // current level (+ the fraction of XP earned inside it).
+  const track = document.getElementById('rewardsTrack');
+  if (track) {
+    const rewards = BWR.LEVEL_REWARDS;
+    const maxLv = rewards[rewards.length - 1].level;
+    // Continuous position from level 1 → maxLv, including partial in-level XP.
+    const pos = Math.min(1, Math.max(0, ((level - 1) + prog.pct / 100) / (maxLv - 1)));
+    const dots = rewards.map(r => {
+      const done = r.level <= level;
+      const isNext = r.level === level + 1;
+      const at = ((r.level - 1) / (maxLv - 1)) * 100;
+      return `<div class="rt-dot ${done ? 'done' : ''}${isNext ? ' is-next' : ''}" style="left:${at}%" title="Niv. ${r.level} — ${r.label}">
+        <span class="rt-ic">${done ? r.icon : '🔒'}</span>
+      </div>`;
+    }).join('');
+    track.innerHTML =
+      `<div class="rt-rail"><div class="rt-fill" style="width:${pos * 100}%"></div>${dots}</div>`;
+  }
+
   // Full ladder grid
   const ladder = document.getElementById('rewardsLadder');
   if (!ladder) return;
