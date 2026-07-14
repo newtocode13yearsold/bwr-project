@@ -321,9 +321,10 @@ function renderRewardLadder(level, prog) {
   if (nextEl) {
     const next = BWR.nextReward(level);
     if (next) {
-      const need = BWR.xpForLevel(next.level) - prog.xp;
+      const total = BWR.xpForLevel(next.level);
+      const need  = total - prog.xp;
       nextEl.innerHTML =
-        `Prochain palier : <strong>${next.icon} ${next.label}</strong> · encore <strong>${need} XP</strong> (niveau ${next.level})`;
+        `Prochain palier : <strong>${next.icon} ${next.label}</strong> · encore <strong>${need} XP</strong> sur <strong>${total} XP</strong> au total (niveau ${next.level})`;
       nextEl.style.display = '';
     } else {
       nextEl.innerHTML = '🏆 Tous les paliers débloqués — bravo, tu es une légende !';
