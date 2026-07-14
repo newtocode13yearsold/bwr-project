@@ -18,6 +18,12 @@
   <link rel="stylesheet" href="css/login.css" />
   <script src="js/theme.js"></script>
   <style>
+    /* The shared admin layout locks the page to the viewport for the full-screen
+       map. The dashboard is a normal scrolling document, so undo that here. */
+    body { height: auto; min-height: 100dvh; overflow-y: auto; overflow-x: hidden; }
+    #adminPanel { overflow: visible; min-height: 0; }
+    #adminPanel .header { position: sticky; top: 0; z-index: 500; }
+
     /* ── Admin dashboard landing ──────────────────────────────────────────── */
     .admin-dashboard {
       max-width: 1120px;
