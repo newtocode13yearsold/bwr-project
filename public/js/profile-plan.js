@@ -127,9 +127,13 @@ function renderPlanAndProgress(user) {
   // ── Weekly route quota strip (free users only) — includes the level bonus ──
   renderQuotaStrip(plan, level);
 
+  // XP bar shows *cumulative* progress toward the next level (not the per-level
+  // slice), so the numbers match the "total XP" framing of the reward ladder.
+  const target  = BWR.xpForLevel(level + 1); // total XP to reach the next level
+  const totalPct = target > 0 ? Math.min(100, (prog.xp / target) * 100) : 100;
   document.getElementById('levelNum').textContent = `Niveau ${level}`;
-  document.getElementById('levelXp').textContent  = `${prog.xpIn} / ${prog.span} XP`;
-  document.getElementById('xpFill').style.width   = `${prog.pct}%`;
+  document.getElementById('levelXp').textContent  = `${prog.xp} / ${target} XP`;
+  document.getElementById('xpFill').style.width   = `${totalPct}%`;
 
   // Next-reward teaser + full reward ladder
   renderRewardLadder(level, prog);
@@ -321,9 +325,8 @@ function renderRewardLadder(level, prog) {
   if (nextEl) {
     const next = BWR.nextReward(level);
     if (next) {
-      const need = prog.xpToNext; // XP left to reach the next level (matches the bar)
       nextEl.innerHTML =
-        `Prochain palier : <strong>${next.icon} ${next.label}</strong> · encore <strong>${need} XP</strong> sur <strong>${prog.span} XP</strong> pour ce niveau (niveau ${next.level})`;
+        `Prochain palier : <strong>${next.icon} ${next.label}</strong> (niveau ${next.level})`;
       nextEl.style.display = '';
     } else {
       nextEl.innerHTML = '🏆 Tous les paliers débloqués — bravo, tu es une légende !';
