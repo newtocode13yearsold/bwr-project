@@ -354,28 +354,42 @@ function renderRewardLadder(level, prog) {
     }
   }
 
-  // Unified horizontal timeline — one scrollable strip that replaces the old
-  // (redundant) dot-rail + full card grid. Each palier is a compact node
-  // connected by a rail that fills up to the current level; the segment leading
-  // into the next palier fills by the fraction of XP already earned in it.
+  // Vertical stepper — every palier is listed top-to-bottom so nothing is hidden
+  // behind a horizontal scroll: the ones already unlocked (Débloqué), the one
+  // currently being worked toward (En cours, with an XP bar), and the ones still
+  // to come (🔒).
   const track = document.getElementById('rewardsTrack');
-  if (track) track.innerHTML = ''; // legacy container — timeline below carries progress now
+  if (track) track.innerHTML = ''; // legacy container — stepper below carries progress now
 
   const ladder = document.getElementById('rewardsLadder');
   if (!ladder) return;
-  const nodes = BWR.LEVEL_REWARDS.map(r => {
+  const rows = BWR.LEVEL_REWARDS.map(r => {
     const done   = r.level <= level;
-    const isNext = r.level === level + 1;
-    const state  = done ? 'done' : (isNext ? 'is-next' : 'locked');
-    const frame  = done && r.frame ? ` rl-frame-${r.frame}` : '';
-    const fill   = isNext ? ` style="--rl-fill:${Math.round(prog.pct)}%"` : '';
-    return `<div class="rl-node ${state}${frame}"${fill} title="Niv. ${r.level} — ${r.label} · ${r.desc}">
-      <span class="rl-dot">${done ? r.icon : '🔒'}</span>
-      <span class="rl-lv">Niv. ${r.level}</span>
-      <span class="rl-name">${r.label}</span>
+    const isNext = r.level === level + 1;          // the palier being earned now
+    const state  = done ? 'done' : (isNext ? 'next' : 'locked');
+    const frame  = done && r.frame ? ` pl-frame-${r.frame}` : '';
+    const tag = done
+      ? '<span class="pl-tag pl-tag-done">Débloqué</span>'
+      : isNext
+        ? '<span class="pl-tag pl-tag-next">En cours</span>'
+        : '<span class="pl-tag pl-tag-lock">🔒</span>';
+    const progress = isNext
+      ? `<div class="pl-prog"><div class="pl-prog-bar"><i style="width:${Math.round(prog.pct)}%"></i></div><span class="pl-prog-txt">Plus que ${prog.xpToNext} XP</span></div>`
+      : '';
+    return `<div class="pl-row ${state}${frame}" title="Niv. ${r.level} — ${r.label} · ${r.desc}">
+      <span class="pl-dot">${done ? r.icon : '🔒'}</span>
+      <div class="pl-card">
+        <span class="pl-ic">${done ? r.icon : '🔒'}</span>
+        <div class="pl-meta">
+          <div class="pl-lv">Niveau ${r.level}</div>
+          <div class="pl-name">${r.label}</div>
+          ${progress}
+        </div>
+        ${tag}
+      </div>
     </div>`;
   }).join('');
-  ladder.innerHTML = `<div class="rl-timeline">${nodes}</div>`;
+  ladder.innerHTML = `<div class="pl-stepper">${rows}</div>`;
 }
 
 // ── Goals ─────────────────────────────────────────────────────────────────────
