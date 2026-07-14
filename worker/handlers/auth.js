@@ -525,7 +525,15 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const weeklyRoutes = sameWeek ? (stats.weeklyRoutes || 0) : 0;
     const weeklyLoops  = sameWeek ? (stats.weeklyLoops  || 0) : 0;
 
-    const LIMIT = 10;       // total routes / week (free)
+    // Level bonus: free accounts earn +1 (level 4+) then +2 (level 7+) weekly
+    // routes through community XP. Mirror of features.js routeBonus/LEVEL_REWARDS
+    // + the progressive curve levelFromXp — keep in sync. XP = reports×2 + pathGrades,
+    // level n reached at 5·n·(n−1) XP → level = floor((1 + √(1 + 0.8·xp)) / 2).
+    const xp = (stats.reports || 0) * 2 + (stats.pathGrades || 0);
+    const level = Math.floor((1 + Math.sqrt(1 + 0.8 * xp)) / 2);
+    const routeBonus = level >= 7 ? 2 : level >= 4 ? 1 : 0;
+
+    const LIMIT = 10 + routeBonus; // total routes / week (free) + level bonus
     const LOOP_LIMIT = 3;   // loop routes / week (free) — see features.js loops_per_week
 
     // Loop sub-quota is checked first so its dedicated upsell wins.

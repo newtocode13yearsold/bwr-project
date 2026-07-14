@@ -18,7 +18,9 @@ global.localStorage = {
 
 require('../public/js/features.js');
 // Destructure from the BWR namespace so test bodies can call functions directly.
-const { can, limitOf, requiredTier, normalisePlan, readWeekly, bumpWeekly, checkRouteQuota } = global.BWR;
+const { can, limitOf, requiredTier, normalisePlan, readWeekly, bumpWeekly, checkRouteQuota,
+  xpFromStats, levelFromXp, xpForLevel, levelProgress, routeBonus, routeLimit,
+  levelTitle, levelFrame, nextReward, XP_STEP, LEVEL_REWARDS } = global.BWR;
 
 // ── normalisePlan ─────────────────────────────────────────────────────────────
 
@@ -227,5 +229,121 @@ describe('checkRouteQuota', () => {
   test('null plan treated as free → blocks at 10', () => {
     for (let i = 0; i < 10; i++) bumpWeekly();
     assert.equal(checkRouteQuota(null).ok, false);
+  });
+
+  test('free at level 4 gets +1 bonus → ok at 10 routes', () => {
+    for (let i = 0; i < 10; i++) bumpWeekly();
+    const result = checkRouteQuota('free', 4);
+    assert.ok(result.ok);
+    assert.equal(result.limit, 11);
+  });
+
+  test('free at level 7 gets +2 bonus → blocks only at 12', () => {
+    for (let i = 0; i < 11; i++) bumpWeekly();
+    assert.ok(checkRouteQuota('free', 7).ok);
+    bumpWeekly(); // 12
+    assert.equal(checkRouteQuota('free', 7).ok, false);
+  });
+
+  test('free at level 9 (405 XP contributor) still +2 bonus', () => {
+    assert.equal(levelFromXp(405), 9);
+    for (let i = 0; i < 11; i++) bumpWeekly();
+    assert.ok(checkRouteQuota('free', levelFromXp(405)).ok);
+    assert.equal(routeLimit('free', levelFromXp(405)), 12);
+  });
+
+  test('silver at high level stays Infinity (bonus never applies)', () => {
+    for (let i = 0; i < 100; i++) bumpWeekly();
+    assert.ok(checkRouteQuota('silver', 10).ok);
+  });
+});
+
+// ── Level / XP reward ladder ──────────────────────────────────────────────────
+
+describe('XP + level math', () => {
+  test('xpFromStats: reports×2 + pathGrades', () => {
+    assert.equal(xpFromStats({ reports: 3, pathGrades: 4 }), 10);
+    assert.equal(xpFromStats({}), 0);
+    assert.equal(xpFromStats(null), 0);
+  });
+
+  // Progressive curve: xpForLevel(n) = 5·n·(n−1)
+  test('levelFromXp: 0 XP → level 1',   () => assert.equal(levelFromXp(0), 1));
+  test('levelFromXp: 9 XP → level 1',   () => assert.equal(levelFromXp(9), 1));
+  test('levelFromXp: 10 XP → level 2',  () => assert.equal(levelFromXp(10), 2));
+  test('levelFromXp: 29 XP → level 2',  () => assert.equal(levelFromXp(29), 2));
+  test('levelFromXp: 30 XP → level 3',  () => assert.equal(levelFromXp(30), 3));
+  test('levelFromXp: 60 XP → level 4',  () => assert.equal(levelFromXp(60), 4));
+  test('levelFromXp: 405 XP → level 9', () => assert.equal(levelFromXp(405), 9));
+  test('levelFromXp: 450 XP → level 10',() => assert.equal(levelFromXp(450), 10));
+  test('levelFromXp: negative clamps to level 1', () => assert.equal(levelFromXp(-5), 1));
+
+  test('xpForLevel: cumulative floor of a level (5·n·(n−1))', () => {
+    assert.equal(xpForLevel(1), 0);
+    assert.equal(xpForLevel(2), 10);
+    assert.equal(xpForLevel(4), 60);
+    assert.equal(xpForLevel(7), 210);
+    assert.equal(xpForLevel(10), 450);
+  });
+
+  test('level spans grow by XP_STEP each level', () => {
+    // span for level L = xpForLevel(L+1) − xpForLevel(L) = XP_STEP × L
+    for (let L = 1; L <= 9; L++) {
+      assert.equal(xpForLevel(L + 1) - xpForLevel(L), XP_STEP * L);
+    }
+  });
+
+  test('levelProgress: 405 XP → level 9, 45/90 into it', () => {
+    const p = levelProgress(405);
+    assert.equal(p.level, 9);
+    assert.equal(p.xpIn, 45);       // 405 − xpForLevel(9)=360
+    assert.equal(p.span, 90);       // XP_STEP × 9
+    assert.equal(p.xpToNext, 45);
+    assert.equal(p.pct, 50);
+  });
+
+  test('levelProgress: 34 XP → level 3, 4/30 into it', () => {
+    const p = levelProgress(34); // level 3 floor=30, span=30 (3→4)
+    assert.equal(p.level, 3);
+    assert.equal(p.xpIn, 4);
+    assert.equal(p.span, 30);
+    assert.equal(p.xpToNext, 26);
+    assert.equal(Math.round(p.pct), 13);
+  });
+});
+
+describe('routeBonus + routeLimit', () => {
+  test('routeBonus: 0 below level 4',  () => assert.equal(routeBonus(3), 0));
+  test('routeBonus: +1 at level 4-6',  () => { assert.equal(routeBonus(4), 1); assert.equal(routeBonus(6), 1); });
+  test('routeBonus: +2 at level 7+',   () => { assert.equal(routeBonus(7), 2); assert.equal(routeBonus(20), 2); });
+
+  test('routeLimit: free base 10 + bonus', () => {
+    assert.equal(routeLimit('free', 1), 10);
+    assert.equal(routeLimit('free', 4), 11);
+    assert.equal(routeLimit('free', 7), 12);
+  });
+  test('routeLimit: silver stays Infinity', () => assert.equal(routeLimit('silver', 10), Infinity));
+  test('routeLimit: defaults level 1 when omitted', () => assert.equal(routeLimit('free'), 10));
+});
+
+describe('level cosmetics + nextReward', () => {
+  test('levelTitle: none before level 2', () => assert.equal(levelTitle(1), null));
+  test('levelTitle: Promeneur at level 2', () => assert.equal(levelTitle(2), 'Promeneur'));
+  test('levelTitle: highest wins at level 8', () => assert.equal(levelTitle(9), 'Gardien de la forêt'));
+  test('levelTitle: Légende at level 10', () => assert.equal(levelTitle(10), 'Légende de Compiègne'));
+
+  test('levelFrame: none before level 3', () => assert.equal(levelFrame(2), null));
+  test('levelFrame: bronze at 3, silver at 6, gold at 9', () => {
+    assert.equal(levelFrame(3), 'bronze');
+    assert.equal(levelFrame(6), 'silver');
+    assert.equal(levelFrame(9), 'gold');
+  });
+
+  test('nextReward: level 1 → level 2 reward', () => assert.equal(nextReward(1).level, 2));
+  test('nextReward: maxed out → null', () => assert.equal(nextReward(10), null));
+
+  test('LEVEL_REWARDS has 10 sequential levels', () => {
+    assert.equal(LEVEL_REWARDS.length, 10);
+    LEVEL_REWARDS.forEach((r, i) => assert.equal(r.level, i + 1));
   });
 });

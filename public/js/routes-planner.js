@@ -335,14 +335,15 @@ function showUpgradeModal(tier, featureLabel) {
 // ── Weekly route quota strip ──────────────────────────────────────────────────
 function updateQuotaStrip() {
   const plan  = currentUser?.plan || 'free';
-  const limit = BWR.limitOf('routes_per_week', plan);
+  const stats = currentUser?.stats || {};
+  const level = BWR.levelFromXp(BWR.xpFromStats(stats));
+  const limit = BWR.routeLimit(plan, level);
   const stripEl = document.getElementById('quotaStrip');
   if (!stripEl) return;
   if (limit === Infinity) {
     stripEl.classList.add('hidden');
     return;
   }
-  const stats = currentUser?.stats || {};
   const count = stats.weekStart === BWR.isoMonday() ? (stats.weeklyRoutes || 0) : 0;
   const remaining = Math.max(0, limit - count);
   const pct = Math.min(100, (count / limit) * 100);

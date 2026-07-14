@@ -709,6 +709,40 @@ describe('consume-route (weekly quota)', () => {
     assert.equal(data.limit, 10);
   });
 
+  test('free level-4 user (60 XP) gets +1 bonus → 11th route ok, 12th blocked', async () => {
+    const { env, seedUser, seedSession } = freshEnv();
+    // Progressive curve: XP = reports×2 + pathGrades = 60 → level 4 → +1 → limit 11
+    seedUser({ id: 'lv4', name: 'Lvl4', email: 'lv4@bwr.fr', role: 'free', plan: 'free',
+      passwordHash: 'x', salt: 'y', hashVersion: 2, stats: { reports: 30, pathGrades: 0 } });
+    seedSession('lv4-tok', 'lv4', new Date(Date.now() + 86400000).toISOString());
+    for (let i = 1; i <= 11; i++) {
+      const res = await worker.fetch(authed('POST', '/api/auth/consume-route', 'lv4-tok'), env);
+      assert.equal(res.status, 200, `route ${i} should pass`);
+      assert.equal((await res.json()).limit, 11);
+    }
+    const blocked = await worker.fetch(authed('POST', '/api/auth/consume-route', 'lv4-tok'), env);
+    assert.equal(blocked.status, 429);
+    assert.equal((await blocked.json()).limit, 11);
+  });
+
+  test('free level-7 user (210 XP) gets +2 bonus → limit 12', async () => {
+    const { env, seedUser, seedSession } = freshEnv();
+    seedUser({ id: 'lv7', name: 'Lvl7', email: 'lv7@bwr.fr', role: 'free', plan: 'free',
+      passwordHash: 'x', salt: 'y', hashVersion: 2, stats: { reports: 105, pathGrades: 0 } });
+    seedSession('lv7-tok', 'lv7', new Date(Date.now() + 86400000).toISOString());
+    const res = await worker.fetch(authed('POST', '/api/auth/consume-route', 'lv7-tok'), env);
+    assert.equal((await res.json()).limit, 12);
+  });
+
+  test('free level-3 user (30 XP) below bonus threshold → limit 10', async () => {
+    const { env, seedUser, seedSession } = freshEnv();
+    seedUser({ id: 'lv3', name: 'Lvl3', email: 'lv3@bwr.fr', role: 'free', plan: 'free',
+      passwordHash: 'x', salt: 'y', hashVersion: 2, stats: { reports: 15, pathGrades: 0 } });
+    seedSession('lv3-tok', 'lv3', new Date(Date.now() + 86400000).toISOString());
+    const res = await worker.fetch(authed('POST', '/api/auth/consume-route', 'lv3-tok'), env);
+    assert.equal((await res.json()).limit, 10);
+  });
+
   test('silver user → always ok regardless of count (unlimited)', async () => {
     const { env, seedUser, seedSession } = freshEnv();
     seedUser({ id: 'sv1', name: 'Silver', email: 'sv@bwr.fr', role: 'free', plan: 'silver', passwordHash: 'x', salt: 'y', hashVersion: 2 });

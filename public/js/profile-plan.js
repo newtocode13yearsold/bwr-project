@@ -117,21 +117,22 @@ function renderPlanAndProgress(user) {
     }
   }
 
-  // ── Weekly route quota strip (free users only) ──
-  renderQuotaStrip(plan);
   // ── Level / XP — earned through community contributions, not distance ──
   // XP = 2 per report + 1 per graded path (same formula as the leaderboard points),
   // so the level here matches a member's standing in the classement.
-  const XP_PER_LEVEL = 10;
-  const reportsXp   = (user.stats?.reports || 0) * 2;
-  const gradesXp    = (user.stats?.pathGrades || 0);
-  const xp          = reportsXp + gradesXp;
-  const level       = Math.floor(xp / XP_PER_LEVEL) + 1;
-  const xpIn        = xp - (level - 1) * XP_PER_LEVEL;
-  const xpPct       = Math.min(100, (xpIn / XP_PER_LEVEL) * 100);
+  const xp    = BWR.xpFromStats(user.stats);
+  const prog  = BWR.levelProgress(xp);
+  const level = prog.level;
+
+  // ── Weekly route quota strip (free users only) — includes the level bonus ──
+  renderQuotaStrip(plan, level);
+
   document.getElementById('levelNum').textContent = `Niveau ${level}`;
-  document.getElementById('levelXp').textContent  = `${xpIn} / ${XP_PER_LEVEL} XP`;
-  document.getElementById('xpFill').style.width   = `${xpPct}%`;
+  document.getElementById('levelXp').textContent  = `${prog.xpIn} / ${prog.span} XP`;
+  document.getElementById('xpFill').style.width   = `${prog.pct}%`;
+
+  // Next-reward teaser + full reward ladder
+  renderRewardLadder(level, prog);
 
   // Badges — for free users, show locked silhouettes for higher-tier badges
   const streak = user.stats?.streak || 0;
@@ -287,10 +288,10 @@ async function startSilverTrial(e) {
 }
 
 // ── Weekly route quota strip ─────────────────────────────────────────────────
-function renderQuotaStrip(plan) {
+function renderQuotaStrip(plan, level) {
   const strip = document.getElementById('quotaStrip');
   if (!strip) return;
-  const limit = BWR.limitOf('routes_per_week', plan);
+  const limit = BWR.routeLimit(plan, level || 1);
   if (limit === Infinity) { strip.style.display = 'none'; return; }
   const { count } = BWR.readWeekly();
   const remaining = Math.max(0, limit - count);
@@ -309,6 +310,40 @@ function renderQuotaStrip(plan) {
     </div>
     <div class="pqs-bar"><div class="pqs-fill" style="width:${pct}%"></div></div>
   `;
+}
+
+// ── Level reward ladder ───────────────────────────────────────────────────────
+// Renders the "next reward" teaser under the XP bar + the full paliers grid.
+// Cosmetic/status rewards + one light functional perk (bonus weekly routes).
+function renderRewardLadder(level, prog) {
+  // Next-reward teaser under the XP bar
+  const nextEl = document.getElementById('levelNext');
+  if (nextEl) {
+    const next = BWR.nextReward(level);
+    if (next) {
+      const need = BWR.xpForLevel(next.level) - prog.xp;
+      nextEl.innerHTML =
+        `Prochain palier : <strong>${next.icon} ${next.label}</strong> · encore <strong>${need} XP</strong> (niveau ${next.level})`;
+      nextEl.style.display = '';
+    } else {
+      nextEl.innerHTML = '🏆 Tous les paliers débloqués — bravo, tu es une légende !';
+      nextEl.style.display = '';
+    }
+  }
+
+  // Full ladder grid
+  const ladder = document.getElementById('rewardsLadder');
+  if (!ladder) return;
+  ladder.innerHTML = BWR.LEVEL_REWARDS.map(r => {
+    const unlocked = r.level <= level;
+    const isNext   = r.level === level + 1;
+    return `<div class="reward-item ${unlocked ? 'unlocked' : 'locked'}${isNext ? ' is-next' : ''}${r.frame ? ' reward-frame-' + r.frame : ''}">
+      <span class="reward-lv">Niv. ${r.level}</span>
+      <span class="reward-icon">${unlocked ? r.icon : '🔒'}</span>
+      <span class="reward-label">${r.label}</span>
+      <span class="reward-desc">${r.desc}</span>
+    </div>`;
+  }).join('');
 }
 
 // ── Goals ─────────────────────────────────────────────────────────────────────

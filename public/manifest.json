@@ -3,7 +3,7 @@
   "short_name": "BWR",
   "description": "Carte interactive des chemins et forêts de l'Oise. Planifiez vos balades à pied ou à vélo.",
   "lang": "fr",
-  "start_url": "/map",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
