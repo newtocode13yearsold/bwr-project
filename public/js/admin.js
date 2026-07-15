@@ -1170,6 +1170,161 @@ document.querySelectorAll('.members-tab').forEach(tab => {
   });
 });
 
+// ── Activity line chart ───────────────────────────────────────────────────────
+// Two lines over time:
+//   • rouge = visiteurs sans compte (anonymous visitors, dwell-gated)
+//   • bleu  = connexions de comptes existants (re-logins)
+// Tabs pick the time window: 1 jour / 1 semaine / 1 mois / 1 an / all.
+let _chartData = null;      // { events, visitors, monthlyVisits }
+let _chartRange = 'week';   // active tab
+
+function renderActivityChart(events, visitors, monthlyVisits) {
+  _chartData = { events, visitors, monthlyVisits };
+  drawActivityChart();
+}
+
+// Build { labels, visitorsData, loginsData } for the active range.
+function buildChartSeries(range) {
+  const { events, visitors, monthlyVisits } = _chartData;
+  const logins = events.filter(e => e.type !== 'signup'); // re-logins
+  const now = new Date();
+
+  // Sum values into a fixed set of buckets. `keyOf(date)` maps a date to a bucket
+  // key; buckets is an ordered list of { key, label }.
+  const bucketize = (buckets, keyOf, stampList) => {
+    const idx = new Map(buckets.map((b, i) => [b.key, i]));
+    const out = buckets.map(() => 0);
+    for (const ts of stampList) {
+      const k = keyOf(new Date(ts));
+      if (idx.has(k)) out[idx.get(k)]++;
+    }
+    return out;
+  };
+
+  const pad = n => String(n).padStart(2, '0');
+  const loginStamps   = logins.map(e => e.timestamp);
+  // Anonymous visitors are keyed by when they were first seen this month.
+  const visitorStamps = visitors.map(v => v.firstSeen).filter(Boolean);
+
+  if (range === 'day') {
+    // 24 hourly buckets ending at the current hour.
+    const buckets = [];
+    for (let i = 23; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 3600000);
+      buckets.push({ key: `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`,
+                     label: i % 3 === 0 ? `${pad(d.getHours())}h` : '' });
+    }
+    const keyOf = d => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
+    return { labels: buckets.map(b => b.label),
+             visitorsData: bucketize(buckets, keyOf, visitorStamps),
+             loginsData:   bucketize(buckets, keyOf, loginStamps) };
+  }
+
+  if (range === 'week' || range === 'month') {
+    const days = range === 'week' ? 7 : 30;
+    const buckets = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      const show = days === 7 || i % 5 === 0;
+      buckets.push({ key, label: show ? `${pad(d.getDate())}/${pad(d.getMonth() + 1)}` : '' });
+    }
+    const keyOf = d => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    return { labels: buckets.map(b => b.label),
+             visitorsData: bucketize(buckets, keyOf, visitorStamps),
+             loginsData:   bucketize(buckets, keyOf, loginStamps) };
+  }
+
+  // 'year' (12 months) or 'all' (every month we have data for).
+  const MONTHS = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+  const monthKey = d => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}`;
+  let span = 12;
+  if (range === 'all') {
+    const keys = Object.keys(monthlyVisits).filter(k => monthlyVisits[k] > 0).sort();
+    if (keys.length) {
+      const first = keys[0];
+      const [fy, fm] = first.split('-').map(Number);
+      span = (now.getUTCFullYear() - fy) * 12 + (now.getUTCMonth() + 1 - fm) + 1;
+    }
+    span = Math.max(6, Math.min(span, 13)); // API returns up to 13 months
+  }
+  const buckets = [];
+  for (let i = span - 1; i >= 0; i--) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    buckets.push({ key: monthKey(d), label: MONTHS[d.getUTCMonth()], _d: d });
+  }
+  // Logins bucketed by month; visitors read straight from the monthly totals.
+  const loginsData = bucketize(buckets, d => monthKey(new Date(Date.UTC(d.getFullYear(), d.getMonth(), 1))), loginStamps);
+  const visitorsData = buckets.map(b => monthlyVisits[b.key] || 0);
+  return { labels: buckets.map(b => b.label), visitorsData, loginsData };
+}
+
+function drawActivityChart() {
+  const el = document.getElementById('visitsChart');
+  if (!el || !_chartData) return;
+
+  const TABS = [
+    { key: 'day',   label: '1 jour' },
+    { key: 'week',  label: '1 semaine' },
+    { key: 'month', label: '1 mois' },
+    { key: 'year',  label: '1 an' },
+    { key: 'all',   label: 'Tout' },
+  ];
+  const { labels, visitorsData, loginsData } = buildChartSeries(_chartRange);
+
+  // SVG geometry.
+  const W = 640, H = 220, PADL = 34, PADR = 12, PADT = 14, PADB = 26;
+  const iw = W - PADL - PADR, ih = H - PADT - PADB;
+  const n = labels.length;
+  const maxV = Math.max(1, ...visitorsData, ...loginsData);
+  const x = i => PADL + (n <= 1 ? iw / 2 : (i / (n - 1)) * iw);
+  const y = v => PADT + ih - (v / maxV) * ih;
+
+  const linePath = data => data.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const dots = (data, color) => data.map((v, i) =>
+    `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.4" fill="${color}"><title>${v}</title></circle>`).join('');
+
+  // Y grid (4 lines) with rounded value labels.
+  const gridN = 4;
+  let grid = '';
+  for (let g = 0; g <= gridN; g++) {
+    const val = Math.round((maxV * g) / gridN);
+    const gy = (PADT + ih - (g / gridN) * ih).toFixed(1);
+    grid += `<line x1="${PADL}" y1="${gy}" x2="${W - PADR}" y2="${gy}" stroke="#eef0f2" stroke-width="1"/>`;
+    grid += `<text x="${PADL - 6}" y="${(+gy + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#9ca3af">${val}</text>`;
+  }
+  const xlabels = labels.map((l, i) => l
+    ? `<text x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="9" fill="#9ca3af">${l}</text>` : '').join('');
+
+  const totalVisitors = visitorsData.reduce((a, b) => a + b, 0);
+  const totalLogins   = loginsData.reduce((a, b) => a + b, 0);
+
+  const tabBtns = TABS.map(t =>
+    `<button data-chart-range="${t.key}" style="padding:4px 12px;font-size:0.78rem;font-weight:600;border-radius:999px;cursor:pointer;border:1px solid ${t.key === _chartRange ? '#1e4d14' : '#d1d5db'};background:${t.key === _chartRange ? '#1e4d14' : '#fff'};color:${t.key === _chartRange ? '#fff' : '#374151'}">${t.label}</button>`
+  ).join('');
+
+  el.innerHTML = `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabBtns}</div>
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:6px;font-size:0.78rem;font-weight:600">
+      <span style="display:flex;align-items:center;gap:5px;color:#374151"><span style="width:14px;height:3px;background:#ef4444;border-radius:2px;display:inline-block"></span>Visiteurs sans compte <span style="color:#9ca3af">(${totalVisitors})</span></span>
+      <span style="display:flex;align-items:center;gap:5px;color:#374151"><span style="width:14px;height:3px;background:#2563eb;border-radius:2px;display:inline-block"></span>Reconnexions <span style="color:#9ca3af">(${totalLogins})</span></span>
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:100%;background:#fff;border:1px solid #e5e7eb;border-radius:10px" preserveAspectRatio="xMidYMid meet">
+      ${grid}${xlabels}
+      <path d="${linePath(visitorsData)}" fill="none" stroke="#ef4444" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${linePath(loginsData)}" fill="none" stroke="#2563eb" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots(visitorsData, '#ef4444')}${dots(loginsData, '#2563eb')}
+    </svg>`;
+
+  // Wire the tab buttons (CSP blocks inline onclick).
+  el.querySelectorAll('[data-chart-range]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _chartRange = btn.getAttribute('data-chart-range');
+      drawActivityChart();
+    });
+  });
+}
+
 // Shows real activity: anonymous visitors (counted only after ≥ 10 s, so bots and
 // bounces are excluded), plus logins and new accounts.
 async function loadVisits() {
@@ -1187,6 +1342,9 @@ async function loadVisits() {
     const totalSignups = data.totalSignups ?? events.filter(e => e.type === 'signup').length;
     const visitsMonth  = data.visitsThisMonth ?? 0; // real anonymous visitors (≥ 10 s)
     const visitors     = Array.isArray(data.visitors) ? data.visitors : []; // per-person list, this month
+
+    // Line chart: red = anonymous visitors (no account), blue = re-logins.
+    renderActivityChart(events, visitors, data.monthlyVisits || {});
 
     // Quick stats over the recent (90-day) window the API returns.
     const now   = Date.now();

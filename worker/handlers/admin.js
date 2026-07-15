@@ -523,10 +523,12 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
   if (pathname === '/api/analytics/events' && request.method === 'GET') {
     const admin = await getUserFromToken(env, request);
     if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
-    // Real anonymous visitor counts (dwell-gated) for the last 6 calendar months.
+    // Real anonymous visitor counts (dwell-gated) for the last 13 calendar months
+    // (enough to feed the "1 an" / "all" tabs of the activity chart; the revenue
+    // forecast just picks the specific recent keys it needs out of the map).
     const now = new Date();
     const months = [];
-    for (let i = 5; i >= 0; i--) {
+    for (let i = 12; i >= 0; i--) {
       months.push(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1))
         .toISOString().slice(0, 7));
     }
