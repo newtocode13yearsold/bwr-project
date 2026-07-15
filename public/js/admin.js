@@ -1217,29 +1217,45 @@ async function loadVisits() {
     };
     const pageName = p => PAGE_NAMES[p] || p;
 
-    const visitorRow = v => {
+    // A visitor is one collapsible card: a compact header (place, device, total
+    // time) and, once clicked, the full list of every page they visited. `i` is
+    // the row index used to pair the header's click with its details panel.
+    const visitorRow = (v, i) => {
       const place = [v.city, countryName(v.country)].filter(Boolean).join(', ') || 'Localisation inconnue';
       const visitsTxt = (v.visits || 1) > 1 ? `${v.visits} pages vues` : '1 page vue';
       const totalTxt  = v.seconds != null ? ` · ⏱️ ${fmtDur(v.seconds)}` : '';
 
-      // Per-page breakdown, most time-consuming page first.
+      // Every page this visitor opened, most time-consuming first.
       const pages = (v.pages && typeof v.pages === 'object') ? Object.entries(v.pages) : [];
       pages.sort((a, b) => (b[1].seconds || 0) - (a[1].seconds || 0));
-      const pagesHtml = pages.length ? `<div style="margin-top:5px;display:flex;flex-direction:column;gap:2px">` +
-        pages.map(([path, d]) => `
-          <div style="display:flex;justify-content:space-between;gap:8px;font-size:0.72rem;color:#4b5563">
-            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📄 ${escapeHtml(pageName(path))}</span>
-            <span style="flex-shrink:0;color:#6b7280">${fmtDur(d.seconds)}${(d.views || 1) > 1 ? ` · ${d.views}×` : ''}</span>
-          </div>`).join('') + `</div>` : '';
+      const hasPages = pages.length > 0;
+
+      const detailHtml = hasPages ? `
+        <div id="vdet-${i}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px dashed #e5e7eb;flex-direction:column;gap:3px">
+          <div style="font-size:0.7rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:2px">Pages visitées (${pages.length})</div>
+          ${pages.map(([path, d]) => `
+            <div style="display:flex;justify-content:space-between;gap:8px;font-size:0.75rem;color:#374151">
+              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📄 ${escapeHtml(pageName(path))}</span>
+              <span style="flex-shrink:0;color:#6b7280">${fmtDur(d.seconds)}${(d.views || 1) > 1 ? ` · ${d.views} vues` : ''}</span>
+            </div>`).join('')}
+        </div>` : '';
+
+      const caret = hasPages
+        ? `<span id="vcar-${i}" style="flex-shrink:0;color:#9ca3af;font-size:0.9rem;transition:transform .15s">▸</span>`
+        : '';
+      const cursor = hasPages ? 'cursor:pointer' : '';
 
       return `
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px">
-        <span style="font-size:1.25rem;flex-shrink:0">${flagEmoji(v.country)}</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🧍 ${escapeHtml(place)}</div>
-          <div style="font-size:0.75rem;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(v.device || 'Appareil inconnu')} · ${visitsTxt}${totalTxt} · 🕐 ${formatTime(v.lastSeen)}</div>
-          ${pagesHtml}
+      <div data-visitor="${i}" style="padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px">
+        <div ${hasPages ? `data-visitor-toggle="${i}"` : ''} style="display:flex;align-items:flex-start;gap:10px;${cursor}">
+          <span style="font-size:1.25rem;flex-shrink:0">${flagEmoji(v.country)}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🧍 ${escapeHtml(place)}</div>
+            <div style="font-size:0.75rem;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(v.device || 'Appareil inconnu')} · ${visitsTxt}${totalTxt} · 🕐 ${formatTime(v.lastSeen)}</div>
+          </div>
+          ${caret}
         </div>
+        ${detailHtml}
       </div>`;
     };
 
@@ -1284,6 +1300,20 @@ async function loadVisits() {
     }
 
     itemsEl.innerHTML = html;
+
+    // Click a visitor → toggle their full page list. CSP blocks inline onclick,
+    // so wire it via delegation after the markup is in the DOM.
+    itemsEl.querySelectorAll('[data-visitor-toggle]').forEach(head => {
+      head.addEventListener('click', () => {
+        const i   = head.getAttribute('data-visitor-toggle');
+        const det = document.getElementById(`vdet-${i}`);
+        const car = document.getElementById(`vcar-${i}`);
+        if (!det) return;
+        const open = det.style.display !== 'none';
+        det.style.display = open ? 'none' : 'flex';
+        if (car) car.style.transform = open ? 'rotate(0deg)' : 'rotate(90deg)';
+      });
+    });
   } catch {
     itemsEl.innerHTML = '<p style="color:red">Erreur réseau</p>';
   }
