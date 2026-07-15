@@ -2,8 +2,9 @@ import { listItems, listKeys, putUser, getUser } from '../kv.js';
 import { getUserFromToken, hashPassword } from '../auth-utils.js';
 
 // ── Visitor-tracking helpers ───────────────────────────────────────────────────
-// Server-side bot detection. The client already gates on > 30 s of presence, so
-// this only catches a bot/script hitting /api/track/visit directly.
+// Server-side bot detection. The client reports real dwell time, and the server
+// only counts a visitor past the 10 s bar, so this mainly catches a bot/script
+// hitting /api/track/visit directly.
 const BOT_UA_RE = /bot|crawl|spider|slurp|mediapartners|facebookexternalhit|embedly|quora link preview|whatsapp|telegrambot|discordbot|bingpreview|yandex|baidu|duckduckbot|semrush|ahrefs|mj12bot|petalbot|headless|phantomjs|python-requests|python-urllib|axios|node-fetch|okhttp|curl|wget|libwww|scrapy|go-http-client|httpclient|lighthouse|pingdom|uptimerobot|monitor/i;
 export function isBotUA(ua) {
   if (!ua) return true; // real browsers always send a User-Agent
@@ -454,7 +455,14 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
       // endpoint directly is dropped before it can count or be listed.
       if (isBotUA(ua)) return json({ ok: true, counted: false, bot: true });
 
+      // Which page + how long the visitor looked at it (seconds, to the second).
+      // Both are sanitised/clamped; a page path must start with "/".
+      let page = typeof body.page === 'string' ? body.page.toLowerCase().slice(0, 80) : '';
+      if (!page || page[0] !== '/') page = '/';
+      const secs = Math.max(0, Math.min(86400, Math.round(Number(body.seconds) || 0)));
+
       const TTL = 60 * 60 * 24 * 400; // keep ~13 months, same as the counter
+      const THRESHOLD = 10; // a real visitor: >= 10 s on the site (bounces excluded)
       const cf  = request.cf || {};
       const now = new Date().toISOString();
       const geo = {
@@ -464,30 +472,47 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
       };
       const device = describeDevice(ua);
 
-      // No vid (private mode / storage off): can't dedup or list, just count.
+      // No vid (private mode / storage off): can't dedup or list — only count a
+      // clearly-real (>= 10 s) hit so bounces don't inflate the number.
       if (!vid) {
-        await bumpVisitCounter(env, month, TTL);
-        return json({ ok: true, counted: true });
+        const ok = secs >= THRESHOLD;
+        if (ok) await bumpVisitCounter(env, month, TTL);
+        return json({ ok: true, counted: ok });
       }
 
       const key = `visitor:${month}:${vid}`;
       const existingRaw = await env.BWR_KV.get(key);
-      if (existingRaw) {
-        // Returning visitor this month → update, don't re-count.
-        const rec = JSON.parse(existingRaw);
-        rec.lastSeen = now;
-        rec.visits   = (rec.visits || 1) + 1;
-        if (geo.country) { rec.country = geo.country; rec.city = geo.city; rec.region = geo.region; }
-        if (device) rec.device = device;
-        await env.BWR_KV.put(key, JSON.stringify(rec), { expirationTtl: TTL });
-        return json({ ok: true, counted: false });
+      const rec = existingRaw ? JSON.parse(existingRaw) : {
+        vid, firstSeen: now, lastSeen: now,
+        visits: 0, seconds: 0, pages: {}, device, ...geo, counted: false,
+      };
+
+      rec.lastSeen = now;
+      rec.visits   = (rec.visits || 0) + 1;         // page views
+      rec.seconds  = (rec.seconds || 0) + secs;     // total time on the site
+      if (geo.country) { rec.country = geo.country; rec.city = geo.city; rec.region = geo.region; }
+      if (device) rec.device = device;
+
+      // Per-page breakdown (time + views). Bounded so one browser can't create
+      // an unlimited number of distinct pages.
+      rec.pages = rec.pages || {};
+      if (rec.pages[page] || Object.keys(rec.pages).length < 40) {
+        const p = rec.pages[page] || { seconds: 0, views: 0 };
+        p.seconds += secs;
+        p.views   += 1;
+        rec.pages[page] = p;
       }
 
-      // First time this browser is seen this month → new record + bump the count.
-      const rec = { vid, firstSeen: now, lastSeen: now, visits: 1, device, ...geo };
+      // Count this browser once, the moment it first crosses the 10 s bar.
+      let counted = false;
+      if (!rec.counted && rec.seconds >= THRESHOLD) {
+        rec.counted = true;
+        counted = true;
+        await bumpVisitCounter(env, month, TTL);
+      }
+
       await env.BWR_KV.put(key, JSON.stringify(rec), { expirationTtl: TTL });
-      await bumpVisitCounter(env, month, TTL);
-      return json({ ok: true, counted: true });
+      return json({ ok: true, counted });
     } catch {
       // Analytics must never surface an error to a normal visitor.
       return json({ ok: true });
@@ -528,6 +553,9 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
     const visitorKeys = await listKeys(env, `visitor:${thisMonth}:`);
     const visitorRaw  = await Promise.all(visitorKeys.slice(0, 500).map(k => env.BWR_KV.get(k.name)));
     const visitors = visitorRaw.filter(Boolean).map(v => JSON.parse(v))
+      // Hide sub-10 s bounces (counted === false). Legacy records predate the
+      // flag (undefined) and were already dwell-gated, so they stay visible.
+      .filter(v => v.counted !== false)
       .sort((a, b) => new Date(b.lastSeen) - new Date(a.lastSeen));
 
     return json({

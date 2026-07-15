@@ -1128,7 +1128,7 @@ document.querySelectorAll('.members-tab').forEach(tab => {
   });
 });
 
-// Shows real activity: anonymous visitors (counted only after > 30 s, so bots and
+// Shows real activity: anonymous visitors (counted only after ≥ 10 s, so bots and
 // bounces are excluded), plus logins and new accounts.
 async function loadVisits() {
   const statsEl = document.getElementById('visitsStats');
@@ -1143,7 +1143,7 @@ async function loadVisits() {
     const events       = Array.isArray(data) ? data : (data.events || []);
     const totalLogins  = data.totalLogins  ?? events.filter(e => e.type === 'login').length;
     const totalSignups = data.totalSignups ?? events.filter(e => e.type === 'signup').length;
-    const visitsMonth  = data.visitsThisMonth ?? 0; // real anonymous visitors (> 30 s)
+    const visitsMonth  = data.visitsThisMonth ?? 0; // real anonymous visitors (≥ 10 s)
     const visitors     = Array.isArray(data.visitors) ? data.visitors : []; // per-person list, this month
 
     // Quick stats over the recent (90-day) window the API returns.
@@ -1160,7 +1160,7 @@ async function loadVisits() {
          ${subtitle ? `<div style="font-size:0.65rem;color:#6b7280;margin-top:1px">${subtitle}</div>` : ''}
        </div>`;
     statsEl.innerHTML =
-      statCard('Visiteurs', visitsMonth.toLocaleString('fr-FR'), '#dbeafe', 'ce mois · > 30 s') +
+      statCard('Visiteurs', visitsMonth.toLocaleString('fr-FR'), '#dbeafe', 'ce mois · ≥ 10 s') +
       statCard('Nouveaux comptes', totalSignups.toLocaleString('fr-FR'), '#dcfce7', 'depuis le début') +
       statCard('Connexions', totalLogins.toLocaleString('fr-FR'), '#fef9c3', 'depuis le début') +
       statCard("Aujourd'hui", today, '#d1fae5') +
@@ -1197,15 +1197,48 @@ async function loadVisits() {
       catch { return cc; }
     };
 
+    // Human-readable duration, to the second: "45 s", "3 min 12 s", "1 h 04".
+    const fmtDur = s => {
+      s = Math.max(0, Math.round(s || 0));
+      if (s < 60) return `${s} s`;
+      const m = Math.floor(s / 60), rs = s % 60;
+      if (m < 60) return rs ? `${m} min ${rs} s` : `${m} min`;
+      const h = Math.floor(m / 60), rm = m % 60;
+      return `${h} h ${String(rm).padStart(2, '0')}`;
+    };
+    // Friendly French label for a page path (falls back to the raw path).
+    const PAGE_NAMES = {
+      '/': 'Accueil', '/index.html': 'Accueil', '/map.html': 'Carte',
+      '/routes.html': 'Itinéraires', '/profile.html': 'Profil', '/forum.html': 'Forum',
+      '/leaderboard.html': 'Classement', '/login.html': 'Connexion', '/plans.html': 'Abonnements',
+      '/changelog.html': 'Nouveautés', '/quests.html': 'Quêtes', '/guide.html': 'Guide',
+      '/blog.html': 'Blog', '/news.html': 'Actus', '/best-tours.html': 'Meilleures balades',
+      '/legal.html': 'Mentions légales', '/admin.html': 'Carte admin', '/admin-panel.html': 'Panneau admin',
+    };
+    const pageName = p => PAGE_NAMES[p] || p;
+
     const visitorRow = v => {
       const place = [v.city, countryName(v.country)].filter(Boolean).join(', ') || 'Localisation inconnue';
-      const visitsTxt = (v.visits || 1) > 1 ? `${v.visits} visites` : '1 visite';
+      const visitsTxt = (v.visits || 1) > 1 ? `${v.visits} pages vues` : '1 page vue';
+      const totalTxt  = v.seconds != null ? ` · ⏱️ ${fmtDur(v.seconds)}` : '';
+
+      // Per-page breakdown, most time-consuming page first.
+      const pages = (v.pages && typeof v.pages === 'object') ? Object.entries(v.pages) : [];
+      pages.sort((a, b) => (b[1].seconds || 0) - (a[1].seconds || 0));
+      const pagesHtml = pages.length ? `<div style="margin-top:5px;display:flex;flex-direction:column;gap:2px">` +
+        pages.map(([path, d]) => `
+          <div style="display:flex;justify-content:space-between;gap:8px;font-size:0.72rem;color:#4b5563">
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📄 ${escapeHtml(pageName(path))}</span>
+            <span style="flex-shrink:0;color:#6b7280">${fmtDur(d.seconds)}${(d.views || 1) > 1 ? ` · ${d.views}×` : ''}</span>
+          </div>`).join('') + `</div>` : '';
+
       return `
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px">
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px">
         <span style="font-size:1.25rem;flex-shrink:0">${flagEmoji(v.country)}</span>
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🧍 ${escapeHtml(place)}</div>
-          <div style="font-size:0.75rem;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(v.device || 'Appareil inconnu')} · ${visitsTxt} · 🕐 ${formatTime(v.lastSeen)}</div>
+          <div style="font-size:0.75rem;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(v.device || 'Appareil inconnu')} · ${visitsTxt}${totalTxt} · 🕐 ${formatTime(v.lastSeen)}</div>
+          ${pagesHtml}
         </div>
       </div>`;
     };

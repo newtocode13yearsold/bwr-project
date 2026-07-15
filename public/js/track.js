@@ -1,18 +1,26 @@
 /* ──────────────────────────────────────────────────────────────────────────
-   Anonymous visitor tracking.
+   Anonymous visitor + per-page dwell tracking.
 
-   A visit is only counted once the visitor has stayed on the site for more than
-   30 seconds. Search-engine bots and instant bounces never wait that long, so
-   they are excluded by design (this is exactly why raw page-view tracking was
-   removed previously). No personal data is stored — only a random per-browser id
-   used to count each visitor at most once per calendar month, server-side.
+   For each page the visitor opens we measure how long they actually *look* at
+   it (visible time, to the second — the timer pauses while the tab is hidden so
+   a forgotten background tab never inflates the number) and, when they leave the
+   page, send { vid, page, seconds } to the server. The server accumulates this
+   into a per-browser record so the admin panel can show which pages people visit
+   and how long they spend on each.
+
+   Privacy: no personal data is stored — only a random per-browser id (used to
+   count each visitor at most once per calendar month) and the page path. A
+   visitor is only *counted* as real once they've spent at least 10 s on the
+   site in total, so search-engine bots and instant bounces are excluded. Pages
+   where the visitor stayed less than a few seconds (a mis-click, an instant
+   bounce) are never reported.
    ────────────────────────────────────────────────────────────────────────── */
 (function () {
   var API = (typeof API_URL !== 'undefined' && API_URL)
     ? API_URL
     : 'https://bwrmaps.com';
 
-  var DWELL_MS = 30 * 1000; // must stay > 30 s to be counted
+  var MIN_SECONDS = 3; // don't report a blink (mis-click / instant bounce)
 
   // Persistent, non-identifying browser id (used only for per-month dedup).
   var vid = null;
@@ -24,17 +32,43 @@
         : String(Date.now()) + '-' + Math.random().toString(36).slice(2);
       localStorage.setItem('bwr_vid', vid);
     }
-  } catch (_) { /* private mode / storage disabled — still count, just no dedup */ }
+  } catch (_) { /* private mode / storage disabled — still track, just no dedup */ }
+
+  // Which page this is. Path only (no query/hash) so distinct pages stay bounded.
+  var page = (location.pathname || '/').toLowerCase().slice(0, 80);
+
+  // Precise *visible* time on this page. We accumulate the time the tab is
+  // actually shown and pause the clock whenever it goes into the background.
+  var activeMs  = 0;
+  var visible   = (typeof document.visibilityState === 'undefined')
+    || document.visibilityState === 'visible';
+  var startedAt = visible ? Date.now() : 0;
+
+  function tick() { // fold the elapsed visible stretch into the accumulator
+    if (visible && startedAt) {
+      var t = Date.now();
+      activeMs += t - startedAt;
+      startedAt = t;
+    }
+  }
+  document.addEventListener('visibilitychange', function () {
+    tick();
+    visible   = document.visibilityState === 'visible';
+    startedAt = visible ? Date.now() : 0;
+  });
+
+  function seconds() { tick(); return Math.round(activeMs / 1000); }
 
   var sent = false;
-
-  function sendVisit() {
+  function flush() {
     if (sent) return;
+    var secs = seconds();
     sent = true;
+    if (secs < MIN_SECONDS) return; // too short to be a real page view
     try {
       // text/plain keeps it a CORS-simple request (no preflight) on preview
       // origins; the Worker parses the JSON body regardless of content type.
-      var body = JSON.stringify({ vid: vid });
+      var body = JSON.stringify({ vid: vid, page: page, seconds: secs });
       var url  = API + '/api/track/visit';
       if (navigator.sendBeacon) {
         navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' }));
@@ -49,10 +83,7 @@
     } catch (_) { /* analytics must never break the page */ }
   }
 
-  // Count after 30 s of presence. If the visitor leaves earlier, the pending
-  // timer is cleared and nothing is recorded.
-  var timer = setTimeout(sendVisit, DWELL_MS);
-  window.addEventListener('pagehide', function () {
-    if (!sent) clearTimeout(timer); // left before 30 s → do not count
-  });
+  // Terminal event for the page — fires when the tab is closed and when the
+  // visitor navigates to another page, so each page reports its own dwell time.
+  window.addEventListener('pagehide', flush);
 })();

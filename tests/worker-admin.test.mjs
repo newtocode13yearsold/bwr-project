@@ -807,9 +807,9 @@ describe('POST /api/analytics/reset', () => {
 describe('POST /api/track/visit', () => {
   const month = () => new Date().toISOString().slice(0, 7); // YYYY-MM (UTC)
 
-  test('counts a visit without auth and increments the monthly counter', async () => {
+  test('counts a visit without auth once it crosses the 20 s bar', async () => {
     const { env, kv } = freshEnv();
-    const res = await worker.fetch(r('POST', '/api/track/visit', { vid: 'visitor-a' }), env);
+    const res = await worker.fetch(r('POST', '/api/track/visit', { vid: 'visitor-a', page: '/map.html', seconds: 25 }), env);
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.ok, true);
@@ -819,8 +819,8 @@ describe('POST /api/track/visit', () => {
 
   test('same browser (vid) is counted at most once per month', async () => {
     const { env, kv } = freshEnv();
-    await worker.fetch(r('POST', '/api/track/visit', { vid: 'dup' }), env);
-    const res2 = await worker.fetch(r('POST', '/api/track/visit', { vid: 'dup' }), env);
+    await worker.fetch(r('POST', '/api/track/visit', { vid: 'dup', seconds: 25 }), env);
+    const res2 = await worker.fetch(r('POST', '/api/track/visit', { vid: 'dup', seconds: 25 }), env);
     const body2 = await res2.json();
     assert.equal(body2.counted, false);
     assert.equal(kv.store.get(`analytics:visits:${month()}`), '1', 'counter must not double-count');
@@ -828,14 +828,41 @@ describe('POST /api/track/visit', () => {
 
   test('different browsers each add to the count', async () => {
     const { env, kv } = freshEnv();
-    await worker.fetch(r('POST', '/api/track/visit', { vid: 'one' }), env);
-    await worker.fetch(r('POST', '/api/track/visit', { vid: 'two' }), env);
+    await worker.fetch(r('POST', '/api/track/visit', { vid: 'one', seconds: 25 }), env);
+    await worker.fetch(r('POST', '/api/track/visit', { vid: 'two', seconds: 25 }), env);
     assert.equal(kv.store.get(`analytics:visits:${month()}`), '2');
   });
 
-  test('missing vid still counts (best-effort, no dedup)', async () => {
+  test('a short visit (< 10 s) is recorded but not counted', async () => {
     const { env, kv } = freshEnv();
-    await worker.fetch(r('POST', '/api/track/visit', {}), env);
+    const res  = await worker.fetch(r('POST', '/api/track/visit', { vid: 'short', page: '/map.html', seconds: 4 }), env);
+    const body = await res.json();
+    assert.equal(body.counted, false);
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), undefined, 'a bounce must not count');
+    const rec = JSON.parse(kv.store.get(`visitor:${month()}:short`));
+    assert.equal(rec.counted, false);
+    assert.equal(rec.seconds, 4);
+  });
+
+  test('time accumulates across pages and counts once the total passes 10 s', async () => {
+    const { env, kv } = freshEnv();
+    await worker.fetch(r('POST', '/api/track/visit', { vid: 'acc', page: '/map.html', seconds: 6 }), env);
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), undefined, 'still under 10 s');
+    const res  = await worker.fetch(r('POST', '/api/track/visit', { vid: 'acc', page: '/routes.html', seconds: 8 }), env);
+    const body = await res.json();
+    assert.equal(body.counted, true, 'crossing 10 s counts the browser');
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), '1');
+    const rec = JSON.parse(kv.store.get(`visitor:${month()}:acc`));
+    assert.equal(rec.seconds, 14);
+    assert.equal(rec.visits, 2);
+    assert.equal(rec.pages['/map.html'].seconds, 6);
+    assert.equal(rec.pages['/routes.html'].seconds, 8);
+    assert.equal(rec.pages['/map.html'].views, 1);
+  });
+
+  test('missing vid still counts once it crosses 20 s (best-effort, no dedup)', async () => {
+    const { env, kv } = freshEnv();
+    await worker.fetch(r('POST', '/api/track/visit', { seconds: 25 }), env);
     assert.equal(kv.store.get(`analytics:visits:${month()}`), '1');
   });
 
@@ -869,8 +896,8 @@ describe('POST /api/track/visit', () => {
 
   test('a repeat visit increments visits without re-counting the browser', async () => {
     const { env, kv } = freshEnv();
-    await worker.fetch(r('POST', '/api/track/visit', { vid: 'v2' }), env);
-    await worker.fetch(r('POST', '/api/track/visit', { vid: 'v2' }), env);
+    await worker.fetch(r('POST', '/api/track/visit', { vid: 'v2', seconds: 15 }), env);
+    await worker.fetch(r('POST', '/api/track/visit', { vid: 'v2', seconds: 15 }), env);
     const rec = JSON.parse(kv.store.get(`visitor:${month()}:v2`));
     assert.equal(rec.visits, 2);
     assert.equal(kv.store.get(`analytics:visits:${month()}`), '1', 'still one unique visitor');
