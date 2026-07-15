@@ -409,6 +409,15 @@
 .pc-annual-note:empty { margin: 0; min-height: 0; }
 .plan-gold .pc-annual-note { color: var(--gold-700, var(--gold-600)); }
 
+/* Features wrapper — holds the core list, the collapsible extras and the
+   "Tout voir" toggle. Grows to push the CTA to the bottom of the card. */
+.pc-featwrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 /* Features list */
 .pc-features {
   list-style: none;
@@ -417,8 +426,34 @@
   display: flex;
   flex-direction: column;
   gap: 9px;
-  flex: 1;
 }
+.pc-features.pc-extra[hidden] { display: none; }
+
+/* "Tout voir / Réduire" per-card toggle */
+.pc-toggle {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--forest-700);
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.pc-toggle:hover { color: var(--forest-900); text-decoration: underline; }
+.plan-gold .pc-toggle { color: var(--gold-700, var(--gold-600)); }
+.pc-toggle-chev {
+  font-size: 0.8rem;
+  transition: transform var(--dur) var(--ease-out);
+}
+.pc-toggle[aria-expanded="true"] .pc-toggle-chev { transform: rotate(180deg); }
 .pf {
   display: flex;
   align-items: flex-start;
@@ -666,6 +701,57 @@
 .compare-head {
   text-align: center;
   margin-bottom: 36px;
+}
+
+/* Collapsible comparison accordion */
+.compare-details {
+  background: var(--surface-0);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.compare-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 26px;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.compare-summary::-webkit-details-marker { display: none; }
+.compare-summary:hover { background: var(--surface-2); }
+.cs-label { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+.cs-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--forest-700);
+}
+.cs-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.1rem, 2.4vw, 1.4rem);
+  letter-spacing: -0.01em;
+  color: var(--forest-900);
+}
+.cs-chevron {
+  flex-shrink: 0;
+  font-size: 1.3rem;
+  color: var(--forest-700);
+  transition: transform var(--dur) var(--ease-out);
+}
+.compare-details[open] .cs-chevron { transform: rotate(180deg); }
+/* The table wrapper already carries its own border/shadow — inside the
+   accordion it should sit flush, so strip the doubled chrome. */
+.compare-details .compare-table-wrap {
+  border: none;
+  border-top: 1px solid var(--border-soft);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .compare-table-wrap {

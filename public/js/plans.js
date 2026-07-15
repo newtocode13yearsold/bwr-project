@@ -29,6 +29,19 @@ billingToggles.forEach(btn => {
   });
 });
 
+/* ── Per-card "Tout voir / Réduire" toggle ───────────────────────────── */
+document.querySelectorAll('.pc-toggle').forEach(btn => {
+  const wrap  = btn.closest('.pc-featwrap');
+  const extra = wrap && wrap.querySelector('.pc-extra');
+  if (!extra) return;
+  btn.addEventListener('click', () => {
+    const open = extra.hidden;
+    extra.hidden = !open;
+    btn.setAttribute('aria-expanded', String(open));
+    btn.firstChild.textContent = open ? 'Réduire ' : 'Tout voir ';
+  });
+});
+
 /* ── Focus trap helper ───────────────────────────────────────────────── */
 function trapFocus(container) {
   const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
