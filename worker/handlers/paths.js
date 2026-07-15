@@ -6,6 +6,23 @@ const STATUS_LABELS = {
   not_passable: 'Impraticable', no_bike: 'Vélo interdit',
 };
 
+// ── Edge cache for GET /api/paths ────────────────────────────────────────────
+// The path list is identical for every visitor and only changes when an admin
+// creates/edits/deletes a path, yet building it costs one KV read per path on
+// every page load. Cache the assembled JSON at Cloudflare's edge so repeat
+// requests skip KV entirely. `caches` is absent in the Node test runner and in
+// dev, so every use is guarded — caching there simply no-ops.
+const PATHS_CACHE_KEY = 'https://bwr-internal-cache/api/paths';
+const PATHS_CACHE_TTL = 60; // seconds; short so other colos self-heal (cache.delete only purges the local one)
+
+const cacheAvailable = () => typeof caches !== 'undefined' && caches.default;
+
+/** Best-effort purge of the cached path list after a write. */
+async function purgePathsCache() {
+  if (!cacheAvailable()) return;
+  try { await caches.default.delete(new Request(PATHS_CACHE_KEY)); } catch {}
+}
+
 /** @param {string} channel @param {string} pathName @param {string} oldStatus @param {string} newStatus */
 async function notifyStatusChange(channel, pathName, oldStatus, newStatus) {
   try {
@@ -24,9 +41,36 @@ async function notifyStatusChange(channel, pathName, oldStatus, newStatus) {
  * @param {{ pathname: string, json: Function, fail: Function }} ctx
  * @returns {Promise<Response|null>}
  */
-export async function handlePaths(request, env, { pathname, json, fail }) {
+export async function handlePaths(request, env, { pathname, json, fail, cors, waitUntil }) {
   if (pathname === '/api/paths' && request.method === 'GET') {
-    return json(await listItems(env, 'path:'));
+    const cache = cacheAvailable() ? caches.default : null;
+    const cacheKey = cache ? new Request(PATHS_CACHE_KEY) : null;
+
+    if (cache) {
+      const hit = await cache.match(cacheKey);
+      if (hit) {
+        // Re-wrap with the caller's live CORS headers (the cached copy is stored
+        // origin-agnostic) so Origin reflection stays correct across sites.
+        const body = await hit.text();
+        return new Response(body, {
+          headers: { ...cors, 'Content-Type': 'application/json', 'X-Cache': 'HIT' },
+        });
+      }
+    }
+
+    const body = JSON.stringify(await listItems(env, 'path:'));
+
+    if (cache) {
+      const store = new Response(body, {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${PATHS_CACHE_TTL}` },
+      });
+      const put = cache.put(cacheKey, store);
+      if (waitUntil) waitUntil(put); else await put.catch(() => {});
+    }
+
+    return new Response(body, {
+      headers: { ...cors, 'Content-Type': 'application/json', 'X-Cache': cache ? 'MISS' : 'BYPASS' },
+    });
   }
 
   if (pathname === '/api/paths' && request.method === 'POST') {
@@ -68,6 +112,7 @@ export async function handlePaths(request, env, { pathname, json, fail }) {
     await patchLeaderboardCache(env, gradedUser);
     await addPeriodXp(env, gradedUser, { pathGrades: 1 });
 
+    await purgePathsCache();
     return json(newPath, 201);
   }
 
@@ -91,6 +136,7 @@ export async function handlePaths(request, env, { pathname, json, fail }) {
       }
     }
 
+    await purgePathsCache();
     return json(updated);
   }
 
@@ -159,6 +205,7 @@ export async function handlePaths(request, env, { pathname, json, fail }) {
       }
     }
 
+    await purgePathsCache();
     return json(updated);
   }
 
@@ -192,6 +239,7 @@ export async function handlePaths(request, env, { pathname, json, fail }) {
       }));
     }
 
+    await purgePathsCache();
     return json({ success: true });
   }
 
