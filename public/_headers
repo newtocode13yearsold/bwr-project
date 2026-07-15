@@ -10,3 +10,21 @@
 # immediately instead of being held by the Cloudflare edge / browser cache.
 /*.html
   Cache-Control: no-cache
+
+# Static media (images, icons, favicon) is content-stable and safe to cache for
+# 30 days — the browser stops re-fetching it on every visit. Deliberately NOT
+# applied to .js/.css: those filenames are not content-hashed, so they must keep
+# revalidating (the service worker is network-first for app files) or a deploy
+# would be held back behind a stale cache.
+/*.png
+  Cache-Control: public, max-age=2592000
+/*.jpg
+  Cache-Control: public, max-age=2592000
+/*.jpeg
+  Cache-Control: public, max-age=2592000
+/*.webp
+  Cache-Control: public, max-age=2592000
+/*.svg
+  Cache-Control: public, max-age=2592000
+/*.ico
+  Cache-Control: public, max-age=2592000
