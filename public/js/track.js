@@ -2,7 +2,7 @@
    Anonymous visitor tracking.
 
    A visit is only counted once the visitor has stayed on the site for more than
-   one minute. Search-engine bots and instant bounces never wait that long, so
+   30 seconds. Search-engine bots and instant bounces never wait that long, so
    they are excluded by design (this is exactly why raw page-view tracking was
    removed previously). No personal data is stored — only a random per-browser id
    used to count each visitor at most once per calendar month, server-side.
@@ -12,7 +12,7 @@
     ? API_URL
     : 'https://bwrmaps.com';
 
-  var DWELL_MS = 60 * 1000; // must stay > 1 min to be counted
+  var DWELL_MS = 30 * 1000; // must stay > 30 s to be counted
 
   // Persistent, non-identifying browser id (used only for per-month dedup).
   var vid = null;
@@ -49,10 +49,10 @@
     } catch (_) { /* analytics must never break the page */ }
   }
 
-  // Count after a full minute of presence. If the visitor leaves earlier, the
-  // pending timer is cleared and nothing is recorded.
+  // Count after 30 s of presence. If the visitor leaves earlier, the pending
+  // timer is cleared and nothing is recorded.
   var timer = setTimeout(sendVisit, DWELL_MS);
   window.addEventListener('pagehide', function () {
-    if (!sent) clearTimeout(timer); // left before 1 min → do not count
+    if (!sent) clearTimeout(timer); // left before 30 s → do not count
   });
 })();

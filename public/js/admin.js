@@ -1128,7 +1128,7 @@ document.querySelectorAll('.members-tab').forEach(tab => {
   });
 });
 
-// Shows real activity: anonymous visitors (counted only after > 1 min, so bots and
+// Shows real activity: anonymous visitors (counted only after > 30 s, so bots and
 // bounces are excluded), plus logins and new accounts.
 async function loadVisits() {
   const statsEl = document.getElementById('visitsStats');
@@ -1143,7 +1143,8 @@ async function loadVisits() {
     const events       = Array.isArray(data) ? data : (data.events || []);
     const totalLogins  = data.totalLogins  ?? events.filter(e => e.type === 'login').length;
     const totalSignups = data.totalSignups ?? events.filter(e => e.type === 'signup').length;
-    const visitsMonth  = data.visitsThisMonth ?? 0; // real anonymous visitors (> 1 min)
+    const visitsMonth  = data.visitsThisMonth ?? 0; // real anonymous visitors (> 30 s)
+    const visitors     = Array.isArray(data.visitors) ? data.visitors : []; // per-person list, this month
 
     // Quick stats over the recent (90-day) window the API returns.
     const now   = Date.now();
@@ -1159,7 +1160,7 @@ async function loadVisits() {
          ${subtitle ? `<div style="font-size:0.65rem;color:#6b7280;margin-top:1px">${subtitle}</div>` : ''}
        </div>`;
     statsEl.innerHTML =
-      statCard('Visiteurs', visitsMonth.toLocaleString('fr-FR'), '#dbeafe', 'ce mois · > 1 min') +
+      statCard('Visiteurs', visitsMonth.toLocaleString('fr-FR'), '#dbeafe', 'ce mois · > 30 s') +
       statCard('Nouveaux comptes', totalSignups.toLocaleString('fr-FR'), '#dcfce7', 'depuis le début') +
       statCard('Connexions', totalLogins.toLocaleString('fr-FR'), '#fef9c3', 'depuis le début') +
       statCard("Aujourd'hui", today, '#d1fae5') +
@@ -1172,7 +1173,7 @@ async function loadVisits() {
     document.getElementById('btnDebugKV')?.addEventListener('click', loadDebug);
     document.getElementById('btnResetActivity')?.addEventListener('click', resetActivity);
 
-    if (events.length === 0) {
+    if (events.length === 0 && visitors.length === 0) {
       itemsEl.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Aucune activité enregistrée pour l\'instant.</p>';
       return;
     }
@@ -1181,6 +1182,32 @@ async function loadVisits() {
       const d = new Date(iso);
       return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' })
            + ' ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+    };
+
+    // 🇫🇷 flag from an ISO country code, and the country name in French.
+    const flagEmoji = cc => {
+      if (!cc || cc.length !== 2) return '🌍';
+      const A = 0x1F1E6;
+      return String.fromCodePoint(A + cc.toUpperCase().charCodeAt(0) - 65,
+                                  A + cc.toUpperCase().charCodeAt(1) - 65);
+    };
+    const countryName = cc => {
+      if (!cc) return '';
+      try { countryName._n ??= new Intl.DisplayNames(['fr'], { type: 'region' }); return countryName._n.of(cc) || cc; }
+      catch { return cc; }
+    };
+
+    const visitorRow = v => {
+      const place = [v.city, countryName(v.country)].filter(Boolean).join(', ') || 'Localisation inconnue';
+      const visitsTxt = (v.visits || 1) > 1 ? `${v.visits} visites` : '1 visite';
+      return `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px">
+        <span style="font-size:1.25rem;flex-shrink:0">${flagEmoji(v.country)}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🧍 ${escapeHtml(place)}</div>
+          <div style="font-size:0.75rem;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(v.device || 'Appareil inconnu')} · ${visitsTxt} · 🕐 ${formatTime(v.lastSeen)}</div>
+        </div>
+      </div>`;
     };
 
     const eventRow = e => {
@@ -1209,6 +1236,11 @@ async function loadVisits() {
        </div>`;
 
     let html = '';
+    if (visitors.length > 0) {
+      const count = visitors.length + (data.visitorsTruncated ? '+' : '');
+      html += sectionTitle('🌍', 'Visiteurs ce mois', count);
+      html += visitors.map(visitorRow).join('');
+    }
     if (signups.length > 0) {
       html += sectionTitle('✨', 'Nouveaux comptes', signups.length);
       html += signups.slice(0, 100).map(eventRow).join('');
@@ -1745,7 +1777,7 @@ async function loadRevenue() {
       const eventsData = eventsRes.ok ? await eventsRes.json() : {};
       const users  = usersRes.ok  ? await usersRes.json()  : (_revenueUsers || []);
 
-      // Real anonymous visitors (dwell-gated, > 1 min) per calendar month, keyed YYYY-MM.
+      // Real anonymous visitors (dwell-gated, > 30 s) per calendar month, keyed YYYY-MM.
       const monthlyVisits = (eventsData && eventsData.monthlyVisits) || {};
       const hasRealVisits = Object.values(monthlyVisits).some(v => v > 0);
       // Fallback proxy while no real visitor data exists yet: logins + new accounts.

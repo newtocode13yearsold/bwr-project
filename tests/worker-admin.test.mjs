@@ -88,11 +88,14 @@ function freshEnv() {
 
 // ── Request helpers ───────────────────────────────────────────────────────────
 
+// A realistic browser User-Agent by default so visit tracking treats requests as
+// real people; pass a { 'User-Agent': … } override to simulate a bot.
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
 const r = (method, path, body, extraHeaders = {}) => new Request(
   `https://bwr.test${path}`,
   {
     method,
-    headers: { 'Content-Type': 'application/json', ...extraHeaders },
+    headers: { 'Content-Type': 'application/json', 'User-Agent': BROWSER_UA, ...extraHeaders },
     ...(body != null ? { body: JSON.stringify(body) } : {}),
   }
 );
@@ -835,6 +838,43 @@ describe('POST /api/track/visit', () => {
     await worker.fetch(r('POST', '/api/track/visit', {}), env);
     assert.equal(kv.store.get(`analytics:visits:${month()}`), '1');
   });
+
+  test('a bot User-Agent is never counted nor listed', async () => {
+    const { env, kv } = freshEnv();
+    const res = await worker.fetch(
+      r('POST', '/api/track/visit', { vid: 'botv' }, { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' }), env);
+    const body = await res.json();
+    assert.equal(body.counted, false);
+    assert.equal(body.bot, true);
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), undefined, 'bot must not touch the counter');
+    assert.equal(kv.store.get(`visitor:${month()}:botv`), undefined, 'bot must not create a record');
+  });
+
+  test('a request with no User-Agent is treated as a bot', async () => {
+    const { env, kv } = freshEnv();
+    await worker.fetch(r('POST', '/api/track/visit', { vid: 'noua' }, { 'User-Agent': '' }), env);
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), undefined);
+  });
+
+  test('creates a per-visitor record with a friendly device label', async () => {
+    const { env, kv } = freshEnv();
+    await worker.fetch(
+      r('POST', '/api/track/visit', { vid: 'v1' },
+        { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605 Version/17.0 Mobile Safari/604' }), env);
+    const rec = JSON.parse(kv.store.get(`visitor:${month()}:v1`));
+    assert.equal(rec.visits, 1);
+    assert.equal(rec.device, 'Safari · iPhone');
+    assert.ok(rec.firstSeen && rec.lastSeen, 'timestamps recorded');
+  });
+
+  test('a repeat visit increments visits without re-counting the browser', async () => {
+    const { env, kv } = freshEnv();
+    await worker.fetch(r('POST', '/api/track/visit', { vid: 'v2' }), env);
+    await worker.fetch(r('POST', '/api/track/visit', { vid: 'v2' }), env);
+    const rec = JSON.parse(kv.store.get(`visitor:${month()}:v2`));
+    assert.equal(rec.visits, 2);
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), '1', 'still one unique visitor');
+  });
 });
 
 // ── GET /api/analytics/events — exposes real monthly visitor counts ───────────
@@ -859,5 +899,24 @@ describe('GET /api/analytics/events monthlyVisits', () => {
     const { token } = seedFree();
     const res = await worker.fetch(authed('GET', '/api/analytics/events', token), env);
     assert.equal(res.status, 403);
+  });
+
+  test('admin sees the per-visitor list, most recently active first', async () => {
+    const { env, kv, seedAdmin } = freshEnv();
+    const { token } = seedAdmin();
+    kv.store.set(`visitor:${month()}:a`, JSON.stringify({
+      vid: 'a', firstSeen: '2026-07-01T10:00:00Z', lastSeen: '2026-07-01T10:00:00Z',
+      visits: 1, country: 'FR', city: 'Compiègne', device: 'Chrome · Windows' }));
+    kv.store.set(`visitor:${month()}:b`, JSON.stringify({
+      vid: 'b', firstSeen: '2026-07-02T10:00:00Z', lastSeen: '2026-07-05T12:00:00Z',
+      visits: 3, country: 'BE', city: 'Bruxelles', device: 'Safari · iPhone' }));
+
+    const res = await worker.fetch(authed('GET', '/api/analytics/events', token), env);
+    const body = await res.json();
+    assert.equal(body.visitors.length, 2);
+    assert.equal(body.visitors[0].vid, 'b', 'sorted by lastSeen desc');
+    assert.equal(body.visitors[0].city, 'Bruxelles');
+    assert.equal(body.visitors[0].visits, 3);
+    assert.equal(body.visitorsTruncated, false);
   });
 });

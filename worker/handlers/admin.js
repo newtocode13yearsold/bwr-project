@@ -1,6 +1,47 @@
 import { listItems, listKeys, putUser, getUser } from '../kv.js';
 import { getUserFromToken, hashPassword } from '../auth-utils.js';
 
+// ── Visitor-tracking helpers ───────────────────────────────────────────────────
+// Server-side bot detection. The client already gates on > 30 s of presence, so
+// this only catches a bot/script hitting /api/track/visit directly.
+const BOT_UA_RE = /bot|crawl|spider|slurp|mediapartners|facebookexternalhit|embedly|quora link preview|whatsapp|telegrambot|discordbot|bingpreview|yandex|baidu|duckduckbot|semrush|ahrefs|mj12bot|petalbot|headless|phantomjs|python-requests|python-urllib|axios|node-fetch|okhttp|curl|wget|libwww|scrapy|go-http-client|httpclient|lighthouse|pingdom|uptimerobot|monitor/i;
+export function isBotUA(ua) {
+  if (!ua) return true; // real browsers always send a User-Agent
+  return BOT_UA_RE.test(ua);
+}
+
+// Friendly, non-identifying device label parsed from the User-Agent
+// (e.g. "Chrome · Windows", "Safari · iPhone"). No raw UA is ever stored.
+export function describeDevice(ua) {
+  if (!ua) return '';
+  let os = '';
+  if (/iphone/i.test(ua))            os = 'iPhone';
+  else if (/ipad/i.test(ua))         os = 'iPad';
+  else if (/android/i.test(ua))      os = 'Android';
+  else if (/windows/i.test(ua))      os = 'Windows';
+  else if (/mac os x|macintosh/i.test(ua)) os = 'Mac';
+  else if (/cros/i.test(ua))         os = 'ChromeOS';
+  else if (/linux/i.test(ua))        os = 'Linux';
+
+  let browser = '';
+  if (/edg\//i.test(ua))                       browser = 'Edge';
+  else if (/opr\/|opera/i.test(ua))            browser = 'Opera';
+  else if (/samsungbrowser/i.test(ua))         browser = 'Samsung Internet';
+  else if (/firefox|fxios/i.test(ua))          browser = 'Firefox';
+  else if (/chrome|crios/i.test(ua))           browser = 'Chrome';
+  else if (/safari/i.test(ua))                 browser = 'Safari';
+
+  return [browser, os].filter(Boolean).join(' · ');
+}
+
+// Fixed-window counter of unique visitors for a month (drives the stat cards).
+async function bumpVisitCounter(env, month, ttl) {
+  const counterKey = `analytics:visits:${month}`;
+  const cur = await env.BWR_KV.get(counterKey);
+  await env.BWR_KV.put(counterKey, String((cur ? parseInt(cur, 10) : 0) + 1),
+    { expirationTtl: ttl });
+}
+
 /**
  * Admin-only endpoints: one-time setup/migration, user list, contact messages.
  * @param {Request} request
@@ -296,7 +337,7 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
     if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
 
     const prefixes = ['user:', 'uemail:', 'session:', 'path:', 'report:', 'contact:',
-                      'event:', 'savedroute:', 'routeshare:', 'osm:', 'pending:', 'pemail:',
+                      'event:', 'visitor:', 'savedroute:', 'routeshare:', 'osm:', 'pending:', 'pemail:',
                       'photo:', 'aisugg:', 'walkedpath:', 'pathgrade:', 'leaderboard:'];
 
     const counts = {};
@@ -371,7 +412,7 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
     // 3. Purge the bot-prone rate-limit / visitor-number keys and old counters,
     //    plus the dwell-gated visitor counters (analytics:visits:* + vseen:* markers).
     for (const prefix of ['ratelimit:visit:', 'ratelimit:device:', 'visitor:num:',
-                          'analytics:visits:', 'vseen:']) {
+                          'analytics:visits:', 'vseen:', 'visitor:']) {
       const keys = await listKeys(env, prefix);
       await Promise.all(keys.map(k => env.BWR_KV.delete(k.name)));
       deleted += keys.length;
@@ -395,27 +436,57 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
   }
 
   // ── Anonymous visit tracking (PUBLIC — no auth) ──────────────────────────────
-  // Counts one unique visitor per calendar month. The client (public/js/track.js)
-  // only calls this after the visitor has stayed > 1 min, so search-engine bots and
-  // instant bounces — the reason raw page-view tracking was removed — never reach
-  // here. Dedup per browser via the anonymous `vid` marker (no PII stored).
+  // Logs one record per unique visitor per calendar month, so the admin panel can
+  // list every real person who came (not just a count). The client
+  // (public/js/track.js) only calls this after the visitor has stayed > 30 s, so
+  // search-engine bots and instant bounces never reach here; a server-side
+  // User-Agent bot filter is a second line of defence. No PII is stored — only an
+  // anonymous per-browser `vid`, a coarse Cloudflare city/country, and a friendly
+  // device label (never the IP or the raw User-Agent).
   if (pathname === '/api/track/visit' && request.method === 'POST') {
     try {
       const body  = await request.json().catch(() => ({}));
       const vid   = typeof body.vid === 'string' ? body.vid.slice(0, 64) : '';
       const month = new Date().toISOString().slice(0, 7); // YYYY-MM (UTC)
+      const ua    = request.headers.get('user-agent') || '';
 
-      // Already counted this browser this month → no-op.
-      if (vid) {
-        const seenKey = `vseen:${month}:${vid}`;
-        if (await env.BWR_KV.get(seenKey)) return json({ ok: true, counted: false });
-        await env.BWR_KV.put(seenKey, '1', { expirationTtl: 60 * 60 * 24 * 40 }); // ~40 days
+      // Server-side bot guard on top of the client dwell gate: a bot that hits this
+      // endpoint directly is dropped before it can count or be listed.
+      if (isBotUA(ua)) return json({ ok: true, counted: false, bot: true });
+
+      const TTL = 60 * 60 * 24 * 400; // keep ~13 months, same as the counter
+      const cf  = request.cf || {};
+      const now = new Date().toISOString();
+      const geo = {
+        country: typeof cf.country === 'string' ? cf.country : '',
+        city:    typeof cf.city    === 'string' ? cf.city    : '',
+        region:  typeof cf.region  === 'string' ? cf.region  : '',
+      };
+      const device = describeDevice(ua);
+
+      // No vid (private mode / storage off): can't dedup or list, just count.
+      if (!vid) {
+        await bumpVisitCounter(env, month, TTL);
+        return json({ ok: true, counted: true });
       }
 
-      const counterKey = `analytics:visits:${month}`;
-      const cur = await env.BWR_KV.get(counterKey);
-      await env.BWR_KV.put(counterKey, String((cur ? parseInt(cur, 10) : 0) + 1),
-        { expirationTtl: 60 * 60 * 24 * 400 }); // keep ~13 months
+      const key = `visitor:${month}:${vid}`;
+      const existingRaw = await env.BWR_KV.get(key);
+      if (existingRaw) {
+        // Returning visitor this month → update, don't re-count.
+        const rec = JSON.parse(existingRaw);
+        rec.lastSeen = now;
+        rec.visits   = (rec.visits || 1) + 1;
+        if (geo.country) { rec.country = geo.country; rec.city = geo.city; rec.region = geo.region; }
+        if (device) rec.device = device;
+        await env.BWR_KV.put(key, JSON.stringify(rec), { expirationTtl: TTL });
+        return json({ ok: true, counted: false });
+      }
+
+      // First time this browser is seen this month → new record + bump the count.
+      const rec = { vid, firstSeen: now, lastSeen: now, visits: 1, device, ...geo };
+      await env.BWR_KV.put(key, JSON.stringify(rec), { expirationTtl: TTL });
+      await bumpVisitCounter(env, month, TTL);
       return json({ ok: true, counted: true });
     } catch {
       // Analytics must never surface an error to a normal visitor.
@@ -451,12 +522,22 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
     const monthlyVisits = {};
     months.forEach((m, i) => { monthlyVisits[m] = visitRaw[i] ? parseInt(visitRaw[i], 10) : 0; });
 
+    // Per-visitor list for the current month — one entry per real person, most
+    // recently active first. Capped so a busy month can't blow up the response.
+    const thisMonth   = months[months.length - 1];
+    const visitorKeys = await listKeys(env, `visitor:${thisMonth}:`);
+    const visitorRaw  = await Promise.all(visitorKeys.slice(0, 500).map(k => env.BWR_KV.get(k.name)));
+    const visitors = visitorRaw.filter(Boolean).map(v => JSON.parse(v))
+      .sort((a, b) => new Date(b.lastSeen) - new Date(a.lastSeen));
+
     return json({
       events,
       totalLogins:  loginsRaw  ? parseInt(loginsRaw, 10)  : 0,
       totalSignups: signupsRaw ? parseInt(signupsRaw, 10) : 0,
       monthlyVisits,
-      visitsThisMonth: monthlyVisits[months[months.length - 1]] || 0,
+      visitsThisMonth: monthlyVisits[thisMonth] || 0,
+      visitors,
+      visitorsTruncated: visitorKeys.length > 500,
     });
   }
 
