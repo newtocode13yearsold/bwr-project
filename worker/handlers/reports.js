@@ -8,6 +8,23 @@ const TYPE_LABELS = {
   danger: 'Danger', other: 'Autre',
 };
 
+// ── Edge cache for GET /api/reports ──────────────────────────────────────────
+// Same pattern as GET /api/paths: the report list is identical for everyone and
+// only changes on create/dismiss, yet building it costs one KV read per report
+// on every map load. Cache the assembled (userId-stripped) JSON at Cloudflare's
+// edge. `caches` is absent in the Node test runner and dev, so every use is
+// guarded and simply no-ops there.
+const REPORTS_CACHE_KEY = 'https://bwr-internal-cache/api/reports';
+const REPORTS_CACHE_TTL = 60; // seconds; short so other colos self-heal (cache.delete only purges the local one)
+
+const cacheAvailable = () => typeof caches !== 'undefined' && caches.default;
+
+/** Best-effort purge of the cached report list after a write. */
+async function purgeReportsCache() {
+  if (!cacheAvailable()) return;
+  try { await caches.default.delete(new Request(REPORTS_CACHE_KEY)); } catch {}
+}
+
 /**
  * Report and photo endpoints (crowd-sourced problem reporting).
  * @param {Request} request
@@ -17,8 +34,33 @@ const TYPE_LABELS = {
  */
 export async function handleReports(request, env, { pathname, json, fail, cors, waitUntil }) {
   if (pathname === '/api/reports' && request.method === 'GET') {
+    const cache = cacheAvailable() ? caches.default : null;
+    const cacheKey = cache ? new Request(REPORTS_CACHE_KEY) : null;
+
+    if (cache) {
+      const hit = await cache.match(cacheKey);
+      if (hit) {
+        const body = await hit.text();
+        return new Response(body, {
+          headers: { ...cors, 'Content-Type': 'application/json', 'X-Cache': 'HIT' },
+        });
+      }
+    }
+
     const reports = await listItems(env, 'report:');
-    return json(reports.map(({ userId: _, ...r }) => r));
+    const body = JSON.stringify(reports.map(({ userId: _, ...r }) => r));
+
+    if (cache) {
+      const store = new Response(body, {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${REPORTS_CACHE_TTL}` },
+      });
+      const put = cache.put(cacheKey, store);
+      if (waitUntil) waitUntil(put); else await put.catch(() => {});
+    }
+
+    return new Response(body, {
+      headers: { ...cors, 'Content-Type': 'application/json', 'X-Cache': cache ? 'MISS' : 'BYPASS' },
+    });
   }
 
   if (pathname.startsWith('/api/photos/') && request.method === 'GET') {
@@ -96,6 +138,7 @@ export async function handleReports(request, env, { pathname, json, fail, cors, 
       waitUntil(notifyHazard(env, report).catch(() => {}));
     }
 
+    await purgeReportsCache();
     return json(report, 201);
   }
 
@@ -108,6 +151,7 @@ export async function handleReports(request, env, { pathname, json, fail, cors, 
       env.BWR_KV.delete(`report:${id}`),
       env.BWR_KV.delete(`photo:${id}`),
     ]);
+    await purgeReportsCache();
     return json({ success: true });
   }
 
