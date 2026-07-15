@@ -28,12 +28,13 @@
   function injectStyles() {
     if (document.getElementById('bwr-rating-styles')) return;
     var css = ''
-      + '.footer-rating{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:6px}'
-      + '.footer-rating__score{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:#fff}'
-      + '.footer-rating__stars{color:#f59e0b;letter-spacing:1px;font-size:1.05rem;position:relative;display:inline-block;line-height:1}'
+      + '.footer-rating{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:6px}'
+      + '.footer-rating__label{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap}'
+      + '.footer-rating__score{display:inline-flex;align-items:center;gap:7px;font-weight:700;color:#fff;white-space:nowrap}'
+      + '.footer-rating__stars{color:#f59e0b;letter-spacing:2px;font-size:1.05rem;position:relative;display:inline-block;line-height:1}'
       + '.footer-rating__stars i{font-style:normal;color:rgba(255,255,255,.25)}'
-      + '.footer-rating__stars b{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#f59e0b;font-weight:400}'
-      + '.footer-rating__count{color:rgba(255,255,255,.6);font-weight:500;font-size:.9rem}'
+      + '.footer-rating__stars b{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#f59e0b;font-weight:400;letter-spacing:2px}'
+      + '.footer-rating__count{color:rgba(255,255,255,.6);font-weight:500;font-size:.9rem;white-space:nowrap}'
       + '.footer-rating__btn{border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;'
       + 'border-radius:999px;padding:6px 14px;font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s}'
       + '.footer-rating__btn:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.7)}'
@@ -93,7 +94,7 @@
       aria = 'Aucun avis pour le moment';
     }
     var btnLabel = mine ? 'Modifier mon avis' : 'Donner mon avis';
-    block.innerHTML = '<span role="img" aria-label="' + aria + '">' + label + '</span>'
+    block.innerHTML = '<span class="footer-rating__label" role="img" aria-label="' + aria + '">' + label + '</span>'
       + '<button type="button" class="footer-rating__btn" id="bwr-rating-open">' + btnLabel + '</button>';
     var btn = document.getElementById('bwr-rating-open');
     if (btn) btn.addEventListener('click', openModal);
