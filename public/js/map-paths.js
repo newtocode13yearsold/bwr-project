@@ -16,14 +16,34 @@ function pathWeight() {
 let walkedPathLayer = null;
 
 async function loadPaths() {
+  // Stale-while-revalidate: paint the last-known path list instantly from
+  // localStorage so graded paths appear as fast as the map, then revalidate
+  // from the network and redraw only if the list actually changed.
+  let cachedRaw = null;
+  try {
+    cachedRaw = localStorage.getItem('bwr_cached_paths');
+    if (cachedRaw) {
+      const arr = JSON.parse(cachedRaw);
+      if (Array.isArray(arr) && arr.length) {
+        allPaths = arr;
+        renderPaths();
+        showPathHintIfNeeded();
+      }
+    }
+  } catch { cachedRaw = null; }
+
   try {
     const res = await fetch(`${API_URL}/api/paths`);
     if (!res.ok) return;
     const data = await res.json();
     if (!Array.isArray(data)) return;
-    allPaths = data;
-    renderPaths();
-    showPathHintIfNeeded();
+    const fresh = JSON.stringify(data);
+    if (fresh !== cachedRaw) {
+      allPaths = data;
+      renderPaths();
+      showPathHintIfNeeded();
+      try { localStorage.setItem('bwr_cached_paths', fresh); } catch {}
+    }
     if (_userPlan === 'gold') loadWalkedOverlay();
   } catch (e) {
     console.error('loadPaths:', e);
