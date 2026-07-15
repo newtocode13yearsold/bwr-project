@@ -75,6 +75,7 @@ let editModeActive = false;
 // Populate the always-visible dashboard sections (admin-panel.html).
 async function initDashboard() {
   await loadMessages();
+  await loadRatings();
   await loadMembers();
   await loadRevenue();
   if (window.__wireRevenueForecast) window.__wireRevenueForecast();
@@ -1079,6 +1080,47 @@ async function loadMessages() {
         btn.textContent = '…'; btn.disabled = true;
         await fetch(`${API_URL}/api/contacts/${btn.dataset.id}`, { method: 'DELETE', headers: authHeader() });
         await loadMessages();
+      });
+    });
+  } catch {
+    list.innerHTML = '<p style="color:red">Erreur réseau</p>';
+  }
+}
+
+// ── Site ratings (admin-only comments) ─────────────────────────────────────
+async function loadRatings() {
+  const list = document.getElementById('ratingList');
+  const sum  = document.getElementById('ratingSummary');
+  if (!list) return;
+  list.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Chargement…</p>';
+  try {
+    const res = await fetch(`${API_URL}/api/ratings`, { headers: authHeader() });
+    const data = await res.json();
+    if (!res.ok) { list.innerHTML = `<p style="color:red">${escapeHtml(data.error || 'Erreur')}</p>`; return; }
+    if (sum) sum.textContent = data.count > 0
+      ? `— ${data.avg.toFixed(1).replace('.', ',')}/5 · ${data.count} avis`
+      : '';
+    const reviews = data.reviews || [];
+    if (reviews.length === 0) { list.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Aucun avis pour le moment.</p>'; return; }
+    const stars = n => '★★★★★☆☆☆☆☆'.slice(5 - n, 10 - n);
+    list.innerHTML = reviews.map(r => {
+      const date = new Date(r.updatedAt || r.createdAt).toLocaleDateString('fr-FR');
+      return `<div style="padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div>
+            <div style="font-weight:600;font-size:0.9rem">${escapeHtml(r.name || 'Anonyme')}</div>
+            <div style="font-size:0.95rem;color:#f59e0b;letter-spacing:1px" title="${r.stars}/5">${stars(r.stars)} <span style="color:#6b7280;font-size:0.75rem">· ${date}</span></div>
+          </div>
+          <button class="btn-secondary rating-delete-btn" data-id="${escapeHtml(r.userId)}" style="width:auto;padding:4px 10px;font-size:0.78rem;flex-shrink:0">Supprimer</button>
+        </div>
+        ${r.comment ? `<p style="margin:8px 0 0;font-size:0.88rem;white-space:pre-wrap;color:#374151">${escapeHtml(r.comment)}</p>` : ''}
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.rating-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.textContent = '…'; btn.disabled = true;
+        await fetch(`${API_URL}/api/ratings/${encodeURIComponent(btn.dataset.id)}`, { method: 'DELETE', headers: authHeader() });
+        await loadRatings();
       });
     });
   } catch {

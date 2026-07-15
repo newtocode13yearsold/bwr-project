@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BWR — Carte interactive de l'Oise | Balades & itinéraires</title>
-  <meta name="description" content="BWR : carte interactive des forêts et chemins de l'Oise. Planifiez vos balades à pied ou à vélo, consultez l'état des sentiers et signalez les obstacles en temps réel." />
-  <meta name="keywords" content="BWR, carte forêt Oise, balades Oise, chemins forêt, itinéraires randonnée Oise, carte interactive, vélo forêt Oise, Compiègne, Chantilly, Halatte, Ermenonville" />
+  <title>Carte de la forêt de Compiègne & des forêts de l'Oise | BWR</title>
+  <meta name="description" content="Carte interactive de la forêt de Compiègne et des forêts de l'Oise (Laigue, Halatte, Chantilly, Ermenonville). Planifiez vos balades à pied ou à vélo, consultez l'état des sentiers et signalez les obstacles en temps réel." />
+  <meta name="keywords" content="carte forêt de Compiègne, carte forêt Compiègne, randonnée forêt de Compiègne, sentiers forêt de Compiègne, carte forêt de Laigue, carte forêt d'Halatte, carte forêt de Chantilly, carte forêt d'Ermenonville, carte forêt Oise, balades Oise, itinéraires randonnée Oise, vélo forêt Oise, VTT forêt de Compiègne, BWR" />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://bwrmaps.com/" />
 
   <!-- Open Graph / réseaux sociaux -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://bwrmaps.com/" />
-  <meta property="og:title" content="BWR — Carte interactive de l'Oise" />
-  <meta property="og:description" content="Planifiez vos balades dans les forêts de l'Oise : carte des sentiers, état des chemins, itinéraires à pied et à vélo." />
+  <meta property="og:title" content="Carte de la forêt de Compiègne & des forêts de l'Oise — BWR" />
+  <meta property="og:description" content="Carte interactive de la forêt de Compiègne, Laigue, Halatte, Chantilly et Ermenonville : sentiers vérifiés, état des chemins, itinéraires à pied et à vélo." />
   <meta property="og:locale" content="fr_FR" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="BWR — Carte interactive de l'Oise" />
-  <meta name="twitter:description" content="Carte interactive des forêts de l'Oise. Balades, vélo, état des chemins en temps réel." />
+  <meta name="twitter:title" content="Carte de la forêt de Compiègne & des forêts de l'Oise — BWR" />
+  <meta name="twitter:description" content="Carte interactive de la forêt de Compiègne, Laigue, Halatte, Chantilly, Ermenonville. Balades, vélo, état des chemins en temps réel." />
 
   <meta name="theme-color" content="#1e4d14" />
   <link rel="manifest" href="manifest.json" />
@@ -31,6 +31,31 @@
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/home.css" />
   <link rel="stylesheet" href="lib/leaflet.css" />
+
+  <!-- Données structurées : service de cartographie couvrant les forêts de l'Oise -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "BWR",
+    "alternateName": "BWR — Carte de la forêt de Compiègne",
+    "url": "https://bwrmaps.com/",
+    "description": "Carte interactive de la forêt de Compiègne et des forêts de l'Oise : sentiers vérifiés, planificateur d'itinéraires à pied et à vélo, état des chemins en temps réel.",
+    "inLanguage": "fr-FR",
+    "about": [
+      { "@type": "Place", "name": "Forêt de Compiègne" },
+      { "@type": "Place", "name": "Forêt de Laigue" },
+      { "@type": "Place", "name": "Forêt d'Halatte" },
+      { "@type": "Place", "name": "Forêt de Chantilly" },
+      { "@type": "Place", "name": "Forêt d'Ermenonville" }
+    ],
+    "areaServed": {
+      "@type": "AdministrativeArea",
+      "name": "Oise",
+      "containedInPlace": { "@type": "Country", "name": "France" }
+    }
+  }
+  </script>
 </head>
 <body>
 
@@ -134,13 +159,13 @@
   <section class="hero">
     <div class="hero-bg"></div>
     <div class="hero-content">
-      <div class="hero-badge">🌲 Oise · Forêts & sentiers</div>
+      <div class="hero-badge">🌲 Compiègne · Laigue · Halatte · Chantilly · Ermenonville</div>
       <h1 class="hero-title">
-        Planifiez, explorez,<br />
-        <span class="hero-accent">aventurez-vous.</span>
+        Carte de la forêt de Compiègne<br />
+        <span class="hero-accent">et des forêts de l'Oise.</span>
       </h1>
       <p class="hero-sub">
-        BWR transforme chaque sortie en aventure. Carte interactive vérifiée sur le terrain, planificateur intelligent, profils altimétriques, export GPX et cartes hors-ligne — tout pour explorer les forêts de l'Oise autrement.
+        Planifiez, explorez, aventurez-vous. BWR est la carte interactive des forêts de l'Oise — Compiègne, Laigue, Halatte, Chantilly, Ermenonville — vérifiée sur le terrain : sentiers, planificateur d'itinéraires, profils altimétriques, export GPX et cartes hors-ligne.
       </p>
       <div class="hero-actions">
         <a href="login" class="btn-hero-primary">Commencer gratuitement →</a>
@@ -552,5 +577,6 @@
   <script src="js/config.js"></script>
   <script src="js/index.js"></script>
   <script src="js/track.js"></script>
+  <script src="js/rating.js"></script>
 </body>
 </html>

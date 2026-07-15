@@ -14,7 +14,7 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
-Run all automated tests (333 tests, ~4 s):
+Run all automated tests (400 tests, ~4 s):
   npm test
 
 Run tests in watch mode (re-runs on file save):
@@ -51,6 +51,7 @@ Main endpoint groups:
 - Contact: POST /api/contact — sends to ntfy.sh push notification service
 - Notification emails (retention): two best-effort emails via Resend fire from `worker/notify.js` — (1) a forum reply emails the topic author (`notifyForumReply`, triggered from the reply POST via `waitUntil`), (2) a hazard report emails Silver+ owners of a saved route it passes near (`notifyRouteHazardEmail`, sent from `notifyHazard` in `worker/handlers/push.js` alongside the web-push fan-out, independent of any push subscription). Both are gated on the user's `emailNotifications !== false` flag (default on) and carry a one-click List-Unsubscribe link. Toggle it via PUT /api/auth/notifications (auth) or the public GET/POST /api/notify/unsubscribe?uid=…&token=… (token = `unsubscribeToken(user)` = SHA-256 of id+salt, no session needed). Field is surfaced in GET /api/auth/me and toggled from the profile "Emails de notification" block (`renderEmailNotif` in `public/js/profile-plan.js`).
 - Analytics: POST /api/track/visit (public — per-page dwell tracking. `public/js/track.js` measures the *visible* time on each page (to the second, paused while the tab is hidden) and sends `{ vid, page, seconds }` on `pagehide`. The server accumulates this into one record per anonymous visitor per month; a visitor is only *counted* (and shown in the admin list) once their cumulative time crosses the `THRESHOLD` (10 s) so bots/bounces are excluded — records under the bar are stored with `counted:false` and filtered out of the list. A server-side User-Agent bot filter (`isBotUA` in `worker/handlers/admin.js`) is a second line of defence — a missing UA is treated as a bot. Each record stores an anonymous `vid`, coarse Cloudflare city/country/region from `request.cf`, a friendly device label from `describeDevice` (never the IP or raw UA), `firstSeen`/`lastSeen`, `visits` (page views), total `seconds`, `counted`, and a `pages` map of `{ path: { seconds, views } }` rendered per-visitor in the admin "Activité" tab), GET /api/analytics/events (admin — recent login/signup events + `totalLogins`/`totalSignups` + `monthlyVisits`/`visitsThisMonth` + `visitors` (per-person list for the current month, most-recently-active first, capped at 500 with `visitorsTruncated`)). Frontend renders the per-visitor list in the profile-less admin "Activité" tab (`loadVisits` in `public/js/admin.js`).
+- Site rating (whole-site "avis Google", `worker/handlers/rating.js`): the **average + count + star distribution are public** (footer social proof), the **individual comments are admin-only**. GET /api/rating (public — `{ avg, count, dist:{1..5} }`, plus the caller's own `mine:{stars,comment}` when authed; aggregate cached 5 min under the `reviewsummary` KV key), POST /api/rating ({stars 1–5, comment?} — auth required, **one review per account, editable**; re-posting overwrites `review:{userId}` keeping `createdAt`), GET /api/ratings (admin — full review list with comments, most-recent first), DELETE /api/ratings/:userId (admin). Frontend: the self-contained `public/js/rating.js` injects the footer block + star/comment modal into `.footer-inner`/`.blog-footer` on the marketing pages (index, blog, news, plans, best-tours, forum); the admin "⭐ Avis sur le site" card in `admin-panel.html` is loaded by `loadRatings()` in `public/js/admin.js`.
 - Saved routes (Silver+): POST /api/savedroutes, GET /api/savedroutes, GET /api/savedroutes/:id, DELETE /api/savedroutes/:id
 - Share route (public): GET /api/savedroutes/share/:token — returns route by share token, no auth required
 - Forum (community): GET /api/forum/topics (list — reading is public, but free accounts only get the 5 most recent topics unlocked; older ones come back `locked:true` with no body), GET /api/forum/topics/:id (topic + replies — free users get 403 on a locked topic), POST /api/forum/topics (create — Silver/Gold/admin only), POST /api/forum/topics/:id/replies (reply — Silver/Gold/admin only), PUT /api/forum/topics/:id (edit topic title/body) + PUT /api/forum/topics/:id/replies/:replyId (edit reply body) — author or admin, stamps `editedAt` and keeps thread order (no `lastActivityAt` bump), DELETE /api/forum/topics/:id + DELETE /api/forum/topics/:id/replies/:replyId (author or admin). The free-tier visible count is `FREE_VISIBLE_TOPICS` in `worker/handlers/forum.js`, mirrored by `FEATURES.forum_topics_visible` / `forum_post` in `public/js/features.js`. Frontend: `public/forum.html` + `public/js/forum.js` (single page; list ↔ detail swapped via the `#t/:id` URL hash).
@@ -73,6 +74,8 @@ Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - routeshare:{token} — JSON {userId, routeId}, 180-day TTL; maps share token → route
 - forum:topic:{id} — JSON forum topic {userId, authorName, title, body, createdAt, lastActivityAt, replyCount}
 - forum:reply:{topicId}:{paddedTs}:{id} — JSON reply {topicId, userId, authorName, body, createdAt}; ts in the key keeps replies ordered within a topic
+- review:{userId} — JSON site review {userId, name, stars, comment, createdAt, updatedAt} (one per account)
+- reviewsummary — JSON {avg, count, dist:{1..5}} public rating aggregate, 5-min TTL cache (deliberately NOT prefixed `review:` so `listItems('review:')` never picks it up)
 
 Migration: POST /api/migrate (admin only) migrates legacy array keys (users/paths/reports/contact_messages) to granular keys. Run once after deploy. POST /api/migrate/pathgrades (admin only) attributes every currently-ungraded path to the requesting admin and recomputes every user's `stats.pathGrades` from their `pathgrade:` keys — run once to reconcile the leaderboard "chemins notés" with the total path count after the "creating a path credits a grade" change.
 
@@ -216,7 +219,7 @@ Cloudflare Config (wrangler.jsonc):
 
 ## Testing Notes
 
-Automated test suite: **333 tests, ~4 s** (`npm test`). Test files:
+Automated test suite: **400 tests, ~4 s** (`npm test`). Test files:
 
 | File | What it covers | Style |
 |------|---------------|-------|
@@ -227,6 +230,7 @@ Automated test suite: **333 tests, ~4 s** (`npm test`). Test files:
 | `tests/worker-paths.test.mjs` | Path CRUD + OSM proxy behaviour | ESM |
 | `tests/worker-savedroutes.test.mjs` | Saved-route CRUD and share-token endpoints | ESM |
 | `tests/worker-forum.test.mjs` | Forum topics/replies — Silver+ posting, free-tier 5-topic read limit, locked detail, author/admin edit + deletion | ESM |
+| `tests/worker-rating.test.mjs` | Site rating — public aggregate, one-per-account overwrite, star validation, admin-only comment list + delete | ESM |
 | `tests/sw.test.js` | Service-worker cache-version sync | CJS |
 
 E2E (Playwright, `npx playwright test`) runs against the live prod URL — see `tests/e2e/`.
