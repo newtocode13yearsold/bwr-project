@@ -208,8 +208,7 @@ jobs:
             # Collect failure lines
             DETAILS=$(cat /tmp/failures.txt 2>/dev/null | head -20 | sed 's/|/-/g' || echo "")
             TITLE="❌ BWR Health — $TOTAL erreur(s) — $DATE"
-            MSG="Pages: $EP err | API: $EA err | Ext: $EX err
-$DETAILS"
+            MSG=$(printf 'Pages: %s err | API: %s err | Ext: %s err\n%s' "$EP" "$EA" "$EX" "$DETAILS")
             PRIORITY="high"
             TAGS="rotating_light"
           fi
