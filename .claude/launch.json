@@ -54,6 +54,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["-y", "serve", "C:\\Users\\TOM\\DOCUME~1\\PROJET~1\\SONORA~1", "-l", "4700"],
       "port": 4700
+    },
+    {
+      "name": "carte-proto",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "C:\\Users\\TOM\\DOCUME~1\\PROJET~1\\CARTE-~1", "-l", "4800"],
+      "port": 4800
     }
   ]
 }

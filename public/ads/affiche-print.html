@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BWR — Affiche à imprimer (A4)</title>
+<meta name="robots" content="noindex" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&family=Fraunces:opsz,wght@9..144,700;9..144,900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest-900:#0b2410; --forest-800:#0e2c14; --forest-700:#12351a;
+    --forest-500:#2f6b25; --lime:#a3e635; --lime-400:#bef264;
+    --cream:#f4f7ee; --ink:#05140a;
+    --easy:#22c55e; --med:#f97316; --hard:#ef4444; --imp:#9ca3af;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#3a3a3a;font-family:Inter,sans-serif}
+
+  /* ── A4 page ── */
+  @page{ size:A4 portrait; margin:0; }
+  .sheet{
+    position:relative;
+    width:210mm; height:297mm;
+    margin:12mm auto;
+    background:
+      radial-gradient(130% 80% at 50% 0%, #16451f 0%, #0e2c14 45%, #081d0d 100%);
+    color:var(--cream);
+    overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+    display:flex; flex-direction:column;
+  }
+
+  /* subtle topographic contour texture */
+  .sheet::before{
+    content:""; position:absolute; inset:0; z-index:0; opacity:.10; pointer-events:none;
+    background-image:
+      repeating-radial-gradient(circle at 22% 30%, transparent 0 26px, rgba(163,230,53,.7) 26px 27px),
+      repeating-radial-gradient(circle at 80% 78%, transparent 0 30px, rgba(163,230,53,.55) 30px 31px);
+  }
+  .sheet::after{
+    content:""; position:absolute; left:0; right:0; bottom:0; height:34mm; z-index:0;
+    background:linear-gradient(180deg, transparent, rgba(4,14,8,.85));
+  }
+  .sheet > *{ position:relative; z-index:1; }
+
+  /* ── top brand bar ── */
+  .top{ display:flex; align-items:center; gap:5mm; padding:14mm 16mm 0; }
+  .mark{ width:16mm; height:16mm; border-radius:5mm; flex:none;
+    background:var(--forest-700); display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 1.5px rgba(163,230,53,.35), 0 8px 20px rgba(0,0,0,.4); }
+  .mark svg{ width:11mm; height:11mm; display:block; }
+  .brand .logo{ font:900 30pt/1 Fraunces; letter-spacing:.5pt; }
+  .brand .logo b{ color:var(--lime); }
+  .brand .sub{ font:800 10.5pt/1 Inter; color:var(--lime-400); letter-spacing:.35em; margin-top:2mm; text-transform:uppercase; }
+
+  /* ── hero headline ── */
+  .hero{ padding:9mm 16mm 0; }
+  .kicker{ display:inline-block; font:900 11pt/1 Inter; letter-spacing:.14em;
+    color:var(--ink); background:linear-gradient(120deg,var(--lime),var(--lime-400));
+    padding:2.6mm 5mm; border-radius:999px; text-transform:uppercase; }
+  h1{ font:900 41pt/1.04 Fraunces; margin-top:7mm; letter-spacing:-.5pt; }
+  h1 .hl{ color:var(--lime); }
+  .lead{ font:600 14.5pt/1.45 Inter; color:#d7ecc6; margin-top:6mm; max-width:24cm; }
+
+  /* ── feature chips ── */
+  .feats{ display:flex; flex-wrap:wrap; gap:3.5mm; padding:9mm 16mm 0; }
+  .chip{ display:flex; align-items:center; gap:2.5mm; font:800 12pt/1 Inter; color:var(--cream);
+    background:rgba(163,230,53,.10); border:1px solid rgba(163,230,53,.28);
+    padding:3.5mm 5mm; border-radius:4mm; }
+  .chip .dot{ width:4mm; height:4mm; border-radius:50%; flex:none; box-shadow:0 0 6px currentColor; }
+
+  /* difficulty legend line */
+  .legend{ display:flex; align-items:center; gap:6mm; padding:8mm 16mm 0; flex-wrap:wrap; }
+  .legend .l{ display:flex; align-items:center; gap:2.5mm; font:800 11pt/1 Inter; color:#cfe6bd; }
+  .legend .bar{ width:11mm; height:3mm; border-radius:2mm; box-shadow:0 0 6px currentColor; }
+
+  /* ── QR call-to-action block ── */
+  .cta{ margin-top:auto; display:flex; align-items:center; gap:9mm; padding:0 16mm 15mm; }
+  .qr{ background:#fff; padding:5mm; border-radius:6mm; flex:none;
+    box-shadow:0 12px 34px rgba(0,0,0,.45), 0 0 0 2px rgba(163,230,53,.5); }
+  .qr svg{ width:42mm; height:42mm; display:block; }
+  .qr .scan{ text-align:center; font:900 8.5pt/1 Inter; color:var(--forest-700); letter-spacing:.12em; margin-top:3mm; text-transform:uppercase; }
+  .ctatext .go{ font:900 20pt/1.15 Fraunces; color:#fff; }
+  .ctatext .go b{ color:var(--lime); }
+  .ctatext .url{ display:inline-block; margin-top:4mm; font:900 21pt/1 Inter; color:var(--ink);
+    background:linear-gradient(120deg,var(--lime),var(--lime-400)); padding:3.5mm 6mm; border-radius:3mm; letter-spacing:.5pt; }
+  .ctatext .free{ margin-top:4mm; font:700 11.5pt/1.4 Inter; color:#bcd6a6; }
+  .ctatext .free b{ color:var(--lime-400); }
+
+  /* screen-only helper toolbar (hidden in print) */
+  .bar{ position:fixed; top:0; left:0; right:0; z-index:99; display:flex; gap:10px; align-items:center;
+    justify-content:center; padding:10px; background:rgba(6,20,11,.92); color:#cfe6bd; font:600 13px Inter; }
+  .bar button{ cursor:pointer; border:1px solid rgba(163,230,53,.35); background:rgba(163,230,53,.12);
+    color:#e7f6d7; border-radius:9px; padding:9px 16px; font:800 13px Inter; }
+  .bar span{ color:#9dbb86; }
+  @media print{ .bar{ display:none; } .sheet{ margin:0; box-shadow:none; } html,body{ background:#fff; } }
+</style>
+</head>
+<body>
+<div class="bar">
+  <button onclick="window.print()">🖨️ Imprimer / Enregistrer en PDF</button>
+  <span>Format A4 · imprime « à la taille réelle » (100 %), sans marges si possible.</span>
+</div>
+
+<div class="sheet">
+  <div class="top">
+    <div class="mark">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+        <polygon points="32,6 43,26 37,26 47,42 36,42 42,56 22,56 28,42 17,42 27,26 21,26" fill="#a3e635"/>
+      </svg>
+    </div>
+    <div class="brand">
+      <div class="logo">B<b>W</b>R</div>
+      <div class="sub">Balades en forêt de Compiègne</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <span class="kicker">La carte des sentiers · 100 % gratuit</span>
+    <h1>Marche, vélo ou course&nbsp;:<br>trouve <span class="hl">ton</span> chemin<br>en forêt de Compiègne.</h1>
+    <p class="lead">Chaque sentier est <b>noté et coloré</b> selon sa difficulté. Crée ton itinéraire A→B ou une boucle, évite la boue et les arbres tombés grâce aux alertes de la communauté.</p>
+  </div>
+
+  <div class="feats">
+    <div class="chip"><span class="dot" style="color:var(--lime);background:var(--lime)"></span>Itinéraires &amp; boucles sur mesure</div>
+    <div class="chip"><span class="dot" style="color:var(--lime);background:var(--lime)"></span>Alertes chemins (boue, arbres)</div>
+    <div class="chip"><span class="dot" style="color:var(--lime);background:var(--lime)"></span>Fonctionne hors-ligne</div>
+  </div>
+
+  <div class="legend">
+    <div class="l"><span class="bar" style="color:var(--easy);background:var(--easy)"></span>Facile</div>
+    <div class="l"><span class="bar" style="color:var(--med);background:var(--med)"></span>Moyen</div>
+    <div class="l"><span class="bar" style="color:var(--hard);background:var(--hard)"></span>Difficile</div>
+    <div class="l"><span class="bar" style="color:var(--imp);background:var(--imp)"></span>Impraticable</div>
+  </div>
+
+  <div class="cta">
+    <div class="qr">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h25v25H0z"/><path stroke="#000000" d="M0 0.5h7m3 0h1m1 0h2m2 0h1m1 0h7M0 1.5h1m5 0h1m5 0h5m1 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m1 0h1m3 0h1m1 0h1m3 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h4m2 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m2 0h1m1 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m1 0h2m2 0h1m1 0h2m2 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M8 7.5h1m1 0h1m1 0h1m1 0h1m1 0h1M0 8.5h1m1 0h5m3 0h1m7 0h5M4 9.5h2m1 0h1m1 0h3m1 0h1m3 0h1m1 0h1m3 0h1M2 10.5h1m1 0h5m2 0h1m1 0h6m1 0h2m1 0h2M1 11.5h4m2 0h7m3 0h1m6 0h1M4 12.5h1m1 0h1m1 0h5m1 0h5m1 0h1m1 0h3M0 13.5h1m1 0h2m3 0h1m1 0h1m6 0h2m1 0h1m1 0h1m1 0h1M0 14.5h1m2 0h2m1 0h1m4 0h2m2 0h1m2 0h4m1 0h2M0 15.5h1m1 0h1m1 0h1m2 0h1m3 0h1m2 0h2m3 0h2m3 0h1M0 16.5h1m1 0h2m1 0h7m3 0h6m1 0h1M8 17.5h3m1 0h3m1 0h1m3 0h2M0 18.5h7m2 0h1m3 0h2m1 0h1m1 0h1m1 0h1m1 0h3M0 19.5h1m5 0h1m1 0h1m1 0h1m1 0h2m2 0h1m3 0h2m1 0h1M0 20.5h1m1 0h3m1 0h1m1 0h2m2 0h1m1 0h7m1 0h1m1 0h1M0 21.5h1m1 0h3m1 0h1m1 0h1m8 0h2m1 0h5M0 22.5h1m1 0h3m1 0h1m1 0h1m1 0h3m2 0h1m5 0h2m1 0h1M0 23.5h1m5 0h1m2 0h3m2 0h4m1 0h3m2 0h1M0 24.5h7m1 0h4m5 0h8"/></svg>
+      <div class="scan">Scanne-moi</div>
+    </div>
+    <div class="ctatext">
+      <div class="go">Ouvre la carte<br>directement sur <b>ton téléphone</b> 👇</div>
+      <div class="url">bwrmaps.com</div>
+      <div class="free">Aucune appli à installer · <b>gratuit</b><br>Scanne le QR code ou tape l'adresse dans ton navigateur.</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
