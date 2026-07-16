@@ -25,8 +25,8 @@
     },
     {
       target: '#toggleFilters',
-      title: 'Filtrez les chemins',
-      body: 'Affichez ou masquez les sentiers selon leur difficulté, et basculez entre la carte IGN et la vue satellite.',
+      title: 'Changez de carte',
+      body: 'Basculez entre le plan OpenStreetMap, la carte IGN topographique et la vue satellite.',
       placement: 'bottom'
     },
     {

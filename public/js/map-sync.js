@@ -123,16 +123,6 @@ window.addEventListener('online', async () => {
   await replayMapReports();
 });
 
-// ── Filters ───────────────────────────────────────────────────────────────────
-document.querySelectorAll('.filter-check').forEach(cb => {
-  cb.addEventListener('change', () => {
-    if (cb.checked) activeFilters.add(cb.value);
-    else activeFilters.delete(cb.value);
-    renderPaths();
-    updateCount();
-  });
-});
-
 // Shared tile-layer switch, driven by both the Filtres radios and the floating
 // .layer-btn buttons on the map. Keeps both UIs in sync and gates satellite.
 function switchTileLayer(wanted) {

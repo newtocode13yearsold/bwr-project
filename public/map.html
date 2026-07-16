@@ -81,7 +81,7 @@
       <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
       <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
       <button class="btn-icon hidden" id="btnEditPaths" title="Modifier les chemins"><span class="btn-emoji">✎</span><span class="btn-label">Modifier</span></button>
-      <button class="btn-icon" id="toggleFilters" title="Filtres"><span class="btn-emoji">&#8942;</span><span class="btn-label">Filtres</span></button>
+      <button class="btn-icon" id="toggleFilters" title="Couche de carte"><span class="btn-emoji">&#8942;</span><span class="btn-label">Carte</span></button>
       <div id="notifBell" class="notif-bell-wrap"></div>
       <div class="user-menu" id="userMenu">
         <!-- filled by map.js -->
@@ -161,30 +161,6 @@
   </div>
 
   <div class="filter-panel hidden" id="filterPanel">
-    <h3>Filtrer les chemins</h3>
-    <div class="filter-group">
-      <label class="filter-label">
-        <input type="checkbox" class="filter-check" value="easy" checked />
-        <span class="dot easy"></span> Facile
-      </label>
-      <label class="filter-label">
-        <input type="checkbox" class="filter-check" value="medium" checked />
-        <span class="dot medium"></span> Moyen
-      </label>
-      <label class="filter-label">
-        <input type="checkbox" class="filter-check" value="hard" checked />
-        <span class="dot hard"></span> Difficile
-      </label>
-      <label class="filter-label">
-        <input type="checkbox" class="filter-check" value="not_passable" checked />
-        <span class="dot not_passable"></span> Impraticable
-      </label>
-      <label class="filter-label">
-        <input type="checkbox" class="filter-check" value="no_bike" checked />
-        <span class="dot no_bike"></span> Vélo interdit
-      </label>
-    </div>
-    <hr />
     <h3>Couche de carte</h3>
     <div class="filter-group">
       <label class="filter-label">
