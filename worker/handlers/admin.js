@@ -358,7 +358,7 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
       .map(k => `${k}: ${num(mv[k])}`).join(', ') || 'aucun historique';
 
     const topPages = Array.isArray(a.topPages) && a.topPages.length
-      ? a.topPages.slice(0, 6).map(p => `${p.page} (${num(p.views)} vues, ${num(p.seconds)}s)`).join(', ')
+      ? a.topPages.slice(0, 25).map(p => `${p.page} (${num(p.views)} vues, ${num(p.seconds)}s)`).join(', ')
       : 'non renseigné';
 
     const comments = Array.isArray(g.recentComments) && g.recentComments.length

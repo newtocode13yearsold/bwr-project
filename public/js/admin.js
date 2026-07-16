@@ -140,9 +140,11 @@ async function wireGlobalAnalysis() {
         pageAgg[p] = a;
       });
     });
+    // Toutes les pages visitées ce mois (triées par vues), plafonnées pour ne pas
+    // surcharger le prompt IA. Une page sans trafic n'existe pas dans les stats.
     const topPages = Object.entries(pageAgg)
       .sort((a, b) => b[1].views - a[1].views)
-      .slice(0, 6)
+      .slice(0, 25)
       .map(([page, o]) => ({ page, views: o.views, seconds: o.seconds }));
 
     // Ratings distribution + recent comments
