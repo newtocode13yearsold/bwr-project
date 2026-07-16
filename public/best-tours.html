@@ -679,23 +679,25 @@
     let currentImageDataUri = '';
     let isAdmin = false;
 
-    // ── Auth: detect admin, then load tours ──────────────────────────────────
+    // ── Load tours immediately (never blocked by the auth check) ──────────────
+    loadTours();
+
+    // ── Detect admin in parallel; re-render admin controls when it resolves ───
     (async () => {
       const token = localStorage.getItem('bwr_token');
-      if (token) {
-        try {
-          const res = await fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
-          if (res.ok) {
-            const user = await res.json();
-            if (user?.role === 'admin') {
-              isAdmin = true;
-              document.getElementById('fabAdd').style.display = 'flex';
-              document.getElementById('navDrawerAdmin')?.classList.remove('hidden');
-            }
+      if (!token) return;
+      try {
+        const res = await fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) {
+          const user = await res.json();
+          if (user?.role === 'admin') {
+            isAdmin = true;
+            document.getElementById('fabAdd').style.display = 'flex';
+            document.getElementById('navDrawerAdmin')?.classList.remove('hidden');
+            renderTours(); // re-render so the edit/delete rows appear
           }
-        } catch {}
-      }
-      await loadTours();
+        }
+      } catch {}
     })();
 
     // ── Load tours ────────────────────────────────────────────────────────────
