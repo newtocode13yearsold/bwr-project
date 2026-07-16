@@ -6,6 +6,28 @@
   <meta name="theme-color" content="#1e4d14" />
   <title>Forum — BWR · Oise</title>
   <meta name="description" content="Le forum de la communauté BWR : posez vos questions, partagez vos balades et échangez avec les autres marcheurs et cyclistes des forêts de l'Oise." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://bwrmaps.com/forum" />
+  <!-- Open Graph / réseaux sociaux -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://bwrmaps.com/forum" />
+  <meta property="og:site_name" content="BWR" />
+  <meta property="og:title" content="Forum de la communauté BWR — forêts de l'Oise" />
+  <meta property="og:description" content="Le forum de la communauté BWR : posez vos questions, partagez vos balades et échangez avec les autres marcheurs et cyclistes des forêts de l'Oise." />
+  <meta property="og:locale" content="fr_FR" />
+
+  <meta property="og:image" content="https://bwrmaps.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:alt" content="BWR — la carte des forêts de l'Oise, à pied ou à vélo" />
+  <meta name="twitter:image" content="https://bwrmaps.com/og-image.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Forum de la communauté BWR — forêts de l'Oise" />
+  <meta name="twitter:description" content="Le forum de la communauté BWR : posez vos questions, partagez vos balades et échangez avec les autres marcheurs et cyclistes des forêts de l'Oise." />
+
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon-180.png" />
@@ -15,6 +37,18 @@
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/home.css" />
+  <!-- Données structurées : forum de la communauté BWR -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Forum de la communauté BWR",
+    "description": "Le forum de la communauté BWR : questions, partages de balades et échanges entre marcheurs et cyclistes des forêts de l'Oise.",
+    "url": "https://bwrmaps.com/forum",
+    "inLanguage": "fr-FR",
+    "isPartOf": { "@type": "WebSite", "name": "BWR", "url": "https://bwrmaps.com/" }
+  }
+  </script>
   <script src="js/theme.js"></script>
   <style>
     html, body { height: auto !important; overflow: auto !important; }
@@ -353,6 +387,7 @@
   </nav>
 
   <script src="js/config.js"></script>
+  <script src="js/track.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/features.js"></script>
   <script src="js/forum.js"></script>

@@ -16,6 +16,38 @@
        to the login page, so it must not be advertised as an indexable URL. Re-add it
        once the planner renders public content behind an overlay instead of redirecting. -->
 
+  <!-- Marketing & content pages (public, indexable) -->
+  <url>
+    <loc>https://bwrmaps.com/best-tours</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://bwrmaps.com/plans</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bwrmaps.com/guide</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://bwrmaps.com/news</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://bwrmaps.com/forum</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://bwrmaps.com/leaderboard</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
   <!-- Blog index -->
   <url>
     <loc>https://bwrmaps.com/blog</loc>

@@ -6,6 +6,28 @@
   <meta name="theme-color" content="#1e4d14" />
   <title>Meilleures balades — BWR · Forêt de Compiègne</title>
   <meta name="description" content="Découvrez les meilleures balades et circuits sélectionnés dans la forêt de Compiègne : randonnées pédestres, vélo, et mixtes." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://bwrmaps.com/best-tours" />
+  <!-- Open Graph / réseaux sociaux -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://bwrmaps.com/best-tours" />
+  <meta property="og:site_name" content="BWR" />
+  <meta property="og:title" content="Les meilleures balades en forêt de Compiègne — BWR" />
+  <meta property="og:description" content="Découvrez les meilleures balades et circuits sélectionnés dans la forêt de Compiègne : randonnées pédestres, vélo, et mixtes." />
+  <meta property="og:locale" content="fr_FR" />
+
+  <meta property="og:image" content="https://bwrmaps.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:alt" content="BWR — la carte des forêts de l'Oise, à pied ou à vélo" />
+  <meta name="twitter:image" content="https://bwrmaps.com/og-image.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Les meilleures balades en forêt de Compiègne — BWR" />
+  <meta name="twitter:description" content="Découvrez les meilleures balades et circuits sélectionnés dans la forêt de Compiègne : randonnées pédestres, vélo, et mixtes." />
+
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon-180.png" />
@@ -16,6 +38,19 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/login.css" />
   <link rel="stylesheet" href="css/home.css" />
+  <!-- Données structurées : sélection de balades en forêt de Compiègne -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Les meilleures balades en forêt de Compiègne",
+    "description": "Sélection des meilleures balades et circuits de la forêt de Compiègne : randonnées pédestres, VTT et parcours mixtes, vérifiés terrain par BWR.",
+    "url": "https://bwrmaps.com/best-tours",
+    "inLanguage": "fr-FR",
+    "isPartOf": { "@type": "WebSite", "name": "BWR", "url": "https://bwrmaps.com/" },
+    "about": { "@type": "Place", "name": "Forêt de Compiègne" }
+  }
+  </script>
   <script src="js/theme.js"></script>
   <style>
     html, body { height: auto !important; overflow: auto !important; }
@@ -628,6 +663,7 @@
   </div>
 
   <script src="js/config.js"></script>
+  <script src="js/track.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/ui-shared.js"></script>
   <script src="js/install.js"></script>
