@@ -1,0 +1,74 @@
+/* ── Grade-help banner ─────────────────────────────────────────────────────
+ * A one-time, dismissible banner shown the first time a user opens the map or
+ * the route-planner page, asking them to help grade path difficulty and
+ * linking to the guide. Injected by js/grade-banner.js. Styles live here (the
+ * site CSP forbids inline <script>, JS stays external).
+ * ────────────────────────────────────────────────────────────────────────── */
+.grade-banner {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 74px);
+  transform: translateX(-50%) translateY(20px);
+  z-index: 1200;
+  width: min(520px, calc(100vw - 24px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #1e4d14, #2f7d32);
+  color: #f0fdf4;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  font-family: 'Inter', system-ui, sans-serif;
+  opacity: 0;
+  transition: opacity .28s ease, transform .28s ease;
+  pointer-events: none;
+}
+.grade-banner.grade-banner-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.grade-banner-emoji {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+.grade-banner-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.grade-banner-body p {
+  margin: 0 0 6px;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+.grade-banner-body strong { font-weight: 700; }
+.grade-banner-cta {
+  display: inline-block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.grade-banner-close {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.grade-banner-close:hover { background: rgba(255, 255, 255, 0.28); }
+
+/* On the map page the bottom action buttons + bottom-nav sit low, so lift the
+   banner a touch higher; on desktop there's no bottom-nav. */
+@media (min-width: 780px) {
+  .grade-banner { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
+}
