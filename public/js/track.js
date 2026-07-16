@@ -20,6 +20,18 @@
     ? API_URL
     : 'https://bwrmaps.com';
 
+  // Never count the admin's own browsing. If an admin session is (or ever was)
+  // active on this browser, set a persistent opt-out flag and stop tracking —
+  // so the admin's PC stays excluded from the visitor list even after logout.
+  try {
+    if (localStorage.getItem('bwr_notrack') === '1') return;
+    var cachedUser = JSON.parse(localStorage.getItem('bwr_user') || 'null');
+    if (cachedUser && cachedUser.role === 'admin') {
+      localStorage.setItem('bwr_notrack', '1');
+      return;
+    }
+  } catch (_) { /* storage disabled — fall through and track normally */ }
+
   var MIN_SECONDS = 3; // don't report a blink (mis-click / instant bounce)
 
   // Persistent, non-identifying browser id (used only for per-month dedup).
