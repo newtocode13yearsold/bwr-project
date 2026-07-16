@@ -17,6 +17,7 @@ const OISE_OFFLINE_ZONES = [
   { id: 'ermenonville', name: "Forêt d'Ermenonville",   bbox: { north: 49.18, south: 49.06, west: 2.54, east: 2.78 } },
   { id: 'hez',          name: 'Forêt de Hez-Froidmont', bbox: { north: 49.43, south: 49.33, west: 2.30, east: 2.50 } },
   { id: 'retheuil',    name: 'Forêt de Retheuil',      bbox: { north: 49.40, south: 49.25, west: 2.92, east: 3.16 } },
+  { id: 'retz',         name: 'Forêt de Retz',          bbox: { north: 49.35, south: 49.14, west: 2.95, east: 3.30 } },
 ];
 
 const _zoneCacheKey = id => `bwr_zone_cached:${id}`;
