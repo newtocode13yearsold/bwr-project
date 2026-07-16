@@ -332,6 +332,132 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
     }
   }
 
+  /* ── AI Global Analysis — one AI read of the WHOLE admin dashboard ──── */
+  // Takes a compact, pre-aggregated snapshot of every dashboard section (built
+  // client-side in public/js/admin.js) and returns a structured French analysis.
+  if (pathname === '/api/ai/analysis' && request.method === 'POST') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+
+    let body;
+    try { body = await request.json(); } catch { return fail('JSON invalide.'); }
+
+    const m = body.members  || {};
+    const r = body.revenue  || {};
+    const a = body.activity || {};
+    const g = body.ratings  || {};
+    const c = body.content  || {};
+    const ch = body.challenge || {};
+    const msg = body.messages || {};
+
+    const num = v => (typeof v === 'number' && isFinite(v)) ? v : 0;
+
+    // Compact traffic history (last months) so the model can read the trend.
+    const mv = a.monthlyVisits && typeof a.monthlyVisits === 'object' ? a.monthlyVisits : {};
+    const histStr = Object.keys(mv).sort().slice(-6)
+      .map(k => `${k}: ${num(mv[k])}`).join(', ') || 'aucun historique';
+
+    const topPages = Array.isArray(a.topPages) && a.topPages.length
+      ? a.topPages.slice(0, 6).map(p => `${p.page} (${num(p.views)} vues, ${num(p.seconds)}s)`).join(', ')
+      : 'non renseigné';
+
+    const comments = Array.isArray(g.recentComments) && g.recentComments.length
+      ? g.recentComments.slice(0, 8).map(x => `${num(x.stars)}★ "${String(x.comment || '').slice(0, 140)}"`).join(' | ')
+      : 'aucun commentaire';
+
+    const dist = g.dist && typeof g.dist === 'object'
+      ? [5,4,3,2,1].map(s => `${s}★:${num(g.dist[s])}`).join(' ') : '';
+
+    const chStr = ch && ch.name
+      ? `${ch.name} — objectif ${num(ch.target)} km${ch.description ? ' · ' + String(ch.description).slice(0, 160) : ''}`
+      : 'aucun défi publié ce mois';
+
+    const prompt = `Tu es un consultant produit et croissance pour applications web françaises. Tu analyses le tableau de bord admin complet de BWR — une PWA de randonnée/vélo/course dans les forêts de l'Oise (France), avec deux plans payants : Argent (2,99 €/mois) et Or (6,99 €/mois).
+
+Voici l'état RÉEL de toutes les statistiques (données du panneau admin) :
+
+MEMBRES
+- Total : ${num(m.total)} (Gratuit ${num(m.free)}, Argent ${num(m.silver)}, Or ${num(m.gold)})
+- Abonnés payants : ${num(m.paying)} · Offerts (hors CA) : ${num(m.comped)}
+- Taux de conversion : ${num(m.conv)} %
+
+REVENUS
+- MRR : ${num(r.mrr).toFixed(2)} €/mois · ARR projeté : ${Math.round(num(r.arr))} €/an
+
+TRAFIC & ACTIVITÉ
+- Visiteurs ce mois (≥10 s, sans bots) : ${num(a.visitsThisMonth)}
+- Historique mensuel : ${histStr}
+- Nouveaux comptes (total) : ${num(a.totalSignups)} · Connexions (total) : ${num(a.totalLogins)}
+- Pages les plus vues : ${topPages}
+
+AVIS DU SITE
+- Note moyenne : ${num(g.avg).toFixed(1)}/5 sur ${num(g.count)} avis ${dist ? '(' + dist + ')' : ''}
+- Commentaires récents : ${comments}
+
+CONTENU & TERRAIN
+- Chemins cartographiés : ${num(c.paths)} · Signalements ouverts : ${num(c.openReports)} / ${num(c.reports)} au total
+
+MESSAGES & DÉFI
+- Messages de contact non traités : ${num(msg.count)}
+- Défi du mois : ${chStr}
+
+Rends une analyse structurée en français, concise et actionnable, avec EXACTEMENT ces sections (garde les titres avec les emojis) :
+
+📊 VUE D'ENSEMBLE
+(2-3 phrases : santé globale du produit et de l'activité)
+
+✅ CE QUI MARCHE
+(2-3 puces courtes, appuyées sur les chiffres ci-dessus)
+
+⚠️ POINTS DE VIGILANCE
+(2-3 puces : risques, angles morts, chiffres inquiétants)
+
+🎯 3 ACTIONS PRIORITAIRES
+(3 puces numérotées, très concrètes, chacune avec un impact chiffré attendu)
+
+Utilise les vrais chiffres. Pas d'intro type "Bien sûr" ni de conclusion. Puces avec "- ".`;
+
+    try {
+      let analysis = '';
+
+      if (env.AI) {
+        const cfRes = await env.AI.run('@cf/meta/llama-3.1-8b-instruct-fp8', {
+          messages: [
+            { role: 'system', content: 'Tu es un consultant produit/croissance senior. Réponds uniquement en français, structuré et concret.' },
+            { role: 'user', content: prompt },
+          ],
+          max_tokens: 800,
+        });
+        analysis = cfRes.response?.trim() || '';
+      }
+
+      if (!analysis && env.ANTHROPIC_API_KEY) {
+        const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 800,
+            messages: [{ role: 'user', content: prompt }],
+          }),
+        });
+        if (aiRes.ok) {
+          const d = await aiRes.json();
+          analysis = d.content?.[0]?.text?.trim() || '';
+        }
+      }
+
+      if (!analysis) return fail('Aucun modèle IA disponible. Déployez le worker avec la liaison AI activée.', 503);
+      return json({ analysis });
+    } catch (e) {
+      return fail('Erreur lors de l\'appel à l\'IA : ' + (e?.message || e), 502);
+    }
+  }
+
   // ── Debug diagnostic (admin only) ───────────────────────────────────────────
   if (pathname === '/api/debug' && request.method === 'GET') {
     const admin = await getUserFromToken(env, request);

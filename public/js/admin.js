@@ -80,6 +80,137 @@ async function initDashboard() {
   await loadRevenue();
   if (window.__wireRevenueForecast) window.__wireRevenueForecast();
   await loadChallenges();
+  await wireGlobalAnalysis();
+}
+
+// ── AI Global Analysis — one AI read of the whole dashboard ───────────────────
+// Gathers a compact snapshot of every section (members, revenue, traffic, ratings,
+// content, messages, challenge) and POSTs it to /api/ai/analysis. Data is fetched
+// fresh here so the card works even before the other panels finish rendering.
+async function wireGlobalAnalysis() {
+  const btn    = document.getElementById('aiaBtn');
+  const statusEl = document.getElementById('aiaStatus');
+  if (!btn) return;
+
+  let snapshot = null;
+
+  async function buildSnapshot() {
+    const [usersRes, eventsRes, ratingsRes, contactsRes, pathsRes, reportsRes, chRes] = await Promise.all([
+      fetch(`${API_URL}/api/users`,            { headers: authHeader() }).catch(() => null),
+      fetch(`${API_URL}/api/analytics/events`, { headers: authHeader() }).catch(() => null),
+      fetch(`${API_URL}/api/ratings`,          { headers: authHeader() }).catch(() => null),
+      fetch(`${API_URL}/api/contacts`,         { headers: authHeader() }).catch(() => null),
+      fetch(`${API_URL}/api/paths`).catch(() => null),
+      fetch(`${API_URL}/api/reports`).catch(() => null),
+      fetch(`${API_URL}/api/challenge`).catch(() => null),
+    ]);
+
+    const users    = usersRes?.ok    ? await usersRes.json()    : [];
+    const events   = eventsRes?.ok   ? await eventsRes.json()   : {};
+    const ratings  = ratingsRes?.ok  ? await ratingsRes.json()  : {};
+    const contacts = contactsRes?.ok ? await contactsRes.json() : [];
+    const paths    = pathsRes?.ok    ? await pathsRes.json()    : [];
+    const reports  = reportsRes?.ok  ? await reportsRes.json()  : [];
+    const challenge = chRes?.ok      ? await chRes.json()       : null;
+
+    // Members & revenue
+    const counts = { free: 0, silver: 0, gold: 0 };
+    const comped = { silver: 0, gold: 0 };
+    (Array.isArray(users) ? users : []).forEach(u => {
+      if (u.role === 'admin') return;
+      counts[u.plan || 'free'] = (counts[u.plan || 'free'] || 0) + 1;
+      if (u.comped && (u.plan === 'silver' || u.plan === 'gold')) comped[u.plan]++;
+    });
+    const paySilver = counts.silver - comped.silver;
+    const payGold   = counts.gold   - comped.gold;
+    const paying    = paySilver + payGold;
+    const total     = counts.free + counts.silver + counts.gold;
+    const mrr       = paySilver * PLAN_PRICE_MONTHLY.silver + payGold * PLAN_PRICE_MONTHLY.gold;
+    const arr       = paySilver * PLAN_PRICE_ANNUAL.silver * 12 + payGold * PLAN_PRICE_ANNUAL.gold * 12;
+
+    // Traffic: aggregate top pages across this month's visitors
+    const visitors = Array.isArray(events.visitors) ? events.visitors : [];
+    const pageAgg  = {};
+    visitors.forEach(v => {
+      const pages = v.pages && typeof v.pages === 'object' ? v.pages : {};
+      Object.entries(pages).forEach(([p, o]) => {
+        const a = pageAgg[p] || { views: 0, seconds: 0 };
+        a.views   += (o && o.views)   || 0;
+        a.seconds += (o && o.seconds) || 0;
+        pageAgg[p] = a;
+      });
+    });
+    const topPages = Object.entries(pageAgg)
+      .sort((a, b) => b[1].views - a[1].views)
+      .slice(0, 6)
+      .map(([page, o]) => ({ page, views: o.views, seconds: o.seconds }));
+
+    // Ratings distribution + recent comments
+    const reviews = Array.isArray(ratings.reviews) ? ratings.reviews : [];
+    const dist = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+    reviews.forEach(r => { if (dist[r.stars] !== undefined) dist[r.stars]++; });
+    const recentComments = reviews.filter(r => r.comment)
+      .slice(0, 8).map(r => ({ stars: r.stars, comment: r.comment }));
+
+    const openReports = (Array.isArray(reports) ? reports : []).filter(r => r.status === 'open').length;
+
+    return {
+      members: { total, free: counts.free, silver: counts.silver, gold: counts.gold,
+                 paying, comped: comped.silver + comped.gold,
+                 conv: total ? Math.round(paying / total * 100) : 0 },
+      revenue: { mrr, arr },
+      activity: {
+        visitsThisMonth: events.visitsThisMonth || 0,
+        totalLogins:  events.totalLogins  || 0,
+        totalSignups: events.totalSignups || 0,
+        monthlyVisits: events.monthlyVisits || {},
+        topPages,
+      },
+      ratings: { avg: ratings.avg || 0, count: ratings.count || 0, dist, recentComments },
+      content: { paths: Array.isArray(paths) ? paths.length : 0,
+                 reports: Array.isArray(reports) ? reports.length : 0, openReports },
+      messages: { count: Array.isArray(contacts) ? contacts.length : 0 },
+      challenge: challenge && challenge.name
+        ? { name: challenge.name, target: challenge.target, description: challenge.description || '' }
+        : null,
+    };
+  }
+
+  // Preload the snapshot in the background so the button is ready to fire.
+  buildSnapshot().then(s => {
+    snapshot = s;
+    if (statusEl) {
+      statusEl.textContent = `✅ Données prêtes · ${s.members.total} membres · ${s.members.paying} payant(s) · ${s.activity.visitsThisMonth} visiteurs ce mois · ${s.ratings.count} avis`;
+      statusEl.style.color = '#15803d';
+    }
+  }).catch(() => {
+    if (statusEl) statusEl.textContent = '⚠️ Erreur de chargement des données — clique quand même pour réessayer.';
+  });
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    const original = btn.innerHTML;
+    btn.innerHTML = '⏳ Analyse en cours…';
+    const resultEl = document.getElementById('aiaResult');
+    const textEl   = document.getElementById('aiaText');
+    try {
+      if (!snapshot) snapshot = await buildSnapshot();
+      const res = await fetch(`${API_URL}/api/ai/analysis`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify(snapshot),
+      });
+      const d = await res.json();
+      if (textEl) textEl.textContent = res.ok ? (d.analysis || 'Aucune analyse retournée.') : (d.error || 'Erreur API.');
+      if (resultEl) resultEl.style.display = 'block';
+    } catch {
+      if (textEl) textEl.textContent = 'Impossible de joindre le serveur.';
+      if (resultEl) resultEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = original;
+    }
+  });
 }
 
 function initUserMenu() {
