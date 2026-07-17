@@ -252,11 +252,15 @@ function openPathPopup(path, latlng) {
     ? `<button class="popup-delete-path-btn" id="deletePath-${path.id}">🗑 Supprimer ce chemin</button>`
     : '';
 
-  const freeGradesLeft = canEdit
+  // Only free users have a grading cap, and it only applies to "remote" gradings
+  // (path they aren't standing near). Silver+ is unlimited, so no hint for them.
+  const freeGradesLeft = (canEdit && _userPlan === 'free')
     ? Math.max(0, 5 - (_cachedUser?.stats?.unwalkedGrades || 0))
-    : 0;
-  const gradeHint = canEdit && freeGradesLeft < 5
-    ? `<div class="popup-grade-quota">${freeGradesLeft > 0 ? `${freeGradesLeft} notation${freeGradesLeft > 1 ? 's' : ''} libre${freeGradesLeft > 1 ? 's' : ''} restante${freeGradesLeft > 1 ? 's' : ''}` : '🔒 Limite atteinte — parcourez ce chemin pour noter'}</div>`
+    : 5;
+  const gradeHint = (canEdit && _userPlan === 'free' && freeGradesLeft < 5)
+    ? `<div class="popup-grade-quota">${freeGradesLeft > 0
+        ? `${freeGradesLeft} notation${freeGradesLeft > 1 ? 's' : ''} à distance restante${freeGradesLeft > 1 ? 's' : ''} · activez 📍 votre position (&lt; 2 km) pour noter sans limite`
+        : '🔒 Limite atteinte — activez 📍 votre position (&lt; 2 km) ou parcourez ce chemin pour noter sans limite'}</div>`
     : '';
 
   const difficultyHTML = canEdit
@@ -313,17 +317,26 @@ function openPathPopup(path, latlng) {
         btn.addEventListener('click', async () => {
           const newStatus = btn.dataset.status;
           if (newStatus === path.status) { map.closePopup(); return; }
+          // Send the user's live GPS position (when available) so free users can
+          // grade paths they're standing near (< 2 km) without using a "remote"
+          // grading slot. `_currentPosition` is set by js/map-locate.js.
+          const pos = (typeof _currentPosition !== 'undefined' && _currentPosition) || null;
           try {
             const res = await fetch(`${API_URL}/api/paths/${path.id}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json', ...authHeader() },
-              body: JSON.stringify({ status: newStatus }),
+              body: JSON.stringify({
+                status: newStatus,
+                ...(pos ? { userLat: pos.lat, userLon: pos.lng } : {}),
+              }),
             });
             if (res.ok) {
               path.status = newStatus;
               const idx = allPaths.findIndex(p => p.id === path.id);
               if (idx !== -1) allPaths[idx].status = newStatus;
-              if (_cachedUser?.stats && !res.headers.get('x-already-graded')) {
+              // Only a "remote" grading (server: _grade.counted) uses a free slot.
+              const data = await res.json().catch(() => ({}));
+              if (_cachedUser?.stats && data?._grade?.counted) {
                 _cachedUser.stats.unwalkedGrades = (_cachedUser.stats.unwalkedGrades || 0) + 1;
               }
               renderPaths();

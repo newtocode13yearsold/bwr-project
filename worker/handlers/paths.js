@@ -1,5 +1,14 @@
 import { listItems, getPath, putPath, putUser, getUser, effectivePlan, patchLeaderboardCache, addPeriodXp } from '../kv.js';
 import { getUserFromToken } from '../auth-utils.js';
+import { distanceToPolylineMeters } from '../geo.js';
+
+// Free users get a limited number of "remote" gradings (a path they haven't
+// walked and aren't standing near). Grading a path within this range of the
+// user's live GPS position, or one they've walked, is unlimited. Silver+ is
+// always unlimited. Keep FREE_REMOTE_GRADES in sync with the client hint in
+// public/js/map-paths.js and tests/worker-paths.test.mjs.
+const NEAR_GRADE_RANGE_M = 2000;
+const FREE_REMOTE_GRADES = 5;
 
 const STATUS_LABELS = {
   easy: 'Facile', medium: 'Moyen', hard: 'Difficile',
@@ -179,23 +188,35 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
       }
     }
 
+    // Silver+ grade without limit. Free users grade without limit when they are
+    // physically near the path (live GPS within 2 km) or have walked it recently;
+    // otherwise they get FREE_REMOTE_GRADES "remote" gradings.
+    const isSilverPlus = plan === 'silver' || plan === 'gold';
+    let nearby = false;
+    if (typeof body.userLat === 'number' && isFinite(body.userLat) &&
+        typeof body.userLon === 'number' && isFinite(body.userLon) &&
+        Array.isArray(existing.coordinates) && existing.coordinates.length) {
+      nearby = distanceToPolylineMeters([body.userLat, body.userLon], existing.coordinates) <= NEAR_GRADE_RANGE_M;
+    }
+
     if (!alreadyGraded) {
-      if (!walkedRecently) {
-        const unwalkedGrades = user.stats?.unwalkedGrades || 0;
-        if (unwalkedGrades >= 5) {
-          return fail('Limite de 5 notations libres atteinte. Parcourez ce chemin pour le noter sans limite.', 403);
-        }
+      const countsToward = !isSilverPlus && !walkedRecently && !nearby;
+      if (countsToward && (user.stats?.unwalkedGrades || 0) >= FREE_REMOTE_GRADES) {
+        return fail(`Avec le plan gratuit, vous ne pouvez pas noter plus de ${FREE_REMOTE_GRADES} chemins à distance. Activez votre localisation (à moins de 2 km du chemin) — ou parcourez-le pour le noter plus tard sans limite.`, 403);
       }
       const gStats = user.stats || { routes: 0, km: 0 };
       const newStats = { ...gStats, pathGrades: (gStats.pathGrades || 0) + 1 };
-      if (!walkedRecently) newStats.unwalkedGrades = (gStats.unwalkedGrades || 0) + 1;
+      if (countsToward) newStats.unwalkedGrades = (gStats.unwalkedGrades || 0) + 1;
       const gradedUser = { ...user, stats: newStats };
       await Promise.all([
-        env.BWR_KV.put(gradeKey, JSON.stringify({ walkedWhenGraded: walkedRecently })),
+        env.BWR_KV.put(gradeKey, JSON.stringify({ walkedWhenGraded: walkedRecently || nearby })),
         putUser(env, gradedUser),
       ]);
       await patchLeaderboardCache(env, gradedUser);
       await addPeriodXp(env, gradedUser, { pathGrades: 1 });
+      updated._grade = { counted: countsToward, remaining: Math.max(0, FREE_REMOTE_GRADES - (newStats.unwalkedGrades || 0)) };
+    } else {
+      updated._grade = { counted: false, alreadyGraded: true };
     }
 
     if (body.status !== oldStatus) {

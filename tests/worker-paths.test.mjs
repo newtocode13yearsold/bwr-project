@@ -167,6 +167,68 @@ describe('PATCH /api/paths/:id', () => {
     const user = JSON.parse(kv.store.get(`user:${userId}`));
     assert.equal(user.stats.pathGrades, 1);
   });
+
+  // A "remote" grade = free user, path not walked and no GPS within 2 km.
+  function seedPath(kv, id) {
+    kv.store.set(`path:${id}`, JSON.stringify({ id, name: 'X', status: 'easy', coordinates: sampleCoords }));
+  }
+
+  test('free user is capped at 5 remote gradings', async () => {
+    const { env, token, kv } = freshEnv('user', 'free');
+    for (let i = 0; i < 5; i++) {
+      seedPath(kv, `rp${i}`);
+      const res = await worker.fetch(authed('PATCH', `/api/paths/rp${i}`, token, { status: 'medium' }), env);
+      assert.equal(res.status, 200);
+    }
+    seedPath(kv, 'rp5');
+    const res = await worker.fetch(authed('PATCH', `/api/paths/rp5`, token, { status: 'medium' }), env);
+    assert.equal(res.status, 403);
+  });
+
+  test('free user grading near the path (GPS < 2 km) does not use a remote slot', async () => {
+    const { env, token, kv, userId } = freshEnv('user', 'free');
+    // Exhaust the 5 remote slots first.
+    for (let i = 0; i < 5; i++) {
+      seedPath(kv, `rn${i}`);
+      await worker.fetch(authed('PATCH', `/api/paths/rn${i}`, token, { status: 'medium' }), env);
+    }
+    // A grade with GPS on the path itself must still succeed and not count.
+    seedPath(kv, 'near');
+    const res = await worker.fetch(authed('PATCH', '/api/paths/near', token, {
+      status: 'medium', userLat: 49.35, userLon: 2.90,
+    }), env);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body._grade.counted, false);
+    const user = JSON.parse(kv.store.get(`user:${userId}`));
+    assert.equal(user.stats.unwalkedGrades, 5); // unchanged by the nearby grade
+    assert.equal(user.stats.pathGrades, 6);      // but still credited as a grade
+  });
+
+  test('free user with far-away GPS still consumes a remote slot', async () => {
+    const { env, token, kv, userId } = freshEnv('user', 'free');
+    seedPath(kv, 'far');
+    // ~200 km away → not nearby.
+    const res = await worker.fetch(authed('PATCH', '/api/paths/far', token, {
+      status: 'medium', userLat: 47.0, userLon: 2.0,
+    }), env);
+    assert.equal(res.status, 200);
+    assert.equal((await res.json())._grade.counted, true);
+    const user = JSON.parse(kv.store.get(`user:${userId}`));
+    assert.equal(user.stats.unwalkedGrades, 1);
+  });
+
+  test('silver user has no grading cap', async () => {
+    const { env, token, kv, userId } = freshEnv('user', 'silver');
+    for (let i = 0; i < 7; i++) {
+      seedPath(kv, `sp${i}`);
+      const res = await worker.fetch(authed('PATCH', `/api/paths/sp${i}`, token, { status: 'medium' }), env);
+      assert.equal(res.status, 200);
+    }
+    const user = JSON.parse(kv.store.get(`user:${userId}`));
+    assert.equal(user.stats.pathGrades, 7);
+    assert.ok(!user.stats.unwalkedGrades); // silver never accrues remote-grade count
+  });
 });
 
 // ── DELETE /api/paths/:id ─────────────────────────────────────────────────────
