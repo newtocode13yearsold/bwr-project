@@ -23,6 +23,23 @@ const TRAIL_TIPS = [
   '🍁 Saison idéale pour les photos en sous-bois.',
 ];
 
+// Badges de collection remportés à la roue. Stockés comme un tableau d'ids dans
+// localStorage ('bwr_collectible_badges'). Partagé avec profile-plan.js (chargé
+// après celui-ci) qui les rend dans la grille de badges du profil.
+const COLLECTIBLE_BADGES = [
+  { id: 'cb_chene',      icon: '🌳', label: 'Vieux Chêne' },
+  { id: 'cb_cerf',       icon: '🦌', label: 'Cerf Majestueux' },
+  { id: 'cb_renard',     icon: '🦊', label: 'Renard Rusé' },
+  { id: 'cb_chouette',   icon: '🦉', label: 'Chouette Nocturne' },
+  { id: 'cb_champignon', icon: '🍄', label: 'Cueilleur de Champignons' },
+  { id: 'cb_sanglier',   icon: '🐗', label: 'Sanglier des Grands Monts' },
+];
+
+function ownedCollectibles() {
+  try { return JSON.parse(localStorage.getItem('bwr_collectible_badges') || '[]'); }
+  catch { return []; }
+}
+
 // ── Canvas roulette wheel ──────────────────────────────────────────────────────
 const WHEEL_SIZE = 260; // logical px (CSS pixels)
 const WHEEL_COLORS = [
@@ -216,21 +233,21 @@ const WHEEL_PRIZES = {
     { id: 'silver_week',  icon: '🥈', label: '7 jours Argent',      desc: 'Accès Argent pendant 7 jours',              type: 'plan',        plan: 'silver', days: 7,  weight: 12  },
     { id: 'bonus_route',  icon: '🎫', label: '+1 trajet bonus',      desc: 'Un trajet supplémentaire cette semaine',    type: 'bonus_route',                           weight: 228 },
     { id: 'lucky_badge',  icon: '🍀', label: 'Badge Chanceux',       desc: 'Badge exclusif de la roue de la chance',   type: 'badge',                                weight: 182 },
-    { id: 'double_xp',    icon: '⭐', label: 'Double XP 24h',        desc: 'Progression doublée pendant 24 heures',    type: 'double_xp',   hours: 24,                weight: 183 },
+    { id: 'collectible',  icon: '🎖️', label: 'Badge Nature',        desc: 'Un badge de collection de la forêt',       type: 'collectible',                          weight: 183 },
     { id: 'trail_tip',    icon: '🌲', label: 'Conseil sentier',       desc: 'Une suggestion pour ta prochaine sortie',  type: 'tip',                                  weight: 228 },
   ],
   silver: [
     { id: 'gold_month',   icon: '🥇', label: '1 mois Or !',          desc: 'Abonnement Or offert pendant 30 jours',    type: 'plan',        plan: 'gold',   days: 30, weight: 7   },
     { id: 'gold_week',    icon: '🥇', label: '7 jours Or',            desc: 'Accès Or pendant 7 jours',                type: 'plan',        plan: 'gold',   days: 7,  weight: 12  },
     { id: 'lucky_badge',  icon: '🍀', label: 'Badge Chanceux',        desc: 'Badge exclusif de la roue de la chance',  type: 'badge',                                weight: 137 },
-    { id: 'double_xp',    icon: '⭐', label: 'Double XP 24h',         desc: 'Progression doublée pendant 24 heures',   type: 'double_xp',   hours: 24,                weight: 182 },
-    { id: 'xp_bonus',     icon: '🎯', label: '+200 XP bonus',         desc: 'Bonus d\'expérience immédiat',             type: 'xp_bonus',    xp: 200,                  weight: 228 },
+    { id: 'collectible',  icon: '🎖️', label: 'Badge Nature',         desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 182 },
+    { id: 'collectible2', icon: '🏅', label: 'Badge Forêt',          desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 228 },
     { id: 'trail_tip',    icon: '🌲', label: 'Conseil sentier',        desc: 'Une suggestion pour ta prochaine sortie', type: 'tip',                                  weight: 274 },
   ],
   gold: [
     { id: 'exclusive_badge', icon: '✨', label: 'Badge Or exclusif', desc: 'Badge animé réservé aux membres Or',       type: 'badge',                                weight: 10 },
-    { id: 'double_xp_48',    icon: '⭐', label: 'Double XP 48h',     desc: 'Progression doublée pendant 48 heures',   type: 'double_xp',   hours: 48,                weight: 15 },
-    { id: 'xp_bonus_500',    icon: '🎯', label: '+500 XP bonus',     desc: 'Bonus d\'expérience immédiat',             type: 'xp_bonus',    xp: 500,                  weight: 25 },
+    { id: 'collectible',     icon: '🎖️', label: 'Badge Nature',     desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 15 },
+    { id: 'collectible2',    icon: '🏅', label: 'Badge Forêt',      desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 25 },
     { id: 'trail_tip',       icon: '🌲', label: 'Conseil sentier VIP', desc: 'Suggestion exclusive pour membres Or',   type: 'tip',                                  weight: 50 },
   ],
 };
@@ -334,18 +351,22 @@ async function spinWheel(plan) {
     const w = BWR.readWeekly();
     w.count = Math.max(0, w.count - 1);
     localStorage.setItem('bwr_routes_week', JSON.stringify(w));
-  } else if (prize.type === 'xp_bonus') {
-    const km      = parseFloat(localStorage.getItem('bwr_km_total') || '0');
-    const bonusKm = (prize.xp || 0) / 20;
-    localStorage.setItem('bwr_km_total', (km + bonusKm).toFixed(2));
-    fetch(`${API_URL}/api/auth/stats`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ routes: 0, km: bonusKm }),
-    }).catch(() => {});
-  } else if (prize.type === 'double_xp') {
-    const expires = Date.now() + (prize.hours || 24) * 3600000;
-    localStorage.setItem('bwr_double_xp_until', expires);
+  } else if (prize.type === 'collectible') {
+    // Ajoute un badge de collection encore non possédé. Collection complète → repli sur un conseil.
+    const owned     = ownedCollectibles();
+    const remaining = COLLECTIBLE_BADGES.filter(b => !owned.includes(b.id));
+    if (remaining.length) {
+      const won = remaining[Math.floor(Math.random() * remaining.length)];
+      owned.push(won.id);
+      localStorage.setItem('bwr_collectible_badges', JSON.stringify(owned));
+      prize.icon  = won.icon;
+      prize.label = `Badge ${won.label}`;
+      prize.desc  = 'Ajouté à ta collection de badges de la forêt !';
+    } else {
+      prize.icon  = '🌲';
+      prize.label = 'Conseil sentier';
+      prize.desc  = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
+    }
   } else if (prize.type === 'badge') {
     if (prize.id === 'exclusive_badge') {
       localStorage.setItem('bwr_exclusive_badge', '1');

@@ -46,6 +46,12 @@ const BADGES = [
   // Roue de la chance — badges exclusifs
   { id: 'lucky_badge',    icon: '🍀', label: 'Badge Chanceux',    tier: 'free',   desc: 'Remporté en tournant la roue de la chance',   test: () => localStorage.getItem('bwr_lucky_badge') === '1' },
   { id: 'exclusive_badge', icon: '✨', label: 'Badge Or Exclusif', tier: 'gold',   desc: 'Badge animé exclusif gagné à la roue de la chance', test: () => localStorage.getItem('bwr_exclusive_badge') === '1' },
+  // Roue de la chance — collection de badges nature (COLLECTIBLE_BADGES vient de profile-wheel.js, chargé avant)
+  ...(typeof COLLECTIBLE_BADGES !== 'undefined' ? COLLECTIBLE_BADGES : []).map(b => ({
+    id: b.id, icon: b.icon, label: b.label, tier: 'free',
+    desc: 'Badge de collection remporté à la roue de la chance',
+    test: () => { try { return JSON.parse(localStorage.getItem('bwr_collectible_badges') || '[]').includes(b.id); } catch { return false; } },
+  })),
 ];
 
 function populatePage(user) {
