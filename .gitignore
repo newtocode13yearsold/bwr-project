@@ -6,6 +6,13 @@ dist/
 # Generated Instagram promo videos
 scripts/promo/out/
 scripts/promo/.raw/
+scripts/promo/.raw-*/
 
 # Stray generation log
 gen.log
+
+# KV database backups — contain real user data, never commit to GitHub
+backups/
+
+# Private secrets/logins checklist — never commit
+SECRETS.local.md

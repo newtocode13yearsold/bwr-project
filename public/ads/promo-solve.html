@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BWR — Promo Reel · Problème → Solution (vraie carte + vraies photos)</title>
+<meta name="robots" content="noindex" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&family=Fraunces:opsz,wght@9..144,700;9..144,900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest-900:#0b2410; --forest-700:#12351a; --forest-500:#2f6b25;
+    --lime:#a3e635; --lime-400:#bef264; --cream:#f4f7ee; --ink:#05140a;
+    --accent:#f97316; --barr:#ef4444;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#05140a;overflow:hidden;font-family:Inter,sans-serif}
+  #page{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px}
+  #stage{
+    position:relative;width:calc(100vh * 9 / 16);max-width:96vw;aspect-ratio:9/16;
+    background:#05140a;border-radius:22px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(163,230,53,.14);
+  }
+
+  /* full-bleed b-roll photo of the PROBLEM */
+  #bg{position:absolute;inset:0;z-index:1;background-size:cover;background-position:center;
+      transform:scale(1.08);transition:transform 6s linear, filter 1s ease;filter:brightness(.72)}
+  #bg.ken{transform:scale(1.16)}
+  #bg.dim{filter:brightness(.34) saturate(.85)}
+  #bgtint{position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:linear-gradient(180deg,rgba(5,20,10,.55) 0%,rgba(5,20,10,.15) 40%,rgba(5,20,10,.78) 100%)}
+
+  #cap{position:absolute;left:0;right:0;top:9%;z-index:40;text-align:center;padding:0 7%;
+       font:800 clamp(17px,4.3vh,36px)/1.16 Inter;color:var(--cream);
+       text-shadow:0 2px 22px rgba(0,0,0,.9);opacity:0;transform:translateY(-12px);
+       transition:opacity .5s ease, transform .55s cubic-bezier(.2,.9,.2,1)}
+  #cap.in{opacity:1;transform:none}
+  #cap .hl{color:var(--lime)} #cap b{color:var(--accent)}
+
+  #content{position:absolute;inset:0;z-index:20;transition:transform .3s ease}
+  body.feed #content{transform:scale(.82)}
+
+  /* phone showing the REAL map (the solution) */
+  #phone{position:absolute;left:50%;top:53%;z-index:20;
+    width:52%;aspect-ratio:9/18;transform:translate(-50%,-42%) scale(.86) rotate(-3deg);
+    background:#04110a;border-radius:34px;padding:9px;
+    box-shadow:0 26px 60px rgba(0,0,0,.6), 0 0 0 2px rgba(163,230,53,.22), inset 0 0 0 2px #0a1f11;
+    opacity:0;transition:opacity .7s ease, transform .8s cubic-bezier(.2,.9,.2,1)}
+  #phone.in{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}
+  #screen{position:relative;width:100%;height:100%;border-radius:26px;overflow:hidden;background:#0e2a16}
+  #notch{position:absolute;top:6px;left:50%;transform:translateX(-50%);width:32%;height:14px;
+    background:#04110a;border-radius:0 0 12px 12px;z-index:8}
+  .mapimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;
+    transform:scale(1.02);transition:transform 5s linear}
+  #phone.in .mapimg{transform:scale(1.1)}
+
+  #uiTop{position:absolute;top:22px;left:10px;right:10px;z-index:6;
+    display:flex;align-items:center;gap:7px;padding:8px 11px;border-radius:12px;
+    background:rgba(6,20,11,.82);border:1px solid rgba(163,230,53,.25);backdrop-filter:blur(4px);
+    color:#cde8bd;font:700 clamp(8px,1.5vh,13px)/1 Inter;
+    opacity:0;transform:translateY(-8px);transition:opacity .5s ease, transform .5s ease}
+  #uiTop.in{opacity:1;transform:none}
+  #uiTop .pinico{color:var(--lime)}
+  #uiTop .live{margin-left:auto;display:flex;align-items:center;gap:5px;color:#9dbb86;font:800 clamp(7px,1.3vh,11px)/1 Inter}
+  #uiTop .dot{width:7px;height:7px;border-radius:50%;background:var(--barr);box-shadow:0 0 8px var(--barr);animation:blink 1.2s ease-in-out infinite}
+  @keyframes blink{50%{opacity:.35}}
+
+  /* the solution "badge" chip that pops over the map */
+  #badge{position:absolute;left:8px;right:8px;bottom:14px;z-index:9;
+    display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 12px;border-radius:14px;
+    background:rgba(6,20,11,.92);border:1.5px solid var(--accent);backdrop-filter:blur(5px);
+    color:var(--cream);font:900 clamp(11px,2vh,16px)/1.1 Inter;text-align:center;
+    box-shadow:0 12px 30px rgba(0,0,0,.5);
+    opacity:0;transform:translateY(16px) scale(.94);transition:opacity .5s ease, transform .5s cubic-bezier(.2,1.3,.3,1)}
+  #badge.in{opacity:1;transform:none}
+
+  #cta{position:absolute;inset:0;z-index:80;display:flex;flex-direction:column;
+       align-items:center;justify-content:center;text-align:center;padding:0 8%;
+       background:radial-gradient(120% 90% at 50% 40%, rgba(20,64,30,.72), rgba(5,20,10,.97));
+       opacity:0;transition:opacity .7s ease}
+  #cta.in{opacity:1}
+  .logo{font:900 clamp(52px,15vh,150px)/1 Fraunces;color:#fff;letter-spacing:.02em;text-shadow:0 6px 40px rgba(0,0,0,.8)}
+  .logo b{color:var(--lime)}
+  .tagline{font:700 clamp(15px,3.4vh,30px)/1.3 Inter;color:var(--cream);margin-top:2vh;max-width:22ch;text-shadow:0 2px 16px rgba(0,0,0,.85)}
+  .cta-btn{margin-top:3.2vh;font:900 clamp(15px,3.4vh,28px)/1 Inter;color:var(--ink);
+           background:linear-gradient(120deg,var(--lime),var(--lime-400));border-radius:999px;padding:15px 30px;
+           text-decoration:none;display:inline-block;pointer-events:auto;box-shadow:0 14px 40px rgba(163,230,53,.4)}
+  .url{margin-top:2.2vh;font:800 clamp(13px,2.8vh,24px)/1 Inter;color:var(--lime-400);letter-spacing:.05em}
+
+  #prog{position:absolute;top:0;left:0;height:4px;width:0;z-index:90;
+        background:linear-gradient(90deg,var(--forest-500),var(--lime));box-shadow:0 0 10px var(--lime)}
+
+  body.bare #page{padding:0;gap:0;height:100vh}
+  body.bare #stage{width:100vw;height:100vh;max-width:none;aspect-ratio:auto;border-radius:0;box-shadow:none}
+  body.bare #controls,body.bare #gate{display:none!important}
+
+  #gate{position:absolute;inset:0;z-index:700;background:rgba(4,12,7,.94);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:0 10%}
+  #gate .logo{font-size:clamp(48px,13vh,120px)}
+  #gate p{color:#cfe8c2;font:600 clamp(13px,2.6vh,20px)/1.45 Inter;max-width:32ch}
+  #gate button{cursor:pointer;border:none}
+  .play{font:900 clamp(17px,4vh,30px)/1 Inter;color:var(--ink);background:linear-gradient(120deg,var(--lime),var(--lime-400));
+        border-radius:999px;padding:17px 34px;box-shadow:0 14px 40px rgba(163,230,53,.45)}
+
+  #controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;color:#9dbb86;font:600 13px/1.4 Inter;max-width:96vw}
+  #controls button,#controls label,#controls a{cursor:pointer;border:1px solid rgba(163,230,53,.3);
+    background:rgba(163,230,53,.08);color:#d8efc7;border-radius:10px;padding:9px 14px;font:700 13px Inter;text-decoration:none}
+  #controls button:hover,#controls label:hover{background:rgba(163,230,53,.18)}
+  #controls .hint{border:none;background:none;color:#7f9a6c;max-width:64ch;text-align:center}
+  #controls select{background:rgba(163,230,53,.08);color:#d8efc7;border:1px solid rgba(163,230,53,.3);border-radius:10px;padding:9px 12px;font:700 13px Inter}
+</style>
+</head>
+<body>
+<div id="page">
+  <div id="stage">
+    <div id="bg"></div>
+    <div id="bgtint"></div>
+    <div id="prog"></div>
+
+    <div id="content">
+      <div id="cap"></div>
+
+      <div id="phone">
+        <div id="screen">
+          <div id="notch"></div>
+          <img class="mapimg" id="mapimg" src="img/report-map.png" alt="">
+          <div id="uiTop">
+            <span class="pinico">◎</span><span>Forêt de Compiègne</span>
+            <span class="live"><span class="dot"></span>EN DIRECT</span>
+          </div>
+          <div id="badge">Badge</div>
+        </div>
+      </div>
+    </div><!-- /#content -->
+
+    <div id="cta">
+      <div class="logo">B<b>W</b>R</div>
+      <div class="tagline" id="ctaTag">La forêt de Compiègne, en mieux.</div>
+      <a class="cta-btn" href="https://bwrmaps.com" target="_blank" rel="noopener">Essaie gratuitement →</a>
+      <div class="url">bwrmaps.com · gratuit</div>
+    </div>
+
+    <div id="gate">
+      <div class="logo">B<b>W</b>R</div>
+      <button class="play" id="playBtn">▶ Lancer le reel</button>
+      <p>Musique incluse 🎵 — monte le volume. Plein écran conseillé pour enregistrer.</p>
+    </div>
+  </div>
+
+  <div id="controls">
+    <select id="variant" title="Choisir le reel">
+      <option value="1">1 · Arbre en travers</option>
+      <option value="2">2 · Tourner en rond</option>
+      <option value="3">3 · C'est encore loin ?</option>
+      <option value="4">4 · Chemin galère</option>
+      <option value="5">5 · Zéro réseau</option>
+    </select>
+    <button id="replay">↻ Rejouer</button>
+    <button id="fs">⛶ Plein écran</button>
+    <button id="rec">⏺ Enregistrer la vidéo</button>
+    <div class="hint">Série « problème → solution » : une vraie photo de forêt pose le problème, <b>ta vraie carte BWR</b> le règle. 5 variantes (menu déroulant). Marimba douce. Format 9:16, ~16&nbsp;s.</div>
+  </div>
+</div>
+
+<script>
+const $ = s=>document.querySelector(s);
+const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+let abort=false;
+
+if(location.search.includes('bare')) document.body.classList.add('bare');
+if(location.search.includes('feed')) document.body.classList.add('feed');
+
+// ── the 5 problem → solution configs (real photo + real map) ──────────────────
+const CONFIGS = {
+  1: { bg:'img/broll/p01.jpg', map:'img/report-map.png', accent:'#f97316',
+       problem:"Un <b>arbre en travers</b><br>du chemin. Encore lui.",
+       solve:"Tu râles pas.<br>Tu <span class='hl'>signales.</span>",
+       badge:"＋ Arbre tombé · envoyé ✓",
+       payoff:"Et toute la forêt<br>est <span class='hl'>prévenue.</span>",
+       tag:"La forêt change. Ta carte aussi." },
+  2: { bg:'img/broll/p11.jpg', map:'img/loop-1.png', accent:'#a3e635',
+       problem:"Marcher 2 h…<br>et <b>tourner en rond.</b>",
+       solve:"BWR trace ta <span class='hl'>boucle.</span>",
+       badge:"↺ Boucle 7,3 km · retour au départ",
+       payoff:"Tu pars, tu reviens.<br><span class='hl'>Jamais le même chemin.</span>",
+       tag:"Des boucles qui reviennent au départ." },
+  3: { bg:'img/broll/p07.jpg', map:'img/route-ab.png', accent:'#38bdf8',
+       problem:"« C'est <b>encore loin ?</b> »<br>Aucune idée.",
+       solve:"La vraie distance,<br>au <span class='hl'>mètre près.</span>",
+       badge:"→ 8,4 km · 2 h 05",
+       payoff:"Tu sais où tu vas.<br>Et pour <span class='hl'>combien de temps.</span>",
+       tag:"Chaque itinéraire, chiffré." },
+  4: { bg:'img/broll/p10.jpg', map:'img/grades-all.png', accent:'#ef4444',
+       problem:"Chemin <b>galère</b> surprise :<br>boue, racines, dénivelé.",
+       solve:"Chaque sentier <span class='hl'>noté.</span>",
+       badge:"🟢 facile · 🟠 moyen · 🔴 dur",
+       payoff:"Tu choisis ta rando<br><span class='hl'>avant</span> de partir.",
+       tag:"Les sentiers notés par ceux qui les marchent." },
+  5: { bg:'img/broll/p12.jpg', map:'img/loop-2.png', accent:'#a3e635',
+       problem:"<b>Zéro réseau</b><br>en pleine forêt.",
+       solve:"Ta carte marche<br><span class='hl'>hors-ligne.</span>",
+       badge:"✈ Hors-ligne · GPS actif",
+       payoff:"Perdu ? <span class='hl'>Jamais.</span><br>Même sans data.",
+       tag:"Ta carte, même sans réseau." },
+};
+let CFG = CONFIGS[1];
+window.setVariant = function(n){
+  CFG = CONFIGS[n] || CONFIGS[1];
+  document.documentElement.style.setProperty('--accent', CFG.accent);
+  $('#bg').style.backgroundImage = `url('${CFG.bg}')`;
+  $('#mapimg').src = CFG.map;
+  $('#badge').innerHTML = CFG.badge;
+  $('#ctaTag').innerHTML = CFG.tag;
+  const sel=$('#variant'); if(sel) sel.value=String(n);
+};
+// pick up ?v=N if the host preserves the query string; make script uses setVariant() too.
+(function(){ const m=location.search.match(/[?&]v=(\d)/); setVariant(m?+m[1]:1); })();
+
+function cap(html){ const el=$('#cap'); el.classList.remove('in'); void el.offsetWidth;
+  el.innerHTML=html||''; if(html) el.classList.add('in'); }
+
+function runProgress(total){ const el=$('#prog'); const start=Date.now();
+  const id=setInterval(()=>{ if(abort){ clearInterval(id); return; }
+    const p=Math.min(1,(Date.now()-start)/total); el.style.width=(p*100)+'%';
+    if(p>=1) clearInterval(id); }, 33); }
+
+/* ── warm marimba bed (WebAudio) — Am – F – C – G, identical to the family track. */
+let audioCtx=null, musicStop=null, musicMaster=null, userAudioEl=null;
+function buildMusicGraph(ac, t0, dur){
+  const master=ac.createGain();
+  master.gain.setValueAtTime(0,t0); master.gain.linearRampToValueAtTime(0.5,t0+1.6);
+
+  const delay=ac.createDelay(1.0); delay.delayTime.value=0.24;
+  const fb=ac.createGain(); fb.gain.value=0.24; const wet=ac.createGain(); wet.gain.value=0.19;
+  delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(master);
+
+  const nbuf=ac.createBuffer(1, Math.ceil(ac.sampleRate*0.2), ac.sampleRate);
+  const nd=nbuf.getChannelData(0); for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1;
+
+  const bpm=100, beat=60/bpm, bars=Math.ceil(dur/(4*beat))+1;
+  const A3=220.00,C4=261.63,E4=329.63,F3=174.61,G3=196.00,B3=246.94,D4=293.66,
+        A4=440.00,C5=523.25,D5=587.33,E5=659.25;
+  const chords=[ [A3,C4,E4], [F3,A3,C4], [C4,E4,G3*2], [G3,B3,D4] ]; // Am F C G
+  const tops  =[ A4,          C5,          E5,          D5        ];
+
+  function marimba(f,s,d,gain){ [0,0.4].forEach((det,k)=>{ const o=ac.createOscillator(); o.type='sine';
+    o.frequency.value=f*(k?1.005:1)+det; const g=ac.createGain();
+    g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(gain*(k?0.5:1),s+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+d);
+    o.connect(g); g.connect(master); if(!k) g.connect(delay); o.start(s); o.stop(s+d+0.05); }); }
+  function pad(freqs,s,d){ freqs.forEach(f=>{ const o=ac.createOscillator(); o.type='sine'; o.frequency.value=f/2;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(0.032,s+0.6);
+    g.gain.setValueAtTime(0.032,Math.max(s+0.6,s+d-0.6)); g.gain.linearRampToValueAtTime(0,s+d);
+    o.connect(g); g.connect(master); o.start(s); o.stop(s+d+0.06); }); }
+  function kick(s){ const o=ac.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(125,s); o.frequency.exponentialRampToValueAtTime(45,s+0.12);
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(0.13,s+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+0.2); o.connect(g); g.connect(master); o.start(s); o.stop(s+0.26); }
+  function hat(s,gain){ const src=ac.createBufferSource(); src.buffer=nbuf;
+    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=6800;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(gain,s+0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+0.06); src.connect(hp); hp.connect(g); g.connect(master);
+    src.start(s); src.stop(s+0.09); }
+
+  for(let bar=0;bar<bars;bar++){ const bs=t0+bar*4*beat; const ch=chords[bar%4];
+    pad(ch, bs, 4*beat);
+    const arp=[ ch[0], ch[2], ch[1], ch[2]*2, ch[0]*2, ch[2], ch[1], ch[2]*2 ];
+    for(let i=0;i<8;i++) marimba(arp[i], bs+i*0.5*beat, 0.7*beat, 0.075);
+    if(bar>0){ for(let q=0;q<4;q++){ kick(bs+q*beat); hat(bs+q*beat+0.5*beat, q%2?0.05:0.03); } }
+    if(bar>1) marimba(tops[bar%4], bs, 1.6*beat, 0.05);
+  }
+  master.gain.setValueAtTime(0.5, t0+dur-2); master.gain.linearRampToValueAtTime(0, t0+dur);
+  return master;
+}
+function startMusic(){ stopMusic();
+  if(userAudioEl){ userAudioEl.currentTime=0; userAudioEl.play().catch(()=>{}); return; }
+  const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+  const ac=new AC(); audioCtx=ac; musicMaster=buildMusicGraph(ac, ac.currentTime+0.1, 42);
+  musicMaster.connect(ac.destination); musicStop=()=>{ try{ac.close();}catch(e){} audioCtx=null; musicMaster=null; }; }
+window.renderMusicWav = async function(seconds){ seconds=seconds||42;
+  const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext; if(!OAC) return null;
+  const sr=44100; const oac=new OAC(2, Math.ceil(sr*seconds), sr);
+  const master=buildMusicGraph(oac,0,seconds); master.connect(oac.destination);
+  const buf=await oac.startRendering(); return bufferToWavBase64(buf); };
+function bufferToWavBase64(buf){ const numCh=buf.numberOfChannels, len=buf.length, sr=buf.sampleRate;
+  const blockAlign=numCh*2, dataLen=len*blockAlign; const ab=new ArrayBuffer(44+dataLen); const dv=new DataView(ab);
+  const wr=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
+  wr(0,'RIFF'); dv.setUint32(4,36+dataLen,true); wr(8,'WAVE'); wr(12,'fmt ');
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,numCh,true);
+  dv.setUint32(24,sr,true); dv.setUint32(28,sr*blockAlign,true); dv.setUint16(32,blockAlign,true);
+  dv.setUint16(34,16,true); wr(36,'data'); dv.setUint32(40,dataLen,true);
+  const chans=[]; for(let c=0;c<numCh;c++) chans.push(buf.getChannelData(c));
+  let off=44; for(let i=0;i<len;i++){ for(let c=0;c<numCh;c++){ let s=Math.max(-1,Math.min(1,chans[c][i]));
+    dv.setInt16(off, s<0? s*0x8000 : s*0x7FFF, true); off+=2; } }
+  let bin=''; const bytes=new Uint8Array(ab); const CH=0x8000;
+  for(let i=0;i<bytes.length;i+=CH) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+CH));
+  return btoa(bin); }
+function fadeMusic(sec=1.4){ if(userAudioEl){ const a=userAudioEl; const step=a.volume/(sec*20||1);
+    const id=setInterval(()=>{ a.volume=Math.max(0,a.volume-step); if(a.volume<=0.001){clearInterval(id);a.pause();a.volume=1;} },50); return; }
+  if(musicMaster&&audioCtx){ try{ const now=audioCtx.currentTime;
+    musicMaster.gain.cancelScheduledValues(now); musicMaster.gain.setValueAtTime(musicMaster.gain.value,now);
+    musicMaster.gain.linearRampToValueAtTime(0, now+sec);}catch(e){} } }
+function stopMusic(){ if(userAudioEl){ try{userAudioEl.pause();}catch(e){} } if(musicStop){musicStop();musicStop=null;} }
+
+// ── timeline (~16 s). Keep TOTAL in sync with the scene sleeps below. ──
+const TOTAL = 16000;
+function resetUI(){
+  ['uiTop','badge','phone','cap','cta'].forEach(id=>$('#'+id).classList.remove('in'));
+  $('#bg').classList.remove('ken','dim');
+}
+async function play(){
+  abort=false; resetUI(); $('#prog').style.width='0'; runProgress(TOTAL);
+
+  // 1 — the PROBLEM, over a real forest photo
+  void $('#bg').offsetWidth; $('#bg').classList.add('ken');
+  cap(CFG.problem);
+  await sleep(2700); if(abort)return;
+
+  // 2 — BWR steps in: photo dims, phone with the REAL map slides up
+  cap(CFG.solve);
+  $('#bg').classList.add('dim');
+  $('#phone').classList.add('in');
+  $('#uiTop').classList.add('in');
+  await sleep(1900); if(abort)return;
+
+  // 3 — the concrete payoff badge on the real map
+  $('#badge').classList.add('in');
+  await sleep(2600); if(abort)return;
+
+  // 4 — payoff line
+  cap(CFG.payoff);
+  await sleep(2900); if(abort)return;
+
+  // 5 — CTA
+  cap('');
+  $('#phone').classList.remove('in');
+  $('#cta').classList.add('in');
+  await sleep(4600); if(abort)return;
+  fadeMusic(1.6);
+}
+function stopAll(){ abort=true; stopMusic(); }
+
+// ── controls ──
+$('#playBtn').addEventListener('click',()=>{ $('#gate').style.display='none'; startMusic(); play(); });
+$('#variant').addEventListener('change',e=>{ stopAll(); setVariant(+e.target.value); });
+$('#replay').addEventListener('click',async()=>{ stopAll(); await sleep(80); abort=false; startMusic(); play(); });
+$('#fs').addEventListener('click',()=>{ const s=$('#stage'); if(!document.fullscreenElement) s.requestFullscreen?.(); else document.exitFullscreen?.(); });
+$('#rec').addEventListener('click',async()=>{
+  if(!navigator.mediaDevices?.getDisplayMedia){ alert('Ton navigateur ne supporte pas l’enregistrement.'); return; }
+  let stream; try{ stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:true,preferCurrentTab:true}); }catch(e){ return; }
+  const mime = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4'
+            : MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+  const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:9000000});
+  const chunks=[]; rec.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+  rec.onstop=()=>{ const blob=new Blob(chunks,{type:mime}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='bwr-reel-solve'+(mime.includes('mp4')?'.mp4':'.webm');
+    document.body.appendChild(a); a.click(); a.remove(); stream.getTracks().forEach(t=>t.stop());
+    $('#rec').textContent='⏺ Enregistrer la vidéo'; };
+  $('#rec').textContent='● Enregistrement…'; $('#gate').style.display='none';
+  stopAll(); await sleep(100); abort=false;
+  rec.start(); startMusic(); play();
+  setTimeout(()=>{ try{ rec.stop(); }catch(e){} }, TOTAL+4000);
+});
+</script>
+<script src="../js/track.js"></script>
+</body>
+</html>
