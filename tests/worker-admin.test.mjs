@@ -902,6 +902,26 @@ describe('POST /api/track/visit', () => {
     assert.equal(rec.visits, 2);
     assert.equal(kv.store.get(`analytics:visits:${month()}`), '1', 'still one unique visitor');
   });
+
+  test('an admin session token drops the visit entirely (server backstop)', async () => {
+    const { env, kv, seedAdmin } = freshEnv();
+    const { token } = seedAdmin();
+    const res  = await worker.fetch(r('POST', '/api/track/visit', { vid: 'adminv', seconds: 30, token }), env);
+    const body = await res.json();
+    assert.equal(body.counted, false);
+    assert.equal(body.admin, true);
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), undefined, 'admin must not touch the counter');
+    assert.equal(kv.store.get(`visitor:${month()}:adminv`), undefined, 'admin must not create a record');
+  });
+
+  test('a non-admin token is tracked normally', async () => {
+    const { env, kv, seedFree } = freshEnv();
+    const { token } = seedFree();
+    const res  = await worker.fetch(r('POST', '/api/track/visit', { vid: 'freev', seconds: 30, token }), env);
+    const body = await res.json();
+    assert.equal(body.counted, true);
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), '1');
+  });
 });
 
 // ── GET /api/analytics/events — exposes real monthly visitor counts ───────────

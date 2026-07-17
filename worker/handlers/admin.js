@@ -581,6 +581,22 @@ Utilise les vrais chiffres. Pas d'intro type "Bien sûr" ni de conclusion. Puces
       // endpoint directly is dropped before it can count or be listed.
       if (isBotUA(ua)) return json({ ok: true, counted: false, bot: true });
 
+      // Never count the admin's own browsing. The client's per-browser opt-out
+      // (bwr_notrack) misses sessions where no admin login is cached on this origin
+      // (preview deploys, incognito, cleared storage). As a server-side backstop,
+      // the client also sends its auth token in the body when signed in — if it maps
+      // to an admin session we drop the visit entirely.
+      if (typeof body.token === 'string' && body.token) {
+        const sessRaw = await env.BWR_KV.get(`session:${body.token.slice(0, 128)}`);
+        if (sessRaw) {
+          try {
+            const sess = JSON.parse(sessRaw);
+            const u = sess && sess.userId ? await getUser(env, sess.userId) : null;
+            if (u && u.role === 'admin') return json({ ok: true, counted: false, admin: true });
+          } catch { /* malformed session — fall through and track normally */ }
+        }
+      }
+
       // Which page + how long the visitor looked at it (seconds, to the second).
       // Both are sanitised/clamped; a page path must start with "/".
       let page = typeof body.page === 'string' ? body.page.toLowerCase().slice(0, 80) : '';

@@ -80,7 +80,14 @@
     try {
       // text/plain keeps it a CORS-simple request (no preflight) on preview
       // origins; the Worker parses the JSON body regardless of content type.
-      var body = JSON.stringify({ vid: vid, page: page, seconds: secs });
+      // Include the auth token when signed in so the server can drop the visit if
+      // it belongs to an admin session — a backstop for the per-browser opt-out
+      // above, which misses origins where no admin login was ever cached.
+      var token = null;
+      try { token = localStorage.getItem('bwr_token'); } catch (_) {}
+      var payload = { vid: vid, page: page, seconds: secs };
+      if (token) payload.token = token;
+      var body = JSON.stringify(payload);
       var url  = API + '/api/track/visit';
       if (navigator.sendBeacon) {
         navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' }));
