@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BWR — Promo Reel · FRESH (5 nouveaux sujets, couleurs, stickers, confettis + vraie carte)</title>
+<meta name="robots" content="noindex" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&family=Fraunces:opsz,wght@9..144,900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --lime:#a3e635; --lime-400:#bef264; --cream:#fefefb; --ink:#0a0a12;
+    --c1:#f97316; --c2:#a3e635;               /* per-variant gradient (JS overrides) */
+    --pop:#ffe14d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#07070c;overflow:hidden;font-family:Inter,sans-serif}
+  #page{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px}
+  #stage{
+    position:relative;width:calc(100vh * 9 / 16);max-width:96vw;aspect-ratio:9/16;
+    border-radius:22px;overflow:hidden;background:#07070c;
+    box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.08);
+  }
+
+  /* living, colorful backdrop */
+  #bgwrap{position:absolute;inset:0;z-index:1;overflow:hidden}
+  #grad{position:absolute;inset:-30%;z-index:1;
+    background:conic-gradient(from 0deg, var(--c1), var(--c2), var(--c1));
+    filter:saturate(1.25);animation:spin 14s linear infinite;opacity:.9}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #blobs{position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:overlay;
+    background:radial-gradient(38% 30% at 22% 26%, rgba(255,255,255,.55), transparent 70%),
+               radial-gradient(42% 34% at 78% 72%, rgba(0,0,0,.4), transparent 72%);
+    animation:drift 9s ease-in-out infinite alternate}
+  @keyframes drift{to{transform:translate3d(0,-4%,0) scale(1.08)}}
+  #grain{position:absolute;inset:0;z-index:3;opacity:.06;pointer-events:none;
+    background-image:radial-gradient(rgba(255,255,255,.9) .5px, transparent .6px);background-size:3px 3px}
+
+  #prog{position:absolute;top:0;left:0;height:5px;width:0;z-index:95;border-radius:0 4px 4px 0;
+        background:linear-gradient(90deg,#fff,var(--pop));box-shadow:0 0 14px var(--pop)}
+
+  #content{position:absolute;inset:0;z-index:20}
+  body.feed #content{transform:scale(.84)}
+
+  /* the "cool photo" as a tilted sticker card */
+  #photo{position:absolute;left:50%;top:47%;z-index:14;width:74%;aspect-ratio:3/4;
+    transform:translate(-50%,-50%) rotate(-5deg) scale(.6);opacity:0;
+    background-size:cover;background-position:center;border-radius:22px;
+    border:7px solid #fff;box-shadow:0 26px 60px rgba(0,0,0,.5);
+    transition:opacity .45s ease, transform .6s cubic-bezier(.2,1.5,.35,1)}
+  #photo.in{opacity:1;transform:translate(-50%,-50%) rotate(-5deg) scale(1)}
+  #photo.out{opacity:0;transform:translate(-50%,-62%) rotate(-5deg) scale(.82)}
+  #photoTape{position:absolute;top:-16px;left:50%;transform:translateX(-50%) rotate(-3deg);
+    width:38%;height:26px;background:rgba(255,255,255,.55);backdrop-filter:blur(2px);
+    border-radius:3px;box-shadow:0 3px 8px rgba(0,0,0,.2)}
+
+  /* big bouncy headline */
+  #cap{position:absolute;left:0;right:0;top:8.5%;z-index:40;text-align:center;padding:0 6%;
+       font:900 clamp(20px,5vh,42px)/1.08 Inter;color:#fff;letter-spacing:-.01em;
+       text-shadow:0 3px 0 rgba(0,0,0,.22), 0 6px 26px rgba(0,0,0,.5);
+       opacity:0;transform:translateY(-14px) scale(.9)}
+  #cap.in{animation:pop .5s cubic-bezier(.2,1.6,.35,1) forwards}
+  @keyframes pop{to{opacity:1;transform:none}}
+  #cap .hl{color:var(--pop)} #cap .green{color:var(--lime)}
+  #cap .box{background:var(--ink);color:#fff;padding:.02em .22em;border-radius:8px;box-decoration-break:clone}
+
+  /* emoji stickers that bounce in */
+  .sticker{position:absolute;z-index:30;font-size:clamp(30px,7vh,60px);opacity:0;
+    filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));transform:scale(.2) rotate(-12deg)}
+  .sticker.in{animation:stick .6s cubic-bezier(.2,1.8,.3,1) forwards}
+  @keyframes stick{60%{opacity:1}to{opacity:1;transform:scale(1) rotate(var(--rot,0deg))}}
+  .sticker.wob{animation:stick .6s cubic-bezier(.2,1.8,.3,1) forwards, wob 2.2s ease-in-out .6s infinite}
+  @keyframes wob{50%{transform:scale(1) rotate(calc(var(--rot,0deg) + 6deg))}}
+
+  /* phone with the REAL map + glowing colorful frame */
+  #phone{position:absolute;left:50%;top:50%;z-index:16;width:56%;aspect-ratio:9/18;
+    transform:translate(-50%,-46%) scale(.7) rotate(6deg);opacity:0;
+    border-radius:34px;padding:8px;background:#0a0a12;
+    box-shadow:0 26px 60px rgba(0,0,0,.55), 0 0 0 3px var(--pop), 0 0 40px var(--pop);
+    transition:opacity .5s ease, transform .7s cubic-bezier(.2,1.4,.3,1)}
+  #phone.in{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}
+  #phscreen{position:relative;width:100%;height:100%;border-radius:26px;overflow:hidden;background:#0e2a16}
+  #notch{position:absolute;top:6px;left:50%;transform:translateX(-50%);width:30%;height:13px;background:#0a0a12;border-radius:0 0 12px 12px;z-index:8}
+  .mapimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;
+    transform:scale(1.02);transition:transform 5s linear}
+  #phone.in .mapimg{transform:scale(1.12)}
+  #uiTop{position:absolute;top:20px;left:9px;right:9px;z-index:6;display:flex;align-items:center;gap:6px;
+    padding:7px 10px;border-radius:11px;background:rgba(10,10,18,.82);border:1px solid rgba(255,255,255,.18);
+    backdrop-filter:blur(4px);color:#eafcd6;font:800 clamp(8px,1.5vh,13px)/1 Inter}
+  #uiTop .live{margin-left:auto;display:flex;align-items:center;gap:5px;color:#ffd6d6;font:900 clamp(7px,1.3vh,11px)/1 Inter}
+  #uiTop .dot{width:7px;height:7px;border-radius:50%;background:#ef4444;box-shadow:0 0 8px #ef4444;animation:blink 1s ease-in-out infinite}
+  @keyframes blink{50%{opacity:.3}}
+
+  /* chunky solution badge */
+  #badge{position:absolute;left:50%;bottom:11%;z-index:34;transform:translate(-50%,20px) scale(.8);
+    display:flex;align-items:center;gap:9px;padding:13px 20px;border-radius:999px;
+    background:#fff;color:var(--ink);font:900 clamp(13px,2.4vh,20px)/1 Inter;white-space:nowrap;
+    box-shadow:0 14px 34px rgba(0,0,0,.4), 0 0 0 4px rgba(255,255,255,.25);opacity:0;
+    transition:opacity .4s ease, transform .5s cubic-bezier(.2,1.7,.3,1)}
+  #badge.in{opacity:1;transform:translate(-50%,0) scale(1)}
+  #badge .tick{color:#16a34a;font-size:1.2em}
+
+  #confetti{position:absolute;inset:0;z-index:60;pointer-events:none}
+
+  #cta{position:absolute;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;
+       text-align:center;padding:0 8%;opacity:0;transition:opacity .5s ease;
+       background:radial-gradient(120% 90% at 50% 38%, rgba(0,0,0,.15), rgba(7,7,12,.9))}
+  #cta.in{opacity:1}
+  .logo{font:900 clamp(56px,16vh,160px)/1 Fraunces;color:#fff;letter-spacing:.02em;text-shadow:0 8px 40px rgba(0,0,0,.6)}
+  .logo b{color:var(--pop)}
+  .tagline{font:800 clamp(16px,3.6vh,32px)/1.25 Inter;color:#fff;margin-top:2vh;max-width:20ch;text-shadow:0 2px 16px rgba(0,0,0,.6)}
+  .cta-btn{margin-top:3.2vh;font:900 clamp(15px,3.4vh,28px)/1 Inter;color:var(--ink);
+           background:#fff;border-radius:999px;padding:15px 32px;text-decoration:none;display:inline-block;
+           box-shadow:0 14px 40px rgba(0,0,0,.35);pointer-events:auto}
+  .url{margin-top:2.2vh;font:900 clamp(13px,2.8vh,24px)/1 Inter;color:var(--pop);letter-spacing:.05em}
+
+  body.bare #page{padding:0;gap:0;height:100vh}
+  body.bare #stage{width:100vw;height:100vh;max-width:none;aspect-ratio:auto;border-radius:0;box-shadow:none}
+  body.bare #controls,body.bare #gate{display:none!important}
+
+  #gate{position:absolute;inset:0;z-index:700;background:rgba(7,7,12,.94);display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:16px;text-align:center;padding:0 10%}
+  #gate .logo{font-size:clamp(48px,13vh,120px)}
+  #gate p{color:#e6f6d6;font:600 clamp(13px,2.6vh,20px)/1.45 Inter;max-width:32ch}
+  #gate button{cursor:pointer;border:none}
+  .play{font:900 clamp(17px,4vh,30px)/1 Inter;color:var(--ink);background:linear-gradient(120deg,var(--lime),var(--lime-400));
+        border-radius:999px;padding:17px 34px;box-shadow:0 14px 40px rgba(163,230,53,.45)}
+
+  #controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;color:#9dbb86;font:600 13px/1.4 Inter;max-width:96vw}
+  #controls button,#controls a{cursor:pointer;border:1px solid rgba(163,230,53,.3);background:rgba(163,230,53,.08);
+    color:#d8efc7;border-radius:10px;padding:9px 14px;font:700 13px Inter;text-decoration:none}
+  #controls select{background:rgba(163,230,53,.08);color:#d8efc7;border:1px solid rgba(163,230,53,.3);border-radius:10px;padding:9px 12px;font:700 13px Inter}
+  #controls .hint{border:none;background:none;color:#7f9a6c;max-width:64ch;text-align:center}
+</style>
+</head>
+<body>
+<div id="page">
+  <div id="stage">
+    <div id="bgwrap"><div id="grad"></div><div id="blobs"></div><div id="grain"></div></div>
+    <div id="prog"></div>
+
+    <div id="content">
+      <div id="cap"></div>
+
+      <div id="photo"><div id="photoTape"></div></div>
+
+      <div class="sticker" id="st1" style="left:8%;top:26%;--rot:-10deg"></div>
+      <div class="sticker" id="st2" style="right:8%;top:30%;--rot:12deg"></div>
+      <div class="sticker" id="st3" style="left:12%;bottom:20%;--rot:8deg"></div>
+
+      <div id="phone">
+        <div id="phscreen">
+          <div id="notch"></div>
+          <img class="mapimg" id="mapimg" src="img/report-map.png" alt="">
+          <div id="uiTop"><span>◎ Forêt de Compiègne</span><span class="live"><span class="dot"></span>LIVE</span></div>
+        </div>
+      </div>
+
+      <div id="badge"><span class="tick">✓</span><span id="badgeTxt">Réglé</span></div>
+    </div><!-- /#content -->
+
+    <canvas id="confetti"></canvas>
+
+    <div id="cta">
+      <div class="logo">B<b>W</b>R</div>
+      <div class="tagline" id="ctaTag">La forêt de Compiègne, en mieux.</div>
+      <a class="cta-btn" href="https://bwrmaps.com" target="_blank" rel="noopener">Essaie gratuitement →</a>
+      <div class="url">bwrmaps.com · gratuit</div>
+    </div>
+
+    <div id="gate">
+      <div class="logo">B<b>W</b>R</div>
+      <button class="play" id="playBtn">▶ Lancer le reel</button>
+      <p>Musique incluse 🎵 — monte le volume. Plein écran conseillé pour enregistrer.</p>
+    </div>
+  </div>
+
+  <div id="controls">
+    <select id="variant" title="Choisir le reel">
+      <option value="1">1 · Reprends demain</option>
+      <option value="2">2 · Ta pote court, toi tu survis</option>
+      <option value="3">3 · Rouler 30 min pour marcher</option>
+      <option value="4">4 · Envoie-moi le parcours</option>
+      <option value="5">5 · Marre du même sentier</option>
+    </select>
+    <button id="replay">↻ Rejouer</button>
+    <button id="fs">⛶ Plein écran</button>
+    <button id="rec">⏺ Enregistrer la vidéo</button>
+    <div class="hint">Série FRESH : 5 nouveaux sujets, couleurs animées, photo cool en sticker, emojis, confettis + <b>ta vraie carte BWR</b>. Format 9:16, ~15&nbsp;s.</div>
+  </div>
+</div>
+
+<script>
+const $ = s=>document.querySelector(s);
+const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+let abort=false;
+
+if(location.search.includes('bare')) document.body.classList.add('bare');
+if(location.search.includes('feed')) document.body.classList.add('feed');
+
+// ── 5 NEW problem → solution configs (cool photo + real map + vivid palette) ──
+const CONFIGS = {
+  1: { photo:'img/broll/p07.jpg', map:'img/grades-all.png', c1:'#ec4899', c2:'#f59e0b', pop:'#ffe14d',
+       hook:"« Je reprends le sport<br><span class='box'>demain</span> » 😴",
+       solve:"Défis + badges +<br>tes km. <span class='hl'>Aujourd'hui.</span> 🔥",
+       stickers:['😴','🏅','📈'], badge:"3 défis actifs · +40 XP",
+       payoff:"Chaque sortie compte.<br><span class='green'>Tu progresses</span> pour de vrai. 🙌",
+       tag:"La motivation, gamifiée." },
+  2: { photo:'img/broll/p11.jpg', map:'img/grades-zoom.png', c1:'#22c55e', c2:'#0ea5e9', pop:'#ffe14d',
+       hook:"Ta pote court 🏃‍♀️<br>toi tu <span class='box'>survis</span> 😮‍💨",
+       solve:"Chacun son <span class='hl'>niveau.</span> 🟢🟠🔴",
+       stickers:['😮‍💨','🐢','🐇'], badge:"Facile pour toi · Dur pour elle",
+       payoff:"Même forêt,<br>difficulté <span class='green'>sur mesure.</span> ✌️",
+       tag:"Un sentier pour chaque rythme." },
+  3: { photo:'img/broll/p06.jpg', map:'img/route-ab-road.png', c1:'#eab308', c2:'#ef4444', pop:'#ffe14d',
+       hook:"Rouler <span class='box'>30 min</span><br>pour marcher 10 ?! 🚗😩",
+       solve:"Départ = <span class='hl'>ta porte.</span> 🏠",
+       stickers:['🚗','🏠','🥾'], badge:"Départ à 400 m de chez toi",
+       payoff:"La forêt est<br><span class='green'>plus proche</span> que tu crois. 👀",
+       tag:"Ta prochaine rando commence en bas de chez toi." },
+  4: { photo:'img/broll/p03.jpg', map:'img/loop-1.png', c1:'#6366f1', c2:'#22d3ee', pop:'#a3e635',
+       hook:"« Envoie-moi<br>le <span class='box'>parcours</span> ? » 📲",
+       solve:"Un lien. <span class='hl'>1 seconde.</span> ⚡",
+       stickers:['📲','🔗','👯'], badge:"Lien copié · prêt à partager",
+       payoff:"Toute la bande<br><span class='green'>suit le même</span> chemin. 🤙",
+       tag:"Un tap, et tout le monde a l'itinéraire." },
+  5: { photo:'img/broll/p09.jpg', map:'img/loop-empty.png', c1:'#14b8a6', c2:'#84cc16', pop:'#ffe14d',
+       hook:"Marre du<br><span class='box'>même sentier</span> 🥱",
+       solve:"Explore <span class='hl'>tout</span> le réseau. 🗺️",
+       stickers:['🥱','🧭','🌿'], badge:"+120 chemins à découvrir",
+       payoff:"Une forêt entière,<br><span class='green'>jamais</span> deux fois le même tour. ✨",
+       tag:"Toute la forêt de Compiègne à explorer." },
+};
+let CFG = CONFIGS[1];
+window.setVariant = function(n){
+  CFG = CONFIGS[n] || CONFIGS[1];
+  const r=document.documentElement.style;
+  r.setProperty('--c1', CFG.c1); r.setProperty('--c2', CFG.c2); r.setProperty('--pop', CFG.pop);
+  $('#photo').style.backgroundImage = `url('${CFG.photo}')`;
+  $('#mapimg').src = CFG.map;
+  $('#badgeTxt').textContent = CFG.badge;
+  $('#ctaTag').innerHTML = CFG.tag;
+  $('#st1').textContent = CFG.stickers[0];
+  $('#st2').textContent = CFG.stickers[1];
+  $('#st3').textContent = CFG.stickers[2];
+  const sel=$('#variant'); if(sel) sel.value=String(n);
+};
+(function(){ const m=location.search.match(/[?&]v=(\d)/); setVariant(m?+m[1]:1); })();
+
+function cap(html){ const el=$('#cap'); el.classList.remove('in'); void el.offsetWidth;
+  el.innerHTML=html||''; if(html) el.classList.add('in'); }
+function runProgress(total){ const el=$('#prog'); const start=Date.now();
+  const id=setInterval(()=>{ if(abort){ clearInterval(id); return; }
+    const p=Math.min(1,(Date.now()-start)/total); el.style.width=(p*100)+'%';
+    if(p>=1) clearInterval(id); }, 33); }
+
+// ── confetti burst (colorful) ────────────────────────────────────────────────
+const cv=$('#confetti'); const cx=cv.getContext('2d'); let parts=[], rafOn=false;
+function sizeCanvas(){ cv.width=cv.clientWidth*2; cv.height=cv.clientHeight*2; }
+function burst(n=90){ sizeCanvas();
+  const cols=['#a3e635','#ffe14d','#fb923c','#22d3ee','#f43f5e','#ffffff'];
+  for(let i=0;i<n;i++){ parts.push({ x:cv.width*(.3+Math.random()*.4), y:cv.height*.42,
+    vx:(Math.random()-.5)*16, vy:-8-Math.random()*13, g:.32+Math.random()*.12,
+    s:6+Math.random()*8, rot:Math.random()*6.28, vr:(Math.random()-.5)*.4,
+    col:cols[i%cols.length], life:1 }); }
+  if(!rafOn){ rafOn=true; tick(); } }
+function tick(){ cx.clearRect(0,0,cv.width,cv.height); let alive=false;
+  for(const p of parts){ if(p.life<=0) continue; alive=true;
+    p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.life-=0.006;
+    cx.save(); cx.globalAlpha=Math.max(0,p.life); cx.translate(p.x,p.y); cx.rotate(p.rot);
+    cx.fillStyle=p.col; cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*1.6); cx.restore(); }
+  if(alive && !abort) requestAnimationFrame(tick); else { rafOn=false; parts=[]; cx.clearRect(0,0,cv.width,cv.height); } }
+
+/* ── upbeat marimba/pluck bed (WebAudio), Am–F–C–G at 116 bpm, brighter. ── */
+let audioCtx=null, musicStop=null, musicMaster=null, userAudioEl=null;
+function buildMusicGraph(ac, t0, dur){
+  const master=ac.createGain();
+  master.gain.setValueAtTime(0,t0); master.gain.linearRampToValueAtTime(0.5,t0+1.2);
+  const delay=ac.createDelay(1.0); delay.delayTime.value=0.19;
+  const fb=ac.createGain(); fb.gain.value=0.26; const wet=ac.createGain(); wet.gain.value=0.2;
+  delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(master);
+  const nbuf=ac.createBuffer(1, Math.ceil(ac.sampleRate*0.2), ac.sampleRate);
+  const nd=nbuf.getChannelData(0); for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1;
+
+  const bpm=116, beat=60/bpm, bars=Math.ceil(dur/(4*beat))+1;
+  const A3=220.00,C4=261.63,E4=329.63,F3=174.61,G3=196.00,B3=246.94,D4=293.66,
+        A4=440.00,C5=523.25,D5=587.33,E5=659.25;
+  const chords=[ [A3,C4,E4], [F3,A3,C4], [C4,E4,G3*2], [G3,B3,D4] ];
+  const tops  =[ E5, C5, A4*1.5, D5 ];
+  function pluck(f,s,d,gain){ [0,0.5].forEach((det,k)=>{ const o=ac.createOscillator(); o.type=k?'triangle':'sine';
+    o.frequency.value=f*(k?1.004:1)+det; const g=ac.createGain();
+    g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(gain*(k?0.45:1),s+0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+d); o.connect(g); g.connect(master); if(!k) g.connect(delay);
+    o.start(s); o.stop(s+d+0.05); }); }
+  function pad(freqs,s,d){ freqs.forEach(f=>{ const o=ac.createOscillator(); o.type='sawtooth'; o.frequency.value=f/2;
+    const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=900;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(0.02,s+0.5);
+    g.gain.setValueAtTime(0.02,Math.max(s+0.5,s+d-0.5)); g.gain.linearRampToValueAtTime(0,s+d);
+    o.connect(lp); lp.connect(g); g.connect(master); o.start(s); o.stop(s+d+0.06); }); }
+  function kick(s){ const o=ac.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(140,s); o.frequency.exponentialRampToValueAtTime(48,s+0.11);
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(0.16,s+0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+0.2); o.connect(g); g.connect(master); o.start(s); o.stop(s+0.26); }
+  function hat(s,gain){ const src=ac.createBufferSource(); src.buffer=nbuf;
+    const hp=ac.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7200;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(gain,s+0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+0.05); src.connect(hp); hp.connect(g); g.connect(master);
+    src.start(s); src.stop(s+0.08); }
+  function clap(s){ const src=ac.createBufferSource(); src.buffer=nbuf;
+    const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1500; bp.Q.value=0.7;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(0.12,s+0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001,s+0.13); src.connect(bp); bp.connect(g); g.connect(master);
+    src.start(s); src.stop(s+0.15); }
+  for(let bar=0;bar<bars;bar++){ const bs=t0+bar*4*beat; const ch=chords[bar%4];
+    pad(ch, bs, 4*beat);
+    const arp=[ ch[0], ch[2], ch[1], ch[2]*2, ch[0]*2, ch[2], ch[1], ch[2]*2 ];
+    for(let i=0;i<8;i++) pluck(arp[i], bs+i*0.5*beat, 0.6*beat, 0.07);
+    if(bar>0){ for(let q=0;q<4;q++){ kick(bs+q*beat); hat(bs+q*beat+0.5*beat, q%2?0.055:0.035);
+      if(q===1||q===3) clap(bs+q*beat); } }
+    if(bar>1) pluck(tops[bar%4], bs, 1.4*beat, 0.055);
+  }
+  master.gain.setValueAtTime(0.5, t0+dur-1.6); master.gain.linearRampToValueAtTime(0, t0+dur);
+  return master;
+}
+function startMusic(){ stopMusic();
+  if(userAudioEl){ userAudioEl.currentTime=0; userAudioEl.play().catch(()=>{}); return; }
+  const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+  const ac=new AC(); audioCtx=ac; musicMaster=buildMusicGraph(ac, ac.currentTime+0.1, 42);
+  musicMaster.connect(ac.destination); musicStop=()=>{ try{ac.close();}catch(e){} audioCtx=null; musicMaster=null; }; }
+window.renderMusicWav = async function(seconds){ seconds=seconds||42;
+  const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext; if(!OAC) return null;
+  const sr=44100; const oac=new OAC(2, Math.ceil(sr*seconds), sr);
+  const master=buildMusicGraph(oac,0,seconds); master.connect(oac.destination);
+  const buf=await oac.startRendering(); return bufferToWavBase64(buf); };
+function bufferToWavBase64(buf){ const numCh=buf.numberOfChannels, len=buf.length, sr=buf.sampleRate;
+  const blockAlign=numCh*2, dataLen=len*blockAlign; const ab=new ArrayBuffer(44+dataLen); const dv=new DataView(ab);
+  const wr=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i,s.charCodeAt(i)); };
+  wr(0,'RIFF'); dv.setUint32(4,36+dataLen,true); wr(8,'WAVE'); wr(12,'fmt ');
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,numCh,true);
+  dv.setUint32(24,sr,true); dv.setUint32(28,sr*blockAlign,true); dv.setUint16(32,blockAlign,true);
+  dv.setUint16(34,16,true); wr(36,'data'); dv.setUint32(40,dataLen,true);
+  const chans=[]; for(let c=0;c<numCh;c++) chans.push(buf.getChannelData(c));
+  let off=44; for(let i=0;i<len;i++){ for(let c=0;c<numCh;c++){ let s=Math.max(-1,Math.min(1,chans[c][i]));
+    dv.setInt16(off, s<0? s*0x8000 : s*0x7FFF, true); off+=2; } }
+  let bin=''; const bytes=new Uint8Array(ab); const CH=0x8000;
+  for(let i=0;i<bytes.length;i+=CH) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+CH));
+  return btoa(bin); }
+function fadeMusic(sec=1.4){ if(userAudioEl){ const a=userAudioEl; const step=a.volume/(sec*20||1);
+    const id=setInterval(()=>{ a.volume=Math.max(0,a.volume-step); if(a.volume<=0.001){clearInterval(id);a.pause();a.volume=1;} },50); return; }
+  if(musicMaster&&audioCtx){ try{ const now=audioCtx.currentTime;
+    musicMaster.gain.cancelScheduledValues(now); musicMaster.gain.setValueAtTime(musicMaster.gain.value,now);
+    musicMaster.gain.linearRampToValueAtTime(0, now+sec);}catch(e){} } }
+function stopMusic(){ if(userAudioEl){ try{userAudioEl.pause();}catch(e){} } if(musicStop){musicStop();musicStop=null;} }
+
+// ── timeline (~15 s). Keep TOTAL in sync with the sleeps below. ──
+const TOTAL = 15000;
+function resetUI(){
+  ['photo','phone','cap','cta','badge'].forEach(id=>$('#'+id).classList.remove('in','out'));
+  ['st1','st2','st3'].forEach(id=>$('#'+id).classList.remove('in','wob'));
+  parts=[]; if(cx) cx.clearRect(0,0,cv.width||0,cv.height||0);
+}
+async function play(){
+  abort=false; resetUI(); $('#prog').style.width='0'; runProgress(TOTAL);
+
+  // 1 — snappy hook: cool photo sticker snaps in + big headline + emojis
+  cap(CFG.hook);
+  $('#photo').classList.add('in');
+  await sleep(280); $('#st1').classList.add('in','wob'); if(abort)return;
+  await sleep(240); $('#st2').classList.add('in','wob'); if(abort)return;
+  await sleep(240); $('#st3').classList.add('in','wob'); if(abort)return;
+  await sleep(1900); if(abort)return;
+
+  // 2 — the fix: photo flies up, phone with the REAL map pops + confetti
+  $('#photo').classList.add('out');
+  ['st1','st2','st3'].forEach(id=>$('#'+id).classList.remove('in','wob'));
+  cap(CFG.solve);
+  $('#phone').classList.add('in');
+  await sleep(500); burst(90); if(abort)return;
+  await sleep(1200); if(abort)return;
+  $('#badge').classList.add('in');
+  await sleep(2400); if(abort)return;
+
+  // 3 — payoff line (phone stays)
+  cap(CFG.payoff);
+  await sleep(2600); if(abort)return;
+
+  // 4 — CTA with a final confetti pop
+  cap('');
+  $('#phone').classList.remove('in'); $('#badge').classList.remove('in');
+  $('#cta').classList.add('in');
+  await sleep(400); burst(70); if(abort)return;
+  await sleep(4200); if(abort)return;
+  fadeMusic(1.4);
+}
+function stopAll(){ abort=true; stopMusic(); }
+
+$('#playBtn').addEventListener('click',()=>{ $('#gate').style.display='none'; startMusic(); play(); });
+$('#variant').addEventListener('change',e=>{ stopAll(); setVariant(+e.target.value); });
+$('#replay').addEventListener('click',async()=>{ stopAll(); await sleep(80); abort=false; startMusic(); play(); });
+$('#fs').addEventListener('click',()=>{ const s=$('#stage'); if(!document.fullscreenElement) s.requestFullscreen?.(); else document.exitFullscreen?.(); });
+$('#rec').addEventListener('click',async()=>{
+  if(!navigator.mediaDevices?.getDisplayMedia){ alert('Ton navigateur ne supporte pas l’enregistrement.'); return; }
+  let stream; try{ stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:true,preferCurrentTab:true}); }catch(e){ return; }
+  const mime = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4'
+            : MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+  const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:9000000});
+  const chunks=[]; rec.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+  rec.onstop=()=>{ const blob=new Blob(chunks,{type:mime}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='bwr-reel-fresh'+(mime.includes('mp4')?'.mp4':'.webm');
+    document.body.appendChild(a); a.click(); a.remove(); stream.getTracks().forEach(t=>t.stop());
+    $('#rec').textContent='⏺ Enregistrer la vidéo'; };
+  $('#rec').textContent='● Enregistrement…'; $('#gate').style.display='none';
+  stopAll(); await sleep(100); abort=false;
+  rec.start(); startMusic(); play();
+  setTimeout(()=>{ try{ rec.stop(); }catch(e){} }, TOTAL+4000);
+});
+</script>
+<script src="../js/track.js"></script>
+</body>
+</html>
