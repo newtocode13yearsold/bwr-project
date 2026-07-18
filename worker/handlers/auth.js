@@ -620,16 +620,21 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
 
     // GDPR right to erasure (art. 17): purge every key tied to this user, not
     // just the account record. Saved routes carry a public share token that
-    // must die with the route, and walked-path markers are per-user.
+    // must die with the route, walked-path markers are per-user, the site
+    // review holds a name + free-text comment, and push subscriptions are
+    // device-identifying — all must go with the account.
     const savedRoutes = await listItems(env, `savedroute:${user.id}:`);
     const walkedKeys = await listKeys(env, `walkedpath:${user.id}:`);
+    const pushKeys = await listKeys(env, `pushsub:${user.id}:`);
 
     await Promise.all([
       env.BWR_KV.delete(`user:${user.id}`),
       env.BWR_KV.delete(`uemail:${user.email}`),
+      env.BWR_KV.delete(`review:${user.id}`),
       ...savedRoutes.map(rt => env.BWR_KV.delete(`savedroute:${user.id}:${rt.id}`)),
       ...savedRoutes.filter(rt => rt.shareToken).map(rt => env.BWR_KV.delete(`routeshare:${rt.shareToken}`)),
       ...walkedKeys.map(k => env.BWR_KV.delete(k.name)),
+      ...pushKeys.map(k => env.BWR_KV.delete(k.name)),
     ]);
 
     const auth = request.headers.get('Authorization');

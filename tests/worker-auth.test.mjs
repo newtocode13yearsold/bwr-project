@@ -1096,7 +1096,7 @@ describe('/api/auth/account', () => {
     assert.ok(kv.store.has('user:admin1'), 'admin account must survive');
   });
 
-  test('deletion purges account, saved routes, share tokens and walked paths', async () => {
+  test('deletion purges account, saved routes, share tokens, walked paths, review and push subs', async () => {
     const { env, kv } = freshEnv();
     await worker.fetch(r('POST', '/api/auth/register', { name: 'Del', email: 'del@bwr.fr', password: 'deleteme1' }), env);
     const vt = kv.store.get('pemail:del@bwr.fr');
@@ -1107,6 +1107,8 @@ describe('/api/auth/account', () => {
     kv.store.set(`savedroute:${uid}:rt1`, JSON.stringify({ id: 'rt1', userId: uid, shareToken: 'shtok1' }));
     kv.store.set(`routeshare:shtok1`, JSON.stringify({ userId: uid, routeId: 'rt1' }));
     kv.store.set(`walkedpath:${uid}:p1`, '2026-06-01T00:00:00.000Z');
+    kv.store.set(`review:${uid}`, JSON.stringify({ userId: uid, name: 'Del', stars: 5, comment: 'Top!' }));
+    kv.store.set(`pushsub:${uid}:hash1`, JSON.stringify({ endpoint: 'https://push.example/ep1' }));
 
     const res = await worker.fetch(authed('DELETE', '/api/auth/account', login.token), env);
     assert.equal(res.status, 200);
@@ -1116,6 +1118,8 @@ describe('/api/auth/account', () => {
     assert.ok(!kv.store.has(`savedroute:${uid}:rt1`), 'saved routes must be gone');
     assert.ok(!kv.store.has('routeshare:shtok1'), 'public share token must be gone');
     assert.ok(!kv.store.has(`walkedpath:${uid}:p1`), 'walked-path markers must be gone');
+    assert.ok(!kv.store.has(`review:${uid}`), 'site review must be gone');
+    assert.ok(!kv.store.has(`pushsub:${uid}:hash1`), 'push subscription must be gone');
     assert.ok(!kv.store.has(`session:${login.token}`), 'active session must be gone');
   });
 });
