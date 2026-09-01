@@ -9,6 +9,7 @@ import { handleForum }      from './worker/handlers/forum.js';
 import { handlePush }       from './worker/handlers/push.js';
 import { handleNotify }     from './worker/handlers/notify.js';
 import { handleRating }     from './worker/handlers/rating.js';
+import { handleInbox }      from './worker/handlers/inbox.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://bwrmaps.com',
@@ -98,7 +99,8 @@ export default {
       await handleForum(request, env, ctx)       ??
       await handlePush(request, env, ctx)        ??
       await handleNotify(request, env, ctx)      ??
-      await handleRating(request, env, ctx);
+      await handleRating(request, env, ctx)      ??
+      await handleInbox(request, env, ctx);
 
     if (apiResponse) return apiResponse;
 

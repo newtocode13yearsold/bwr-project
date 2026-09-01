@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1e4d14" />
+  <title>Messagerie — BWR · Oise</title>
+  <meta name="description" content="Votre messagerie BWR : les messages et annonces envoyés par l'équipe BWR." />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/home.css" />
+  <script src="js/theme.js"></script>
+  <style>
+    html, body { height: auto !important; overflow: auto !important; }
+    body { background: var(--surface-1, #fafbf7); }
+
+    .page-hero {
+      padding: 56px 24px 56px;
+      text-align: center;
+      background: linear-gradient(160deg, #0b2410 0%, #1e4d14 55%, #2d6b1f 100%);
+      color: #fff;
+    }
+    .page-hero-badge {
+      display: inline-block;
+      background: rgba(163, 230, 53, 0.18);
+      color: #a3e635;
+      border: 1px solid rgba(163, 230, 53, 0.35);
+      border-radius: 999px;
+      padding: 4px 16px;
+      font-size: 0.82rem; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    .page-hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700; letter-spacing: -0.02em;
+      margin-bottom: 14px; line-height: 1.15;
+    }
+    .page-hero p { color: rgba(255,255,255,0.72); font-size: 1.02rem; max-width: 540px; margin: 0 auto; }
+
+    .inbox-section { max-width: 760px; margin: 0 auto; padding: 40px 24px 96px; }
+
+    /* ── Message list ── */
+    .msg-card {
+      background: #fff; border: 1px solid var(--border-soft, #ebeee5);
+      border-radius: 14px; padding: 18px 20px; margin-bottom: 14px;
+      cursor: pointer; transition: box-shadow 0.18s, transform 0.1s, border-color 0.18s;
+    }
+    .msg-card:hover { box-shadow: 0 8px 24px -10px rgba(11,36,16,0.16); transform: translateY(-1px); }
+    .msg-card.unread { border-left: 4px solid var(--forest-600, #2d6b1f); }
+    .msg-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .msg-subject {
+      font-family: var(--font-display); font-size: 1.08rem; font-weight: 700;
+      color: var(--text-strong, #0b2410); line-height: 1.3;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .unread-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--forest-600, #2d6b1f); flex-shrink: 0; }
+    .msg-date { font-size: 0.78rem; color: var(--text-muted, #6b7280); white-space: nowrap; flex-shrink: 0; }
+    .msg-meta { font-size: 0.8rem; color: var(--text-muted, #6b7280); margin-top: 4px; }
+    .msg-badge-direct {
+      display: inline-block; background: #eef2ff; color: #4338ca; border: 1px solid #e0e7ff;
+      border-radius: 999px; padding: 1px 9px; font-size: 0.72rem; font-weight: 700; margin-left: 6px;
+    }
+    .msg-body { font-size: 0.95rem; color: var(--text, #1f2937); line-height: 1.7; white-space: pre-line; word-break: break-word; margin-top: 12px; display: none; }
+    .msg-card.open .msg-body { display: block; }
+
+    .inbox-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .inbox-toolbar h2 { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: var(--text-strong, #0b2410); }
+    .btn-plain {
+      background: var(--surface-2, #f3f4f0); color: var(--text, #1f2937); border: none; border-radius: 10px;
+      padding: 8px 16px; font-size: 0.86rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-plain:hover { opacity: 0.8; }
+
+    .inbox-loading, .inbox-empty { text-align: center; color: var(--text-muted, #6b7280); padding: 56px 0; }
+
+    /* ── Admin compose ── */
+    .compose-card {
+      background: #fff; border: 1px solid var(--forest-300, #b9d8a4); border-radius: 16px;
+      padding: 24px; margin-bottom: 32px;
+    }
+    .compose-card h2 {
+      font-family: var(--font-display); font-size: 1.2rem; font-weight: 700;
+      color: var(--text-strong, #0b2410); margin-bottom: 4px;
+    }
+    .compose-card .hint { font-size: 0.85rem; color: var(--text-muted, #6b7280); margin-bottom: 18px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-strong, #0b2410); margin-bottom: 6px; letter-spacing: 0.03em; text-transform: uppercase; }
+    .form-input, .form-textarea, .form-select {
+      width: 100%; border: 1.5px solid var(--border, #e2e8da); border-radius: 10px; padding: 10px 14px;
+      font-size: 0.97rem; font-family: var(--font-sans); color: var(--text, #1f2937); background: #fff; outline: none; transition: border-color 0.15s;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--forest-600, #2d6b1f); }
+    .form-textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+    .compose-error { color: #b91c1c; font-size: 0.875rem; margin: 8px 0; min-height: 18px; }
+    .compose-ok { color: var(--forest-700, #1e4d14); font-size: 0.875rem; margin: 8px 0; min-height: 18px; }
+    .compose-actions { display: flex; justify-content: flex-end; }
+    .btn-save { background: var(--forest-700, #1e4d14); color: #a3e635; border: none; border-radius: 10px; padding: 10px 28px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-save:hover:not(:disabled) { opacity: 0.88; }
+
+    /* ── Admin sent list ── */
+    .sent-title { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted, #6b7280); margin: 28px 0 14px; }
+    .sent-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      background: #fff; border: 1px solid var(--border-soft, #ebeee5); border-radius: 12px; padding: 12px 16px; margin-bottom: 10px;
+    }
+    .sent-row-main { min-width: 0; }
+    .sent-row-subject { font-weight: 700; color: var(--text-strong, #0b2410); font-size: 0.94rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sent-row-meta { font-size: 0.78rem; color: var(--text-muted, #6b7280); margin-top: 2px; }
+    .sent-delete { background: #fee2e2; color: #b91c1c; border: none; border-radius: 8px; padding: 6px 12px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; flex-shrink: 0; }
+    .sent-delete:hover { opacity: 0.75; }
+
+    .inbox-footer { background: #0b2410; color: rgba(255,255,255,0.55); text-align: center; padding: 32px 24px; font-size: 0.85rem; }
+    .inbox-footer a { color: #a3e635; text-decoration: none; }
+
+    @media (max-width: 600px) { .msg-card, .compose-card { padding: 16px; } }
+    @media (max-width: 768px) { body { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); } }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-left">
+      <a href="/" class="logo" style="text-decoration:none">BWR</a>
+      <nav class="header-nav-links">
+        <a href="map">Carte</a>
+        <a href="routes">Planifier</a>
+        <a href="forum">Forum</a>
+        <a href="plans">Plans</a>
+      </nav>
+    </div>
+    <div class="header-right">
+      <button class="btn-icon" id="btnThemeToggle" title="Mode sombre / clair"><span class="btn-emoji theme-toggle-icon">🌙</span><span class="btn-label">Thème</span></button>
+      <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji">&#9776;</span><span class="btn-label">Menu</span></button>
+      <div class="user-menu" id="userMenu"></div>
+    </div>
+  </header>
+
+  <!-- Nav drawer -->
+  <div class="nav-drawer-overlay hidden" id="navDrawerOverlay"></div>
+  <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
+    <div class="nav-drawer-header">
+      <span class="nav-drawer-logo">BWR</span>
+      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+    </div>
+    <nav class="nav-drawer-links">
+      <a href="map" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
+        <span>Carte</span>
+      </a>
+      <a href="routes" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
+        <span>Planifier un trajet</span>
+      </a>
+      <a href="profile" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+        <span>Mon profil</span>
+      </a>
+      <a href="inbox" class="nav-drawer-item active">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
+        <span>Messagerie</span>
+      </a>
+      <a href="forum" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+        <span>Forum</span>
+      </a>
+      <a href="plans" class="nav-drawer-item">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+        <span>Plans &amp; abonnements</span>
+      </a>
+      <a href="admin" class="nav-drawer-item nav-drawer-admin hidden" id="navDrawerAdmin">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
+        <span>Carte admin</span>
+      </a>
+      <a href="admin-panel" class="nav-drawer-item nav-drawer-admin hidden" id="navDrawerAdminPanel">
+        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        <span>Panneau admin</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- ── Hero ── -->
+  <div class="page-hero">
+    <div class="page-hero-badge">📬 Messagerie</div>
+    <h1>Votre messagerie</h1>
+    <p>Les messages et annonces envoyés par l'équipe BWR.</p>
+  </div>
+
+  <!-- ── Main ── -->
+  <section class="inbox-section" id="inboxRoot">
+    <div class="inbox-loading">Chargement de la messagerie…</div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer class="inbox-footer">
+    <p>© 2026 <a href="/">BWR</a> · Carte interactive de l'Oise ·
+       <a href="mailto:ciril8596@gmail.com">Contact</a></p>
+  </footer>
+
+  <nav class="bottom-nav" aria-label="Navigation principale">
+    <a href="map" class="bnav-item">
+      <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
+      <span class="bnav-label">Carte</span>
+    </a>
+    <a href="routes" class="bnav-item">
+      <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
+      <span class="bnav-label">Trajets</span>
+    </a>
+    <a href="inbox" class="bnav-item active">
+      <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
+      <span class="bnav-label">Messages</span>
+    </a>
+    <a href="profile" class="bnav-item">
+      <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+      <span class="bnav-label">Profil</span>
+    </a>
+  </nav>
+
+  <script src="js/config.js"></script>
+  <script src="js/track.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/inbox.js"></script>
+  <script src="js/ui-shared.js"></script>
+</body>
+</html>
