@@ -2,7 +2,7 @@
 // the `sync` handler below can drain queued reports even when no page is open.
 importScripts('/js/outbox.js');
 
-const CACHE = 'bwr-v54';
+const CACHE = 'bwr-v55';
 // Tiles live in two separate caches:
 //   • TILE_CACHE — forests the user explicitly downloaded ("Cartes hors-ligne").
 //     Permanent: never expired, never evicted, so a downloaded forest stays
@@ -33,6 +33,7 @@ const APP_SHELL = [
   'plans',
   'news',
   'forum',
+  'inbox',
   'quests',
   'verify',
   'reset',
@@ -71,6 +72,7 @@ const APP_SHELL = [
   'js/exporters.js',
   'js/news.js',
   'js/forum.js',
+  'js/inbox.js',
   'js/quests.js',
   'js/install.js',
   'js/theme.js',

@@ -54,15 +54,15 @@ const r = (method, path, body, headers = {}) => new Request(`https://bwr.test${p
 const authed = (method, path, token, body) => r(method, path, body, { Authorization: `Bearer ${token}` });
 
 describe('GET /api/leaderboard (all-time)', () => {
-  test('sorts members by points = reports*2 + pathGrades', async () => {
+  test('sorts members by points = reports + pathGrades*2', async () => {
     const { env, seedUser } = freshEnv();
-    seedUser({ id: 'a', name: 'Alpha', email: 'a@bwr.fr', stats: { reports: 1, pathGrades: 0 } });   // 2 pts
-    seedUser({ id: 'b', name: 'Bravo', email: 'b@bwr.fr', stats: { reports: 2, pathGrades: 3 } });   // 7 pts
+    seedUser({ id: 'a', name: 'Alpha', email: 'a@bwr.fr', stats: { reports: 1, pathGrades: 0 } });   // 1 pt
+    seedUser({ id: 'b', name: 'Bravo', email: 'b@bwr.fr', stats: { reports: 2, pathGrades: 3 } });   // 8 pts
     const res = await worker.fetch(r('GET', '/api/leaderboard'), env);
     assert.equal(res.status, 200);
     const board = await res.json();
     assert.deepEqual(board.map(e => e.id), ['b', 'a']);
-    assert.equal(board[0].points, 7);
+    assert.equal(board[0].points, 8);
     assert.equal(typeof board[0].forestCoverage, 'number');
   });
 });
@@ -86,7 +86,7 @@ describe('GET /api/leaderboard?period=…', () => {
       const board = await res.json();
       assert.equal(board.length, 1, `${period} board has the reporter`);
       assert.equal(board[0].id, 'silver-x');
-      assert.equal(board[0].points, 2);            // one report = 2 pts
+      assert.equal(board[0].points, 1);            // one report = 1 pt
       assert.equal(board[0].forestCoverage, null); // coverage is omitted on periodic boards
     }
   });

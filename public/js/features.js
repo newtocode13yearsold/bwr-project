@@ -16,6 +16,11 @@
   'use strict';
 
   // Truthy values mean "available". For numeric quotas the value IS the limit.
+  //
+  // The `visitor` column is the 7-day "passe Visiteur": a time-limited FULL Silver.
+  // It must stay identical to `silver` for every row — the server's effectivePlan()
+  // already resolves an active visitor to 'silver', so any client value below Silver
+  // makes the paid pass behave like Free (locked satellite/weather/goals/…).
   const FEATURES = {
     /* — Core routing — */
     routes_per_week:     { free: 10,    visitor: Infinity, silver: Infinity, gold: Infinity },
@@ -24,8 +29,8 @@
     difficulty_hard:     { free: false, visitor: true,     silver: true,     gold: true     },
 
     /* — Map & layers — */
-    satellite_tiles:     { free: false, visitor: false,    silver: true,     gold: true     },
-    ign_topo_tiles:      { free: false, visitor: false,    silver: true,     gold: true     },
+    satellite_tiles:     { free: false, visitor: true,     silver: true,     gold: true     },
+    ign_topo_tiles:      { free: false, visitor: true,     silver: true,     gold: true     },
     carrefours:          { free: true,  visitor: true,     silver: true,     gold: true     },
 
     /* — Trip analysis & export — */
@@ -34,13 +39,13 @@
     // GPX import is deliberately open to everyone (incl. free/visitor) — it's an
     // acquisition hook: bring a Strava/Garmin route onto the graded BWR map.
     gpx_import:          { free: true,  visitor: true,     silver: true,     gold: true     },
-    kml_export:          { free: false, visitor: false,    silver: true,     gold: true     },
-    strava_komoot_push:  { free: false, visitor: false,    silver: true,     gold: true     },
-    offline_cache:       { free: 0,     visitor: 1,        silver: 20,       gold: 20       },
+    kml_export:          { free: false, visitor: true,     silver: true,     gold: true     },
+    strava_komoot_push:  { free: false, visitor: true,     silver: true,     gold: true     },
+    offline_cache:       { free: 0,     visitor: 20,       silver: 20,       gold: 20       },
 
     /* — Reports & alerts — */
     reports_create:      { free: true,  visitor: true,     silver: true,     gold: true     },
-    path_alerts:         { free: false, visitor: false,    silver: true,     gold: true     },
+    path_alerts:         { free: false, visitor: true,     silver: true,     gold: true     },
 
     /* — Path editing — */
     path_difficulty_edit: { free: true,  visitor: true,   silver: true,     gold: true     },
@@ -48,12 +53,12 @@
 
     /* — Personalisation & gamification — */
     daily_wheel:         { free: false, visitor: true,     silver: true,     gold: true     },
-    custom_goals:        { free: false, visitor: false,    silver: true,     gold: true     },
-    weather:             { free: false, visitor: false,    silver: true,     gold: true     },
-    custom_route_color:  { free: false, visitor: false,    silver: true,     gold: true     },
+    custom_goals:        { free: false, visitor: true,     silver: true,     gold: true     },
+    weather:             { free: false, visitor: true,     silver: true,     gold: true     },
+    custom_route_color:  { free: false, visitor: true,     silver: true,     gold: true     },
     // "Sur mesure" planner mode: build a route via an ordered list of stops /
     // carrefours the user picks themselves. See public/js/routes-planner.js.
-    custom_route_builder: { free: false, visitor: false,   silver: true,     gold: true     },
+    custom_route_builder: { free: false, visitor: true,    silver: true,     gold: true     },
 
     /* — Badges & progression — */
     badges_free:         { free: true,  visitor: true,     silver: true,     gold: true     },
@@ -65,8 +70,8 @@
     route_sharing:       { free: false, visitor: true,     silver: true,     gold: true     },
 
     /* — Support / perks — */
-    priority_support:    { free: false, visitor: false,    silver: true,     gold: true     },
-    early_access:        { free: false, visitor: false,    silver: true,     gold: true     },
+    priority_support:    { free: false, visitor: true,     silver: true,     gold: true     },
+    early_access:        { free: false, visitor: true,     silver: true,     gold: true     },
 
     /* — Community forum — */
     // forum_post: create topics + reply. forum_topics_visible: how many topics a
@@ -79,7 +84,7 @@
 
   /* ── Level / XP reward ladder ───────────────────────────────────────────────
    * XP is earned through community contributions (NOT distance / subscription):
-   *   XP = reports×2 + pathGrades   (same formula as the leaderboard points)
+   *   XP = reports + pathGrades×2   (same formula as the leaderboard points)
    *
    * PROGRESSIVE curve: the gap between levels grows the higher you climb, so a
    * top contributor isn't instantly at "level 40". Each level L→L+1 costs
@@ -113,7 +118,7 @@
   /** Community XP from a user's stats object. */
   function xpFromStats(stats) {
     const s = stats || {};
-    return (s.reports || 0) * 2 + (s.pathGrades || 0);
+    return (s.reports || 0) + (s.pathGrades || 0) * 2;
   }
 
   /** Cumulative XP needed to *reach* a level: 5·n·(n−1) (progressive curve). */

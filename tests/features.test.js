@@ -86,11 +86,28 @@ describe('can', () => {
   test('weather: silver → true',  () => assert.equal(can('weather', 'silver'), true));
   test('weather: gold → true',    () => assert.equal(can('weather', 'gold'),   true));
 
-  // Custom route builder ("Sur mesure"): silver+
+  // Custom route builder ("Sur mesure"): silver+ (visitor pass = full Silver)
   test('custom_route_builder: free → false',    () => assert.equal(can('custom_route_builder', 'free'),    false));
-  test('custom_route_builder: visitor → false', () => assert.equal(can('custom_route_builder', 'visitor'), false));
+  test('custom_route_builder: visitor → true',  () => assert.equal(can('custom_route_builder', 'visitor'), true));
   test('custom_route_builder: silver → true',   () => assert.equal(can('custom_route_builder', 'silver'),  true));
   test('custom_route_builder: gold → true',     () => assert.equal(can('custom_route_builder', 'gold'),    true));
+
+  // The 7-day Visitor pass is a time-limited full Silver (server effectivePlan()
+  // already resolves an active visitor to 'silver'). Every gated capability the
+  // client checks must therefore match Silver exactly — otherwise the pass
+  // "passes like a free plan" for satellite/weather/goals/colours/etc.
+  const VISITOR_EQ_SILVER = [
+    'satellite_tiles', 'ign_topo_tiles', 'elevation_profile', 'gpx_export',
+    'kml_export', 'strava_komoot_push', 'path_alerts', 'daily_wheel',
+    'custom_goals', 'weather', 'custom_route_color', 'custom_route_builder',
+    'route_history', 'route_sharing', 'priority_support', 'early_access',
+    'forum_post', 'badges_silver', 'difficulty_hard',
+  ];
+  VISITOR_EQ_SILVER.forEach(f => {
+    test(`${f}: visitor mirrors silver`, () => assert.equal(can(f, 'visitor'), can(f, 'silver')));
+  });
+  test('offline_cache: visitor mirrors silver', () => assert.equal(limitOf('offline_cache', 'visitor'), limitOf('offline_cache', 'silver')));
+  test('routes_per_week: visitor mirrors silver', () => assert.equal(limitOf('routes_per_week', 'visitor'), limitOf('routes_per_week', 'silver')));
 
   // Gold badges remain gold-only
   test('badges_gold: silver → false', () => assert.equal(can('badges_gold', 'silver'), false));
@@ -261,8 +278,8 @@ describe('checkRouteQuota', () => {
 // ── Level / XP reward ladder ──────────────────────────────────────────────────
 
 describe('XP + level math', () => {
-  test('xpFromStats: reports×2 + pathGrades', () => {
-    assert.equal(xpFromStats({ reports: 3, pathGrades: 4 }), 10);
+  test('xpFromStats: reports + pathGrades×2', () => {
+    assert.equal(xpFromStats({ reports: 3, pathGrades: 4 }), 11);
     assert.equal(xpFromStats({}), 0);
     assert.equal(xpFromStats(null), 0);
   });

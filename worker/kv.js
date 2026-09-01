@@ -16,6 +16,8 @@
 // forum:topic:{id}         → JSON forum topic { userId, authorName, title, body, createdAt, lastActivityAt, replyCount }
 // forum:reply:{topicId}:{paddedTs}:{id} → JSON reply { topicId, userId, authorName, body, createdAt }
 //                            (ts in the key keeps replies ordered within a topic)
+// inboxmsg:{paddedTs}:{id}   → JSON admin message { id, createdAt, subject, body, target:'all'|userId, targetName, senderName }
+// inboxread:{userId}:{msgId} → ISO timestamp string (existence = that user read the message)
 // newsreact:{newsId}:{voter} → 'like' | 'dislike'  (voter = u:{userId} or ip:{addr})
 // pathgrade:{pathId}:{userId} → JSON { walkedWhenGraded: bool }
 // walkedpath:{userId}:{pathId} → ISO timestamp string
@@ -128,7 +130,7 @@ export async function patchLeaderboardCache(env, updatedUser) {
   const s = updatedUser.stats || {};
   const reports = s.reports || 0;
   const pathGrades = s.pathGrades || 0;
-  const points = reports * 2 + pathGrades;
+  const points = reports + pathGrades * 2;
   const forestCoverage = totalPaths > 0
     ? Math.round((s.walkedPathsCount || 0) / totalPaths * 100) : 0;
   const entry = { id: updatedUser.id, name: updatedUser.name, reports, pathGrades, points, forestCoverage };

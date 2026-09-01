@@ -83,7 +83,7 @@ export async function handleSocial(request, env, { pathname, url, json, fail }) 
         .map(b => {
           const reports = b.reports || 0;
           const pathGrades = b.pathGrades || 0;
-          return { id: b.id, name: b.name, reports, pathGrades, points: reports * 2 + pathGrades, forestCoverage: null };
+          return { id: b.id, name: b.name, reports, pathGrades, points: reports + pathGrades * 2, forestCoverage: null };
         })
         .filter(e => e.points > 0)
         .sort((a, b) => b.points - a.points || b.reports - a.reports);
@@ -108,7 +108,7 @@ export async function handleSocial(request, env, { pathname, url, json, fail }) 
         const s = u.stats || {};
         const reports = s.reports || 0;
         const pathGrades = s.pathGrades || 0;
-        const points = reports * 2 + pathGrades;
+        const points = reports + pathGrades * 2;
         const walkedPathsCount = s.walkedPathsCount || 0;
         const forestCoverage = totalPaths > 0 ? Math.round(walkedPathsCount / totalPaths * 100) : 0;
         return { id: u.id, name: u.name, reports, pathGrades, points, forestCoverage };

@@ -630,8 +630,8 @@ function renderActivityStats() {
   const routes       = Math.max(s.routes || 0, parseInt(localStorage.getItem('bwr_route_count') || '0'));
   const earnedBadges = JSON.parse(localStorage.getItem('bwr_earned_badges') || '[]').length;
   const streak       = s.streak || 0;
-  // Contribution points — same formula as the leaderboard / XP (report=2, grade=1)
-  const points       = (s.reports || 0) * 2 + (s.pathGrades || 0);
+  // Contribution points — same formula as the leaderboard / XP (grade=2, report=1)
+  const points       = (s.reports || 0) + (s.pathGrades || 0) * 2;
 
   const set = (id, val) => {
     const el = document.getElementById(id);

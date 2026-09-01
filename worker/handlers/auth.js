@@ -527,9 +527,9 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
 
     // Level bonus: free accounts earn +1 (level 4+) then +2 (level 7+) weekly
     // routes through community XP. Mirror of features.js routeBonus/LEVEL_REWARDS
-    // + the progressive curve levelFromXp — keep in sync. XP = reports×2 + pathGrades,
+    // + the progressive curve levelFromXp — keep in sync. XP = reports + pathGrades×2,
     // level n reached at 5·n·(n−1) XP → level = floor((1 + √(1 + 0.8·xp)) / 2).
-    const xp = (stats.reports || 0) * 2 + (stats.pathGrades || 0);
+    const xp = (stats.reports || 0) + (stats.pathGrades || 0) * 2;
     const level = Math.floor((1 + Math.sqrt(1 + 0.8 * xp)) / 2);
     const routeBonus = level >= 7 ? 2 : level >= 4 ? 1 : 0;
 
@@ -626,6 +626,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const savedRoutes = await listItems(env, `savedroute:${user.id}:`);
     const walkedKeys = await listKeys(env, `walkedpath:${user.id}:`);
     const pushKeys = await listKeys(env, `pushsub:${user.id}:`);
+    const inboxReadKeys = await listKeys(env, `inboxread:${user.id}:`);
 
     await Promise.all([
       env.BWR_KV.delete(`user:${user.id}`),
@@ -635,6 +636,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       ...savedRoutes.filter(rt => rt.shareToken).map(rt => env.BWR_KV.delete(`routeshare:${rt.shareToken}`)),
       ...walkedKeys.map(k => env.BWR_KV.delete(k.name)),
       ...pushKeys.map(k => env.BWR_KV.delete(k.name)),
+      ...inboxReadKeys.map(k => env.BWR_KV.delete(k.name)),
     ]);
 
     const auth = request.headers.get('Authorization');

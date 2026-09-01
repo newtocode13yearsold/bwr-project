@@ -37,19 +37,45 @@ function clearOsmEditLayers() {
 }
 
 // ── OSM path overlay (for path creation) ─────────────────────────────────────
+
+// Snap the viewport to a coarse grid before asking the server for OSM paths.
+// Rationale: /api/osm caches per exact bbox string, so full-precision bounds turn
+// almost every pan/zoom into a cache MISS → a slow, flaky Overpass round-trip.
+// Snapping to a ~1.5 km grid (floor S/W, ceil N/E so the viewport stays covered)
+// makes nearby views share one cache key, so the grey dotted "select" lines pop in
+// from a fast KV hit — and popular spots stay warm from other users' fetches.
+const _OSM_GRID = 0.02; // degrees (~1.5 km lat)
+function _snappedBbox(b) {
+  const lo = v => (Math.floor(v / _OSM_GRID) * _OSM_GRID);
+  const hi = v => (Math.ceil (v / _OSM_GRID) * _OSM_GRID);
+  return `${lo(b.getSouth()).toFixed(4)},${lo(b.getWest()).toFixed(4)},${hi(b.getNorth()).toFixed(4)},${hi(b.getEast()).toFixed(4)}`;
+}
+// In-session memo so re-entering edit mode (or panning back) is instant, no network.
+const _osmBboxCache = new Map();
+
 async function loadOsmEditPaths() {
   if (map.getZoom() < 12) {
     showToast('Zoome plus près de la forêt (zoom minimum : 12).');
     exitPathEditMode();
     return;
   }
+  const bbox = _snappedBbox(map.getBounds());
+  // Serve instantly from the in-session cache if we already have this grid cell.
+  const memo = _osmBboxCache.get(bbox);
+  if (memo) {
+    renderOsmEditPaths(memo);
+    const count = _osmEditLayers.length / 2;
+    showEditModeBar(count === 0
+      ? 'Aucun chemin OSM trouvé ici — zoome sur la forêt.'
+      : `${count} chemins disponibles — clique sur un chemin en pointillés`);
+    return;
+  }
   showEditModeBar('Chargement des chemins…');
-  const b    = map.getBounds();
-  const bbox = `${b.getSouth().toFixed(4)},${b.getWest().toFixed(4)},${b.getNorth().toFixed(4)},${b.getEast().toFixed(4)}`;
   try {
     const res  = await fetch(`${API_URL}/api/osm?bbox=${bbox}`);
     if (!res.ok) throw new Error();
     const data = await res.json();
+    _osmBboxCache.set(bbox, data);
     renderOsmEditPaths(data);
     const count = _osmEditLayers.length / 2; // hit + visible line per path
     showEditModeBar(count === 0
