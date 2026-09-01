@@ -60,8 +60,10 @@ Main endpoint groups:
 Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - user:{id} — JSON user object
 - uemail:{email} — userId string (email index for O(1) login lookup)
+- uname:{username} — userId string (lowercased-username uniqueness index; created on verify, purged on account deletion). Username is chosen at signup, required, 3–20 chars `[a-zA-Z0-9_.-]`, unique case-insensitively; surfaced in the login/me user object.
 - pending:{token} — JSON pending registration (24-hour TTL); deleted on verify
 - pemail:{email} — token string (pending-registration email index, 24-hour TTL)
+- pname:{username} — token string (pending-registration lowercased-username index, 24-hour TTL; reserves a username while its email is unverified, deleted on verify)
 - path:{id} — JSON path object
 - report:{id} — JSON report object
 - photo:{reportId} — data-URI string, 90-day TTL
