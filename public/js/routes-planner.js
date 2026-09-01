@@ -20,6 +20,11 @@ function initQuickStart() {
       chips.querySelectorAll('.qs-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       if (distInput) distInput.value = chip.dataset.km;
+      // A new distance changes the loop bbox — re-warm the cache if a start is set.
+      if (mode === 'loop' && startMarker) {
+        const s = startMarker.getLatLng();
+        prefetchLoopOsm(s.lat, s.lng, parseFloat(chip.dataset.km) || 10);
+      }
     });
   });
 
@@ -484,6 +489,9 @@ function onMapClick(e) {
       map.getContainer().style.cursor = '';
       unlock('step4');
       enableGenerate();
+      // Warm the OSM cache now so Generate is near-instant (hides the fetch latency).
+      const km = parseFloat(document.getElementById('distanceInput')?.value) || 10;
+      prefetchLoopOsm(lat, lng, km);
     } else {
       pickingPoint = 'end';
     }
@@ -496,6 +504,11 @@ function onMapClick(e) {
     updatePointStatus();
     unlock('step4');
     enableGenerate();
+    // Warm the OSM cache for the A→B bbox while the user reviews the points.
+    if (startMarker) {
+      const s = startMarker.getLatLng();
+      prefetchAtobOsm(s.lat, s.lng, lat, lng);
+    }
   }
 }
 
@@ -770,6 +783,18 @@ document.getElementById('btnGenerate').addEventListener('click', generateRoute);
 async function generateRoute() {
   const btn = document.getElementById('btnGenerate');
 
+  // Kick the OSM fetch off NOW so it runs concurrently with the quota check below
+  // (and reuses any prefetch already in flight). By the time routing runs, the
+  // dominant network round-trip is usually already done.
+  if (mode === 'loop' && startMarker && !loopVias.length) {
+    const s = startMarker.getLatLng();
+    const km = parseFloat(document.getElementById('distanceInput')?.value) || 10;
+    prefetchLoopOsm(s.lat, s.lng, km);
+  } else if (mode === 'atob' && startMarker && endMarker) {
+    const s = startMarker.getLatLng(), e = endMarker.getLatLng();
+    prefetchAtobOsm(s.lat, s.lng, e.lat, e.lng);
+  }
+
   // ── Weekly quota check — enforced server-side ──
   const plan = currentUser?.plan || 'free';
   if (BWR.limitOf('routes_per_week', plan) !== Infinity) {
@@ -958,7 +983,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   const plan = currentUser?.plan || 'free';
   const customColor = BWR.can('custom_route_color', plan) ? localStorage.getItem('bwr_route_color') : null;
   const color = customColor || (difficulty === 'easy' ? '#22c55e' : difficulty === 'medium' ? '#f97316' : '#ef4444');
-  routeLayer = L.polyline(coords, { color, weight: 6, opacity: 0.9 }).addTo(map);
+  routeLayer = drawRouteLine(coords, color).addTo(map);
   map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
 
   // Exact distance display

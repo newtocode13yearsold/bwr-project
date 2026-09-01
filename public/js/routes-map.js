@@ -188,6 +188,26 @@ async function loadSavedPaths() {
   } catch {}
 }
 
+// ── Planned-route rendering ───────────────────────────────────────────────────
+// A *generated* route must never look like a graded path. Graded paths are thin
+// (weight 4), solid, and status-coloured (the same green/orange/red we'd use for
+// the route's difficulty), so a plain colored line for the planned route is
+// visually indistinguishable from them. We therefore draw the planned route as a
+// bright white casing (halo) with a thick DASHED coloured core on top — the
+// dashes run "along the path" and the halo makes it read as the active route.
+// Returns an L.featureGroup so callers keep map.removeLayer()/getBounds() working.
+function drawRouteLine(coords, color) {
+  const casing = L.polyline(coords, {
+    color: '#ffffff', weight: 11, opacity: 0.95,
+    lineJoin: 'round', lineCap: 'round',
+  });
+  const core = L.polyline(coords, {
+    color, weight: 5, opacity: 1, dashArray: '12 9',
+    lineJoin: 'round', lineCap: 'round',
+  });
+  return L.featureGroup([casing, core]);
+}
+
 // ── Save / share buttons ──────────────────────────────────────────────────────
 function setSaveShareEnabled(enabled) {
   const plan = currentUser?.plan || 'free';
@@ -310,7 +330,7 @@ async function handleSharedRouteParam() {
 
     const color = route.difficulty === 'easy' ? '#22c55e' : route.difficulty === 'medium' ? '#f97316' : '#ef4444';
     if (routeLayer) map.removeLayer(routeLayer);
-    routeLayer = L.polyline(route.coords, { color, weight: 6, opacity: 0.9 }).addTo(map);
+    routeLayer = drawRouteLine(route.coords, color).addTo(map);
     map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
 
     const km   = (route.meters / 1000).toFixed(2);

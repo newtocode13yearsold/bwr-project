@@ -174,7 +174,7 @@ async function replaySavedRoute(id) {
     const route = await res.json();
     if (routeLayer) map.removeLayer(routeLayer);
     const color = route.difficulty === 'easy' ? '#22c55e' : route.difficulty === 'medium' ? '#f97316' : '#ef4444';
-    routeLayer = L.polyline(route.coords, { color, weight: 6, opacity: 0.9 }).addTo(map);
+    routeLayer = drawRouteLine(route.coords, color).addTo(map);
     map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
     showToast('Trajet affiché sur la carte.');
   } catch (e) {
