@@ -43,6 +43,15 @@ async function bumpVisitCounter(env, month, ttl) {
     { expirationTtl: ttl });
 }
 
+// Inverse of bumpVisitCounter — used when an admin deletes a counted visitor so
+// the "Visiteurs ce mois" total stays consistent. Floors at 0 (KV isn't atomic).
+async function dropVisitCounter(env, month, ttl) {
+  const counterKey = `analytics:visits:${month}`;
+  const cur = await env.BWR_KV.get(counterKey);
+  const next = Math.max(0, (cur ? parseInt(cur, 10) : 0) - 1);
+  await env.BWR_KV.put(counterKey, String(next), { expirationTtl: ttl });
+}
+
 /**
  * Admin-only endpoints: one-time setup/migration, user list, contact messages.
  * @param {Request} request
@@ -597,6 +606,14 @@ Utilise les vrais chiffres. Pas d'intro type "Bien sûr" ni de conclusion. Puces
         }
       }
 
+      // "Exclure mon réseau": the admin can register their own public IP so their
+      // testing (incognito / logged-out, where the token/opt-out backstops miss) is
+      // dropped. One O(1) lookup keyed by exact IP — no list to parse on the hot path.
+      const ip = request.headers.get('CF-Connecting-IP') || '';
+      if (ip && await env.BWR_KV.get(`excludeip:${ip}`)) {
+        return json({ ok: true, counted: false, excluded: true });
+      }
+
       // Which page + how long the visitor looked at it (seconds, to the second).
       // Both are sanitised/clamped; a page path must start with "/".
       let page = typeof body.page === 'string' ? body.page.toLowerCase().slice(0, 80) : '';
@@ -711,6 +728,52 @@ Utilise les vrais chiffres. Pas d'intro type "Bien sûr" ni de conclusion. Puces
       visitors,
       visitorsTruncated: visitorKeys.length > 500,
     });
+  }
+
+  // ── Delete one visitor record (admin only) ───────────────────────────────────
+  // Lets the admin remove a "Visiteurs ce mois" card that is actually themselves
+  // (incognito / logged-out testing that the tracking backstops can't catch).
+  if (pathname.startsWith('/api/analytics/visitor/') && request.method === 'DELETE') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+    const vid = decodeURIComponent(pathname.slice('/api/analytics/visitor/'.length)).slice(0, 64);
+    if (!vid) return fail('Identifiant manquant.');
+    const month = new Date().toISOString().slice(0, 7);
+    const key   = `visitor:${month}:${vid}`;
+    const raw   = await env.BWR_KV.get(key);
+    if (raw) {
+      const TTL = 60 * 60 * 24 * 400;
+      let counted = true;
+      try { counted = JSON.parse(raw).counted !== false; } catch { /* keep default */ }
+      if (counted) await dropVisitCounter(env, month, TTL);
+      await env.BWR_KV.delete(key);
+    }
+    return json({ ok: true });
+  }
+
+  // ── Exclude / re-include the admin's own network (admin only) ─────────────────
+  // Register (POST) or clear (DELETE) the caller's public IP so their own visits
+  // are dropped at /api/track/visit. Best-effort: reliable only from a non-shared
+  // (home / fixed-line) IP — a 4G/VPN IP is shared and would hide real visitors.
+  if (pathname === '/api/analytics/exclude-ip'
+      && (request.method === 'POST' || request.method === 'DELETE')) {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+    const ip = request.headers.get('CF-Connecting-IP') || '';
+    if (!ip) return fail("Adresse IP introuvable.");
+    // Mask the IP for display so the panel confirms without echoing it in full.
+    const masked = ip.includes(':')
+      ? ip.split(':').slice(0, 2).join(':') + ':…'
+      : ip.replace(/\.\d+$/, '.x');
+    const key = `excludeip:${ip}`;
+    if (request.method === 'POST') {
+      const TTL = 60 * 60 * 24 * 180; // ~180 days: a stale home IP self-clears
+      await env.BWR_KV.put(key, JSON.stringify({ addedAt: new Date().toISOString() }),
+        { expirationTtl: TTL });
+      return json({ ok: true, excluded: true, ip: masked });
+    }
+    await env.BWR_KV.delete(key);
+    return json({ ok: true, excluded: false, ip: masked });
   }
 
   // ── Monthly challenges (public read, admin write) ─────────────────────────────

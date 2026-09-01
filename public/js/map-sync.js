@@ -27,10 +27,14 @@ async function updateMapSyncBanner() {
     `${total} changement${total > 1 ? 's' : ''} en attente de synchronisation`;
 }
 
-function queueMapPatch(pathId, newStatus) {
+// `pos` (optional {lat, lng}) is the user's live GPS at queue time. It must be
+// captured NOW, not at replay: the server uses it for the free-tier "near the
+// path" grading exemption, and by the time we're back online the user has moved.
+function queueMapPatch(pathId, newStatus, pos) {
   const q = getMapPatches();
+  const entry = { id: pathId, status: newStatus, ...(pos ? { userLat: pos.lat, userLon: pos.lng } : {}) };
   const existing = q.findIndex(item => item.id === pathId);
-  if (existing !== -1) q[existing].status = newStatus; else q.push({ id: pathId, status: newStatus });
+  if (existing !== -1) q[existing] = entry; else q.push(entry);
   saveMapPatches(q);
   updateMapSyncBanner();
 }
@@ -69,17 +73,30 @@ async function replayMapPatches() {
   if (q.length === 0) return;
   document.getElementById('mapSyncBanner')?.classList.add('syncing');
   let remaining = [];
+  let rejected = 0;
   for (const item of q) {
     try {
       const res = await fetch(`${API_URL}/api/paths/${item.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...authHeader() },
-        body: JSON.stringify({ status: item.status }),
+        body: JSON.stringify({
+          status: item.status,
+          ...(typeof item.userLat === 'number' ? { userLat: item.userLat, userLon: item.userLon } : {}),
+        }),
       });
-      if (!res.ok) remaining.push(item);
+      // Keep only transient failures (5xx / 429). A permanent 4xx (quota hit,
+      // path deleted, session expired) will never succeed — drop it instead of
+      // retrying forever, same policy as replayMapReports below.
+      if (!res.ok) {
+        if (res.status >= 400 && res.status < 500 && res.status !== 429) rejected++;
+        else remaining.push(item);
+      }
     } catch { remaining.push(item); }
   }
   saveMapPatches(remaining);
+  if (rejected > 0) {
+    showToast(`⚠️ ${rejected} changement${rejected > 1 ? 's' : ''} de difficulté refusé${rejected > 1 ? 's' : ''} par le serveur (limite ou chemin supprimé).`);
+  }
   document.getElementById('mapSyncBanner')?.classList.remove('syncing');
   updateMapSyncBanner();
   if (remaining.length === 0 && q.length > 0) {

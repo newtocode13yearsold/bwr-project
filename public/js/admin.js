@@ -1501,10 +1501,16 @@ async function loadVisits() {
       `<div style="display:flex;gap:6px;width:100%;margin-top:6px">
          <button id="btnDebugKV" style="flex:1;padding:7px 10px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#374151">🔍 Diagnostic KV</button>
          <button id="btnResetActivity" style="flex:1;padding:7px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#b91c1c">🗑️ Réinitialiser</button>
+       </div>` +
+      `<div style="width:100%;margin-top:6px">
+         <button id="btnExcludeIp" style="width:100%;padding:7px 10px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#3730a3">🙈 Exclure mon réseau</button>
+         <div style="font-size:0.65rem;color:#9ca3af;margin-top:3px;line-height:1.3">N'utilise ceci que depuis ta connexion maison — pas en 4G ni VPN (ça masquerait de vrais visiteurs).</div>
+         <div id="excludeIpMsg" style="font-size:0.7rem;margin-top:3px"></div>
        </div>`;
     // CSP blocks inline onclick, so wire the buttons after they're in the DOM.
     document.getElementById('btnDebugKV')?.addEventListener('click', loadDebug);
     document.getElementById('btnResetActivity')?.addEventListener('click', resetActivity);
+    document.getElementById('btnExcludeIp')?.addEventListener('click', excludeMyNetwork);
 
     if (events.length === 0 && visitors.length === 0) {
       itemsEl.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Aucune activité enregistrée pour l\'instant.</p>';
@@ -1587,6 +1593,7 @@ async function loadVisits() {
             <div style="font-size:0.75rem;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(v.device || 'Appareil inconnu')} · ${visitsTxt}${totalTxt} · 🕐 ${formatTime(v.lastSeen)}</div>
           </div>
           ${caret}
+          <button type="button" data-del-visitor="${escapeHtml(v.vid || '')}" title="C'est moi — retirer de la liste" style="flex-shrink:0;background:none;border:none;cursor:pointer;font-size:0.9rem;padding:2px 4px;line-height:1;color:#9ca3af">🗑️</button>
         </div>
         ${detailHtml}
       </div>`;
@@ -1647,6 +1654,26 @@ async function loadVisits() {
         if (car) car.style.transform = open ? 'rotate(0deg)' : 'rotate(90deg)';
       });
     });
+
+    // "C'est moi" — delete a visitor record. stopPropagation so the click doesn't
+    // also toggle the card's page list (the header owns a toggle listener above).
+    itemsEl.querySelectorAll('[data-del-visitor]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const vid = btn.getAttribute('data-del-visitor');
+        if (!vid || !confirm('Retirer ce visiteur de la liste ? (par ex. si c\'est toi)')) return;
+        btn.disabled = true;
+        try {
+          const res = await fetch(`${API_URL}/api/analytics/visitor/${encodeURIComponent(vid)}`,
+            { method: 'DELETE', headers: authHeader() });
+          if (!res.ok) throw new Error();
+          await loadVisits();
+        } catch {
+          btn.disabled = false;
+          alert('Échec de la suppression.');
+        }
+      });
+    });
   } catch {
     itemsEl.innerHTML = '<p style="color:red">Erreur réseau</p>';
   }
@@ -1671,6 +1698,33 @@ async function resetActivity() {
     await loadVisits();
   } catch {
     alert('Erreur réseau lors de la réinitialisation.');
+  }
+}
+
+// Register the admin's current public IP so their own future visits (incognito,
+// logged-out) are dropped server-side. Toggles: the message offers an undo that
+// re-includes the network via DELETE on the same endpoint.
+async function excludeMyNetwork() {
+  const msg = document.getElementById('excludeIpMsg');
+  const set = (html) => { if (msg) msg.innerHTML = html; };
+  set('<span style="color:#6b7280">…</span>');
+  try {
+    const res  = await fetch(`${API_URL}/api/analytics/exclude-ip`, {
+      method: 'POST', headers: authHeader(),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) { set(`<span style="color:#b91c1c">${escapeHtml(data.error || 'Échec')}</span>`); return; }
+    set(`<span style="color:#166534">✅ Réseau exclu (${escapeHtml(data.ip || '')}). Tes visites depuis ce réseau ne compteront plus.</span> <a href="#" id="undoExcludeIp" style="color:#2563eb">Annuler</a>`);
+    document.getElementById('undoExcludeIp')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        const r = await fetch(`${API_URL}/api/analytics/exclude-ip`, { method: 'DELETE', headers: authHeader() });
+        if (!r.ok) throw new Error();
+        set('<span style="color:#6b7280">Réseau réactivé — tes visites seront de nouveau comptées.</span>');
+      } catch { set('<span style="color:#b91c1c">Échec de l\'annulation.</span>'); }
+    });
+  } catch {
+    set('<span style="color:#b91c1c">Erreur réseau.</span>');
   }
 }
 

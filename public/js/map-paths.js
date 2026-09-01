@@ -351,7 +351,7 @@ function openPathPopup(path, latlng) {
               if (idx !== -1) allPaths[idx].status = newStatus;
               renderPaths();
               map.closePopup();
-              queueMapPatch(path.id, newStatus);
+              queueMapPatch(path.id, newStatus, pos);
               showToast('📶 Hors-ligne — changement enregistré, envoi à la reconnexion.');
             } else {
               showToast('Erreur lors de la mise à jour.');
@@ -362,7 +362,7 @@ function openPathPopup(path, latlng) {
             if (idx !== -1) allPaths[idx].status = newStatus;
             renderPaths();
             map.closePopup();
-            queueMapPatch(path.id, newStatus);
+            queueMapPatch(path.id, newStatus, pos);
             showToast('📶 Hors-ligne — changement enregistré, envoi à la reconnexion.');
           }
         });

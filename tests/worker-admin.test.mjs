@@ -967,3 +967,102 @@ describe('GET /api/analytics/events monthlyVisits', () => {
     assert.equal(body.visitorsTruncated, false);
   });
 });
+
+// ── DELETE /api/analytics/visitor/:vid — admin removes a visitor (e.g. "c'est moi") ──
+
+describe('DELETE /api/analytics/visitor/:vid', () => {
+  const month = () => new Date().toISOString().slice(0, 7);
+
+  test('non-admin is refused', async () => {
+    const { env, seedFree } = freshEnv();
+    const { token } = seedFree();
+    const res = await worker.fetch(authed('DELETE', '/api/analytics/visitor/x', token), env);
+    assert.equal(res.status, 403);
+  });
+
+  test('admin removes the record and decrements the counted total', async () => {
+    const { env, kv, seedAdmin } = freshEnv();
+    const { token } = seedAdmin();
+    kv.store.set(`analytics:visits:${month()}`, '3');
+    kv.store.set(`visitor:${month()}:me`, JSON.stringify({
+      vid: 'me', firstSeen: '2026-07-01T10:00:00Z', lastSeen: '2026-07-01T10:00:00Z',
+      visits: 2, seconds: 40, counted: true }));
+
+    const res = await worker.fetch(authed('DELETE', '/api/analytics/visitor/me', token), env);
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { ok: true });
+    assert.equal(kv.store.get(`visitor:${month()}:me`), undefined, 'record deleted');
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), '2', 'counter dropped by one');
+  });
+
+  test('deleting an uncounted (bounce) record leaves the counter untouched', async () => {
+    const { env, kv, seedAdmin } = freshEnv();
+    const { token } = seedAdmin();
+    kv.store.set(`analytics:visits:${month()}`, '5');
+    kv.store.set(`visitor:${month()}:bounce`, JSON.stringify({ vid: 'bounce', counted: false }));
+
+    await worker.fetch(authed('DELETE', '/api/analytics/visitor/bounce', token), env);
+    assert.equal(kv.store.get(`visitor:${month()}:bounce`), undefined);
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), '5', 'uncounted delete must not change the total');
+  });
+
+  test('deleting a missing record is a no-op 200', async () => {
+    const { env, seedAdmin } = freshEnv();
+    const { token } = seedAdmin();
+    const res = await worker.fetch(authed('DELETE', '/api/analytics/visitor/ghost', token), env);
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { ok: true });
+  });
+});
+
+// ── Exclude-my-network (admin IP self-exclusion) ──────────────────────────────
+
+describe('/api/analytics/exclude-ip + /api/track/visit guard', () => {
+  const month = () => new Date().toISOString().slice(0, 7);
+
+  test('POST is admin-only and stores the caller IP; DELETE removes it', async () => {
+    const { env, kv, seedAdmin, seedFree } = freshEnv();
+    const { token: freeTok } = seedFree();
+    const refused = await worker.fetch(
+      authed('POST', '/api/analytics/exclude-ip', freeTok, null), env);
+    assert.equal(refused.status, 403);
+
+    const { token } = seedAdmin();
+    const ipH = { 'CF-Connecting-IP': '9.8.7.6' };
+    const res = await worker.fetch(
+      r('POST', '/api/analytics/exclude-ip', null, { Authorization: `Bearer ${token}`, ...ipH }), env);
+    const body = await res.json();
+    assert.equal(body.excluded, true);
+    assert.ok(kv.store.get('excludeip:9.8.7.6'), 'IP marker stored');
+
+    const del = await worker.fetch(
+      r('DELETE', '/api/analytics/exclude-ip', null, { Authorization: `Bearer ${token}`, ...ipH }), env);
+    const delBody = await del.json();
+    assert.equal(delBody.excluded, false);
+    assert.equal(kv.store.get('excludeip:9.8.7.6'), undefined, 'IP marker removed');
+  });
+
+  test('a visit from an excluded IP is dropped — not stored, counter untouched', async () => {
+    const { env, kv } = freshEnv();
+    kv.store.set('excludeip:5.5.5.5', JSON.stringify({ addedAt: 'now' }));
+    const res = await worker.fetch(
+      r('POST', '/api/track/visit', { vid: 'mine', page: '/map.html', seconds: 30 },
+        { 'CF-Connecting-IP': '5.5.5.5' }), env);
+    const body = await res.json();
+    assert.equal(body.excluded, true);
+    assert.equal(body.counted, false);
+    assert.equal(kv.store.get(`visitor:${month()}:mine`), undefined, 'excluded IP creates no record');
+    assert.equal(kv.store.get(`analytics:visits:${month()}`), undefined, 'excluded IP never counts');
+  });
+
+  test('a visit from a non-excluded IP is tracked normally', async () => {
+    const { env, kv } = freshEnv();
+    kv.store.set('excludeip:5.5.5.5', JSON.stringify({ addedAt: 'now' }));
+    const res = await worker.fetch(
+      r('POST', '/api/track/visit', { vid: 'other', page: '/map.html', seconds: 30 },
+        { 'CF-Connecting-IP': '1.2.3.4' }), env);
+    const body = await res.json();
+    assert.equal(body.counted, true);
+    assert.ok(kv.store.get(`visitor:${month()}:other`), 'a different IP is tracked');
+  });
+});

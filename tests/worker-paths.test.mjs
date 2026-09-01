@@ -185,6 +185,38 @@ describe('PATCH /api/paths/:id', () => {
     assert.equal(res.status, 403);
   });
 
+  test('an over-limit 403 does NOT persist the status vote', async () => {
+    const { env, token, kv, userId } = freshEnv('user', 'free');
+    for (let i = 0; i < 5; i++) {
+      seedPath(kv, `ov${i}`);
+      await worker.fetch(authed('PATCH', `/api/paths/ov${i}`, token, { status: 'medium' }), env);
+    }
+    seedPath(kv, 'ov5');
+    const res = await worker.fetch(authed('PATCH', `/api/paths/ov5`, token, { status: 'medium' }), env);
+    assert.equal(res.status, 403);
+    // The rejected grade must leave the path, the user's stats, and the grade
+    // marker untouched — the 403 has to actually block the vote.
+    const path = JSON.parse(kv.store.get('path:ov5'));
+    assert.equal(path.status, 'easy');
+    const user = JSON.parse(kv.store.get(`user:${userId}`));
+    assert.equal(user.stats.pathGrades, 5);
+    assert.equal(user.stats.unwalkedGrades, 5);
+    assert.equal(kv.store.get(`pathgrade:ov5:${userId}`), undefined);
+  });
+
+  test('re-sending the same status still succeeds and credits the grade', async () => {
+    const { env, token, kv, userId } = freshEnv('user', 'silver');
+    seedPath(kv, 'same');
+    // Grading with the CURRENT status (e.g. an offline replay) is a no-op on the
+    // path but must still record the user's grade.
+    const res = await worker.fetch(authed('PATCH', '/api/paths/same', token, { status: 'easy' }), env);
+    assert.equal(res.status, 200);
+    const path = JSON.parse(kv.store.get('path:same'));
+    assert.equal(path.status, 'easy');
+    const user = JSON.parse(kv.store.get(`user:${userId}`));
+    assert.equal(user.stats.pathGrades, 1);
+  });
+
   test('free user grading near the path (GPS < 2 km) does not use a remote slot', async () => {
     const { env, token, kv, userId } = freshEnv('user', 'free');
     // Exhaust the 5 remote slots first.

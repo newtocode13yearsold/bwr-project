@@ -169,8 +169,6 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
     }
 
     const oldStatus = existing.status;
-    const updated = { ...existing, status: body.status };
-    await putPath(env, updated);
 
     const gradeKey = `pathgrade:${id}:${user.id}`;
     const [alreadyGraded, walkedRaw] = await Promise.all([
@@ -191,14 +189,22 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
     // Silver+ grade without limit. Free users grade without limit when they are
     // physically near the path (live GPS within 2 km) or have walked it recently;
     // otherwise they get FREE_REMOTE_GRADES "remote" gradings.
+    // The polyline scan only runs when its result can matter: a re-grade or a
+    // recently-walked path never consults GPS (walkedWhenGraded is already true
+    // via walkedRecently in the latter case).
     const isSilverPlus = plan === 'silver' || plan === 'gold';
     let nearby = false;
-    if (typeof body.userLat === 'number' && isFinite(body.userLat) &&
+    if (!alreadyGraded && !walkedRecently &&
+        typeof body.userLat === 'number' && isFinite(body.userLat) &&
         typeof body.userLon === 'number' && isFinite(body.userLon) &&
         Array.isArray(existing.coordinates) && existing.coordinates.length) {
       nearby = distanceToPolylineMeters([body.userLat, body.userLon], existing.coordinates) <= NEAR_GRADE_RANGE_M;
     }
 
+    // Decide the outcome BEFORE writing anything: an over-limit request must not
+    // persist the status vote it is rejecting.
+    let gradeInfo;
+    let gradedUser = null;
     if (!alreadyGraded) {
       const countsToward = !isSilverPlus && !walkedRecently && !nearby;
       if (countsToward && (user.stats?.unwalkedGrades || 0) >= FREE_REMOTE_GRADES) {
@@ -207,16 +213,25 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
       const gStats = user.stats || { routes: 0, km: 0 };
       const newStats = { ...gStats, pathGrades: (gStats.pathGrades || 0) + 1 };
       if (countsToward) newStats.unwalkedGrades = (gStats.unwalkedGrades || 0) + 1;
-      const gradedUser = { ...user, stats: newStats };
+      gradedUser = { ...user, stats: newStats };
+      gradeInfo = { counted: countsToward, remaining: Math.max(0, FREE_REMOTE_GRADES - (newStats.unwalkedGrades || 0)) };
+    } else {
+      gradeInfo = { counted: false, alreadyGraded: true };
+    }
+
+    const updated = { ...existing, status: body.status };
+    // Skip the KV write (and cache purge) when the status doesn't change —
+    // an idempotent re-PATCH still credits the grade below but is a no-op here.
+    if (body.status !== oldStatus) await putPath(env, updated);
+    updated._grade = gradeInfo;
+
+    if (gradedUser) {
       await Promise.all([
         env.BWR_KV.put(gradeKey, JSON.stringify({ walkedWhenGraded: walkedRecently || nearby })),
         putUser(env, gradedUser),
       ]);
       await patchLeaderboardCache(env, gradedUser);
       await addPeriodXp(env, gradedUser, { pathGrades: 1 });
-      updated._grade = { counted: countsToward, remaining: Math.max(0, FREE_REMOTE_GRADES - (newStats.unwalkedGrades || 0)) };
-    } else {
-      updated._grade = { counted: false, alreadyGraded: true };
     }
 
     if (body.status !== oldStatus) {
@@ -224,9 +239,8 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
       for (const u of allUsers.filter(u => u.alertsEnabled && u.alertsChannel)) {
         await notifyStatusChange(u.alertsChannel, updated.name || 'Chemin', oldStatus, body.status);
       }
+      await purgePathsCache();
     }
-
-    await purgePathsCache();
     return json(updated);
   }
 
