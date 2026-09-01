@@ -25,18 +25,26 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       return fail('Trop de tentatives. Réessayez dans une heure.', 429);
 
     const body = await request.json();
-    const { name, email, password } = body;
+    const { name, email, password, username } = body;
 
-    if (!name || !email || !password) return fail('Tous les champs sont obligatoires.');
+    if (!name || !email || !password || !username) return fail('Tous les champs sont obligatoires.');
     if (password.length < 8) return fail('Le mot de passe doit faire au moins 8 caractères.');
 
+    const trimmedUsername = String(username).trim();
+    if (!/^[a-zA-Z0-9_.-]{3,20}$/.test(trimmedUsername))
+      return fail("Le nom d'utilisateur doit faire 3 à 20 caractères (lettres, chiffres, . _ -).");
+    const usernameKey = trimmedUsername.toLowerCase();
+
     const emailKey = email.toLowerCase();
-    const [existingUser, existingPending] = await Promise.all([
+    const [existingUser, existingPending, existingUsername, pendingUsername] = await Promise.all([
       env.BWR_KV.get(`uemail:${emailKey}`),
       env.BWR_KV.get(`pemail:${emailKey}`),
+      env.BWR_KV.get(`uname:${usernameKey}`),
+      env.BWR_KV.get(`pname:${usernameKey}`),
     ]);
     if (existingUser) return fail('Un compte existe déjà avec cet email.');
     if (existingPending) return fail("Un email de vérification a déjà été envoyé à cette adresse. Vérifiez votre boîte mail ou attendez 24 heures.");
+    if (existingUsername || pendingUsername) return fail("Ce nom d'utilisateur est déjà pris.");
 
     const salt = crypto.randomUUID();
     const passwordHash = await hashPassword(password, salt);
@@ -45,6 +53,8 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const pending = {
       id: crypto.randomUUID(),
       name,
+      username: trimmedUsername,
+      usernameKey,
       email: emailKey,
       passwordHash,
       salt,
@@ -56,6 +66,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     await Promise.all([
       env.BWR_KV.put(`pending:${token}`, JSON.stringify(pending), { expirationTtl: PENDING_TTL }),
       env.BWR_KV.put(`pemail:${emailKey}`, token, { expirationTtl: PENDING_TTL }),
+      env.BWR_KV.put(`pname:${usernameKey}`, token, { expirationTtl: PENDING_TTL }),
     ]);
 
     const origin = new URL(request.url).origin;
@@ -78,18 +89,28 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
 
     const pending = JSON.parse(raw);
 
+    const usernameKey = pending.usernameKey || (pending.username || '').toLowerCase();
+
     const alreadyRegistered = await env.BWR_KV.get(`uemail:${pending.email}`);
     if (alreadyRegistered) {
       await Promise.all([
         env.BWR_KV.delete(`pending:${token}`),
         env.BWR_KV.delete(`pemail:${pending.email}`),
+        usernameKey ? env.BWR_KV.delete(`pname:${usernameKey}`) : Promise.resolve(),
       ]);
       return json({ message: 'Adresse email déjà vérifiée. Vous pouvez vous connecter.' });
+    }
+
+    // Guard against a username claimed by someone else between register and verify.
+    if (usernameKey) {
+      const takenBy = await env.BWR_KV.get(`uname:${usernameKey}`);
+      if (takenBy) return fail("Ce nom d'utilisateur est désormais pris. Choisissez-en un autre en vous réinscrivant.", 409);
     }
 
     const newUser = {
       id: pending.id,
       name: pending.name,
+      username: pending.username || null,
       email: pending.email,
       passwordHash: pending.passwordHash,
       salt: pending.salt,
@@ -103,8 +124,10 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     await Promise.all([
       putUser(env, newUser),
       env.BWR_KV.put(`uemail:${newUser.email}`, newUser.id),
+      usernameKey ? env.BWR_KV.put(`uname:${usernameKey}`, newUser.id) : Promise.resolve(),
       env.BWR_KV.delete(`pending:${token}`),
       env.BWR_KV.delete(`pemail:${newUser.email}`),
+      usernameKey ? env.BWR_KV.delete(`pname:${usernameKey}`) : Promise.resolve(),
     ]);
 
     // Count this as a new account in the admin activity panel.
@@ -134,10 +157,12 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const newToken = crypto.randomUUID();
     pending.resendAfter = new Date(Date.now() + RESEND_COOLDOWN * 1000).toISOString();
 
+    const unameKey = pending.usernameKey || (pending.username || '').toLowerCase();
     await Promise.all([
       env.BWR_KV.delete(`pending:${currentToken}`),
       env.BWR_KV.put(`pending:${newToken}`, JSON.stringify(pending), { expirationTtl: PENDING_TTL }),
       env.BWR_KV.put(`pemail:${emailKey}`, newToken, { expirationTtl: PENDING_TTL }),
+      unameKey ? env.BWR_KV.put(`pname:${unameKey}`, newToken, { expirationTtl: PENDING_TTL }) : Promise.resolve(),
     ]);
 
     const origin = new URL(request.url).origin;
@@ -276,7 +301,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
 
     return json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, plan: user.plan || 'free', stats: user.stats || { routes: 0, km: 0 } },
+      user: { id: user.id, name: user.name, username: user.username || null, email: user.email, role: user.role, plan: user.plan || 'free', stats: user.stats || { routes: 0, km: 0 } },
     });
   }
 
@@ -301,7 +326,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     if (dirty) await putUser(env, updated);
 
     return json({
-      id: updated.id, name: updated.name, email: updated.email, role: updated.role,
+      id: updated.id, name: updated.name, username: updated.username || null, email: updated.email, role: updated.role,
       plan: updated.plan || 'free',
       planExpiresAt: updated.planExpiresAt || null,
       planBase: updated.planBase || null,
@@ -631,6 +656,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     await Promise.all([
       env.BWR_KV.delete(`user:${user.id}`),
       env.BWR_KV.delete(`uemail:${user.email}`),
+      user.username ? env.BWR_KV.delete(`uname:${user.username.toLowerCase()}`) : Promise.resolve(),
       env.BWR_KV.delete(`review:${user.id}`),
       ...savedRoutes.map(rt => env.BWR_KV.delete(`savedroute:${user.id}:${rt.id}`)),
       ...savedRoutes.filter(rt => rt.shareToken).map(rt => env.BWR_KV.delete(`routeshare:${rt.shareToken}`)),

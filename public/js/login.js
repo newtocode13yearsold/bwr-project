@@ -207,6 +207,7 @@ signupForm.addEventListener('submit', async (e) => {
   successEl.classList.add('hidden');
 
   const name     = document.getElementById('signupName').value.trim();
+  const username = document.getElementById('signupUsername').value.trim();
   const email    = document.getElementById('signupEmail').value.trim();
   const password = document.getElementById('signupPassword').value;
 
@@ -214,7 +215,7 @@ signupForm.addEventListener('submit', async (e) => {
     const res  = await fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, username, email, password }),
     });
     const data = await res.json();
 
