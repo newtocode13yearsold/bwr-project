@@ -170,24 +170,53 @@ function applyDifficultyWeights(paths) {
 
 // Client-side OSM bbox cache — avoids re-fetching the same area within a session.
 // Server already caches 7 days in KV; this cuts even that round-trip for repeated calls.
-const _osmPathCache = new Map();
+// Stores the in-flight PROMISE (not just the resolved array) so a prefetch fired
+// when the user drops a point and the real fetch fired on "Generate" share a single
+// network request instead of racing two identical ones.
+const _osmPathCache = new Map(); // bbox -> Promise<paths[]>
 
-async function fetchOsmPathsForBbox(minLat, minLng, maxLat, maxLng) {
+function fetchOsmPathsForBbox(minLat, minLng, maxLat, maxLng) {
   const bbox = `${minLat.toFixed(4)},${minLng.toFixed(4)},${maxLat.toFixed(4)},${maxLng.toFixed(4)}`;
   if (_osmPathCache.has(bbox)) return _osmPathCache.get(bbox);
+  const p = (async () => {
+    try {
+      // Generous timeout: the worker may retry a flaky Overpass instance. A late
+      // success is still cached server-side, making the user's next attempt instant.
+      const res = await fetchWithTimeout(`${API_URL}/api/osm?bbox=${bbox}`, {}, 35000);
+      if (!res.ok) { console.warn('OSM bbox fetch failed:', res.status); _osmPathCache.delete(bbox); return []; }
+      const data = await res.json();
+      if (!Array.isArray(data?.elements)) { console.warn('OSM response malformed'); _osmPathCache.delete(bbox); return []; }
+      return osmDataToCoordPaths(data);
+    } catch (e) {
+      // Drop the failed promise so a later attempt can retry instead of caching the failure.
+      console.warn('fetchOsmPathsForBbox:', e.message); _osmPathCache.delete(bbox); return [];
+    }
+  })();
+  // Evict oldest entry (Map keeps insertion order) to bound memory usage.
+  if (_osmPathCache.size >= 5) _osmPathCache.delete(_osmPathCache.keys().next().value);
+  _osmPathCache.set(bbox, p);
+  return p;
+}
+
+// ── OSM prefetch — warm the cache as soon as the user places their point(s) ────
+// The OSM round-trip is the dominant cost of a route; kicking it off on point
+// placement (and again, concurrently, at Generate time) hides that latency behind
+// the user's think-time. Fire-and-forget; the bbox math mirrors routeLoop / routeAtob
+// exactly so the cache key matches and the eventual route reuses this request.
+function prefetchLoopOsm(sLat, sLng, targetKm) {
+  const radiusKm = Math.max((targetKm || 10) / 2, 1);
+  const padLat = radiusKm / 111;
+  const padLng = radiusKm / (111 * Math.cos(sLat * Math.PI / 180));
+  try { fetchOsmPathsForBbox(sLat - padLat, sLng - padLng, sLat + padLat, sLng + padLng); } catch {}
+}
+function prefetchAtobOsm(sLat, sLng, eLat, eLng) {
+  const pad = 0.05;
   try {
-    // Generous timeout: the worker may retry a flaky Overpass instance. A late
-    // success is still cached server-side, making the user's next attempt instant.
-    const res = await fetchWithTimeout(`${API_URL}/api/osm?bbox=${bbox}`, {}, 35000);
-    if (!res.ok) { console.warn('OSM bbox fetch failed:', res.status); return []; }
-    const data = await res.json();
-    if (!Array.isArray(data?.elements)) { console.warn('OSM response malformed'); return []; }
-    const paths = osmDataToCoordPaths(data);
-    // Evict oldest entry to bound memory usage
-    if (_osmPathCache.size >= 5) _osmPathCache.delete(_osmPathCache.keys().next().value);
-    _osmPathCache.set(bbox, paths);
-    return paths;
-  } catch (e) { console.warn('fetchOsmPathsForBbox:', e.message); return []; }
+    fetchOsmPathsForBbox(
+      Math.min(sLat, eLat) - pad, Math.min(sLng, eLng) - pad,
+      Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
+    );
+  } catch {}
 }
 
 // ── Public routing entry points ───────────────────────────────────────────────
@@ -239,7 +268,11 @@ async function routeAtob(sLat, sLng, eLat, eLng) {
       const hybrid = graphAtobHybrid(sLat, sLng, eLat, eLng, admin, weightedOsmPaths, transportMode);
       if (hybrid.meters <= straightM * 4) best = hybrid;
     } catch (e) { console.warn('graph hybrid:', e.message); }
-    if (weightedOsmPaths.length) {
+    // The OSM-only route guards against an admin-path detour. Skip it when there
+    // are no admin paths: the hybrid graph is then just the OSM network with a
+    // uniform gap-fill weight, whose shortest path is identical — so a second
+    // full graph build + Dijkstra would be pure wasted work.
+    if (weightedOsmPaths.length && admin.length) {
       try {
         const osmOnly = graphAtob(sLat, sLng, eLat, eLng, weightedOsmPaths, transportMode);
         if (osmOnly.meters <= straightM * 4 && (!best || osmOnly.meters < best.meters)) best = osmOnly;
