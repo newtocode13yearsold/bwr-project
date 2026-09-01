@@ -5,6 +5,14 @@
 // helpers in js/routes-map.js. Top-level code here only *attaches* event listeners
 // (their callbacks read shared state at click time), so load order is safe.
 
+// Safety shim: the OSM cache-warming helpers live in js/routes-engine.js. If a
+// deploy ever ships this planner without the matching engine build, the bare
+// prefetchLoopOsm()/prefetchAtobOsm() calls below would throw ReferenceError and
+// break Generate. Install no-op fallbacks only when the real functions are
+// absent — once the engine defines them (it loads first), this is a no-op.
+if (typeof prefetchLoopOsm !== 'function') { window.prefetchLoopOsm = function () {}; }
+if (typeof prefetchAtobOsm !== 'function') { window.prefetchAtobOsm = function () {}; }
+
 // ── Quick start — one-tap loop from current location ──────────────────────────
 function initQuickStart() {
   const chips = document.getElementById('qsChips');
