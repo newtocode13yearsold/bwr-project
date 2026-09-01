@@ -14,7 +14,7 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
-Run all automated tests (400 tests, ~4 s):
+Run all automated tests (436 tests, ~4 s):
   npm test
 
 Run tests in watch mode (re-runs on file save):
@@ -222,7 +222,7 @@ Cloudflare Config (wrangler.jsonc):
 
 ## Testing Notes
 
-Automated test suite: **400 tests, ~4 s** (`npm test`). Test files:
+Automated test suite: **436 tests, ~4 s** (`npm test`). Test files:
 
 | File | What it covers | Style |
 |------|---------------|-------|
@@ -234,6 +234,7 @@ Automated test suite: **400 tests, ~4 s** (`npm test`). Test files:
 | `tests/worker-savedroutes.test.mjs` | Saved-route CRUD and share-token endpoints | ESM |
 | `tests/worker-forum.test.mjs` | Forum topics/replies — Silver+ posting, free-tier 5-topic read limit, locked detail, author/admin edit + deletion | ESM |
 | `tests/worker-rating.test.mjs` | Site rating — public aggregate, one-per-account overwrite, star validation, admin-only comment list + delete | ESM |
+| `tests/worker-inbox.test.mjs` | In-app inbox — admin-only send, broadcast vs direct delivery, per-user read state, sent list + delete, deletion purge | ESM |
 | `tests/sw.test.js` | Service-worker cache-version sync | CJS |
 
 E2E (Playwright, `npx playwright test`) runs against the live prod URL — see `tests/e2e/`.
