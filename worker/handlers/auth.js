@@ -333,6 +333,8 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       visitorPlanCount: updated.visitorPlanCount || 0,
       silverTrialUsed: !!updated.silverTrialUsed,
       emailNotifications: updated.emailNotifications !== false, // default on
+      questClaims: updated.questClaims || {},
+      questBadges: updated.questBadges || [],
       stats: updated.stats || { routes: 0, km: 0, weeklyRoutes: 0, weekStart: isoMonday() },
     });
   }

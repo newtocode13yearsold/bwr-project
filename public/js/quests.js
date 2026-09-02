@@ -10,7 +10,7 @@
     oneTime: 'Hauts faits — objectifs cumulés sur toute ta progression, à débloquer une fois.'
   };
 
-  var state = { scope: 'daily', data: null, metrics: null, loggedIn: false };
+  var state = { scope: 'daily', data: null, metrics: null, loggedIn: false, claims: {}, claiming: {} };
   var grid = document.getElementById('questGrid');
   var subtitle = document.getElementById('subtitle');
   var hallHint = document.getElementById('hallHint');
@@ -137,10 +137,61 @@
     fetch(API_URL + '/api/auth/me', { headers: (typeof authHeader === 'function' ? authHeader() : {}) })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (u) {
-        if (u && u.stats) { state.loggedIn = true; state.metrics = computeMetrics(u.stats); }
+        if (u && u.stats) {
+          state.loggedIn = true;
+          state.metrics = computeMetrics(u.stats);
+          state.claims = u.questClaims || {};
+        }
         render();
+        claimCompletedRewards();
       })
       .catch(function () { render(); });
+  }
+
+  // ── Claim any completed one-time achievement whose prize hasn't been given ────
+  // The server actually grants the reward (plan upgrade / badge), records the
+  // claim so it can't repeat, and drops a message into the user's inbox.
+  function claimCompletedRewards() {
+    if (!state.loggedIn || typeof API_URL === 'undefined') return;
+    var list = (state.data && state.data.oneTime) || [];
+    list.forEach(function (q) {
+      var cur = state.metrics ? (state.metrics[q.metric] || 0) : 0;
+      if (cur < q.target) return;                 // not achieved yet
+      if (state.claims[q.id]) return;             // already claimed
+      if (state.claiming[q.id]) return;           // request in flight
+      state.claiming[q.id] = true;
+      fetch(API_URL + '/api/quests/claim', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' },
+          (typeof authHeader === 'function' ? authHeader() : {})),
+        body: JSON.stringify({ id: q.id, questId: q.id })
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (res) {
+          if (res && res.ok) {
+            state.claims[q.id] = true;
+            if (!res.alreadyClaimed) showRewardToast(q, res);
+            render();
+          }
+        })
+        .catch(function () {})
+        .then(function () { delete state.claiming[q.id]; });
+    });
+  }
+
+  function showRewardToast(q, res) {
+    var el = document.getElementById('rewardToast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'rewardToast';
+      el.className = 'reward-toast';
+      document.body.appendChild(el);
+    }
+    el.innerHTML = '🎉 <strong>' + esc(q.title) + '</strong> — récompense créditée : '
+      + esc(res.reward || q.reward || '');
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(function () { el.classList.remove('show'); }, 6000);
   }
 
   fetch('data/quests.json')

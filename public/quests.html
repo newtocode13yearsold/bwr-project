@@ -108,6 +108,17 @@
       padding: 14px 16px; font-size: 0.9rem; color: var(--text-2, #4b5563); margin-bottom: 18px;
     }
 
+    .reward-toast {
+      position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 24px);
+      max-width: min(92vw, 460px); z-index: 999;
+      background: #0b2410; color: #fff; border: 1px solid rgba(163,230,53,0.4);
+      border-radius: 14px; padding: 13px 18px; font-size: 0.92rem; line-height: 1.4;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+      opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease;
+    }
+    .reward-toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .reward-toast strong { color: #a3e635; }
+
     @media (max-width: 560px) { .tab { flex: 1 1 auto; text-align: center; } }
   </style>
 </head>
@@ -144,7 +155,7 @@
     </div>
     <div class="subtitle" id="subtitle"></div>
     <div id="hallHint" class="hall-hint" style="display:none">
-      🏅 Les hauts faits se débloquent <strong>automatiquement</strong> quand ton total atteint l'objectif. La récompense (Gold, Silver, badge) est ensuite créditée par l'équipe.
+      🏅 Les hauts faits se débloquent <strong>automatiquement</strong> quand ton total atteint l'objectif. La récompense (Gold, Silver, badge) est alors <strong>créditée aussitôt</strong> sur ton compte et un message de confirmation arrive dans ta boîte de réception.
     </div>
     <div class="quest-grid" id="questGrid"></div>
   </div>

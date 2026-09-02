@@ -186,6 +186,23 @@ function renderPlanAndProgress(user) {
     </div>`;
   }).join('');
 
+  // Exclusive achievement badges won from the Quêtes page (server-granted, stored
+  // on the user object). Always earned when present — no client-side test.
+  const questBadges = Array.isArray(user.questBadges) ? user.questBadges : [];
+  if (questBadges.length) {
+    grid.insertAdjacentHTML('beforeend', questBadges.map(b => {
+      const d = b.earnedAt
+        ? new Date(b.earnedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+        : null;
+      return `<div class="badge-item earned tier-gold badge-exclusive" title="${b.label}">
+        <span class="badge-icon">${b.icon}</span>
+        <span class="badge-label">${b.label}</span>
+        <span class="badge-desc">Haut fait — récompense de quête</span>
+        ${d ? `<span class="badge-date">Obtenu le ${d}</span>` : ''}
+      </div>`;
+    }).join(''));
+  }
+
   // Title carries the earned count; a long list collapses behind a toggle so it
   // no longer scrolls forever.
   const badgesTitle = document.getElementById('badgesTitle');

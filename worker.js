@@ -10,6 +10,7 @@ import { handlePush }       from './worker/handlers/push.js';
 import { handleNotify }     from './worker/handlers/notify.js';
 import { handleRating }     from './worker/handlers/rating.js';
 import { handleInbox }      from './worker/handlers/inbox.js';
+import { handleQuests }     from './worker/handlers/quests.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://bwrmaps.com',
@@ -100,7 +101,8 @@ export default {
       await handlePush(request, env, ctx)        ??
       await handleNotify(request, env, ctx)      ??
       await handleRating(request, env, ctx)      ??
-      await handleInbox(request, env, ctx);
+      await handleInbox(request, env, ctx)       ??
+      await handleQuests(request, env, ctx);
 
     if (apiResponse) return apiResponse;
 
