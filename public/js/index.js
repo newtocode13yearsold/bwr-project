@@ -209,7 +209,7 @@ try {
       // Draw map paths
       paths.forEach(path => {
         if (!path.coordinates || path.coordinates.length < 2) return;
-        const color = (STATUS_COLORS && STATUS_COLORS[path.status]) || '#22c55e';
+        const color = (typeof colorForPath === 'function') ? colorForPath(path) : ((STATUS_COLORS && STATUS_COLORS[path.status]) || '#22c55e');
         L.polyline(path.coordinates, {
           color,
           weight: 3,

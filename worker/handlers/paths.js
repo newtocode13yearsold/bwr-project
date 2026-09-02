@@ -90,7 +90,7 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
 
     const body = await request.json();
     const VALID_STATUSES = new Set(['easy', 'medium', 'hard', 'not_passable', 'no_bike']);
-    const VALID_PATH_TYPES = new Set(['foot', 'bike']);
+    const VALID_PATH_TYPES = new Set(['foot', 'bike', 'field']);
     const VALID_CONDITIONS = new Set(['muddy', 'flooded', 'fallen_tree', 'rutted', 'closed', 'other']);
     const newPath = {
       id: crypto.randomUUID(),

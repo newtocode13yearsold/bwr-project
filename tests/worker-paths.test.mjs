@@ -121,6 +121,19 @@ describe('POST /api/paths', () => {
     assert.equal(data.status, 'easy');
     assert.equal(data.pathType, 'foot');
   });
+
+  test('accepts field (champs) as a valid pathType', async () => {
+    const { env, token } = freshEnv('user', 'silver');
+    const res = await worker.fetch(authed('POST', '/api/paths', token, {
+      name: 'Chemin de champs',
+      pathType: 'field',
+      status: 'easy',
+      coordinates: sampleCoords,
+    }), env);
+    assert.equal(res.status, 201);
+    const data = await res.json();
+    assert.equal(data.pathType, 'field', 'field is preserved, not coerced to foot');
+  });
 });
 
 // ── PATCH /api/paths/:id ──────────────────────────────────────────────────────

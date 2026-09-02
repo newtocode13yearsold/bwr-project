@@ -57,7 +57,7 @@ function renderPaths() {
   allPaths.forEach(path => {
     if (!activeFilters.has(path.status)) return;
     if (!path.coordinates || path.coordinates.length < 2) return;
-    const color = STATUS_COLORS[path.status] || '#9ca3af';
+    const color = colorForPath(path);
     L.polyline(path.coordinates, {
       color, weight: w, opacity: 0.85, lineCap: 'round', lineJoin: 'round',
     }).addTo(pathLayer);

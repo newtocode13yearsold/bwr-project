@@ -38,3 +38,15 @@ const STATUS_LABELS = {
   not_passable:'Impraticable',
   no_bike:     'Vélo interdit',
 };
+
+// Cyclable (bike) paths are drawn purple, overriding the difficulty colour, so
+// they stand out from foot/field paths on every map. Applies to existing bike
+// paths too, since rendering keys off pathType.
+const BIKE_PATH_COLOR = '#a855f7';
+
+// The colour a curated path should be drawn in: purple for bike paths, otherwise
+// the difficulty (status) colour. Global helper — config.js loads on every page.
+function colorForPath(path) {
+  if (path && path.pathType === 'bike') return BIKE_PATH_COLOR;
+  return (STATUS_COLORS[path && path.status]) || '#9ca3af';
+}

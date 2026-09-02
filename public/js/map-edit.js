@@ -16,7 +16,7 @@ function renderEditPolylines() {
   _editPolylines = [];
   allPaths.forEach(path => {
     if (!path.coordinates || path.coordinates.length < 2) return;
-    const color = STATUS_COLORS[path.status] || '#9ca3af';
+    const color = colorForPath(path);
     const line = L.polyline(path.coordinates, { color, weight: 6, opacity: 0.85, dashArray: '8, 6' });
     line.on('mouseover', () => { line.setStyle({ weight: 9, opacity: 1 }); map.getContainer().style.cursor = 'pointer'; });
     line.on('mouseout',  () => { line.setStyle({ weight: 6, opacity: 0.85 }); map.getContainer().style.cursor = 'crosshair'; });

@@ -530,34 +530,53 @@ function detectPathType(tags) {
   return 'foot';
 }
 
-function renderOSMPaths(data) {
+// Adapt a raw Overpass response ({elements:[node|way]}) to the same coord-path
+// shape the pre-baked forest bundle uses ([{coordinates,_highway,_surface,_name}]),
+// so renderOSMPaths has a single input format regardless of the source.
+function osmElementsToCoordPaths(data) {
+  const nodes = {};
+  (data.elements || []).forEach(el => { if (el.type === 'node') nodes[el.id] = [el.lat, el.lon]; });
+  const out = [];
+  (data.elements || []).forEach(el => {
+    if (el.type !== 'way') return;
+    const coordinates = el.nodes.map(id => nodes[id]).filter(Boolean);
+    if (coordinates.length < 2) return;
+    out.push({
+      coordinates,
+      _highway: el.tags?.highway,
+      _surface: el.tags?.surface,
+      _name: el.tags?.name || el.tags?.ref,
+    });
+  });
+  return out;
+}
+
+// Render a list of selectable OSM paths in the coord-path shape
+// ({coordinates,_highway?,_surface?,_name?}) — from either the pre-baked forest
+// bundle or the live Overpass fallback.
+function renderOSMPaths(paths) {
   clearOSMLayer();
 
-  const nodes = {};
-  data.elements.forEach(el => {
-    if (el.type === 'node') nodes[el.id] = [el.lat, el.lon];
-  });
-
-  data.elements.forEach(el => {
-    if (el.type !== 'way') return;
-    const coords = el.nodes.map(id => nodes[id]).filter(Boolean);
-    if (coords.length < 2) return;
+  (paths || []).forEach(p => {
+    const coords = p.coordinates;
+    if (!coords || coords.length < 2) return;
 
     // Skip paths already saved (require both endpoints to match, not just the first)
     const last = coords[coords.length - 1];
-    const endpointsMatch = (p) => {
-      if (!p.coordinates || p.coordinates.length < 2) return false;
-      const pLast = p.coordinates[p.coordinates.length - 1];
+    const endpointsMatch = (sp) => {
+      if (!sp.coordinates || sp.coordinates.length < 2) return false;
+      const pLast = sp.coordinates[sp.coordinates.length - 1];
       return (
-        Math.abs(p.coordinates[0][0] - coords[0][0]) < 0.0001 &&
-        Math.abs(p.coordinates[0][1] - coords[0][1]) < 0.0001 &&
+        Math.abs(sp.coordinates[0][0] - coords[0][0]) < 0.0001 &&
+        Math.abs(sp.coordinates[0][1] - coords[0][1]) < 0.0001 &&
         Math.abs(pLast[0] - last[0]) < 0.0001 &&
         Math.abs(pLast[1] - last[1]) < 0.0001
       );
     };
     if (allPaths.some(endpointsMatch) || getOfflineNewPaths().some(endpointsMatch)) return;
 
-    const autoType = detectPathType(el.tags);
+    const autoType = detectPathType({ highway: p._highway, surface: p._surface });
+    const pathName = p._name || 'Chemin sans nom';
 
     const line = L.polyline(coords, {
       color: '#475569',
@@ -925,7 +944,7 @@ function renderPaths() {
     };
 
     // Visible line
-    const pathColor = STATUS_COLORS[path.status] || '#9ca3af';
+    const pathColor = colorForPath(path);
     const line = L.polyline(path.coordinates, {
       color: pathColor,
       weight: offlineSelectMode ? pathWeight() + 2 : pathWeight(),

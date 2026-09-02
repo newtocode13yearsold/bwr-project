@@ -181,7 +181,7 @@ async function loadSavedPaths() {
     savedPathsLayer = L.layerGroup();
     savedPaths.forEach(p => {
       L.polyline(p.coordinates, {
-        color: STATUS_COLORS[p.status] || '#9ca3af',
+        color: colorForPath(p),
         weight: 4, opacity: 0.55,
       }).bindTooltip(p.name || '').addTo(savedPathsLayer);
     });
