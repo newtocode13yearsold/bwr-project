@@ -175,20 +175,63 @@ function applyDifficultyWeights(paths) {
 // network request instead of racing two identical ones.
 const _osmPathCache = new Map(); // bbox -> Promise<paths[]>
 
+// A cold OSM fetch *through the worker* is the real reason loops feel slow: Overpass
+// rate-limits Cloudflare's shared egress IPs (measured ~24 s from the worker), while a
+// browser's own residential IP gets the same query back in ~1 s. Overpass sends
+// `Access-Control-Allow-Origin: *` and overpass-api.de is already in our CSP
+// connect-src, and a form-encoded POST is a "simple" CORS request (no preflight), so
+// the browser can hit it directly. We therefore HEDGE every fetch:
+//   1. ask the worker (instant on a warm 7-day KV cache),
+//   2. only if it stays silent past HEDGE_MS, also fetch Overpass straight from the
+//      browser, and take whichever answers first.
+// Warm-cache hits are served by the worker and never touch Overpass directly; cold
+// misses fall onto the fast ~1 s browser path instead of the throttled 24 s one — and
+// the worker request keeps running in the background, warming the shared KV cache for
+// the next visitor even when the direct fetch won the race.
+const OVERPASS_DIRECT = 'https://overpass-api.de/api/interpreter'; // must stay in CSP connect-src
+const HEDGE_MS = 1000;
+
+async function fetchOsmData(bbox) {
+  let workerAnswered = false;
+
+  const viaWorker = (async () => {
+    const res = await fetchWithTimeout(`${API_URL}/api/osm?bbox=${bbox}`, {}, 35000);
+    if (!res.ok) throw new Error(`worker osm ${res.status}`);
+    const data = await res.json();
+    workerAnswered = true; // signal the hedge it no longer needs to hit Overpass
+    return data;
+  })();
+
+  const viaOverpass = (async () => {
+    await new Promise(r => setTimeout(r, HEDGE_MS));
+    if (workerAnswered) throw new Error('worker answered first'); // skip Overpass entirely
+    const [s, w, n, e] = bbox.split(',');
+    const q = `[out:json][timeout:25];(way["highway"~"^(path|track|footway|bridleway|cycleway)$"](${s},${w},${n},${e});>;);out body;`;
+    const res = await fetchWithTimeout(OVERPASS_DIRECT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `data=${encodeURIComponent(q)}`,
+    }, 20000);
+    if (!res.ok) throw new Error(`overpass ${res.status}`);
+    return res.json();
+  })();
+
+  // First VALID response wins. Promise.any ignores the rejections (worker error, or the
+  // hedge's "worker answered first" skip) unless every source fails.
+  return Promise.any([viaWorker, viaOverpass]);
+}
+
 function fetchOsmPathsForBbox(minLat, minLng, maxLat, maxLng) {
   const bbox = `${minLat.toFixed(4)},${minLng.toFixed(4)},${maxLat.toFixed(4)},${maxLng.toFixed(4)}`;
   if (_osmPathCache.has(bbox)) return _osmPathCache.get(bbox);
   const p = (async () => {
     try {
-      // Generous timeout: the worker may retry a flaky Overpass instance. A late
-      // success is still cached server-side, making the user's next attempt instant.
-      const res = await fetchWithTimeout(`${API_URL}/api/osm?bbox=${bbox}`, {}, 35000);
-      if (!res.ok) { console.warn('OSM bbox fetch failed:', res.status); _osmPathCache.delete(bbox); return []; }
-      const data = await res.json();
+      const data = await fetchOsmData(bbox);
       if (!Array.isArray(data?.elements)) { console.warn('OSM response malformed'); _osmPathCache.delete(bbox); return []; }
       return osmDataToCoordPaths(data);
     } catch (e) {
       // Drop the failed promise so a later attempt can retry instead of caching the failure.
+      // (AggregateError from Promise.any means both the worker and the direct fetch failed.)
       console.warn('fetchOsmPathsForBbox:', e.message); _osmPathCache.delete(bbox); return [];
     }
   })();
