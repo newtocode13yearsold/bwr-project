@@ -10,6 +10,24 @@ let locationMarker = null;
 let locationCircle = null;
 let locationWatchId = null;
 let _currentPosition = null;
+let _prevPosition = null;    // previous GPS fix, used to work out which way we're walking
+let _travelBearing = null;   // heading of travel in degrees (0-360), or null when we can't tell
+
+// How close (m) a path must be for "Mon point" to consider it, and how heavily to
+// penalise a path whose direction doesn't match the way we're walking. The penalty
+// is in "equivalent metres", so a crossing path (perpendicular) is treated as if it
+// were HEADING_WEIGHT_M further away than it really is — that lets us lock onto the
+// path we're travelling ALONG at a junction instead of a crossing/parallel one.
+const SELECT_RANGE_M = 60;
+const HEADING_WEIGHT_M = 45;
+
+function _bearingDeg(lat1, lon1, lat2, lon2) {
+  const toRad = d => d * Math.PI / 180;
+  const p1 = toRad(lat1), p2 = toRad(lat2), dl = toRad(lon2 - lon1);
+  const y = Math.sin(dl) * Math.cos(p2);
+  const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
 // states: 'idle' | 'searching' | 'following' | 'watching'
 // 'following' = map re-centers on every GPS update (like Google Maps navigation)
 // 'watching'  = dot visible but map no longer auto-pans (user dragged away)
@@ -63,12 +81,20 @@ function stopLocating() {
   if (locationMarker) { map.removeLayer(locationMarker); locationMarker = null; }
   if (locationCircle) { map.removeLayer(locationCircle); locationCircle = null; }
   _currentPosition = null;
+  _prevPosition = null;
+  _travelBearing = null;
   locateState = 'idle';
   _updateLocateBtn();
 }
 
-function _findNearestPath(lat, lng) {
-  let best = null, bestDist = Infinity, bestLatLng = null;
+// Pick the path the user is standing on. Among every segment within SELECT_RANGE_M
+// we don't just take the geometrically closest one — that grabs a crossing or
+// parallel path at a junction when GPS jitters. Instead we score each nearby
+// segment by distance PLUS a heading penalty, so the path we're actually walking
+// ALONG (its segment roughly parallel to our direction of travel) wins even if a
+// crossing path happens to sit a metre or two closer.
+function _findNearestPath(lat, lng, travelBearing = null) {
+  let best = null, bestScore = Infinity, bestDist = Infinity, bestLatLng = null;
   for (const path of allPaths) {
     if (!activeFilters.has(path.status)) continue;
     if (!path.coordinates || path.coordinates.length < 2) continue;
@@ -80,10 +106,23 @@ function _findNearestPath(lat, lng) {
       const t = len2 ? Math.max(0, Math.min(1, ((lat - lat1) * dx + (lng - lng1) * dy) / len2)) : 0;
       const nearLat = lat1 + t * dx, nearLng = lng1 + t * dy;
       const d = _mapHaversineM(lat, lng, nearLat, nearLng);
-      if (d < bestDist) { bestDist = d; best = path; bestLatLng = [nearLat, nearLng]; }
+      if (d > SELECT_RANGE_M) continue; // out of range → not a candidate
+
+      let score = d;
+      if (travelBearing !== null && len2) {
+        // A path has no inherent direction, so treat parallel and anti-parallel
+        // as an equally good match: collapse the bearing difference into 0-90°.
+        const segBearing = _bearingDeg(lat1, lng1, lat2, lng2);
+        let diff = Math.abs(segBearing - travelBearing) % 360;
+        if (diff > 180) diff = 360 - diff;
+        if (diff > 90) diff = 180 - diff;
+        const align = 1 - diff / 90;              // 1 = walking along it, 0 = crossing it
+        score = d + (1 - align) * HEADING_WEIGHT_M;
+      }
+      if (score < bestScore) { bestScore = score; bestDist = d; best = path; bestLatLng = [nearLat, nearLng]; }
     }
   }
-  return bestDist <= 60 ? { path: best, dist: Math.round(bestDist), latlng: bestLatLng } : null;
+  return best ? { path: best, dist: Math.round(bestDist), latlng: bestLatLng } : null;
 }
 
 // "Mon point" — one tap selects the path you're standing on AND lets you report
@@ -94,7 +133,7 @@ let _pendingSelectHere = false;
 async function selectHere() {
   if (!_currentPosition) return;
   const here = L.latLng(_currentPosition.lat, _currentPosition.lng);
-  const result = _findNearestPath(_currentPosition.lat, _currentPosition.lng);
+  const result = _findNearestPath(_currentPosition.lat, _currentPosition.lng, _travelBearing);
   if (result) {
     // On (or within 60 m of) a known path → open it; its report buttons file at this spot.
     openPathPopup(result.path, L.latLng(result.latlng[0], result.latlng[1]));
@@ -179,13 +218,23 @@ function startLocationWatch() {
   _updateLocateBtn();
 
   locationWatchId = navigator.geolocation.watchPosition(
-    ({ coords: { latitude: lat, longitude: lng, accuracy } }) => {
+    ({ coords: { latitude: lat, longitude: lng, accuracy, heading, speed } }) => {
       const wasSearching = locateState === 'searching';
       if (wasSearching) {
         locateState = 'following';
         _updateLocateBtn();
         showLocateToast('Position trouvée' + (accuracy > 50 ? ` (±${Math.round(accuracy)} m)` : ''));
       }
+
+      // Work out which way we're walking so "Mon point" can pick the path we're
+      // travelling along. Prefer the device's own heading when it's actually moving,
+      // otherwise derive it from the displacement since the last fix.
+      if (typeof heading === 'number' && !isNaN(heading) && typeof speed === 'number' && speed > 0.5) {
+        _travelBearing = heading;
+      } else if (_prevPosition && _mapHaversineM(_prevPosition.lat, _prevPosition.lng, lat, lng) >= 5) {
+        _travelBearing = _bearingDeg(_prevPosition.lat, _prevPosition.lng, lat, lng);
+      }
+      _prevPosition = { lat, lng };
 
       _currentPosition = { lat, lng };
       updateLocationLayers(lat, lng, accuracy);
