@@ -189,7 +189,12 @@ const _osmPathCache = new Map(); // bbox -> Promise<paths[]>
 // the worker request keeps running in the background, warming the shared KV cache for
 // the next visitor even when the direct fetch won the race.
 const OVERPASS_DIRECT = 'https://overpass-api.de/api/interpreter'; // must stay in CSP connect-src
-const HEDGE_MS = 1000;
+// The worker gets only a short head-start: on a cold area its Overpass fetch is
+// throttled from Cloudflare's egress (~24 s / 502) and never warms the KV cache, so
+// the direct-from-browser path (~0.5 s on the user's own IP) is almost always the real
+// winner. A tiny delay still lets a genuinely warm KV cache answer first without firing
+// a needless direct Overpass request.
+const HEDGE_MS = 250;
 
 async function fetchOsmData(bbox) {
   let workerAnswered = false;
