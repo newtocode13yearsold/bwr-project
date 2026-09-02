@@ -788,6 +788,22 @@ function enableGenerate() {
 // ── Step 4: Generate ──────────────────────────────────────────────────────────
 document.getElementById('btnGenerate').addEventListener('click', generateRoute);
 
+// Staged "Calcul en cours…" label. The loop/route wait is dominated by the OSM
+// path fetch followed by the graph build, so cycling an honest description of each
+// phase makes a multi-second wait feel like progress rather than a frozen button.
+const CALC_MSGS = ['Calcul en cours…', 'Chargement des chemins…', 'Traçage de l’itinéraire…'];
+let _calcTimer = null;
+function startCalcCycle(btn) {
+  let i = 0;
+  btn.textContent = CALC_MSGS[0];
+  clearInterval(_calcTimer);
+  _calcTimer = setInterval(() => {
+    i = (i + 1) % CALC_MSGS.length;
+    btn.textContent = CALC_MSGS[i];
+  }, 2500);
+}
+function stopCalcCycle() { clearInterval(_calcTimer); _calcTimer = null; }
+
 async function generateRoute() {
   const btn = document.getElementById('btnGenerate');
 
@@ -853,7 +869,7 @@ async function generateRoute() {
     updateQuotaStrip();
   }
 
-  btn.textContent = 'Calcul en cours…';
+  startCalcCycle(btn);
   btn.classList.add('loading');
   btn.disabled = true;
 
@@ -898,6 +914,7 @@ async function generateRoute() {
       showToast('Pas de connexion — vérifie ta connexion et réessaie.');
     }
     const msg = isNetworkErr ? 'Pas de connexion' : err.message;
+    stopCalcCycle();
     btn.textContent = 'Erreur: ' + msg;
     btn.classList.remove('loading');
     setTimeout(() => { btn.textContent = 'Calculer le trajet'; btn.disabled = false; }, 5000);
@@ -923,6 +940,7 @@ async function generateRoute() {
     console.error('displayRoute error:', err);
   }
 
+  stopCalcCycle();
   btn.textContent = 'Calculer le trajet';
   btn.classList.remove('loading');
   btn.disabled = false;

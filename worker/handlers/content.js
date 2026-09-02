@@ -30,52 +30,62 @@ export async function handleContent(request, env, { pathname, url, json, fail })
     const [s, w, n, e] = bbox.split(',');
     const query = `[out:json][timeout:25];(way["highway"~"^(path|track|footway|bridleway|cycleway)$"](${s},${w},${n},${e});>;);out body;`;
     // The public Overpass instances are flaky: any single one intermittently returns
-    // 406/429/502/504. We try several mirrors in turn (each with a meaningful
-    // User-Agent — required now — and a per-mirror timeout) and use the first that
-    // succeeds, so OSM path data keeps flowing even when one instance is overloaded.
-    // overpass-api.de is the fastest when up but fails intermittently (fast 502s), so we
-    // give it two attempts before falling back to a mirror. Even if the client has already
-    // timed out, a late success here still gets cached for the next request.
-    const ATTEMPTS = [
-      'https://overpass-api.de/api/interpreter',
+    // 406/429/502/504 and, worse, is sometimes just slow. Rather than try mirrors in
+    // series (where one slow mirror makes every user wait through its full timeout
+    // before the next is even attempted), we RACE all distinct mirrors at once with a
+    // per-request timeout and take the first that returns a valid body — so the loop's
+    // dominant cost is the fastest mirror, not the sum of the slow ones. The losers are
+    // aborted as soon as a winner is found. This runs only on a cache miss (results are
+    // cached 7 days in KV), so the extra concurrent load on the free mirrors is minimal.
+    const ENDPOINTS = [
       'https://overpass-api.de/api/interpreter',
       'https://overpass.private.coffee/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter',
     ];
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
       'User-Agent': 'BWR-Oise/1.0 (https://bwrmaps.com; ciril8596@gmail.com)',
     };
 
-    for (const endpoint of ATTEMPTS) {
+    const controllers = ENDPOINTS.map(() => new AbortController());
+    const attempt = async (endpoint, ctrl) => {
+      const timer = setTimeout(() => ctrl.abort(), 24000);
       try {
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 24000);
-        let res;
-        try {
-          res = await fetch(endpoint, { method: 'POST', headers, body: `data=${encodeURIComponent(query)}`, signal: ctrl.signal });
-        } finally {
-          clearTimeout(timer);
-        }
-        if (!res.ok) continue; // try next mirror
-
+        const res = await fetch(endpoint, {
+          method: 'POST', headers, body: `data=${encodeURIComponent(query)}`, signal: ctrl.signal,
+        });
+        if (!res.ok) throw new Error(`overpass ${res.status}`);
         const raw = await res.json();
-        if (!Array.isArray(raw?.elements)) continue;
-
-        const pathTypes = /^(path|track|footway|bridleway|cycleway)$/;
-        const ways = raw.elements.filter(el =>
-          el.type === 'way' && el.tags?.highway && pathTypes.test(el.tags.highway)
-        );
-        const usedNodeIds = new Set(ways.flatMap(w => w.nodes));
-        const nodes = raw.elements.filter(el => el.type === 'node' && usedNodeIds.has(el.id));
-        const data = { elements: [...nodes, ...ways] };
-
-        await env.BWR_KV.put(cacheKey, JSON.stringify(data), { expirationTtl: 604800 });
-        return json(data);
-      } catch {
-        // network error / abort / parse error → fall through to the next mirror
+        if (!Array.isArray(raw?.elements)) throw new Error('overpass malformed');
+        return raw;
+      } finally {
+        clearTimeout(timer);
       }
+    };
+
+    let raw;
+    try {
+      // Promise.any resolves with the first fulfilled attempt; a non-ok/malformed/timed-out
+      // mirror rejects, so we skip straight past it to whichever mirror answers first.
+      raw = await Promise.any(ENDPOINTS.map((ep, i) => attempt(ep, controllers[i])));
+    } catch {
+      // AggregateError → every mirror failed.
+      return fail('Overpass API unavailable', 502);
+    } finally {
+      // Cancel the mirrors that lost the race (and the winner's now-idle timer path).
+      controllers.forEach(c => { try { c.abort(); } catch {} });
     }
-    return fail('Overpass API unavailable', 502);
+
+    const pathTypes = /^(path|track|footway|bridleway|cycleway)$/;
+    const ways = raw.elements.filter(el =>
+      el.type === 'way' && el.tags?.highway && pathTypes.test(el.tags.highway)
+    );
+    const usedNodeIds = new Set(ways.flatMap(w => w.nodes));
+    const nodes = raw.elements.filter(el => el.type === 'node' && usedNodeIds.has(el.id));
+    const data = { elements: [...nodes, ...ways] };
+
+    await env.BWR_KV.put(cacheKey, JSON.stringify(data), { expirationTtl: 604800 });
+    return json(data);
   }
 
   if (pathname === '/api/osm/cache' && request.method === 'DELETE') {
