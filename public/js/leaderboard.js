@@ -74,6 +74,8 @@ function renderTable(entries, myId, period) {
 
   const medals = ['🥇', '🥈', '🥉'];
 
+  const TOP = 5;
+
   const rows = entries.map((e, i) => {
     const rank = i + 1;
     const league = getLeague(e.points);
@@ -88,8 +90,11 @@ function renderTable(entries, myId, period) {
           <div class="lb-cov-wrap">${coverageBar}<span class="lb-cov-pct">${coverage}%</span></div>
         </td>` : '';
 
+    // Rows beyond the top 5 start hidden and are revealed by the "show more" button.
+    const hiddenClass = i >= TOP ? ' lb-row-extra' : '';
+
     return `
-      <tr class="${isMe ? 'is-me' : ''}">
+      <tr class="${isMe ? 'is-me' : ''}${hiddenClass}"${i >= TOP ? ' hidden' : ''}>
         <td><span class="lb-rank-cell ${rankClass}">${medalOrNum}</span></td>
         <td>
           <div class="lb-user-cell">
@@ -110,6 +115,15 @@ function renderTable(entries, myId, period) {
       </tr>`;
   }).join('');
 
+  const extraCount = Math.max(0, entries.length - TOP);
+  const showMoreBtn = extraCount > 0
+    ? `<div class="lb-showmore-wrap">
+        <button type="button" class="lb-showmore-btn" id="lbShowMore" aria-expanded="false">
+          Voir les ${extraCount} autres ↓
+        </button>
+      </div>`
+    : '';
+
   wrap.innerHTML = `
     <table class="lb-table">
       <thead>
@@ -123,7 +137,15 @@ function renderTable(entries, myId, period) {
         </tr>
       </thead>
       <tbody>${rows}</tbody>
-    </table>`;
+    </table>${showMoreBtn}`;
+
+  const btn = document.getElementById('lbShowMore');
+  if (btn) btn.addEventListener('click', () => {
+    const expanded = btn.getAttribute('aria-expanded') === 'true';
+    wrap.querySelectorAll('.lb-row-extra').forEach(tr => { tr.hidden = expanded; });
+    btn.setAttribute('aria-expanded', String(!expanded));
+    btn.textContent = expanded ? `Voir les ${extraCount} autres ↓` : 'Réduire ↑';
+  });
 }
 
 function escHtml(s) {

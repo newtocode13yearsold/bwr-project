@@ -164,6 +164,28 @@
 .lb-empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
 .lb-empty-text { font-size: 0.95rem; }
 
+.lb-showmore-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+.lb-showmore-btn {
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--surface, #fff);
+  color: var(--text, #374151);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 9px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.lb-showmore-btn:hover {
+  background: var(--surface-hover, #f3f4f6);
+  border-color: var(--text-muted, #9ca3af);
+}
+
 .lb-table {
   width: 100%;
   border-collapse: collapse;
