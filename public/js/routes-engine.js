@@ -226,10 +226,66 @@ async function fetchOsmData(bbox) {
   return Promise.any([viaWorker, viaOverpass]);
 }
 
+// ── Pre-baked forest path bundle (fast path, no network) ──────────────────────
+// The whole forest's OSM path network is shipped as a static asset
+// (public/data/forest-paths.json, built by scripts/build-forest-paths.mjs) in the
+// same { coordinates, _highway?, _surface? } shape osmDataToCoordPaths produces. When
+// the requested area is inside FOREST_BOUNDS we filter that in-memory list instead of
+// touching Overpass — so route/loop generation is instant, needs no network, and works
+// offline. Anything outside the forest (or a failed bundle load) falls back to the
+// hedged live fetch above. The bundle is cache-first via the service worker, so it
+// loads once and is reused across sessions.
+let _forestPaths = null;         // parsed array once loaded (null = not loaded / failed)
+let _forestPathsPromise = null;  // in-flight load, shared so we fetch it only once
+
+function loadForestPaths() {
+  if (_forestPaths) return Promise.resolve(_forestPaths);
+  if (_forestPathsPromise) return _forestPathsPromise;
+  _forestPathsPromise = (async () => {
+    try {
+      // Relative URL → always the page's own origin (matches carrefours / quests.json),
+      // so *.pages.dev previews load their own copy and the SW can cache it.
+      const res = await fetchWithTimeout('data/forest-paths.json', {}, 15000);
+      if (!res.ok) throw new Error(`forest-paths ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error('forest-paths malformed');
+      _forestPaths = data;
+      return data;
+    } catch (e) {
+      console.warn('loadForestPaths:', e.message);
+      _forestPaths = null; _forestPathsPromise = null; // allow a later retry
+      return null;
+    }
+  })();
+  return _forestPathsPromise;
+}
+
+// True when the whole requested bbox lies inside the pre-baked forest bounds.
+function bboxWithinForest(minLat, minLng, maxLat, maxLng, bounds) {
+  const b = bounds || (typeof FOREST_BOUNDS !== 'undefined' ? FOREST_BOUNDS : null);
+  if (!b) return false;
+  return minLat >= b.minLat && minLng >= b.minLng && maxLat <= b.maxLat && maxLng <= b.maxLng;
+}
+
+// Keep every path that has at least one coordinate inside the bbox. Pure — the router
+// only reads the coordinate arrays (weighting helpers shallow-copy), so sharing them
+// with the bundle is safe.
+function filterPathsToBbox(paths, minLat, minLng, maxLat, maxLng) {
+  return paths.filter(p => p.coordinates.some(([la, lo]) =>
+    la >= minLat && la <= maxLat && lo >= minLng && lo <= maxLng));
+}
+
 function fetchOsmPathsForBbox(minLat, minLng, maxLat, maxLng) {
   const bbox = `${minLat.toFixed(4)},${minLng.toFixed(4)},${maxLat.toFixed(4)},${maxLng.toFixed(4)}`;
   if (_osmPathCache.has(bbox)) return _osmPathCache.get(bbox);
   const p = (async () => {
+    // Fast path: filter the pre-baked forest bundle in memory — no network.
+    if (bboxWithinForest(minLat, minLng, maxLat, maxLng)) {
+      const forest = await loadForestPaths();
+      if (forest) return filterPathsToBbox(forest, minLat, minLng, maxLat, maxLng);
+      // bundle unavailable → fall through to the live fetch below
+    }
+    // Fallback: live network fetch (out-of-forest, or the bundle failed to load).
     try {
       const data = await fetchOsmData(bbox);
       if (!Array.isArray(data?.elements)) { console.warn('OSM response malformed'); _osmPathCache.delete(bbox); return []; }
@@ -245,6 +301,9 @@ function fetchOsmPathsForBbox(minLat, minLng, maxLat, maxLng) {
   _osmPathCache.set(bbox, p);
   return p;
 }
+
+// Warm the forest bundle as early as possible (browser only) so the first loop is fast.
+if (typeof window !== 'undefined') { try { loadForestPaths(); } catch (e) {} }
 
 // ── OSM prefetch — warm the cache as soon as the user places their point(s) ────
 // The OSM round-trip is the dominant cost of a route; kicking it off on point
@@ -441,4 +500,11 @@ async function routeCustom(waypoints) {
 
   const speed = transportMode === 'bike' ? 4.17 : 1.11; // m/s (mirror graphToResult)
   return { coords, meters, seconds: meters / speed };
+}
+
+// Expose the pure forest-bundle helpers for unit tests (Node CJS). The guard is false
+// in the browser (no `module`), so this is a no-op there — routes-engine.js stays a
+// classic script that reads the shared `let` state declared in routes.js.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { bboxWithinForest, filterPathsToBbox };
 }

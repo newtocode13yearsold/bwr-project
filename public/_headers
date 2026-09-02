@@ -28,3 +28,10 @@
   Cache-Control: public, max-age=2592000
 /*.ico
   Cache-Control: public, max-age=2592000
+
+# Pre-baked forest path network (built by scripts/build-forest-paths.mjs). Content is
+# stable between manual rebuilds; the service worker precaches it and refreshes on a
+# cache-version bump, so a week-long browser cache is safe. Re-run the generator AND
+# bump the sw.js CACHE version together when the forest paths change.
+/data/forest-paths.json
+  Cache-Control: public, max-age=604800

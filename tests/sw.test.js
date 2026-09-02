@@ -129,6 +129,7 @@ const APP_SHELL_EXPECTED = [
   'leaderboard',
   'guide',
   'manifest.json',
+  'data/forest-paths.json',
   'lib/leaflet.js',
   'lib/leaflet.css',
   'js/config.js',
@@ -454,7 +455,7 @@ describe('activate handler: old caches deleted', () => {
 
     // Seed old + current caches
     await mockCaches.open('bwr-v1');           // old → must be deleted
-    await mockCaches.open('bwr-v55');          // current CACHE → keep
+    await mockCaches.open('bwr-v56');          // current CACHE → keep
     await mockCaches.open('bwr-offline-tiles'); // TILE_CACHE → keep
 
     let waitUntilPromise;
@@ -464,7 +465,7 @@ describe('activate handler: old caches deleted', () => {
 
     const remaining = await mockCaches.keys();
     assert.ok(!remaining.includes('bwr-v1'), 'old cache bwr-v1 must be deleted');
-    assert.ok(remaining.includes('bwr-v55'), 'current CACHE must be kept');
+    assert.ok(remaining.includes('bwr-v56'), 'current CACHE must be kept');
     assert.ok(remaining.includes('bwr-offline-tiles'), 'TILE_CACHE must be kept');
   });
 });

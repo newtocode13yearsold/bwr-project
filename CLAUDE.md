@@ -14,7 +14,7 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
-Run all automated tests (436 tests, ~4 s):
+Run all automated tests (448 tests, ~4 s):
   npm test
 
 Run tests in watch mode (re-runs on file save):
@@ -102,6 +102,24 @@ Shared modules:
 - sw.js — Service worker (network-first for HTML/JS/CSS, cache-first for assets, always network for API/tiles)
 
 ### Route Planning System (Three-Tier Fallback)
+
+**OSM base paths are pre-baked, not fetched live.** The whole Compiègne-forest OSM path
+network is shipped as a static asset `public/data/forest-paths.json` (built by
+`scripts/build-forest-paths.mjs`, run manually via `npm run build:forest-paths`), in the
+same `{coordinates,_highway?,_surface?}` shape `osmDataToCoordPaths` produces. On the
+routes page `fetchOsmPathsForBbox` (in `public/js/routes-engine.js`) loads that bundle
+once (`loadForestPaths`, cache-first via the service worker → instant + offline) and, when
+the requested bbox is inside `FOREST_BOUNDS` (`public/js/config.js`), filters it in memory
+(`bboxWithinForest` / `filterPathsToBbox`, unit-tested in `tests/routes-engine.test.js`) —
+no network. This is the fix for slow loop generation: a cold `/api/osm` request is
+throttled from Cloudflare's shared egress IPs (~24 s / 502) and never warms the worker KV
+cache, so every new area used to be a slow cold miss. A bbox **outside** the forest (or a
+failed bundle load) falls back to the hedged live fetch (`fetchOsmData`: worker `/api/osm`
+first, then direct `overpass-api.de` from the browser after `HEDGE_MS`; `overpass-api.de`
+must stay in the CSP `connect-src`). **When you regenerate `forest-paths.json`, bump the
+`CACHE` version in `public/sw.js` (it's precached in `APP_SHELL`, served cache-first) so
+clients pick up the new copy.** Admin-curated paths (`/api/paths`) stay live and are merged
+into the graph at route time — only the OSM base layer is frozen.
 
 The routes.html page uses three routing engines in order of preference:
 
@@ -224,11 +242,12 @@ Cloudflare Config (wrangler.jsonc):
 
 ## Testing Notes
 
-Automated test suite: **436 tests, ~4 s** (`npm test`). Test files:
+Automated test suite: **448 tests, ~4 s** (`npm test`). Test files:
 
 | File | What it covers | Style |
 |------|---------------|-------|
 | `tests/graph-router.test.js` | Pure graph-routing functions (haversine, buildGraph, dijkstra, graphAtob, graphLoop) | CJS, Node test runner |
+| `tests/routes-engine.test.js` | Forest-bundle fast-path helpers — `bboxWithinForest`, `filterPathsToBbox` | CJS, Node test runner |
 | `tests/features.test.js` | Plan-gating matrix — `can()`, `limitOf()`, `requiredTier()`, weekly quota helpers | CJS, browser shim for `window`/`localStorage` |
 | `tests/worker-auth.test.mjs` | Auth API endpoints with in-memory KV mock (register, login, session, plan change, stats, wheel prize) | ESM |
 | `tests/worker-admin.test.mjs` | Admin endpoints (user/plan management, data wipe, content) | ESM |

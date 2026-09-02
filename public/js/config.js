@@ -16,6 +16,13 @@ const CONTACT_EMAIL = 'ciril8596@gmail.com';
 const MAP_CENTER = [49.35, 2.90];
 const MAP_ZOOM = 13;
 
+// Bounding box of the covered area (Forêt de Compiègne + margin), derived from the
+// hardcoded carrefour footprint. The whole forest's OpenStreetMap path network is
+// pre-baked into public/data/forest-paths.json (see scripts/build-forest-paths.mjs)
+// for this bbox, so route/loop generation inside these bounds needs no live Overpass
+// call. A request whose bbox falls outside this box falls back to the network fetch.
+const FOREST_BOUNDS = { minLat: 49.28, minLng: 2.74, maxLat: 49.50, maxLng: 3.05 };
+
 const STATUS_COLORS = {
   easy:        '#22c55e',
   medium:      '#f97316',
