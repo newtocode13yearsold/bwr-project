@@ -27,16 +27,18 @@ const TILE_LAYERS = {
     { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxNativeZoom: 19, maxZoom: 19, detectRetina: true, updateWhenIdle: false, keepBuffer: 4 }
   ),
   ign: L.tileLayer(
-    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    // crossOrigin: tiles are requested with CORS (OpenTopoMap sends ACAO:*) so the
-    // service worker caches them as non-opaque, dated, real-sized responses. Opaque
-    // tiles are padded to several MB each by iOS Safari and blow the cache quota.
+    // Served through our own Worker (/tiles/topo/…), which fetches OpenTopoMap
+    // once and caches each tile at Cloudflare's edge for 30 days. This kills the
+    // "grey map" (OpenTopoMap throttles Leaflet's load-time burst with 429/403)
+    // and makes repeat loads instant. Same-origin, so no subdomains and no
+    // crossOrigin needed (the SW caches these as normal same-origin responses).
     // maxNativeZoom 15: offline downloads only cache z10–15 (z16+ is thousands of
     // tiles per forest and gets rate-limited by OpenTopoMap). Capping the native
     // zoom at 15 means Leaflet never requests a z16/17 tile — it upscales the
     // cached z15 tile instead, so zooming in offline stays sharp-enough rather
     // than going blank. maxZoom 17 still lets the user zoom that far.
-    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxNativeZoom: 15, maxZoom: 17, subdomains: ['a','b','c'], crossOrigin: true, updateWhenIdle: false, keepBuffer: 4 }
+    '/tiles/topo/{z}/{x}/{y}.png',
+    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxNativeZoom: 15, maxZoom: 17, updateWhenIdle: false, keepBuffer: 4 }
   ),
   satellite: L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
@@ -71,7 +73,11 @@ Object.values(TILE_LAYERS).forEach(makeTilesSelfHealing);
 const _cachedUser = (typeof getCachedUser === 'function') ? getCachedUser() : null;
 const _userPlan   = (typeof BWR !== 'undefined') ? BWR.normalisePlan(_cachedUser?.plan) : (_cachedUser?.plan || 'free');
 
-const map = L.map('map', { zoomControl: true, minZoom: 8, maxZoom: LAYER_MAX_ZOOM.ign }).setView(MAP_CENTER, MAP_ZOOM);
+// preferCanvas: the coloured paths are hundreds of polylines — rendering them to
+// one canvas instead of one SVG <path> node each keeps pan/zoom smooth on mobile.
+// Safe for interaction: path click/hover use manual hit-testing (_pathAtClick in
+// map-paths.js), not per-layer Leaflet events, so they're renderer-independent.
+const map = L.map('map', { zoomControl: true, minZoom: 8, maxZoom: LAYER_MAX_ZOOM.ign, preferCanvas: true }).setView(MAP_CENTER, MAP_ZOOM);
 window.map = map; // expose for the shared GPS tracker (js/gps-tracker.js)
 TILE_LAYERS.ign.addTo(map);
 

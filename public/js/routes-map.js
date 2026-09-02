@@ -8,12 +8,13 @@
 const LAYER_MAX_ZOOM = { ign: 17, osm: 19, satellite: 20 };
 const TILE_LAYERS = {
   ign: () => L.tileLayer(
-    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    // maxNativeZoom 15 + crossOrigin: must mirror the map page (js/map.js) so the
-    // offline-downloaded forest tiles (cached z10–15, CORS/non-opaque) cover this
-    // page too. Without the cap, zooming past 15 requests uncached z16/17 tiles
-    // and the route planner goes blank offline.
-    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 15, maxZoom: 17, subdomains: ['a','b','c'], crossOrigin: true }
+    // Edge-cached topo proxy (see js/map.js / worker/handlers/tiles.js). Same-origin,
+    // so no subdomains/crossOrigin. maxNativeZoom 15 mirrors the map page so the
+    // offline-downloaded forest tiles (cached z10–15) cover this page too; without
+    // the cap, zooming past 15 requests uncached z16/17 tiles and the route planner
+    // goes blank offline.
+    '/tiles/topo/{z}/{x}/{y}.png',
+    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 15, maxZoom: 17 }
   ),
   osm: () => L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     { attribution: '© OpenStreetMap', maxNativeZoom: 19, maxZoom: 19, detectRetina: true }
@@ -51,7 +52,7 @@ function makeTilesSelfHealing(layer) {
 function initMap() {
   const plan = currentUser?.plan || 'free';
   const defaultLayer = BWR.can('ign_topo_tiles', plan) ? 'ign' : 'osm';
-  map = L.map('map', { zoomControl: true, maxZoom: LAYER_MAX_ZOOM[defaultLayer] }).setView(MAP_CENTER, MAP_ZOOM);
+  map = L.map('map', { zoomControl: true, maxZoom: LAYER_MAX_ZOOM[defaultLayer], preferCanvas: true }).setView(MAP_CENTER, MAP_ZOOM);
   currentTile = makeTilesSelfHealing(TILE_LAYERS[defaultLayer]());
   currentTile.addTo(map);
   // Reflect that on the layer-button row if it exists

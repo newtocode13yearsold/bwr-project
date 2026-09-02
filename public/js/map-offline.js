@@ -24,13 +24,14 @@ const _zoneCacheKey = id => `bwr_zone_cached:${id}`;
 
 function _zoneTiles(bbox) {
   const tiles = [];
-  const subs  = ['a', 'b', 'c'];
   for (let z = 10; z <= 15; z++) {
     const x0 = lonToTileX(bbox.west, z),  x1 = lonToTileX(bbox.east, z);
     const y0 = latToTileY(bbox.north, z), y1 = latToTileY(bbox.south, z);
     for (let x = x0; x <= x1; x++)
       for (let y = y0; y <= y1; y++)
-        tiles.push(`https://${subs[(x + y) % 3]}.tile.opentopomap.org/${z}/${x}/${y}.png`);
+        // Same-origin edge-cached proxy — matches the URL the map requests so the
+        // downloaded tile shares its cache key (see worker/handlers/tiles.js).
+        tiles.push(`/tiles/topo/${z}/${x}/${y}.png`);
   }
   return tiles;
 }

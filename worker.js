@@ -11,6 +11,7 @@ import { handleNotify }     from './worker/handlers/notify.js';
 import { handleRating }     from './worker/handlers/rating.js';
 import { handleInbox }      from './worker/handlers/inbox.js';
 import { handleQuests }     from './worker/handlers/quests.js';
+import { handleTiles }      from './worker/handlers/tiles.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://bwrmaps.com',
@@ -88,6 +89,12 @@ export default {
       : p => { Promise.resolve(p).catch(() => {}); };
 
     const ctx = { pathname, url, json, fail, cors, waitUntil };
+
+    // Edge-cached tile proxy (/tiles/topo/:z/:x/:y.png) — runs before the /api/
+    // chain and the static-asset fallback. Same-origin, so no CORS reflection
+    // needed; it sets its own image headers.
+    const tileResponse = await handleTiles(request, env, ctx);
+    if (tileResponse) return tileResponse;
 
     const apiResponse =
       await handleAdmin(request, env, ctx)      ??

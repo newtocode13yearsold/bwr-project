@@ -246,8 +246,11 @@ function initMap() {
   window.map = map; // expose for the shared GPS tracker (js/gps-tracker.js)
 
   ignLayer = L.tileLayer(
-    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 17, maxZoom: 17, subdomains: ['a','b','c'] }
+    // Edge-cached topo proxy (see worker/handlers/tiles.js). Same-origin, so no
+    // subdomains. maxNativeZoom 17 (admin needs full-res tiles for drawing) — the
+    // proxy caches z16/17 too, so they no longer get throttled by OpenTopoMap.
+    '/tiles/topo/{z}/{x}/{y}.png',
+    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 17, maxZoom: 17 }
   );
   ignLayer.addTo(map);
 
@@ -2550,13 +2553,14 @@ function latToTileY(lat, z) {
     btn.querySelector('.btn-label').textContent = '0%';
     btn.disabled = true;
     const tiles = [];
-    const subs = ['a', 'b', 'c'];
     for (let z = 10; z <= 15; z++) {
       const x0 = lonToTileX(FOREST_BBOX.west, z),  x1 = lonToTileX(FOREST_BBOX.east, z);
       const y0 = latToTileY(FOREST_BBOX.north, z),  y1 = latToTileY(FOREST_BBOX.south, z);
       for (let x = x0; x <= x1; x++)
         for (let y = y0; y <= y1; y++)
-          tiles.push(`https://${subs[(x + y) % 3]}.tile.opentopomap.org/${z}/${x}/${y}.png`);
+          // Same-origin edge-cached proxy — must match the URL the map requests so
+          // the downloaded tile shares its cache key (see worker/handlers/tiles.js).
+          tiles.push(`/tiles/topo/${z}/${x}/${y}.png`);
     }
     try {
       const cache = await caches.open('bwr-offline-tiles');
