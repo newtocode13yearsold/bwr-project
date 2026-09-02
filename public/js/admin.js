@@ -453,6 +453,57 @@ async function saveSplitPaths(path, part1, part2) {
   }
 }
 
+// ── Pre-baked forest path bundle (fast path, no network) ──────────────────────
+// The whole forest's OSM path network ships as a static asset
+// (public/data/forest-paths.json) in the coord-path shape renderOSMPaths consumes.
+// The admin selector used to fetch /api/osm live for the current bbox, but that
+// Overpass proxy is throttled from Cloudflare's shared egress (~24 s / 502), so the
+// selector felt broken. Filtering the pre-baked bundle in memory instead makes it
+// instant, offline-capable, and available everywhere inside the forest bounds.
+// The bundle is cache-first via the service worker, so it loads once and is reused.
+let _forestBundle = null, _forestBundlePromise = null;
+function loadForestBundle() {
+  if (_forestBundle) return Promise.resolve(_forestBundle);
+  if (_forestBundlePromise) return _forestBundlePromise;
+  _forestBundlePromise = (async () => {
+    try {
+      const res = await fetch('data/forest-paths.json');
+      if (!res.ok) throw new Error(`forest-paths ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error('forest-paths malformed');
+      _forestBundle = data;
+      try { localStorage.setItem('bwr_forest_bundle', JSON.stringify(data)); } catch {}
+      return data;
+    } catch (e) {
+      _forestBundlePromise = null; // allow a later retry
+      const cached = localStorage.getItem('bwr_forest_bundle');
+      if (cached) { try { _forestBundle = JSON.parse(cached); return _forestBundle; } catch {} }
+      console.warn('loadForestBundle:', e.message);
+      return null;
+    }
+  })();
+  return _forestBundlePromise;
+}
+// Warm the bundle as soon as the map page loads so the first "Sélectionner" is instant.
+if (typeof document !== 'undefined' && document.getElementById('map')) {
+  try { loadForestBundle(); } catch {}
+}
+
+// True when the current view overlaps the pre-baked forest bounds at all — the bundle
+// covers the whole forest, so any overlapping view can be served from it instantly.
+function bboxIntersectsForest(b) {
+  const f = typeof FOREST_BOUNDS !== 'undefined' ? FOREST_BOUNDS : null;
+  if (!f) return false;
+  return b.getSouth() <= f.maxLat && b.getNorth() >= f.minLat &&
+         b.getWest()  <= f.maxLng && b.getEast()  >= f.minLng;
+}
+
+function filterBundleToBounds(paths, b) {
+  const minLat = b.getSouth(), maxLat = b.getNorth(), minLng = b.getWest(), maxLng = b.getEast();
+  return paths.filter(p => p.coordinates.some(([la, lo]) =>
+    la >= minLat && la <= maxLat && lo >= minLng && lo <= maxLng));
+}
+
 async function loadOSMPaths() {
   if (map.getZoom() < 12) {
     showStatus('Zoome plus près de la forêt (zoom minimum : 12).', true);
@@ -461,12 +512,30 @@ async function loadOSMPaths() {
     return;
   }
 
-  // Offline: try cached OSM data, then fall back to editing existing paths
+  const b = map.getBounds();
+
+  // Fast path: filter the pre-baked forest bundle in memory — instant, no network,
+  // works offline. Covers the whole open forest zone.
+  if (bboxIntersectsForest(b)) {
+    const bundle = await loadForestBundle();
+    if (bundle) {
+      const inView = filterBundleToBounds(bundle, b);
+      renderOSMPaths(inView);
+      const count = osmLayers.length / 2; // hit + visible line per path
+      showStatus(count > 0
+        ? `${count} chemins disponibles — clique sur un chemin en pointillés.`
+        : 'Aucun chemin ici — déplace la carte sur la forêt.');
+      return;
+    }
+    // bundle unavailable → fall through to the live fetch below
+  }
+
+  // Offline (and no bundle): try cached OSM data, then fall back to editing existing paths
   if (!navigator.onLine) {
     const cached = localStorage.getItem('bwr_osm_cache');
     if (cached) {
       try {
-        renderOSMPaths(JSON.parse(cached));
+        renderOSMPaths(osmElementsToCoordPaths(JSON.parse(cached)));
         const count = osmLayers.length / 2; // hit + visible line per path
         showStatus(count > 0
           ? `${count} chemins (cache hors-ligne) — clique sur un chemin en pointillés.`
@@ -481,12 +550,12 @@ async function loadOSMPaths() {
     return;
   }
 
+  // Live fallback (out-of-forest, or the bundle failed to load).
   // Set loading text directly — bypasses showStatus's 4s auto-clear since Overpass can take up to 72s
   const statusEl = document.getElementById('adminStatus');
   statusEl.textContent = 'Chargement des chemins…';
   statusEl.className = 'admin-status success';
 
-  const b = map.getBounds();
   const bbox = `${b.getSouth().toFixed(4)},${b.getWest().toFixed(4)},${b.getNorth().toFixed(4)},${b.getEast().toFixed(4)}`;
 
   try {
@@ -494,7 +563,7 @@ async function loadOSMPaths() {
     if (!res.ok) throw new Error();
     const data = await res.json();
     try { localStorage.setItem('bwr_osm_cache', JSON.stringify(data)); } catch {}
-    renderOSMPaths(data);
+    renderOSMPaths(osmElementsToCoordPaths(data));
     const count = osmLayers.length / 2; // hit + visible line per path
     if (count === 0) {
       showStatus('Aucun chemin trouvé ici — zoome sur une forêt de l\'Oise.');
@@ -506,7 +575,7 @@ async function loadOSMPaths() {
     const cached = localStorage.getItem('bwr_osm_cache');
     if (cached) {
       try {
-        renderOSMPaths(JSON.parse(cached));
+        renderOSMPaths(osmElementsToCoordPaths(JSON.parse(cached)));
         const count = osmLayers.length / 2; // hit + visible line per path
         if (count > 0) {
           showStatus(`${count} chemins (cache) — clique sur un chemin en pointillés.`);
@@ -591,8 +660,7 @@ function renderOSMPaths(paths) {
     const out  = () => line.setStyle({ color: '#475569', opacity: 0.6, weight: 3 });
     const pick = (e) => {
       L.DomEvent.stopPropagation(e);
-      const name = el.tags?.name || el.tags?.ref || 'Chemin sans nom';
-      openNewPathPopup(coords, name, e.latlng, autoType);
+      openNewPathPopup(coords, pathName, e.latlng, autoType);
     };
     [line, hit].forEach(l => { l.on('mouseover', over); l.on('mouseout', out); l.on('click', pick); });
 
