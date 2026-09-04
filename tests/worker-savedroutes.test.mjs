@@ -109,6 +109,46 @@ describe('POST /api/savedroutes', () => {
   });
 });
 
+// ── Timed-plan expiry (effectivePlan) ────────────────────────────────────────
+// A silver/gold plan carrying a `planExpiresAt` in the past must stop granting
+// access on every gated endpoint immediately — not only after /api/auth/me is
+// hit. Saved-routes POST (silver+ only) is a convenient probe for that gate.
+
+describe('timed plan expiry', () => {
+  function setPlan(kv, userId, patch) {
+    const u = JSON.parse(kv.store.get(`user:${userId}`));
+    kv.store.set(`user:${userId}`, JSON.stringify({ ...u, ...patch }));
+  }
+
+  test('expired silver temp plan is treated as its planBase (free) → 403', async () => {
+    const { env, token, kv, userId } = freshEnv('silver');
+    setPlan(kv, userId, { planExpiresAt: new Date(Date.now() - 60000).toISOString(), planBase: 'free' });
+    const res = await worker.fetch(authed('POST', '/api/savedroutes', token, { coords: sampleCoords, meters: 1000 }), env);
+    assert.equal(res.status, 403);
+  });
+
+  test('not-yet-expired silver temp plan still grants access → 201', async () => {
+    const { env, token, kv, userId } = freshEnv('silver');
+    setPlan(kv, userId, { planExpiresAt: new Date(Date.now() + 86400000).toISOString(), planBase: 'free' });
+    const res = await worker.fetch(authed('POST', '/api/savedroutes', token, { coords: sampleCoords, meters: 1000 }), env);
+    assert.equal(res.status, 201);
+  });
+
+  test('expired gold temp plan reverts to planBase silver (still granted) → 201', async () => {
+    const { env, token, kv, userId } = freshEnv('gold');
+    setPlan(kv, userId, { planExpiresAt: new Date(Date.now() - 60000).toISOString(), planBase: 'silver' });
+    const res = await worker.fetch(authed('POST', '/api/savedroutes', token, { coords: sampleCoords, meters: 1000 }), env);
+    assert.equal(res.status, 201);
+  });
+
+  test('expired visitor alias reverts to free → 403', async () => {
+    const { env, token, kv, userId } = freshEnv('visitor');
+    setPlan(kv, userId, { planExpiresAt: new Date(Date.now() - 60000).toISOString() });
+    const res = await worker.fetch(authed('POST', '/api/savedroutes', token, { coords: sampleCoords, meters: 1000 }), env);
+    assert.equal(res.status, 403);
+  });
+});
+
 // ── GET /api/savedroutes ──────────────────────────────────────────────────────
 
 describe('GET /api/savedroutes', () => {

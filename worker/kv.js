@@ -197,15 +197,21 @@ export async function addPeriodXp(env, user, delta) {
 /**
  * Returns the user's active plan.
  * - Admin accounts always resolve to 'gold'.
- * - 'visitor' is a time-limited Silver alias: resolves to 'silver' while
- *   planExpiresAt is in the future, or 'free' once it has elapsed.
+ * - Any plan with a `planExpiresAt` in the past has elapsed and reverts:
+ *   'visitor' (a time-limited Silver alias) reverts to 'free'; a temp
+ *   silver/gold plan (self-service trial, quest grant) reverts to its
+ *   `planBase` (the plan the user held before the upgrade), or 'free'.
+ *   This is the single source of truth every feature gate reads, so a
+ *   plan stops granting access the moment its date passes — independent
+ *   of whether the user has hit /api/auth/me to persist the revert.
+ * - A live 'visitor' resolves to 'silver'.
  */
 export function effectivePlan(user) {
   if (user.role === 'admin') return 'gold';
   const plan = user.plan || 'free';
-  if (plan === 'visitor') {
-    if (user.planExpiresAt && new Date(user.planExpiresAt) < new Date()) return 'free';
-    return 'silver';
+  if (user.planExpiresAt && new Date(user.planExpiresAt) < new Date()) {
+    return plan === 'visitor' ? 'free' : (user.planBase || 'free');
   }
+  if (plan === 'visitor') return 'silver';
   return plan;
 }
