@@ -10,7 +10,7 @@ const API_URL = (function () {
 })();
 
 // Fallback contact address shown in error messages when the API is unreachable
-const CONTACT_EMAIL = 'ciril8596@gmail.com';
+const CONTACT_EMAIL = 'thomaslegros71@gmail.com';
 
 // Map starting position: Forêt de Compiègne
 const MAP_CENTER = [49.35, 2.90];

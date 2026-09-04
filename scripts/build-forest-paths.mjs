@@ -45,7 +45,7 @@ async function fetchOverpass() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'BWR-Oise/1.0 (https://bwrmaps.com; ciril8596@gmail.com)',
+          'User-Agent': 'BWR-Oise/1.0 (https://bwrmaps.com; thomaslegros71@gmail.com)',
         },
         body: `data=${encodeURIComponent(QUERY)}`,
       });

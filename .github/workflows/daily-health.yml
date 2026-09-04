@@ -287,14 +287,14 @@ jobs:
             -H "Content-Type: application/json" \
             -d "{
               \"from\": \"$FROM\",
-              \"to\": [\"ciril8596@gmail.com\"],
+              \"to\": [\"thomaslegros71@gmail.com\"],
               \"subject\": \"[BWR] Rapport santé $DATE — $STATUS_LABEL\",
               \"html\": $(echo "$HTML_BODY" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
             }")
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-            echo "✅ Email envoyé à ciril8596@gmail.com"
+            echo "✅ Email envoyé à thomaslegros71@gmail.com"
           else
             echo "❌ Échec envoi email (HTTP $HTTP_CODE)"
             echo "$RESPONSE"
