@@ -447,7 +447,7 @@ async function routeLoop(sLat, sLng, targetKm) {
 // the same weighting helpers the other engines use.
 async function routeCustom(waypoints) {
   if (!Array.isArray(waypoints) || waypoints.length < 2) {
-    throw new Error('Ajoute au moins deux points pour un trajet sur mesure');
+    throw new Error('Ajoutez au moins deux points pour un trajet sur mesure');
   }
 
   // 1. bbox over every stop + a pad, fetch OSM forest paths once (cached server + client).

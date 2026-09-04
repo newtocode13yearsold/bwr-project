@@ -139,7 +139,7 @@
           body: JSON.stringify({ routes: 0, km: parseFloat(sessionKm.toFixed(2)) }),
         }).catch(() => {});
       }
-      toast(`✅ ${fmtKm(sessionKm)} ajoutés à ton total !`);
+      toast(`✅ ${fmtKm(sessionKm)} ajoutés à votre total !`);
     } else {
       toast('Balade trop courte — moins de 50 m enregistrés.');
     }

@@ -186,7 +186,7 @@ async function wireGlobalAnalysis() {
       statusEl.style.color = '#15803d';
     }
   }).catch(() => {
-    if (statusEl) statusEl.textContent = '⚠️ Erreur de chargement des données — clique quand même pour réessayer.';
+    if (statusEl) statusEl.textContent = '⚠️ Erreur de chargement des données — cliquez quand même pour réessayer.';
   });
 
   btn.addEventListener('click', async () => {
@@ -277,7 +277,7 @@ function initMap() {
     drawnCoordinates = e.layer.getLatLngs().map(ll => [ll.lat, ll.lng]);
     map.removeControl(drawControl);
     document.getElementById('pathForm').classList.remove('hidden');
-    showStatus('Chemin tracé — remplis le formulaire et enregistre.');
+    showStatus('Chemin tracé — remplissez le formulaire et enregistrez.');
   });
 
   map.on('zoomend', updatePathWeights);
@@ -344,7 +344,7 @@ function enterSelectMode() {
   document.getElementById('btnSelectPath').style.background = 'rgba(239,68,68,0.4)';
   map.getContainer().style.cursor = 'crosshair';
   // Keep IGN tiles — they are more accurate for forest paths
-  showStatus('Clique sur un chemin en pointillés pour le sélectionner.');
+  showStatus('Cliquez sur un chemin en pointillés pour le sélectionner.');
 }
 
 function exitSelectMode() {
@@ -376,7 +376,7 @@ function enterSplitMode(path) {
   const layer = pathLayers[path.id];
   if (layer) layer[0].setStyle({ color: '#f59e0b', weight: pathWeight() + 4, opacity: 1 });
   document.getElementById('btnSplitCancel').style.display = '';
-  showStatus(`Clique sur "${path.name || 'le chemin'}" pour le couper en deux.`);
+  showStatus(`Cliquez sur "${path.name || 'le chemin'}" pour le couper en deux.`);
 }
 
 function exitSplitMode() {
@@ -401,7 +401,7 @@ function enterEditMode() {
   btn.querySelector('.btn-label').textContent = 'Quitter';
   btn.style.background = 'rgba(239,68,68,0.4)';
   map.getContainer().style.cursor = 'crosshair';
-  showStatus('Mode modification — clique sur n\'importe quel chemin pour le modifier.');
+  showStatus('Mode modification — cliquez sur n\'importe quel chemin pour le modifier.');
   loadOSMPaths();
 }
 
@@ -426,7 +426,7 @@ async function handleSplitClick(path, latlng) {
   const coords = path.coordinates;
   const idx = nearestPointIndex(coords, latlng);
   if (idx <= 0 || idx >= coords.length - 1) {
-    showStatus('Clique plus au milieu du chemin pour le couper.', true);
+    showStatus('Cliquez plus au milieu du chemin pour le couper.', true);
     return;
   }
   const part1 = coords.slice(0, idx + 1);
@@ -446,7 +446,7 @@ async function saveSplitPaths(path, part1, part2) {
     // Delete original directly — do NOT use deletePath() which calls loadPaths() early
     await fetch(`${API_URL}/api/paths/${path.id}`, { method: 'DELETE', headers: authHeader() });
     await loadPaths(); // single reload after everything is done
-    showStatus(`"${path.name || 'Chemin'}" découpé en 2 sections — clique sur chaque partie pour changer la couleur.`);
+    showStatus(`"${path.name || 'Chemin'}" découpé en 2 sections — cliquez sur chaque partie pour changer la couleur.`);
   } else {
     showStatus('Erreur lors du découpage.', true);
     await loadPaths();
@@ -506,7 +506,7 @@ function filterBundleToBounds(paths, b) {
 
 async function loadOSMPaths() {
   if (map.getZoom() < 12) {
-    showStatus('Zoome plus près de la forêt (zoom minimum : 12).', true);
+    showStatus('Zoomez plus près de la forêt (zoom minimum : 12).', true);
     if (editModeActive) exitEditMode();
     else exitSelectMode();
     return;
@@ -523,8 +523,8 @@ async function loadOSMPaths() {
       renderOSMPaths(inView);
       const count = osmLayers.length / 2; // hit + visible line per path
       showStatus(count > 0
-        ? `${count} chemins disponibles — clique sur un chemin en pointillés.`
-        : 'Aucun chemin ici — déplace la carte sur la forêt.');
+        ? `${count} chemins disponibles — cliquez sur un chemin en pointillés.`
+        : 'Aucun chemin ici — déplacez la carte sur la forêt.');
       return;
     }
     // bundle unavailable → fall through to the live fetch below
@@ -538,15 +538,15 @@ async function loadOSMPaths() {
         renderOSMPaths(osmElementsToCoordPaths(JSON.parse(cached)));
         const count = osmLayers.length / 2; // hit + visible line per path
         showStatus(count > 0
-          ? `${count} chemins (cache hors-ligne) — clique sur un chemin en pointillés.`
-          : 'Hors-ligne — clique sur un chemin pour modifier sa couleur.');
+          ? `${count} chemins (cache hors-ligne) — cliquez sur un chemin en pointillés.`
+          : 'Hors-ligne — cliquez sur un chemin pour modifier sa couleur.');
         if (count === 0) { offlineSelectMode = true; renderPaths(); }
         return;
       } catch {}
     }
     offlineSelectMode = true;
     renderPaths();
-    showStatus('Hors-ligne — clique sur un chemin pour modifier sa couleur.');
+    showStatus('Hors-ligne — cliquez sur un chemin pour modifier sa couleur.');
     return;
   }
 
@@ -566,9 +566,9 @@ async function loadOSMPaths() {
     renderOSMPaths(osmElementsToCoordPaths(data));
     const count = osmLayers.length / 2; // hit + visible line per path
     if (count === 0) {
-      showStatus('Aucun chemin trouvé ici — zoome sur une forêt de l\'Oise.');
+      showStatus('Aucun chemin trouvé ici — zoomez sur une forêt de l\'Oise.');
     } else {
-      showStatus(`${count} chemins disponibles — clique sur un chemin en pointillés.`);
+      showStatus(`${count} chemins disponibles — cliquez sur un chemin en pointillés.`);
     }
   } catch {
     // Network error after passing the online check — try cache, then fall back
@@ -578,12 +578,12 @@ async function loadOSMPaths() {
         renderOSMPaths(osmElementsToCoordPaths(JSON.parse(cached)));
         const count = osmLayers.length / 2; // hit + visible line per path
         if (count > 0) {
-          showStatus(`${count} chemins (cache) — clique sur un chemin en pointillés.`);
+          showStatus(`${count} chemins (cache) — cliquez sur un chemin en pointillés.`);
           return;
         }
       } catch {}
     }
-    showStatus('Chemins OSM indisponibles — clique sur un chemin existant pour modifier sa couleur.');
+    showStatus('Chemins OSM indisponibles — cliquez sur un chemin existant pour modifier sa couleur.');
   }
 }
 
@@ -786,7 +786,7 @@ document.getElementById('btnDrawPath')?.addEventListener('click', () => {
   map.closePopup();
   map.addControl(drawControl);
   new L.Draw.Polyline(map, drawControl.options.draw.polyline).enable();
-  showStatus('Clique sur la carte pour tracer. Double-clique pour terminer.');
+  showStatus('Cliquez sur la carte pour tracer. Double-cliquez pour terminer.');
 });
 
 document.getElementById('btnCancelPath')?.addEventListener('click', () => {
@@ -1594,7 +1594,7 @@ async function loadVisits() {
        </div>` +
       `<div style="width:100%;margin-top:6px">
          <button id="btnExcludeIp" style="width:100%;padding:7px 10px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#3730a3">🙈 Exclure mon réseau</button>
-         <div style="font-size:0.65rem;color:#9ca3af;margin-top:3px;line-height:1.3">N'utilise ceci que depuis ta connexion maison — pas en 4G ni VPN (ça masquerait de vrais visiteurs).</div>
+         <div style="font-size:0.65rem;color:#9ca3af;margin-top:3px;line-height:1.3">N'utilisez ceci que depuis votre connexion maison — pas en 4G ni VPN (ça masquerait de vrais visiteurs).</div>
          <div id="excludeIpMsg" style="font-size:0.7rem;margin-top:3px"></div>
        </div>`;
     // CSP blocks inline onclick, so wire the buttons after they're in the DOM.
@@ -1751,7 +1751,7 @@ async function loadVisits() {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const vid = btn.getAttribute('data-del-visitor');
-        if (!vid || !confirm('Retirer ce visiteur de la liste ? (par ex. si c\'est toi)')) return;
+        if (!vid || !confirm('Retirer ce visiteur de la liste ? (par ex. si c\'est vous)')) return;
         btn.disabled = true;
         try {
           const res = await fetch(`${API_URL}/api/analytics/visitor/${encodeURIComponent(vid)}`,
@@ -1804,13 +1804,13 @@ async function excludeMyNetwork() {
     });
     const data = await res.json();
     if (!res.ok || !data.ok) { set(`<span style="color:#b91c1c">${escapeHtml(data.error || 'Échec')}</span>`); return; }
-    set(`<span style="color:#166534">✅ Réseau exclu (${escapeHtml(data.ip || '')}). Tes visites depuis ce réseau ne compteront plus.</span> <a href="#" id="undoExcludeIp" style="color:#2563eb">Annuler</a>`);
+    set(`<span style="color:#166534">✅ Réseau exclu (${escapeHtml(data.ip || '')}). Vos visites depuis ce réseau ne compteront plus.</span> <a href="#" id="undoExcludeIp" style="color:#2563eb">Annuler</a>`);
     document.getElementById('undoExcludeIp')?.addEventListener('click', async (e) => {
       e.preventDefault();
       try {
         const r = await fetch(`${API_URL}/api/analytics/exclude-ip`, { method: 'DELETE', headers: authHeader() });
         if (!r.ok) throw new Error();
-        set('<span style="color:#6b7280">Réseau réactivé — tes visites seront de nouveau comptées.</span>');
+        set('<span style="color:#6b7280">Réseau réactivé — vos visites seront de nouveau comptées.</span>');
       } catch { set('<span style="color:#b91c1c">Échec de l\'annulation.</span>'); }
     });
   } catch {

@@ -251,7 +251,7 @@ const GpsTracker = (() => {
         }).catch(() => {});
       }
       const kmFmt = sessionKm.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      showToast(`✅ ${kmFmt} km ajoutés à ton total !`);
+      showToast(`✅ ${kmFmt} km ajoutés à votre total !`);
     } else {
       showToast('Balade trop courte — moins de 50 m enregistrés.');
     }

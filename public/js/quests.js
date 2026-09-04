@@ -7,7 +7,7 @@
     daily:   "Quêtes du jour — mesurées sur la journée (heure UTC), remises à zéro chaque jour.",
     weekly:  'Quêtes de la semaine — mesurées depuis lundi.',
     monthly: 'Quêtes du mois — mesurées sur le mois en cours.',
-    oneTime: 'Hauts faits — objectifs cumulés sur toute ta progression, à débloquer une fois.'
+    oneTime: 'Hauts faits — objectifs cumulés sur toute votre progression, à débloquer une fois.'
   };
 
   var state = { scope: 'daily', data: null, metrics: null, loggedIn: false, claims: {}, claiming: {} };
@@ -106,7 +106,7 @@
       var progress = state.loggedIn
         ? '<div class="q-progress"><div class="q-bar"><div class="q-fill" style="width:' + pct + '%"></div></div>'
           + '<span class="q-prog-txt">' + esc(fmt(cur, q.unit)) + ' / ' + esc(fmt(q.target, q.unit)) + '</span></div>'
-        : '<div class="q-progress q-locked">🔒 Connecte-toi pour suivre ta progression</div>';
+        : '<div class="q-progress q-locked">🔒 Connectez-vous pour suivre votre progression</div>';
 
       html += '<div class="quest' + (done ? ' collected' : '') + '" data-id="' + q.id + '">'
         + '<div class="q-check">' + (done ? '✓' : '') + '</div>'

@@ -8,7 +8,7 @@
 
 const BADGES = [
   // Free tier badges
-  { id: 'first_route',  icon: '🌱', label: 'Première sortie',  tier: 'free',   desc: 'Complète ta première balade en forêt',   test: s => s.routes >= 1 },
+  { id: 'first_route',  icon: '🌱', label: 'Première sortie',  tier: 'free',   desc: 'Complétez votre première balade en forêt',   test: s => s.routes >= 1 },
   { id: 'hiker',        icon: '🥾', label: 'Randonneur',       tier: 'free',   desc: 'Effectue 5 balades',                     test: s => s.routes >= 5 },
   { id: 'explorer',     icon: '🌲', label: 'Explorateur',      tier: 'free',   desc: 'Effectue 10 balades',                    test: s => s.routes >= 10 },
   { id: 'forest_friend',icon: '🦌', label: 'Ami forêt',        tier: 'free',   desc: 'Effectue 25 balades',                    test: s => s.routes >= 25 },
@@ -372,7 +372,7 @@ function renderRewardLadder(level, prog) {
         `Prochain palier : <strong>${next.icon} ${next.label}</strong> (niveau ${next.level})`;
       nextEl.style.display = '';
     } else {
-      nextEl.innerHTML = '🏆 Tous les paliers débloqués — bravo, tu es une légende !';
+      nextEl.innerHTML = '🏆 Tous les paliers débloqués — bravo, vous êtes une légende !';
       nextEl.style.display = '';
     }
   }

@@ -103,8 +103,8 @@
   // bonusRoutes is CUMULATIVE by "highest reached" (see routeBonus): reaching a
   // level with a higher bonusRoutes replaces the previous one, it does not stack.
   const LEVEL_REWARDS = [
-    { level: 1,  icon: '🌱', title: null,                    frame: null,     bonusRoutes: 0, label: 'Bienvenue',                 desc: 'Ton aventure commence' },
-    { level: 2,  icon: '🥾', title: 'Promeneur',             frame: null,     bonusRoutes: 0, label: 'Titre « Promeneur »',       desc: 'Un titre affiché sur ton profil' },
+    { level: 1,  icon: '🌱', title: null,                    frame: null,     bonusRoutes: 0, label: 'Bienvenue',                 desc: 'Votre aventure commence' },
+    { level: 2,  icon: '🥾', title: 'Promeneur',             frame: null,     bonusRoutes: 0, label: 'Titre « Promeneur »',       desc: 'Un titre affiché sur votre profil' },
     { level: 3,  icon: '🥉', title: null,                    frame: 'bronze', bonusRoutes: 0, label: 'Cadre Bronze',              desc: 'Cadre de profil bronze' },
     { level: 4,  icon: '➕', title: null,                    frame: null,     bonusRoutes: 1, label: '+1 trajet / semaine',       desc: 'Quota hebdo gratuit augmenté' },
     { level: 5,  icon: '🧭', title: 'Éclaireur',             frame: null,     bonusRoutes: 0, label: 'Titre « Éclaireur »',       desc: 'Un nouveau titre de profil' },

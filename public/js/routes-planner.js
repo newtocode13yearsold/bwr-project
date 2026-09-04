@@ -81,7 +81,7 @@ function quickLoopFromLocation() {
     () => {
       btn.disabled = false;
       btn.textContent = original;
-      showToast('Position introuvable — autorise la localisation ou clique sur la carte.');
+      showToast('Position introuvable — autorisez la localisation ou cliquez sur la carte.');
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
   );
@@ -110,13 +110,13 @@ function setAiFeedback(kind, html) {
 
 async function runAiPlan(text) {
   if (!text || text.length < 3) {
-    setAiFeedback('error', 'Décris ta balade en quelques mots.');
+    setAiFeedback('error', 'Décrivez votre balade en quelques mots.');
     return;
   }
   const submit = document.getElementById('aiSubmit');
   submit.disabled = true;
   submit.classList.add('loading');
-  setAiFeedback('loading', '🧠 Je réfléchis à ton trajet…');
+  setAiFeedback('loading', '🧠 Je réfléchis à votre trajet…');
 
   let intent;
   try {
@@ -127,19 +127,19 @@ async function runAiPlan(text) {
     }, 30000);
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.plan) {
-      setAiFeedback('error', data.error || 'Petit souci de mon côté, réessaie dans un instant.');
+      setAiFeedback('error', data.error || 'Petit souci de mon côté, réessayez dans un instant.');
       return;
     }
     // Off-topic / unclear request: the assistant replies conversationally
     // instead of forcing a route. Show its message and stop here.
     if (data.understood === false) {
-      setAiFeedback('info', data.reply || 'Dis-moi plutôt la distance ou l\'ambiance de balade que tu cherches 🌲');
+      setAiFeedback('info', data.reply || 'Dites-moi plutôt la distance ou l\'ambiance de balade que vous cherchez 🌲');
       return;
     }
     intent = data.plan;
     intent.reply = data.reply || null;
   } catch {
-    setAiFeedback('error', 'Pas de connexion — vérifie ta connexion et réessaie.');
+    setAiFeedback('error', 'Pas de connexion — vérifiez votre connexion et réessayez.');
     return;
   } finally {
     submit.disabled = false;
@@ -400,14 +400,14 @@ document.querySelectorAll('.mode-card').forEach(card => {
 
     document.getElementById('step3Title').textContent =
       mode === 'loop' ? 'Point de départ'
-      : mode === 'custom' ? 'Tes étapes'
+      : mode === 'custom' ? 'Vos étapes'
       : 'Points de départ et arrivée';
     document.getElementById('step3Hint').textContent =
       mode === 'loop'
-        ? 'Clique sur la carte pour placer le point de départ de ta boucle.'
+        ? 'Cliquez sur la carte pour placer le point de départ de votre boucle.'
         : mode === 'custom'
-        ? 'Clique sur la carte ou cherche un carrefour pour ajouter des étapes dans l\'ordre.'
-        : 'Clique d\'abord pour le départ (A), puis pour l\'arrivée (B).';
+        ? 'Cliquez sur la carte ou cherchez un carrefour pour ajouter des étapes dans l\'ordre.'
+        : 'Cliquez d\'abord pour le départ (A), puis pour l\'arrivée (B).';
 
     unlock('step2');
     unlock('step3');
@@ -705,7 +705,7 @@ function toggleAddViaOnMap() {
     pickingPoint = 'via';
     map.getContainer().style.cursor = 'crosshair';
     btn?.classList.add('active');
-    if (btn) btn.textContent = '✓ Clique sur la carte…';
+    if (btn) btn.textContent = '✓ Cliquez sur la carte…';
   }
 }
 
@@ -844,7 +844,7 @@ async function generateRoute() {
     }
 
     if (!qData) {
-      showToast('Impossible de vérifier ton quota hebdomadaire. Vérifie ta connexion et réessaie.');
+      showToast('Impossible de vérifier votre quota hebdomadaire. Vérifiez votre connexion et réessayez.');
       btn.textContent = 'Calculer le trajet';
       btn.classList.remove('loading');
       btn.disabled = false;
@@ -911,7 +911,7 @@ async function generateRoute() {
     console.error('Routing error:', err);
     const isNetworkErr = err.name === 'AbortError' || err.name === 'TypeError' || err.message === 'Failed to fetch';
     if (isNetworkErr) {
-      showToast('Pas de connexion — vérifie ta connexion et réessaie.');
+      showToast('Pas de connexion — vérifiez votre connexion et réessayez.');
     }
     const msg = isNetworkErr ? 'Pas de connexion' : err.message;
     stopCalcCycle();
@@ -1071,13 +1071,13 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
     : 'Trajet A → B';
   const modeDesc = mode === 'loop'
     ? (loopVias.length
-        ? `Le départ et l\'arrivée sont au même point, en passant par tes ${loopVias.length} carrefour${loopVias.length > 1 ? 's' : ''}.`
+        ? `Le départ et l\'arrivée sont au même point, en passant par vos ${loopVias.length} carrefour${loopVias.length > 1 ? 's' : ''}.`
         : 'Le départ et l\'arrivée sont au même point.')
     : mode === 'custom'
-      ? `Le trajet passe par tes ${waypoints.length} étapes, dans l\'ordre choisi.`
+      ? `Le trajet passe par vos ${waypoints.length} étapes, dans l\'ordre choisi.`
       : mode === 'import'
-        ? 'Tracé importé depuis ton fichier GPX (Strava, Garmin…), affiché sur la carte BWR.'
-        : 'Le trajet relie ton point de départ à ton point d\'arrivée.';
+        ? 'Tracé importé depuis votre fichier GPX (Strava, Garmin…), affiché sur la carte BWR.'
+        : 'Le trajet relie votre point de départ à votre point d\'arrivée.';
   resumeEl.innerHTML = `
     <p><strong>📋 Résumé</strong></p>
     <p>

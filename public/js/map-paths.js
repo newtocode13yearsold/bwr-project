@@ -155,7 +155,7 @@ function showPathHintIfNeeded() {
   const chip = document.createElement('div');
   chip.id = 'pathEditHint';
   chip.className = 'path-edit-hint';
-  chip.innerHTML = '✎ Clique sur un chemin pour modifier sa difficulté <button id="pathEditHintClose" title="Fermer">✕</button>';
+  chip.innerHTML = '✎ Cliquez sur un chemin pour modifier sa difficulté <button id="pathEditHintClose" title="Fermer">✕</button>';
   document.getElementById('map').appendChild(chip);
   document.getElementById('pathEditHintClose').addEventListener('click', dismissPathHint);
   setTimeout(dismissPathHint, 8000);

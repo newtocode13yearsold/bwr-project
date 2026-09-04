@@ -6,19 +6,19 @@
 // irrelevant; they are all defined by the time the boot IIFE calls them.
 
 const TRAIL_TIPS = [
-  '🌲 Essaye le Carrefour du Puits du Roi aujourd\'hui !',
-  '🦌 Observe la faune au lever du jour.',
+  '🌲 Essayez le Carrefour du Puits du Roi aujourd\'hui !',
+  '🦌 Observez la faune au lever du jour.',
   '🍂 Sortie automnale parfaite pour les couleurs.',
-  '🥾 10 km en boucle, ça te tente ?',
-  '🌳 Découvre les vieux chênes des Beaux Monts.',
-  '🌅 Profite de la lumière dorée du matin.',
-  '🏞️ Tente un nouveau sentier inconnu.',
-  '🍄 Ouvre l\'œil pour les champignons.',
-  '🦊 Reste silencieux, tu verras peut-être un renard.',
+  '🥾 10 km en boucle, ça vous tente ?',
+  '🌳 Découvrez les vieux chênes des Beaux Monts.',
+  '🌅 Profitez de la lumière dorée du matin.',
+  '🏞️ Tentez un nouveau sentier inconnu.',
+  '🍄 Ouvrez l\'œil pour les champignons.',
+  '🦊 Restez silencieux, vous verrez peut-être un renard.',
   '⛰️ Mont Saint-Pierre — panorama garanti !',
   '🌿 Sortie courte mais intense : 5 km en 1h.',
   '🦉 Sortie crépusculaire pour écouter la chouette.',
-  '🐗 Prends le sentier des Grands Monts pour croiser des sangliers.',
+  '🐗 Prenez le sentier des Grands Monts pour croiser des sangliers.',
   '🌊 Après la pluie, les rus de la forêt reprennent vie.',
   '🍁 Saison idéale pour les photos en sous-bois.',
 ];
@@ -234,7 +234,7 @@ const WHEEL_PRIZES = {
     { id: 'bonus_route',  icon: '🎫', label: '+1 trajet bonus',      desc: 'Un trajet supplémentaire cette semaine',    type: 'bonus_route',                           weight: 228 },
     { id: 'lucky_badge',  icon: '🍀', label: 'Badge Chanceux',       desc: 'Badge exclusif de la roue de la chance',   type: 'badge',                                weight: 182 },
     { id: 'collectible',  icon: '🎖️', label: 'Badge Nature',        desc: 'Un badge de collection de la forêt',       type: 'collectible',                          weight: 183 },
-    { id: 'trail_tip',    icon: '🌲', label: 'Conseil sentier',       desc: 'Une suggestion pour ta prochaine sortie',  type: 'tip',                                  weight: 228 },
+    { id: 'trail_tip',    icon: '🌲', label: 'Conseil sentier',       desc: 'Une suggestion pour votre prochaine sortie',  type: 'tip',                                  weight: 228 },
   ],
   silver: [
     { id: 'gold_month',   icon: '🥇', label: '1 mois Or !',          desc: 'Abonnement Or offert pendant 30 jours',    type: 'plan',        plan: 'gold',   days: 30, weight: 7   },
@@ -242,7 +242,7 @@ const WHEEL_PRIZES = {
     { id: 'lucky_badge',  icon: '🍀', label: 'Badge Chanceux',        desc: 'Badge exclusif de la roue de la chance',  type: 'badge',                                weight: 137 },
     { id: 'collectible',  icon: '🎖️', label: 'Badge Nature',         desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 182 },
     { id: 'collectible2', icon: '🏅', label: 'Badge Forêt',          desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 228 },
-    { id: 'trail_tip',    icon: '🌲', label: 'Conseil sentier',        desc: 'Une suggestion pour ta prochaine sortie', type: 'tip',                                  weight: 274 },
+    { id: 'trail_tip',    icon: '🌲', label: 'Conseil sentier',        desc: 'Une suggestion pour votre prochaine sortie', type: 'tip',                                  weight: 274 },
   ],
   gold: [
     { id: 'exclusive_badge', icon: '✨', label: 'Badge Or exclusif', desc: 'Badge animé réservé aux membres Or',       type: 'badge',                                weight: 10 },
@@ -284,7 +284,7 @@ function renderDailyWheel(plan) {
       const prize = JSON.parse(saved);
       wheelText.innerHTML = `${prize.icon} <strong>${prize.label}</strong> — ${prize.desc}`;
     } catch {
-      wheelText.textContent = saved || 'Tu as déjà tourné la roue aujourd\'hui — reviens demain !';
+      wheelText.textContent = saved || 'Vous avez déjà tourné la roue aujourd\'hui — revenez demain !';
     }
     wheelBtn.disabled = true;
     wheelBtn.textContent = '✓ Tournée';
@@ -342,7 +342,7 @@ async function spinWheel(plan) {
       const cached = getCachedUser();
       if (cached) setSession(localStorage.getItem('bwr_token'), { ...cached, plan: prize.plan, planExpiresAt: data.expiresAt });
     } catch {
-      wheelText.textContent = '❌ Erreur réseau — réessaie.';
+      wheelText.textContent = '❌ Erreur réseau — réessayez.';
       wheelBtn.disabled    = false;
       wheelBtn.textContent = '🎡 Tourner la roue';
       return;
@@ -361,7 +361,7 @@ async function spinWheel(plan) {
       localStorage.setItem('bwr_collectible_badges', JSON.stringify(owned));
       prize.icon  = won.icon;
       prize.label = `Badge ${won.label}`;
-      prize.desc  = 'Ajouté à ta collection de badges de la forêt !';
+      prize.desc  = 'Ajouté à votre collection de badges de la forêt !';
     } else {
       prize.icon  = '🌲';
       prize.label = 'Conseil sentier';
@@ -404,7 +404,7 @@ function renderPrizeList(plan) {
   const rare = prizes.filter(p => p.weight <= 8);
   const common = prizes.filter(p => p.weight > 8);
   el.innerHTML = `
-    <p class="prizes-title">Ce que tu peux gagner :</p>
+    <p class="prizes-title">Ce que vous pouvez gagner :</p>
     <div class="prizes-grid">
       ${[...rare, ...common].map(p => `
         <div class="prize-chip ${p.weight <= 2 ? 'prize-epic' : p.weight <= 8 ? 'prize-rare' : ''}">

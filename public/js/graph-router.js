@@ -391,7 +391,7 @@ function graphLoop(sLat, sLng, targetKm, paths, pathTyp = 'foot', seed = 0) {
     if (distErr < 0.15 && overlapFrac < 0.05) break; // good enough
   }
 
-  if (!bestLoop) throw new Error('Impossible de former une boucle — ajoute plus de chemins dans la zone');
+  if (!bestLoop) throw new Error('Impossible de former une boucle — ajoutez plus de chemins dans la zone');
   return graphToResult(nodes, bestLoop, pathTyp);
 }
 

@@ -61,7 +61,7 @@ function renderStreakBanner(stats) {
   const recordTxt = best > streak ? ` · Record : ${best} j` : (streak === best ? ' · Record personnel ! 🏅' : '');
   banner.style.display = '';
   banner.innerHTML = last === todayKey
-    ? `<span class="streak-flame">🔥</span><span><strong>${streak} jours d'affilée</strong> — continue sur ta lancée !${recordTxt}</span>`
+    ? `<span class="streak-flame">🔥</span><span><strong>${streak} jours d'affilée</strong> — continuez sur votre lancée !${recordTxt}</span>`
     : `<span class="streak-flame">🔥</span><span>Série de <strong>${streak} jours</strong> — sors aujourd'hui pour ne pas la perdre !${recordTxt}</span>`;
 }
 
@@ -176,7 +176,7 @@ async function renderRecentRoutes(plan) {
     const routes = await res.json();
 
     if (!routes.length) {
-      list.innerHTML = `<p class="rr-empty">Aucun trajet sauvegardé pour l'instant — <a href="routes">planifie ta première boucle →</a></p>`;
+      list.innerHTML = `<p class="rr-empty">Aucun trajet sauvegardé pour l'instant — <a href="routes">planifiez votre première boucle →</a></p>`;
       return;
     }
 
@@ -199,7 +199,7 @@ async function renderRecentRoutes(plan) {
         </a>`;
     }).join('');
   } catch {
-    list.innerHTML = `<p class="rr-empty">Impossible de charger tes trajets.</p>`;
+    list.innerHTML = `<p class="rr-empty">Impossible de charger vos trajets.</p>`;
   }
 }
 

@@ -120,7 +120,7 @@ async function renderDetail(id) {
 
   const composer = canPost
     ? `<div class="composer">
-         <textarea id="replyBody" placeholder="Écris ta réponse…" maxlength="4000"></textarea>
+         <textarea id="replyBody" placeholder="Écrivez votre réponse…" maxlength="4000"></textarea>
          <div class="composer-error" id="replyError"></div>
          <div class="composer-actions"><button class="btn-save" id="btnReply">Répondre</button></div>
        </div>`

@@ -55,7 +55,7 @@ const _osmBboxCache = new Map();
 
 async function loadOsmEditPaths() {
   if (map.getZoom() < 12) {
-    showToast('Zoome plus près de la forêt (zoom minimum : 12).');
+    showToast('Zoomez plus près de la forêt (zoom minimum : 12).');
     exitPathEditMode();
     return;
   }
@@ -66,8 +66,8 @@ async function loadOsmEditPaths() {
     renderOsmEditPaths(memo);
     const count = _osmEditLayers.length / 2;
     showEditModeBar(count === 0
-      ? 'Aucun chemin OSM trouvé ici — zoome sur la forêt.'
-      : `${count} chemins disponibles — clique sur un chemin en pointillés`);
+      ? 'Aucun chemin OSM trouvé ici — zoomez sur la forêt.'
+      : `${count} chemins disponibles — cliquez sur un chemin en pointillés`);
     return;
   }
   showEditModeBar('Chargement des chemins…');
@@ -79,11 +79,11 @@ async function loadOsmEditPaths() {
     renderOsmEditPaths(data);
     const count = _osmEditLayers.length / 2; // hit + visible line per path
     showEditModeBar(count === 0
-      ? 'Aucun chemin OSM trouvé ici — zoome sur la forêt.'
-      : `${count} chemins disponibles — clique sur un chemin en pointillés`);
+      ? 'Aucun chemin OSM trouvé ici — zoomez sur la forêt.'
+      : `${count} chemins disponibles — cliquez sur un chemin en pointillés`);
   } catch {
-    showToast('Chemins OSM indisponibles — tu peux quand même modifier les chemins existants.');
-    showEditModeBar('Clique sur un chemin coloré pour changer sa difficulté');
+    showToast('Chemins OSM indisponibles — vous pouvez quand même modifier les chemins existants.');
+    showEditModeBar('Cliquez sur un chemin coloré pour changer sa difficulté');
   }
 }
 
