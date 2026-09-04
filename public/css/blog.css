@@ -499,3 +499,32 @@
   .article-cta { padding: 32px 20px; }
   .article-hero-img { height: 220px; font-size: 4rem; }
 }
+
+/* ══════════════════════════════════════════════════
+   DARK MODE — blog (index + article)
+   Most surfaces already read from tokens.css and theme
+   automatically; these rules cover the page shell and the
+   light-green (--forest-100) accent surfaces.
+   Set/unset by js/theme.js via [data-theme="dark"] on <html>
+══════════════════════════════════════════════════ */
+[data-theme="dark"] body { background: #0e1a11; color: var(--text); }
+
+[data-theme="dark"] .blog-card-tag,
+[data-theme="dark"] .article-tag {
+  background: #16301f;
+  color: #86efac;
+}
+[data-theme="dark"] .info-box {
+  background: var(--surface-1);
+  border-color: var(--border);
+  border-left-color: var(--forest-500);
+}
+[data-theme="dark"] .info-box-title { color: var(--lime-400); }
+[data-theme="dark"] .article-body h2 { border-bottom-color: var(--border); }
+[data-theme="dark"] .article-body a,
+[data-theme="dark"] .breadcrumb a,
+[data-theme="dark"] .blog-card-tag { color: var(--lime-400); }
+[data-theme="dark"] .article-body a:hover { color: var(--lime-300); }
+[data-theme="dark"] .blog-section-label,
+[data-theme="dark"] .stat-pill-val,
+[data-theme="dark"] .article-nav .anav-title { color: var(--lime-400); }

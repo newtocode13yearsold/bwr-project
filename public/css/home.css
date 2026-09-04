@@ -1934,3 +1934,62 @@ textarea.cf-input { resize: vertical; min-height: 100px; }
   0%, 100% { transform: translateY(0); }
   50%       { transform: translateY(4px); }
 }
+
+/* ══════════════════════════════════════════════════
+   DARK MODE — home / landing
+   Redefines the page's local surface vars (--white / --text /
+   --green-lite) so every card and section that reads from them
+   flips automatically, plus targeted rules for the literal
+   light surfaces (plan strip, pricing, drawer, install UI).
+   The dark forest hero + footer and the light "map screenshot"
+   mockup are intentionally left as-is.
+   Set/unset by js/theme.js via [data-theme="dark"] on <html>.
+══════════════════════════════════════════════════ */
+:root[data-theme="dark"] {
+  --white:      #16201a;   /* card / section surface */
+  --text:       #c8dcc0;   /* body + heading text */
+  --green-lite: #16301f;   /* soft green surface */
+}
+
+[data-theme="dark"] body { background: #0e1a11; }
+
+/* Plan comparison strip */
+[data-theme="dark"] .pc-th,
+[data-theme="dark"] .pc-th-gold,
+[data-theme="dark"] .pc-g { background: var(--surface-2); }
+[data-theme="dark"] .pc-th-gold,
+[data-theme="dark"] .pc-g { border-left-color: var(--border); }
+[data-theme="dark"] .pc-g .pc-yes { color: var(--text-faint); }
+
+/* Pricing */
+[data-theme="dark"] .pf-item::before { background: #16301f; }
+[data-theme="dark"] .pf-item.no::before { background: var(--surface-3); color: var(--text-faint); }
+[data-theme="dark"] .cta-free { border-color: var(--border-strong); }
+[data-theme="dark"] .cta-free:hover { background: var(--surface-3); border-color: var(--lime-500); }
+[data-theme="dark"] .pricing-cs-text { color: var(--text-strong); }
+
+/* Features */
+[data-theme="dark"] .feat-row:hover { background: var(--surface-2); }
+
+/* Map mockup chrome stays on its light "screenshot" surface — pin its
+   text so the dark token flip doesn't wash it out. */
+[data-theme="dark"] .mockup-title { color: #6b7280; }
+[data-theme="dark"] .ml-item { color: #374151; }
+
+/* Nav drawer */
+[data-theme="dark"] .nav-drawer { background: var(--surface-0); }
+[data-theme="dark"] .nav-drawer-item { color: var(--text); }
+[data-theme="dark"] .nav-drawer-item:hover,
+[data-theme="dark"] .nav-drawer-item.active { background: var(--surface-2); color: var(--lime-400); }
+[data-theme="dark"] .nav-drawer-item.active { border-left-color: var(--lime-500); }
+
+/* PWA install banner */
+[data-theme="dark"] .install-banner { background: var(--surface-0); border-top-color: var(--border); }
+[data-theme="dark"] .install-banner-text strong { color: var(--text-strong); }
+
+/* iOS install modal */
+[data-theme="dark"] .ios-modal-box { background: var(--surface-0); }
+[data-theme="dark"] .ios-modal-close { background: var(--surface-2); }
+[data-theme="dark"] .ios-modal-close:hover { background: var(--surface-3); }
+[data-theme="dark"] .ios-modal-title,
+[data-theme="dark"] .ios-step-body strong { color: var(--text-strong); }

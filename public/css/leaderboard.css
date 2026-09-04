@@ -320,3 +320,53 @@
   .lb-table thead th,
   .lb-table tbody td { padding-left: 10px; padding-right: 10px; }
 }
+
+/* ══════════════════════════════════════════════════
+   DARK MODE — leaderboard
+   Set/unset by js/theme.js via [data-theme="dark"] on <html>
+══════════════════════════════════════════════════ */
+[data-theme="dark"] .lb-body { background: #0e1a11; }
+
+[data-theme="dark"] .lb-leagues,
+[data-theme="dark"] .lb-tabs,
+[data-theme="dark"] .lb-my-rank,
+[data-theme="dark"] .lb-table-wrap {
+  background: var(--surface-0);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+
+[data-theme="dark"] .lb-section-title,
+[data-theme="dark"] .my-rank-name,
+[data-theme="dark"] .lb-name { color: var(--text-strong); }
+
+[data-theme="dark"] .lb-tab { color: var(--text-muted); }
+[data-theme="dark"] .lb-tab:hover { background: var(--surface-2); }
+[data-theme="dark"] .lb-tab.active { background: var(--forest-500); color: #fff; }
+
+[data-theme="dark"] .league-promeneur  { background: #2a3a30; border-color: #4a6852; color: #c8dcc0; }
+[data-theme="dark"] .league-randonneur { background: #16301f; border-color: #2f6b45; color: #86efac; }
+[data-theme="dark"] .league-gardien    { background: #16263a; border-color: #2f5a8a; color: #bfdbfe; }
+[data-theme="dark"] .league-forestier  { background: #16301f; border-color: #3f8a5a; color: #86efac; }
+[data-theme="dark"] .league-legende    { background: #3a2f10; border-color: #8a6a1e; color: #fcd34d; }
+
+[data-theme="dark"] .lb-table thead th {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border-bottom-color: var(--border);
+}
+[data-theme="dark"] .lb-table tbody tr { border-bottom-color: var(--border-soft); }
+[data-theme="dark"] .lb-table tbody tr:hover { background: var(--surface-2); }
+[data-theme="dark"] .lb-table tbody tr.is-me { background: #16301f; }
+[data-theme="dark"] .lb-table tbody tr.is-me:hover { background: #1c3a26; }
+
+[data-theme="dark"] .lb-stat-cell { color: var(--text); }
+[data-theme="dark"] .lb-cov-bar { background: var(--surface-3); }
+[data-theme="dark"] .lb-avatar { background: #16301f; color: #86efac; }
+[data-theme="dark"] .lb-name-you { background: #16301f; }
+[data-theme="dark"] .lb-showmore-wrap { border-top-color: var(--border); }
+[data-theme="dark"] .lb-showmore-btn {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+[data-theme="dark"] .lb-showmore-btn:hover { background: var(--surface-3); border-color: var(--border-strong); }
