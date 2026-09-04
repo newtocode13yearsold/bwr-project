@@ -171,6 +171,9 @@
 
   function startTour() {
     if (els.tip) return; // already running
+    // On mobile the locate / "Mon point" pills live behind a collapsed FAB — open
+    // it so those steps spotlight the real (visible) buttons instead of a 0×0 box.
+    try { window.BWRMapFab && window.BWRMapFab.open(); } catch (e) {}
     order = STEPS.map(function (s) {
       return { def: s, node: resolve(s.target) };
     }).filter(function (s) { return s.node; });

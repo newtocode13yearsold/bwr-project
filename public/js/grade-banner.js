@@ -44,7 +44,9 @@
     document.body.appendChild(banner);
     requestAnimationFrame(function () { banner.classList.add('grade-banner-show'); });
 
+    var autoTimer = null;
     function dismiss() {
+      if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
       markSeen();
       banner.classList.remove('grade-banner-show');
       setTimeout(function () { banner.remove(); }, 300);
@@ -52,6 +54,9 @@
     banner.querySelector('.grade-banner-close').addEventListener('click', dismiss);
     // Following the guide link also counts as seen — no need to nag again.
     banner.querySelector('.grade-banner-cta').addEventListener('click', markSeen);
+    // Auto-dismiss after a while so it never lingers over the map; shown once
+    // either way, so a missed nudge is fine (the guide link stays in the menu).
+    autoTimer = setTimeout(dismiss, 14000);
   }
 
   function boot() {

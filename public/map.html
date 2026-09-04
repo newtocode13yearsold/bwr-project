@@ -236,19 +236,6 @@
     <div class="legend-item legend-note"><span class="legend-emoji">🌲</span> Forêts &amp; points de vue (symboles OpenTopoMap)</div>
     </div>
   </div>
-  <script>
-    (function () {
-      var toggle = document.getElementById('legendToggle');
-      var legend = document.getElementById('mapLegend');
-      if (toggle && legend) {
-        toggle.addEventListener('click', function () {
-          var open = legend.classList.toggle('open');
-          toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-        });
-      }
-    })();
-  </script>
-
 
   <button class="contact-chip" id="btnOpenContact">✉ Contact</button>
 
@@ -268,10 +255,13 @@
     </div>
   </div>
 
-  <div class="map-bottom-btns">
-    <button class="map-locate-btn" id="btnLocate" title="Ma position">📍 Ma position</button>
-    <button class="map-select-path-btn" id="btnSelectPath" title="Sélectionner le chemin et l'endroit où je suis pour le signaler">🗺 Mon point</button>
-    <button class="map-locate-btn map-track-btn" id="btnGpsTracker" title="Compter ma distance parcourue">▶ Suivi GPS</button>
+  <div class="map-bottom-btns" id="mapBottomBtns">
+    <div class="map-fab-actions" id="mapFabActions">
+      <button class="map-locate-btn" id="btnLocate" title="Ma position">📍 Ma position</button>
+      <button class="map-select-path-btn" id="btnSelectPath" title="Sélectionner le chemin et l'endroit où je suis pour le signaler">🗺 Mon point</button>
+      <button class="map-locate-btn map-track-btn" id="btnGpsTracker" title="Compter ma distance parcourue">▶ Suivi GPS</button>
+    </div>
+    <button class="map-fab-toggle" id="mapFabToggle" type="button" aria-expanded="false" aria-controls="mapFabActions" aria-label="Outils de la carte" title="Outils de la carte">🧭</button>
   </div>
 
   <script src="lib/leaflet.js"></script>

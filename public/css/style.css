@@ -1243,6 +1243,46 @@ body {
   .layer-btn { padding: 5px 9px; font-size: 0.72rem; }
 }
 
+/* ── "Clique sur un chemin" hint chip (Silver+, auto-dismisses after 8 s) ──────
+   Injected into #map by js/map-paths.js. Anchored at the TOP of the map, just
+   under the search bar, so it never adds to the bottom crowding. */
+.path-edit-hint {
+  position: absolute;
+  top: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 10px 8px 14px;
+  background: var(--forest-700, #166534);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.25;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.24);
+  animation: fab-rise 0.2s ease;
+}
+.path-edit-hint button {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.path-edit-hint button:hover { background: rgba(255,255,255,0.34); }
+@media (max-width: 768px) {
+  .path-edit-hint { top: 66px; font-size: 0.78rem; }
+}
+
 .map-search-icon { font-size: 1rem; color: var(--text-faint); flex-shrink: 0; }
 
 .map-search-input {
@@ -1304,6 +1344,15 @@ body {
   pointer-events: none;
 }
 .map-bottom-btns > * { pointer-events: all; }
+
+/* Speed-dial wrapper: a plain horizontal row on desktop (toggle hidden). On
+   mobile it collapses into a single FAB — see the ≤768px block below. */
+.map-fab-actions { display: flex; gap: 8px; align-items: center; }
+.map-fab-toggle { display: none; }
+@keyframes fab-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* ── Locate me button ── */
 .map-locate-btn {
@@ -1786,12 +1835,51 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
     bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
 
-  /* On the map page the centred "Ma position / Mon chemin" buttons sit at the
-     bottom; the bottom-right legend would otherwise overlap (and half-hide) the
-     right button. Lift the legend clear above that button row. Scoped to
-     .map-body so the admin legend (no bottom buttons) is unaffected. */
+  /* ── Mobile bottom-tools speed dial ─────────────────────────────────────────
+     The three action pills (Ma position / Mon point / Suivi GPS) used to sit as a
+     centred row that — together with the legend, the grade banner and the tab bar
+     — crowded the bottom third of the map and hid the report markers. On mobile
+     they now collapse into a single round FAB anchored bottom-LEFT; the legend
+     sits opposite bottom-RIGHT, leaving the centre of the map clear. Scoped to
+     .map-body so the admin map (same class, no FAB toggle) is untouched. */
+  .map-body .map-bottom-btns {
+    left: max(12px, env(safe-area-inset-left));
+    right: auto;
+    bottom: max(72px, calc(64px + env(safe-area-inset-bottom)));
+    transform: none;
+    flex-direction: column;      /* toggle stays at the bottom, actions rise above */
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .map-body .map-fab-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    background: var(--forest-700);
+    color: #fff;
+    font-size: 1.5rem;
+    line-height: 1;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.28);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .map-body .map-fab-toggle:hover { background: #163a0f; transform: translateY(-2px); }
+  .map-body .map-fab-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .map-body .map-bottom-btns:not(.open) .map-fab-actions { display: none; }
+  .map-body .map-bottom-btns.open .map-fab-actions { animation: fab-rise 0.18s ease; }
+
+  /* The FAB is now bottom-LEFT, so the legend no longer collides with a centred
+     pill row — drop it back down beside the FAB baseline (was lifted to 128px). */
   .map-body .legend {
-    bottom: calc(128px + env(safe-area-inset-bottom, 0px));
+    bottom: max(72px, calc(64px + env(safe-area-inset-bottom)));
   }
 
   .bottom-nav {

@@ -67,8 +67,15 @@
 }
 .grade-banner-close:hover { background: rgba(255, 255, 255, 0.28); }
 
-/* On the map page the bottom action buttons + bottom-nav sit low, so lift the
-   banner a touch higher; on desktop there's no bottom-nav. */
+/* On the map page the bottom-left FAB, bottom-right legend and the tab bar all sit
+   low, so lift the banner clear above them (it spans nearly the full width on a
+   phone and would otherwise overlap the FAB). The planner page keeps the default. */
+.map-body .grade-banner {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 134px);
+}
+
+/* Desktop: no bottom-nav, so the banner can sit near the bottom edge. */
 @media (min-width: 780px) {
-  .grade-banner { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
+  .grade-banner,
+  .map-body .grade-banner { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 }

@@ -253,9 +253,9 @@ function startLocationWatch() {
       _pendingSelectHere = false;
       stopLocating();
       const msgs = {
-        1: 'Permission refusée — autorise la localisation dans les réglages',
+        1: 'Permission refusée — autorisez la localisation dans les réglages',
         2: 'Position introuvable',
-        3: 'Délai dépassé — réessaie',
+        3: 'Délai dépassé — réessayez',
       };
       showLocateToast(msgs[err.code] || 'Erreur de localisation', true);
     },
@@ -385,3 +385,24 @@ function updateCarrefourVisibility() {
 
 map.on('zoomend', () => { renderPaths(); updateCarrefourVisibility(); });
 updateCarrefourVisibility();
+
+// ── Bottom-tools speed dial (mobile) ────────────────────────────────────────────
+// On phones the three action pills collapse behind a single FAB (see the ≤768px
+// rules in css/style.css). This toggles the .open state on the wrapper. On desktop
+// the toggle is display:none and the actions are always shown, so this is inert.
+(function initMapFab() {
+  const wrap   = document.getElementById('mapBottomBtns');
+  const toggle = document.getElementById('mapFabToggle');
+  if (!wrap || !toggle) return;
+
+  function open()  { wrap.classList.add('open');    toggle.setAttribute('aria-expanded', 'true');  toggle.textContent = '✕'; }
+  function close() { wrap.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); toggle.textContent = '🧭'; }
+  function isOpen() { return wrap.classList.contains('open'); }
+
+  toggle.addEventListener('click', (e) => { e.stopPropagation(); isOpen() ? close() : open(); });
+  // Tapping the map (or anywhere outside the dial) collapses it.
+  document.addEventListener('click', (e) => { if (isOpen() && !wrap.contains(e.target)) close(); });
+
+  // Let the onboarding tour reveal the actions before it spotlights them.
+  window.BWRMapFab = { open, close, isOpen };
+})();
