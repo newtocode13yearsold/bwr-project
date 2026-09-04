@@ -68,6 +68,45 @@
 </head>
 <body>
 
+  <!--
+    ── BWR icon set ──
+    Lightweight, crisp SVG icons (Lucide geometry, stroke=currentColor) shared
+    across the page as <symbol>s. Reference one with:
+      <svg class="icon"><use href="#i-name"/></svg>
+    Inline (not an external file) so there is zero extra request, no CSP issue,
+    and currentColor resolves against the host element — same look everywhere,
+    unlike emoji which render differently per OS/browser.
+  -->
+  <svg width="0" height="0" class="svg-sprite" aria-hidden="true" focusable="false" style="position:absolute">
+    <symbol id="i-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/>
+    </symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+    </symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
+    </symbol>
+    <symbol id="i-mountain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m8 3 4 8 5-5 5 15H2L8 3z"/>
+    </symbol>
+    <symbol id="i-offline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 13v8l-4-4"/><path d="m12 21 4-4"/><path d="M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284"/>
+    </symbol>
+    <symbol id="i-weather" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/>
+    </symbol>
+    <symbol id="i-tree" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m17 14 3 3.3a1 1 0 0 1-.7 1.7H4.7a1 1 0 0 1-.7-1.7L7 14h-.3a1 1 0 0 1-.7-1.7L9 9h-.2A1 1 0 0 1 8 7.3L12 3l4 4.3a1 1 0 0 1-.8 1.7H15l3 3.3a1 1 0 0 1-.7 1.7H17Z"/><path d="M12 22v-3"/>
+    </symbol>
+  </svg>
+
   <!-- ── Navigation ── -->
   <nav class="nav" id="nav">
     <div class="nav-inner">
@@ -172,7 +211,7 @@
   <section class="hero">
     <div class="hero-bg"></div>
     <div class="hero-content">
-      <div class="hero-badge">🌲 Compiègne · Laigue · Halatte · Chantilly · Ermenonville · Retz</div>
+      <div class="hero-badge"><svg class="icon" width="15" height="15" aria-hidden="true"><use href="#i-tree"/></svg> Compiègne · Laigue · Halatte · Chantilly · Ermenonville · Retz</div>
       <h1 class="hero-title">
         Carte de la forêt de Compiègne<br />
         <span class="hero-accent">et des forêts de l'Oise.</span>
@@ -238,7 +277,7 @@
 
           <div class="fcarousel-slide" data-idx="0">
             <div class="feature-card fcard">
-              <div class="feature-icon-wrap green"><span class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span></div>
+              <div class="feature-icon-wrap green"><svg class="feature-icon" width="22" height="22" aria-hidden="true"><use href="#i-map"/></svg></div>
               <h3>Carte interactive</h3>
               <p>Tous les chemins de la forêt sur une carte IGN haute résolution. Filtrez par difficulté, changez de vue (IGN, satellite, OSM).</p>
             </div>
@@ -246,7 +285,7 @@
 
           <div class="fcarousel-slide" data-idx="1">
             <div class="feature-card fcard">
-              <div class="feature-icon-wrap blue"><span class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span></div>
+              <div class="feature-icon-wrap blue"><svg class="feature-icon" width="22" height="22" aria-hidden="true"><use href="#i-compass"/></svg></div>
               <h3>Planifier un trajet</h3>
               <p>Départ + distance souhaitée. Le planificateur génère une boucle ou un A→B en empruntant tous les sentiers et chemins forestiers de la carte.</p>
             </div>
@@ -254,7 +293,7 @@
 
           <div class="fcarousel-slide" data-idx="2">
             <div class="feature-card fcard">
-              <div class="feature-icon-wrap teal"><span class="feature-icon">✅</span></div>
+              <div class="feature-icon-wrap teal"><svg class="feature-icon" width="22" height="22" aria-hidden="true"><use href="#i-check"/></svg></div>
               <h3>Chemins vérifiés terrain</h3>
               <p>Chaque sentier est renseigné manuellement. Forestiers, cyclables, praticables ou impraticables — vous savez à quoi vous attendre.</p>
             </div>
@@ -262,7 +301,7 @@
 
           <div class="fcarousel-slide" data-idx="3">
             <div class="feature-card fcard">
-              <div class="feature-icon-wrap red"><span class="feature-icon">📍</span></div>
+              <div class="feature-icon-wrap red"><svg class="feature-icon" width="22" height="22" aria-hidden="true"><use href="#i-pin"/></svg></div>
               <h3>Géolocalisation</h3>
               <p>Démarrez depuis votre position GPS ou recherchez n'importe quelle adresse. Toujours orienté, même en forêt.</p>
             </div>
@@ -282,7 +321,7 @@
       <div class="feat-list">
 
         <div class="feat-row">
-          <div class="feat-row-icon orange">⬇️</div>
+          <div class="feat-row-icon orange"><svg class="feature-icon" width="22" height="22" aria-hidden="true"><use href="#i-download"/></svg></div>
           <div class="feat-row-body">
             <h3>Export GPX / KML <span class="feat-tier tier-tag silver">🥈 Argent</span></h3>
             <p>Téléchargez vos itinéraires et importez-les dans Garmin, Strava ou Komoot pour naviguer sans connexion.</p>
@@ -290,7 +329,7 @@
         </div>
 
         <div class="feat-row">
-          <div class="feat-row-icon purple">⛰️</div>
+          <div class="feat-row-icon purple"><svg class="feature-icon" width="22" height="22" aria-hidden="true"><use href="#i-mountain"/></svg></div>
           <div class="feat-row-body">
             <h3>Profil altimétrique <span class="feat-tier tier-tag silver">🥈 Argent</span></h3>
             <p>Dénivelé positif et négatif, altitude min/max — tout pour préparer votre sortie avant de partir.</p>
@@ -298,7 +337,7 @@
         </div>
 
         <div class="feat-row">
-          <div class="feat-row-icon" style="background:#dbeafe;color:#1d4ed8">📡</div>
+          <div class="feat-row-icon" style="background:#dbeafe;color:#1d4ed8"><svg class="feature-icon" width="22" height="22" aria-hidden="true"><use href="#i-offline"/></svg></div>
           <div class="feat-row-body">
             <h3>Cartes hors-ligne <span class="feat-tier tier-tag silver">🥈 Argent</span></h3>
             <p>Téléchargez les tuiles de votre trajet avant de partir et naviguez sans signal en forêt profonde.</p>
@@ -306,7 +345,7 @@
         </div>
 
         <div class="feat-row">
-          <div class="feat-row-icon" style="background:#fef3c7;color:#b45309">🌦️</div>
+          <div class="feat-row-icon" style="background:#fef3c7;color:#b45309"><svg class="feature-icon" width="22" height="22" aria-hidden="true"><use href="#i-weather"/></svg></div>
           <div class="feat-row-body">
             <h3>Météo &amp; alertes en temps réel <span class="feat-tier tier-tag gold">👑 Or</span></h3>
             <p>Météo forêt en temps réel, alertes push quand l'état d'un chemin change. Plus jamais de mauvaise surprise.</p>

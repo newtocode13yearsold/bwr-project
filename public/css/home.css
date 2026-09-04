@@ -774,8 +774,11 @@ body {
   font-size: 1.3rem;
   flex-shrink: 0;
 }
-.feat-row-icon.orange { background: #ffedd5; }
-.feat-row-icon.purple { background: #ede9fe; }
+.feat-row-icon.orange { background: #ffedd5; color: #ea580c; }
+.feat-row-icon.purple { background: #ede9fe; color: #7c3aed; }
+/* SVG icons inside the chips inherit the chip's tint via currentColor */
+.feat-row-icon .feature-icon,
+.feature-icon-wrap .feature-icon { display: block; }
 
 .feat-row-body h3 {
   font-size: 0.95rem;
@@ -819,12 +822,12 @@ body {
   justify-content: center;
   font-size: 1.4rem;
 }
-.feature-icon-wrap.green  { background: #dcfce7; }
-.feature-icon-wrap.blue   { background: #dbeafe; }
-.feature-icon-wrap.orange { background: #ffedd5; }
-.feature-icon-wrap.purple { background: #ede9fe; }
-.feature-icon-wrap.teal   { background: #ccfbf1; }
-.feature-icon-wrap.red    { background: #fee2e2; }
+.feature-icon-wrap.green  { background: #dcfce7; color: #16a34a; }
+.feature-icon-wrap.blue   { background: #dbeafe; color: #2563eb; }
+.feature-icon-wrap.orange { background: #ffedd5; color: #ea580c; }
+.feature-icon-wrap.purple { background: #ede9fe; color: #7c3aed; }
+.feature-icon-wrap.teal   { background: #ccfbf1; color: #0d9488; }
+.feature-icon-wrap.red    { background: #fee2e2; color: #dc2626; }
 
 .feature-card h3 {
   font-size: 1rem;
