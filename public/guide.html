@@ -228,24 +228,7 @@
   </main>
 
   <script src="js/config.js"></script>
-  <script>
-    // Lightweight theme toggle for the guide page (mirrors theme.js behaviour).
-    (function () {
-      var btn = document.getElementById('btnGuideTheme');
-      function sync() {
-        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (btn) btn.textContent = dark ? '☀️' : '🌙';
-      }
-      if (btn) btn.addEventListener('click', function () {
-        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        var next = dark ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        try { localStorage.setItem('bwr_theme', next); } catch (e) {}
-        sync();
-      });
-      sync();
-    })();
-  </script>
+  <script src="js/guide.js"></script>
   <script defer src="js/ui-shared.js"></script>
   <script src="js/track.js"></script>
 </body>

@@ -4,8 +4,46 @@ const assert = require('node:assert/strict');
 const {
   haversineM, nodeKey, buildGraph, dijkstra,
   rebuildPath, nearestNode, graphToResult,
-  graphAtob, graphLoop,
+  graphAtob, graphLoop, trimSpurs,
 } = require('../public/js/graph-router.js');
+
+describe('trimSpurs', () => {
+  test('removes a single out-and-back whisker', () => {
+    // A→B→C then straight back to B is a whisker off the C→D→A loop closure.
+    assert.deepEqual(trimSpurs(['A', 'B', 'C', 'B', 'D', 'A']), ['A', 'B', 'D', 'A']);
+  });
+  test('peels a multi-node stub layer by layer', () => {
+    assert.deepEqual(trimSpurs(['A', 'B', 'C', 'D', 'C', 'B', 'E', 'A']), ['A', 'B', 'E', 'A']);
+  });
+  test('leaves a clean loop untouched', () => {
+    const loop = ['A', 'B', 'C', 'D', 'A'];
+    assert.deepEqual(trimSpurs(loop), loop);
+  });
+  test('removes a geometric sliver when neighbours are within SPUR_EPS_M', () => {
+    // Loop A→…→A with a whisker: from A the route steps out to tip T then
+    // returns to A' (~8 m from A, a different node) before running the real
+    // loop B→C→A. Exact-key test misses the sliver (T's flanks are A and A',
+    // distinct keys); the coord lookup collapses it. The genuine loop nodes
+    // B and C have well-separated neighbours and survive.
+    const coords = {
+      A:  [49.35000, 2.90000],
+      T:  [49.35030, 2.90000],           // ~33 m out — the tip
+      Ap: [49.35007, 2.90000],           // ~8 m from A — the near-return
+      B:  [49.35007, 2.90200],           // ~145 m east
+      C:  [49.34900, 2.90100],
+    };
+    const coordOf = (k) => coords[k];
+    assert.deepEqual(
+      trimSpurs(['A', 'T', 'Ap', 'B', 'C', 'A'], coordOf),
+      ['A', 'Ap', 'B', 'C', 'A'],
+    );
+    // Without the coord lookup the sliver is invisible (exact-key only).
+    assert.deepEqual(
+      trimSpurs(['A', 'T', 'Ap', 'B', 'C', 'A']),
+      ['A', 'T', 'Ap', 'B', 'C', 'A'],
+    );
+  });
+});
 
 // ─── Test network: a simple rectangle in the Compiegne forest ─────────────────
 //

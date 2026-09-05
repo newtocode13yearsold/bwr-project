@@ -202,6 +202,8 @@ const DEPLOYED_ZONES = [
 const inDeployedZone = latlng => DEPLOYED_ZONES.some(b => b.contains(latlng));
 
 map.on('click', e => {
+  // POI placement mode (js/map-poi.js) owns the click: let it handle the drop.
+  if (window.poiAddModeActive) return;
   if (!inDeployedZone(e.latlng)) {
     showToast('Désolé, nous n\'avons pas encore déployé à cet endroit.');
     return;
@@ -298,6 +300,7 @@ function openPathPopup(path, latlng) {
         ${condHTML}
         ${path.notes ? `<p class="popup-notes">${path.notes}</p>` : ''}
         ${difficultyHTML}
+        ${typeof pathReviewShellHTML === 'function' ? pathReviewShellHTML(path) : ''}
         <div class="popup-report-section">
           <button class="popup-fallen-btn" id="openFallenTree-${path.id}">🪵 Arbre tombé ici</button>
           <button class="popup-fallen-btn" id="openFlooded-${path.id}">💧 Chemin inondé</button>
@@ -312,6 +315,9 @@ function openPathPopup(path, latlng) {
     .openOn(map);
 
   setTimeout(() => {
+    // Lazy-load the per-trail reviews (stars + public comments) into the popup.
+    if (typeof initPathReviews === 'function') initPathReviews(path);
+
     if (canEdit) {
       document.querySelectorAll(`#diffBtns-${path.id} .diff-btn`).forEach(btn => {
         btn.addEventListener('click', async () => {

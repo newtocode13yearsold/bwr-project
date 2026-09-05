@@ -194,6 +194,49 @@ function pruneDeadEnds(adjIn) {
   return adj;
 }
 
+// Distance under which a spur's two flanking nodes count as "the same place",
+// so stepping out to a tip and back to within this radius is a whisker.
+const SPUR_EPS_M = 25;
+
+// Remove out-and-back spurs from a finished route. A whisker is any tip node
+// whose two neighbours are the same place: either the exact same node
+// (…A, B, A…) or — with a coord lookup — two *different* nodes that sit within
+// SPUR_EPS_M of each other (…A, B, A'… where A≈A'). The graph loop excludes
+// each outbound edge on the return leg, so a doubled-back stub comes back on a
+// nearby parallel edge rather than the identical one; the exact-key test alone
+// misses those, the geometric test catches them. Dropping the tip and
+// repeating peels multi-node stubs one layer at a time; genuine cycle nodes
+// have two well-separated neighbours, so they're never touched. Pure O(n)
+// post-processing on the single chosen loop — no routing, loop-build speed is
+// unchanged. coordOf(key) → [lat, lon] (omit to fall back to exact-key only).
+function trimSpurs(keys, coordOf) {
+  const out = keys.slice();
+  const samePlace = (a, b) => {
+    if (a === b) return true;
+    if (!coordOf) return false;
+    const pa = coordOf(a), pb = coordOf(b);
+    if (!pa || !pb) return false;
+    return haversineM(pa[0], pa[1], pb[0], pb[1]) < SPUR_EPS_M;
+  };
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 1; i < out.length - 1; i++) {
+      if (out[i - 1] === out[i + 1]) {
+        out.splice(i, 2); // exact backtrack: drop the tip and the duplicate step back
+        changed = true;
+        break;
+      }
+      if (samePlace(out[i - 1], out[i + 1])) {
+        out.splice(i, 1); // geometric sliver: drop the tip, join the near-neighbours
+        changed = true;
+        break;
+      }
+    }
+  }
+  return out;
+}
+
 function dijkstra(adj, start, end = null) {
   const dist = new Map([[start, 0]]);
   const prev = new Map();
@@ -392,7 +435,8 @@ function graphLoop(sLat, sLng, targetKm, paths, pathTyp = 'foot', seed = 0) {
   }
 
   if (!bestLoop) throw new Error('Impossible de former une boucle — ajoutez plus de chemins dans la zone');
-  return graphToResult(nodes, bestLoop, pathTyp);
+  const coordOf = (k) => { const n = nodes.get(k); return n ? [n.lat, n.lon] : null; };
+  return graphToResult(nodes, trimSpurs(bestLoop, coordOf), pathTyp);
 }
 
 // Cost multiplier applied to unnoted OSM paths when blended with curated admin
@@ -431,6 +475,6 @@ if (typeof module !== 'undefined') {
   module.exports = {
     haversineM, nodeKey, buildGraph, dijkstra, dijkstraExclude,
     rebuildPath, nearestNode, graphToResult,
-    snapToJunction, pruneDeadEnds, graphAtob, graphAtobHybrid, graphLoop, graphLoopHybrid,
+    snapToJunction, pruneDeadEnds, trimSpurs, graphAtob, graphAtobHybrid, graphLoop, graphLoopHybrid,
   };
 }

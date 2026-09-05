@@ -32,6 +32,10 @@
     satellite_tiles:     { free: false, visitor: true,     silver: true,     gold: true     },
     ign_topo_tiles:      { free: false, visitor: true,     silver: true,     gold: true     },
     carrefours:          { free: true,  visitor: true,     silver: true,     gold: true     },
+    // Points of interest: everyone SEES the layer (gated in page code, not here);
+    // adding one is a curation action gated to Silver+ like drawing a path. Mirror
+    // any change in worker/handlers/poi.js (POST plan check).
+    poi_create:          { free: false, visitor: true,     silver: true,     gold: true     },
 
     /* — Trip analysis & export — */
     elevation_profile:   { free: false, visitor: true,     silver: true,     gold: true     },

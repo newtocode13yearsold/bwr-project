@@ -160,3 +160,17 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
 }
+
+// ── Legend toggle ─────────────────────────────────────────────────────────────
+// Moved out of an inline <script> in map.html: the site CSP is `script-src 'self'`
+// (no 'unsafe-inline'), so the inline handler was blocked and the legend never opened.
+(function () {
+  const toggle = document.getElementById('legendToggle');
+  const legend = document.getElementById('mapLegend');
+  if (toggle && legend) {
+    toggle.addEventListener('click', () => {
+      const open = legend.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+})();

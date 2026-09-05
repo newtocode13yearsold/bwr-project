@@ -14,7 +14,7 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
-Run all automated tests (478 tests, ~5 s):
+Run all automated tests (466 tests, ~6 s):
   npm test
 
 Run tests in watch mode (re-runs on file save):
@@ -46,6 +46,8 @@ Main endpoint groups:
 - Password reset: POST /api/auth/forgot-password (email a reset link — always 200, no account enumeration; IP rate-limited 5/h + per-address 5-min cooldown), POST /api/auth/reset-password ({token, password} — single-use `reset:{token}` KV key, 1-hour TTL; rotates salt+hash, sets `sessionsInvalidatedAt`, clears login lockout)
 - Paths: POST /api/paths (create — Silver/Gold only), PATCH /api/paths/:id (grade difficulty — any signed-in user; marking "hard" needs Silver+), PUT/DELETE /api/paths/:id (edit geometry / delete — admin only) — forest/bike paths. **Grading limit:** Silver+ grade without limit; free users get 5 "remote" gradings (`stats.unwalkedGrades`, capped by `FREE_REMOTE_GRADES` in `worker/handlers/paths.js`). A grade does NOT count toward that cap when the user is physically near the path — the client sends its live GPS `{userLat, userLon}` and the server allows it free if within `NEAR_GRADE_RANGE_M` (2 km, via `distanceToPolylineMeters`) — or when they've walked the path recently (`walkedpath:` marker < 24 h). The PATCH response carries `_grade:{counted, remaining}` so the client only decrements its free-slot counter on a counted (remote) grade.
 - Reports (public): POST /api/reports, DELETE /api/reports/:id (admin), GET /api/reports — crowd-sourced issues (fallen trees, floods, etc.)
+- Per-trail reviews (`worker/handlers/pathreviews.js`): star rating (1–5) + optional comment on an individual curated path. **One review per account per path, editable; comments are PUBLIC** (the point of trail reviews — hikers read each other's notes). GET /api/paths/:id/reviews (public — `{avg, count, dist:{1..5}, reviews:[{name,stars,comment,createdAt}], mine}`; `mine` filled when authed), POST /api/paths/:id/reviews ({stars 1–5, comment?} — auth; 404 if the path doesn't exist; re-post overwrites `pathreview:{pathId}:{userId}` keeping `createdAt`), DELETE /api/paths/:id/reviews/:userId (author or admin). **`handlePathReviews` MUST run before `handlePaths` in the dispatch chain** so a review DELETE isn't swallowed by the generic `/api/paths/:id` path-deletion route. Frontend: `public/js/map-reviews.js` renders the aggregate + top comments + a star/comment form inside the map path popup (`initPathReviews` called from `openPathPopup` in `public/js/map-paths.js`). Account deletion purges the user's `pathreview:` markers. Tests: `tests/worker-pathreviews.test.mjs`.
+- Points of interest (`worker/handlers/poi.js`): the practical map furniture hikers ask for — **parking, water, picnic, viewpoint, toilet** (`POI_TYPES`, mirrored in `public/js/map-poi.js`). Reading is public; **adding is Silver+/admin** (gated by `effectivePlan`, mirrored by `FEATURES.poi_create` in `public/js/features.js`); editing/deleting is author-or-admin. GET /api/pois (public — full list, newest-first, edge-cached 60 s like /api/paths), POST /api/pois ({type, name?, lat, lon, note?} — Silver+), PUT /api/pois/:id (partial edit — author/admin), DELETE /api/pois/:id (author/admin). Frontend: `public/js/map-poi.js` draws emoji pin markers on a toggleable layer with an on-map control (a layer show/hide button + an ➕ "add" button for Silver+ that drops a new POI on the next map click). `/api/pois` is in the SW `CACHEABLE_API` list for offline. Account deletion purges the user's own POIs. Tests: `tests/worker-poi.test.mjs`.
 - Routing: POST /api/route — proxy to OpenRouteService (needs ORS_KEY env var)
 - OSM Proxy: GET /api/osm?bbox=... — caches OpenStreetMap path data for 7 days
 - Contact: POST /api/contact — sends to ntfy.sh push notification service
@@ -81,6 +83,8 @@ Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - forum:topic:{id} — JSON forum topic {userId, authorName, title, body, createdAt, lastActivityAt, replyCount}
 - forum:reply:{topicId}:{paddedTs}:{id} — JSON reply {topicId, userId, authorName, body, createdAt}; ts in the key keeps replies ordered within a topic
 - review:{userId} — JSON site review {userId, name, stars, comment, createdAt, updatedAt} (one per account)
+- pathreview:{pathId}:{userId} — JSON per-trail review {pathId, userId, name, stars, comment, createdAt, updatedAt} (one per account per path; comments PUBLIC). pathId-first key so one trail's reviews gather in a single prefix scan; account-erasure filters all `pathreview:` keys by the `:userId` suffix
+- poi:{id} — JSON point of interest {id, type, name, lat, lon, note, createdBy, createdByName, createdAt, updatedAt}; `type` ∈ parking/water/picnic/viewpoint/toilet
 - inboxmsg:{paddedTs}:{id} — JSON admin message {id, createdAt, subject, body, target:'all'|userId, targetName, senderName} (ts in the key keeps messages ordered)
 - inboxread:{userId}:{msgId} — ISO timestamp string; existence = that user read the message (purged on account deletion)
 - reviewsummary — JSON {avg, count, dist:{1..5}} public rating aggregate, 5-min TTL cache (deliberately NOT prefixed `review:` so `listItems('review:')` never picks it up)
@@ -245,7 +249,7 @@ Cloudflare Config (wrangler.jsonc):
 
 ## Testing Notes
 
-Automated test suite: **478 tests, ~5 s** (`npm test`). Test files:
+Automated test suite: **466 tests, ~6 s** (`npm test`). Test files:
 
 | File | What it covers | Style |
 |------|---------------|-------|
@@ -259,6 +263,8 @@ Automated test suite: **478 tests, ~5 s** (`npm test`). Test files:
 | `tests/worker-activities.test.mjs` | Hike-journal CRUD — save/validation/sanitisation, list summary shape, rename, delete, per-user scoping | ESM |
 | `tests/worker-forum.test.mjs` | Forum topics/replies — Silver+ posting, free-tier 5-topic read limit, locked detail, author/admin edit + deletion | ESM |
 | `tests/worker-rating.test.mjs` | Site rating — public aggregate, one-per-account overwrite, star validation, admin-only comment list + delete | ESM |
+| `tests/worker-pathreviews.test.mjs` | Per-trail reviews — public aggregate + comments, one-per-account overwrite, star validation, missing-path 404, author/admin delete, dispatch-order guard | ESM |
+| `tests/worker-poi.test.mjs` | Points of interest — public list, Silver+ create gate, type/coord validation, author/admin edit + delete | ESM |
 | `tests/worker-inbox.test.mjs` | In-app inbox — admin-only send, broadcast vs direct delivery, per-user read state, sent list + delete, deletion purge | ESM |
 | `tests/worker-quests.test.mjs` | Quest rewards — auth guard, unachieved/unknown quests, real plan grant + inbox notify, claimed-once idempotency, badge grant, no-downgrade safety | ESM |
 | `tests/sw.test.js` | Service-worker cache-version sync | CJS |

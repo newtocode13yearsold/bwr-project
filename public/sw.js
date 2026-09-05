@@ -2,7 +2,7 @@
 // the `sync` handler below can drain queued reports even when no page is open.
 importScripts('/js/outbox.js');
 
-const CACHE = 'bwr-v58';
+const CACHE = 'bwr-v59';
 // Tiles live in two separate caches:
 //   • TILE_CACHE — forests the user explicitly downloaded ("Cartes hors-ligne").
 //     Permanent: never expired, never evicted, so a downloaded forest stays
@@ -20,7 +20,7 @@ const TILE_MAX_AGE_MS  = 7 * 24 * 60 * 60 * 1000; // 7 days
 // hazard reports. These are global (not per-user), so caching them in the shared
 // app cache is safe. Strategy: network-first (fresh when online) with a cache
 // fallback, so the map still shows trails and reports with no signal.
-const CACHEABLE_API = ['/api/paths', '/api/reports'];
+const CACHEABLE_API = ['/api/paths', '/api/reports', '/api/pois'];
 
 const APP_SHELL = [
   '/',
@@ -56,6 +56,8 @@ const APP_SHELL = [
   'js/carrefours.js',
   'js/map.js',
   'js/map-paths.js',
+  'js/map-reviews.js',
+  'js/map-poi.js',
   'js/map-locate.js',
   'js/map-sync.js',
   'js/outbox.js',

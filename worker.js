@@ -1,6 +1,8 @@
 import { handleAdmin }      from './worker/handlers/admin.js';
 import { handleAuth }       from './worker/handlers/auth.js';
+import { handlePathReviews } from './worker/handlers/pathreviews.js';
 import { handlePaths }      from './worker/handlers/paths.js';
+import { handlePoi }        from './worker/handlers/poi.js';
 import { handleReports }    from './worker/handlers/reports.js';
 import { handleContent }    from './worker/handlers/content.js';
 import { handleSavedRoutes } from './worker/handlers/savedroutes.js';
@@ -100,7 +102,9 @@ export default {
     const apiResponse =
       await handleAdmin(request, env, ctx)      ??
       await handleAuth(request, env, ctx)        ??
+      await handlePathReviews(request, env, ctx) ??
       await handlePaths(request, env, ctx)       ??
+      await handlePoi(request, env, ctx)         ??
       await handleReports(request, env, ctx)     ??
       await handleContent(request, env, ctx)     ??
       await handleSavedRoutes(request, env, ctx) ??

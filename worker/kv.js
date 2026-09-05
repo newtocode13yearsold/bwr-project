@@ -21,6 +21,9 @@
 // inboxread:{userId}:{msgId} → ISO timestamp string (existence = that user read the message)
 // newsreact:{newsId}:{voter} → 'like' | 'dislike'  (voter = u:{userId} or ip:{addr})
 // pathgrade:{pathId}:{userId} → JSON { walkedWhenGraded: bool }
+// pathreview:{pathId}:{userId} → JSON per-trail review { pathId, userId, name, stars, comment, createdAt, updatedAt }
+//                            (one per account per path; comments are PUBLIC)
+// poi:{id}                 → JSON point of interest { id, type, name, lat, lon, note, createdBy, createdByName, createdAt, updatedAt }
 // walkedpath:{userId}:{pathId} → ISO timestamp string
 // aisugg:{userId}:{date}   → legacy AI-suggestion cache (feature removed; keys self-expire, 48h TTL)
 // leaderboard:cache        → JSON sorted entries array  (5-min TTL, "all-time" board)

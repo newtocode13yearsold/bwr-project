@@ -109,9 +109,13 @@ function fillTopicList(data, q) {
   const { topics, lockedCount } = data;
 
   if (!topics.length) {
-    listEl.innerHTML = q
-      ? `<div class="forum-empty">Aucun sujet ne correspond à «&nbsp;${escHtml(q)}&nbsp;».</div>`
-      : `<div class="forum-empty">Aucun sujet pour l'instant.${canPost ? ' Lance la première discussion !' : ''}</div>`;
+    if (q) {
+      listEl.innerHTML = `<div class="forum-empty">Aucun sujet ne correspond à «&nbsp;${escHtml(q)}&nbsp;».</div>`;
+    } else {
+      listEl.innerHTML = emptyState(canPost);
+      const emptyBtn = document.getElementById('btnNewTopicEmpty');
+      if (emptyBtn) emptyBtn.addEventListener('click', openModal);
+    }
     return;
   }
 
@@ -127,6 +131,36 @@ function fillTopicList(data, q) {
     </div>`;
   }
   listEl.innerHTML = html;
+}
+
+function emptyState(canPost) {
+  const illustration = `<svg class="empty-illu" viewBox="0 0 120 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <ellipse cx="60" cy="86" rx="44" ry="6" fill="var(--forest-600,#2d6b1f)" opacity="0.10"/>
+    <!-- back trees -->
+    <path d="M26 74V60l-9 2 9-14-7 1 11-16 11 16-7-1 9 14-9-2v14z" fill="var(--forest-600,#2d6b1f)" opacity="0.28"/>
+    <path d="M94 74V60l-9 2 9-14-7 1 11-16 11 16-7-1 9 14-9-2v14z" fill="var(--forest-600,#2d6b1f)" opacity="0.28"/>
+    <!-- speech bubble -->
+    <rect x="34" y="20" width="52" height="38" rx="12" fill="var(--forest-600,#2d6b1f)" opacity="0.14"/>
+    <rect x="34" y="20" width="52" height="38" rx="12" stroke="var(--forest-600,#2d6b1f)" stroke-width="2.5" opacity="0.55"/>
+    <path d="M50 58l-2 10 12-10z" fill="var(--forest-600,#2d6b1f)" opacity="0.14" stroke="var(--forest-600,#2d6b1f)" stroke-width="2.5"/>
+    <circle cx="48" cy="39" r="3.2" fill="var(--forest-600,#2d6b1f)"/>
+    <circle cx="60" cy="39" r="3.2" fill="var(--forest-600,#2d6b1f)"/>
+    <circle cx="72" cy="39" r="3.2" fill="var(--forest-600,#2d6b1f)"/>
+  </svg>`;
+  if (canPost) {
+    return `<div class="forum-empty-state">
+      ${illustration}
+      <h3>Aucune discussion pour l'instant</h3>
+      <p>Soyez le premier à lancer une discussion : posez une question, partagez un sentier ou racontez une balade.</p>
+      <button class="btn-new" id="btnNewTopicEmpty">＋ Lancer la première discussion</button>
+    </div>`;
+  }
+  return `<div class="forum-empty-state">
+    ${illustration}
+    <h3>Aucune discussion pour l'instant</h3>
+    <p>Le forum se remplit bientôt. Passez à un abonnement Argent ou Or pour lancer la première discussion.</p>
+    <a class="btn-new" href="plans">Voir les abonnements →</a>
+  </div>`;
 }
 
 function topicCard(t) {

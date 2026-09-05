@@ -658,6 +658,12 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const walkedKeys = await listKeys(env, `walkedpath:${user.id}:`);
     const pushKeys = await listKeys(env, `pushsub:${user.id}:`);
     const inboxReadKeys = await listKeys(env, `inboxread:${user.id}:`);
+    // Per-trail reviews are keyed pathreview:{pathId}:{userId}, so there's no
+    // per-user prefix — scan all review keys and keep the ones this user wrote.
+    const pathReviewKeys = (await listKeys(env, 'pathreview:'))
+      .filter(k => k.name.endsWith(`:${user.id}`));
+    // POIs the user added carry a free-text name/note; purge them with the account.
+    const ownPois = (await listItems(env, 'poi:')).filter(p => p.createdBy === user.id);
 
     await Promise.all([
       env.BWR_KV.delete(`user:${user.id}`),
@@ -670,6 +676,8 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       ...walkedKeys.map(k => env.BWR_KV.delete(k.name)),
       ...pushKeys.map(k => env.BWR_KV.delete(k.name)),
       ...inboxReadKeys.map(k => env.BWR_KV.delete(k.name)),
+      ...pathReviewKeys.map(k => env.BWR_KV.delete(k.name)),
+      ...ownPois.map(p => env.BWR_KV.delete(`poi:${p.id}`)),
     ]);
 
     const auth = request.headers.get('Authorization');
