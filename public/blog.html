@@ -81,6 +81,15 @@
 
   <!-- ── Article grid ── -->
   <section class="blog-index">
+
+    <div class="blog-search">
+      <span class="blog-search-icon" aria-hidden="true">🔍</span>
+      <input type="search" id="blogSearch" class="blog-search-input"
+             placeholder="Rechercher un guide (forêt, VTT, famille…)" autocomplete="off"
+             aria-label="Rechercher un guide" />
+    </div>
+    <p class="blog-no-results" id="blogNoResults" hidden>Aucun guide ne correspond à votre recherche.</p>
+
     <p class="blog-section-label">Tous les guides</p>
     <h2 class="blog-section-title">Explorez la forêt de Compiègne</h2>
 
@@ -276,6 +285,7 @@
     <p>© 2026 <a href="/">BWR</a> · Balades en forêt de Compiègne · <a href="mailto:thomaslegros71@gmail.com">Contact</a></p>
   </footer>
 
+  <script src="js/blog-search.js"></script>
   <script src="js/rating.js"></script>
 </body>
 </html>

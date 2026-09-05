@@ -121,6 +121,62 @@ describe('GET /api/forum/topics free-tier limit', () => {
   });
 });
 
+// ── Search (?q=) ──────────────────────────────────────────────────────────────
+
+describe('GET /api/forum/topics?q=', () => {
+  test('matches title case- and accent-insensitively', async () => {
+    const { env } = freshEnv();
+    await createTopic(env, 'tok-silver', 'Boucle en forêt de Compiègne', 'un corps');
+    await createTopic(env, 'tok-silver', 'Réparation de vélo', 'autre corps');
+
+    const res = await worker.fetch(authed('GET', '/api/forum/topics?q=compiegne', 'tok-silver'), env);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.query, 'compiegne');
+    assert.equal(data.topics.length, 1);
+    assert.match(data.topics[0].title, /Compiègne/);
+  });
+
+  test('matches on body text', async () => {
+    const { env } = freshEnv();
+    await createTopic(env, 'tok-silver', 'Sujet un', 'Attention arbre tombé au carrefour');
+    await createTopic(env, 'tok-silver', 'Sujet deux', 'rien à signaler');
+
+    const data = await (await worker.fetch(authed('GET', '/api/forum/topics?q=arbre%20tombe', 'tok-silver'), env)).json();
+    assert.equal(data.topics.length, 1);
+    assert.equal(data.topics[0].title, 'Sujet un');
+  });
+
+  test('empty query returns the full list unchanged', async () => {
+    const { env } = freshEnv();
+    for (let i = 0; i < 3; i++) await createTopic(env, 'tok-silver', `Sujet ${i}`);
+    const data = await (await worker.fetch(authed('GET', '/api/forum/topics?q=', 'tok-silver'), env)).json();
+    assert.equal(data.topics.length, 3);
+    assert.equal(data.query, undefined);
+  });
+
+  test('free user can find a locked topic by title but not by its gated body', async () => {
+    const { env } = freshEnv();
+    // 6 topics: the oldest (created first) is locked for free users (beyond top 5).
+    await createTopic(env, 'tok-silver', 'Vieux sujet secret', 'mot-cle-cache dans le corps');
+    for (let i = 0; i < 5; i++) await createTopic(env, 'tok-silver', `Récent ${i}`, 'blabla');
+
+    // Title match on a locked topic → returned, but locked (no preview body).
+    const byTitle = await (await worker.fetch(authed('GET', '/api/forum/topics?q=secret', 'tok-free'), env)).json();
+    assert.equal(byTitle.topics.length, 1);
+    assert.equal(byTitle.topics[0].locked, true);
+    assert.equal(byTitle.topics[0].preview, '');
+
+    // Body-only match on that locked topic → not revealed to the free user.
+    const byBody = await (await worker.fetch(authed('GET', '/api/forum/topics?q=mot-cle-cache', 'tok-free'), env)).json();
+    assert.equal(byBody.topics.length, 0);
+
+    // Silver sees it via the body match.
+    const silver = await (await worker.fetch(authed('GET', '/api/forum/topics?q=mot-cle-cache', 'tok-silver'), env)).json();
+    assert.equal(silver.topics.length, 1);
+  });
+});
+
 // ── Topic detail gating ───────────────────────────────────────────────────────
 
 describe('GET /api/forum/topics/:id', () => {

@@ -99,6 +99,24 @@
     .btn-new:hover { opacity: 0.9; transform: translateY(-1px); }
     .btn-new[disabled] { background: var(--surface-2,#eef0ea); color: var(--text-muted,#6b7280); cursor: not-allowed; }
 
+    /* ── Search ── */
+    .forum-search { position: relative; margin-bottom: 20px; }
+    .forum-search-icon {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      font-size: 0.95rem; opacity: 0.55; pointer-events: none;
+    }
+    .forum-search-input {
+      width: 100%; box-sizing: border-box;
+      border: 1.5px solid var(--border, #e2e8da); border-radius: 12px;
+      padding: 12px 16px 12px 42px; font-size: 0.96rem; font-family: var(--font-sans);
+      color: var(--text, #1f2937); background: #fff; outline: none; transition: border-color 0.15s;
+    }
+    .forum-search-input:focus { border-color: var(--forest-600, #2d6b1f); }
+    .forum-search-input::placeholder { color: var(--text-muted, #9aa3af); }
+    .forum-results-count {
+      font-size: 0.85rem; color: var(--text-muted, #6b7280); margin-bottom: 14px;
+    }
+
     /* ── Topic list ── */
     .topic-card {
       background: #fff; border: 1px solid var(--border-soft, #ebeee5);

@@ -6,6 +6,8 @@
 let currentUser = null;
 let canPost = false;          // server's verdict for the current user (silver/gold/admin)
 let editingTopicId = null;    // set while the modal is reused to edit an existing topic
+let currentQuery = '';        // active forum search term (persists across list ↔ detail)
+let searchToken = 0;          // guards against out-of-order search responses
 
 const root = () => document.getElementById('forumRoot');
 
@@ -36,41 +38,95 @@ function route() {
 }
 
 // ── List view ───────────────────────────────────────────────────────────────
+// The toolbar + search box are rendered once; only #topicList is re-rendered on
+// each search so the search input keeps its focus and caret between keystrokes.
 async function renderList() {
   root().innerHTML = '<div class="forum-loading">Chargement du forum…</div>';
   let data;
   try {
-    data = await api('GET', '/api/forum/topics');
+    data = await fetchTopics(currentQuery);
   } catch {
     root().innerHTML = '<div class="forum-empty">Impossible de charger le forum.</div>';
     return;
   }
   canPost = !!data.canPost;
-  const { topics, lockedCount } = data;
 
   const newBtn = canPost
     ? `<button class="btn-new" id="btnNewTopic">＋ Nouveau sujet</button>`
     : `<button class="btn-new" disabled title="Réservé aux membres Argent et Or">＋ Nouveau sujet</button>`;
 
-  let html = `<div class="forum-toolbar"><h2>Discussions</h2>${newBtn}</div>`;
-
-  if (!topics.length) {
-    html += `<div class="forum-empty">Aucun sujet pour l'instant.${canPost ? ' Lance la première discussion !' : ''}</div>`;
-  } else {
-    html += topics.map(topicCard).join('');
-    if (lockedCount > 0) {
-      html += `<div class="upsell-banner">
-        <p>🔒 ${lockedCount} autre${lockedCount > 1 ? 's' : ''} sujet${lockedCount > 1 ? 's' : ''} ${lockedCount > 1 ? 'sont réservés' : 'est réservé'} aux membres Argent et Or.<br>
-        Passe à un abonnement pour lire tout le forum et participer aux discussions.</p>
-        <a href="plans">Voir les abonnements →</a>
-      </div>`;
-    }
-  }
-
-  root().innerHTML = html;
+  root().innerHTML = `
+    <div class="forum-toolbar"><h2>Discussions</h2>${newBtn}</div>
+    <div class="forum-search">
+      <span class="forum-search-icon" aria-hidden="true">🔍</span>
+      <input type="search" id="forumSearch" class="forum-search-input"
+             placeholder="Rechercher un sujet…" autocomplete="off"
+             value="${escAttr(currentQuery)}" />
+    </div>
+    <div id="topicList"></div>
+  `;
 
   const btn = document.getElementById('btnNewTopic');
   if (btn) btn.addEventListener('click', openModal);
+
+  const searchEl = document.getElementById('forumSearch');
+  let debounce;
+  searchEl.addEventListener('input', () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => runSearch(searchEl.value), 250);
+  });
+
+  fillTopicList(data, currentQuery);
+}
+
+/** GET the topic list, appending ?q= when a search term is active. */
+function fetchTopics(q) {
+  const suffix = q ? `?q=${encodeURIComponent(q)}` : '';
+  return api('GET', `/api/forum/topics${suffix}`);
+}
+
+/** Re-run the search and refresh only the list container (input untouched). */
+async function runSearch(value) {
+  currentQuery = value.trim();
+  const listEl = document.getElementById('topicList');
+  if (!listEl) return;
+  const token = ++searchToken;
+  listEl.innerHTML = '<div class="forum-loading">Recherche…</div>';
+  try {
+    const data = await fetchTopics(currentQuery);
+    if (token !== searchToken) return;   // a newer keystroke already won
+    canPost = !!data.canPost;
+    fillTopicList(data, currentQuery);
+  } catch {
+    if (token === searchToken) listEl.innerHTML = '<div class="forum-empty">Erreur de recherche.</div>';
+  }
+}
+
+/** Render topic cards (or an empty/no-results state) into #topicList. */
+function fillTopicList(data, q) {
+  const listEl = document.getElementById('topicList');
+  if (!listEl) return;
+  const { topics, lockedCount } = data;
+
+  if (!topics.length) {
+    listEl.innerHTML = q
+      ? `<div class="forum-empty">Aucun sujet ne correspond à «&nbsp;${escHtml(q)}&nbsp;».</div>`
+      : `<div class="forum-empty">Aucun sujet pour l'instant.${canPost ? ' Lance la première discussion !' : ''}</div>`;
+    return;
+  }
+
+  let html = q
+    ? `<div class="forum-results-count">${topics.length} résultat${topics.length > 1 ? 's' : ''} pour «&nbsp;${escHtml(q)}&nbsp;»</div>`
+    : '';
+  html += topics.map(topicCard).join('');
+  if (lockedCount > 0) {
+    html += `<div class="upsell-banner">
+      <p>🔒 ${lockedCount} autre${lockedCount > 1 ? 's' : ''} sujet${lockedCount > 1 ? 's' : ''} ${lockedCount > 1 ? 'sont réservés' : 'est réservé'} aux membres Argent et Or.<br>
+      Passe à un abonnement pour lire tout le forum et participer aux discussions.</p>
+      <a href="plans">Voir les abonnements →</a>
+    </div>`;
+  }
+  listEl.innerHTML = html;
 }
 
 function topicCard(t) {

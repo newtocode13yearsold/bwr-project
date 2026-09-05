@@ -16,6 +16,12 @@ function preview(body) {
   return oneLine.length > 180 ? oneLine.slice(0, 180) + '…' : oneLine;
 }
 
+/** Lower-cased, accent-stripped form for case/accent-insensitive matching. */
+const DIACRITICS = /[̀-ͯ]/g;
+function normalize(s) {
+  return String(s || '').normalize('NFD').replace(DIACRITICS, '').toLowerCase();
+}
+
 /** Loads every topic, newest activity first. */
 async function loadTopicsSorted(env) {
   const topics = await listItems(env, 'forum:topic:');
@@ -41,17 +47,31 @@ function isUnlockedForFree(index) {
  * @param {{ pathname: string, url: URL, json: Function, fail: Function }} ctx
  * @returns {Promise<Response|null>}
  */
-export async function handleForum(request, env, { pathname, json, fail, waitUntil }) {
+export async function handleForum(request, env, { pathname, url, json, fail, waitUntil }) {
   if (!pathname.startsWith('/api/forum/')) return null;
 
-  // ── List topics ─────────────────────────────────────────────────────────────
+  // ── List topics (optionally full-text searched via ?q=) ──────────────────────
   if (pathname === '/api/forum/topics' && request.method === 'GET') {
     const user = await getUserFromToken(env, request);
     const plan = user ? effectivePlan(user) : 'free';
     const canSeeAll = plan === 'silver' || plan === 'gold';
 
     const topics = await loadTopicsSorted(env);
-    const list = topics.map((t, i) => {
+
+    // Search query: matched case/accent-insensitively against title (always) and
+    // body (only for topics this user can actually read, so gated bodies never
+    // leak to free users). Locking still keys off the topic's position in the
+    // full newest-first list, so a matched-but-locked topic returns title only.
+    const rawQuery = (url?.searchParams.get('q') || '').trim().slice(0, 100);
+    const q = normalize(rawQuery);
+
+    let entries = topics.map((t, i) => ({ t, unlocked: canSeeAll || isUnlockedForFree(i) }));
+    if (q) {
+      entries = entries.filter(({ t, unlocked }) =>
+        normalize(t.title).includes(q) || (unlocked && normalize(t.body).includes(q)));
+    }
+
+    const list = entries.map(({ t, unlocked }) => {
       const base = {
         id: t.id,
         title: t.title,
@@ -61,10 +81,9 @@ export async function handleForum(request, env, { pathname, json, fail, waitUnti
         lastActivityAt: t.lastActivityAt || t.createdAt,
         replyCount: t.replyCount || 0,
       };
-      if (canSeeAll || isUnlockedForFree(i)) {
-        return { ...base, preview: preview(t.body), locked: false };
-      }
-      return { ...base, preview: '', locked: true };
+      return unlocked
+        ? { ...base, preview: preview(t.body), locked: false }
+        : { ...base, preview: '', locked: true };
     });
 
     return json({
@@ -72,7 +91,8 @@ export async function handleForum(request, env, { pathname, json, fail, waitUnti
       canPost: canSeeAll,
       freeVisible: FREE_VISIBLE_TOPICS,
       plan,
-      lockedCount: canSeeAll ? 0 : Math.max(0, topics.length - FREE_VISIBLE_TOPICS),
+      lockedCount: list.filter(t => t.locked).length,
+      ...(rawQuery ? { query: rawQuery } : {}),
     });
   }
 
