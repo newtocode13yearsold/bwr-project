@@ -4,6 +4,7 @@ import { handlePaths }      from './worker/handlers/paths.js';
 import { handleReports }    from './worker/handlers/reports.js';
 import { handleContent }    from './worker/handlers/content.js';
 import { handleSavedRoutes } from './worker/handlers/savedroutes.js';
+import { handleActivities } from './worker/handlers/activities.js';
 import { handleSocial }     from './worker/handlers/social.js';
 import { handleForum }      from './worker/handlers/forum.js';
 import { handlePush }       from './worker/handlers/push.js';
@@ -103,6 +104,7 @@ export default {
       await handleReports(request, env, ctx)     ??
       await handleContent(request, env, ctx)     ??
       await handleSavedRoutes(request, env, ctx) ??
+      await handleActivities(request, env, ctx)  ??
       await handleSocial(request, env, ctx)      ??
       await handleForum(request, env, ctx)       ??
       await handlePush(request, env, ctx)        ??

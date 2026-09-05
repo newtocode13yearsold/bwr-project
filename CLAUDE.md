@@ -14,7 +14,7 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
-Run all automated tests (457 tests, ~5 s):
+Run all automated tests (478 tests, ~5 s):
   npm test
 
 Run tests in watch mode (re-runs on file save):
@@ -55,6 +55,7 @@ Main endpoint groups:
 - Inbox (in-app messages, `worker/handlers/inbox.js`): a one-way message channel where **only the admin can send**. A message is either a broadcast (`target:'all'` — delivered to every account) or a direct message (`target` = a userId). Read state is tracked per-user, so the same broadcast can be unread for one member and read for another. GET /api/inbox (auth — messages addressed to me, newest first, each with `read`; plus `unread` count and `isAdmin`), GET /api/inbox/unread (auth — just `{ unread }`, cheap poll for a nav badge), POST /api/inbox/:id/read (auth — mark one read; 404 if the message isn't addressed to you), POST /api/inbox/read-all (auth — mark all mine read), POST /api/inbox ({subject, body, target?} — **admin only**, 403 otherwise; direct target must resolve to an existing user), GET /api/inbox/sent (admin — every message with recipient info), DELETE /api/inbox/:id (admin — deletes the message + all per-user read markers). Frontend: `public/inbox.html` + `public/js/inbox.js` — every signed-in user reads their inbox there; the admin also sees a compose form (recipient dropdown from GET /api/users) and a sent-message list with delete. Account deletion purges the user's `inboxread:` markers (see the erasure path in `worker/handlers/auth.js`).
 - Quests / achievements (`worker/handlers/quests.js`): the daily/weekly/monthly quests only grant XP (evaluated client-side from `user.stats`), but the one-time "hauts faits" carry a REAL prize and this handler actually grants it. POST /api/quests/claim ({questId} — auth; re-checks the cumulative `user.stats` metric server-side, then grants a temporary plan upgrade and/or an exclusive badge **exactly once**, records it in `user.questClaims`, appends earned badges to `user.questBadges`, and notifies the winner via a direct inbox message (`inboxmsg:` from "Quêtes BWR") + best-effort web-push). GET /api/quests/claims (auth — `{claims, badges}`). The reward table (`ONE_TIME_QUESTS`, mirrors `oneTime` in `public/data/quests.json`) is the server-side source of truth; plan grants never downgrade (see `grantPlanReward` — skips admins/permanent-better plans, stacks on an active same-tier temp plan) and reuse the `planExpiresAt`/`planBase` revert path in `/api/auth/me`. The client (`public/js/quests.js`) auto-claims any completed-but-unclaimed achievement on load and shows a reward toast; `questClaims`/`questBadges` are surfaced in GET /api/auth/me, and the quest badges render in the profile badge grid (`public/js/profile-plan.js`). Tests: `tests/worker-quests.test.mjs`.
 - Saved routes (Silver+): POST /api/savedroutes, GET /api/savedroutes, GET /api/savedroutes/:id, DELETE /api/savedroutes/:id
+- Recorded activities / hike journal (`worker/handlers/activities.js`, **all signed-in users** — this is the retention hook, deliberately not plan-gated): the Strava-style "record a walk → save it → replay it later" loop. POST /api/activities ({name, coords:[[lat,lon]], elevations?, times?, meters, seconds, movingSeconds?, ascent?, descent?, startedAt} — server sanitises the track: finite/in-range coords only, parallel `elevations`/`times` kept only when their length matches the track, stats clamped ≥ 0, ≤ `MAX_POINTS` 50 000 points), GET /api/activities (list summaries — coords/elevations/times stripped, a light `points` count added, newest-first), GET /api/activities/:id (full track for replay + GPX), PATCH /api/activities/:id ({name} rename), DELETE /api/activities/:id. All scoped by the `activity:{userId}:` key prefix, so one user can't read another's. **Recording lives in `public/js/gps-tracker.js`** (map/admin pages): it now records the track (points + timestamps + GPS altitude) alongside the km counter and, on stop, offers a save-to-journal modal (signed-in only); ascent/descent are computed client-side from GPS altitude with a 3 m noise threshold. **Journal UI: `public/activities.html` + `public/js/activities.js`** — list with per-activity distance/duration/pace/ascent, rename, delete, GPX export (reuses `downloadGPX` in `js/exporters.js`), and an inline Leaflet replay modal (animated marker + scrubber, ~12 s regardless of walk length). Activities are included in the GDPR export and purged on account deletion (`worker/handlers/auth.js`). Tests: `tests/worker-activities.test.mjs`.
 - Share route (public): GET /api/savedroutes/share/:token — returns route by share token, no auth required
 - Forum (community): GET /api/forum/topics (list — reading is public, but free accounts only get the 5 most recent topics unlocked; older ones come back `locked:true` with no body), GET /api/forum/topics/:id (topic + replies — free users get 403 on a locked topic), POST /api/forum/topics (create — Silver/Gold/admin only), POST /api/forum/topics/:id/replies (reply — Silver/Gold/admin only), PUT /api/forum/topics/:id (edit topic title/body) + PUT /api/forum/topics/:id/replies/:replyId (edit reply body) — author or admin, stamps `editedAt` and keeps thread order (no `lastActivityAt` bump), DELETE /api/forum/topics/:id + DELETE /api/forum/topics/:id/replies/:replyId (author or admin). The free-tier visible count is `FREE_VISIBLE_TOPICS` in `worker/handlers/forum.js`, mirrored by `FEATURES.forum_topics_visible` / `forum_post` in `public/js/features.js`. Frontend: `public/forum.html` + `public/js/forum.js` (single page; list ↔ detail swapped via the `#t/:id` URL hash).
 
@@ -75,6 +76,7 @@ Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - analytics:visits:{YYYY-MM} — integer count of unique anonymous visitors that month (dwell-gated ≥ 10 s), ~13-month TTL
 - visitor:{YYYY-MM}:{vid} — JSON per-visitor record {vid, firstSeen, lastSeen, visits, seconds, counted, pages:{path:{seconds,views}}, country, city, region, device}; existence also serves as the once-per-month dedup marker (replaces the old `vseen:` marker), ~13-month TTL
 - savedroute:{userId}:{id} — JSON saved route (coords, stats, name, shareToken, etc.)
+- activity:{userId}:{id} — JSON recorded activity / hike-journal entry (coords, elevations?, times?, meters, seconds, movingSeconds, ascent, descent, startedAt, savedAt)
 - routeshare:{token} — JSON {userId, routeId}, 180-day TTL; maps share token → route
 - forum:topic:{id} — JSON forum topic {userId, authorName, title, body, createdAt, lastActivityAt, replyCount}
 - forum:reply:{topicId}:{paddedTs}:{id} — JSON reply {topicId, userId, authorName, body, createdAt}; ts in the key keeps replies ordered within a topic
@@ -243,7 +245,7 @@ Cloudflare Config (wrangler.jsonc):
 
 ## Testing Notes
 
-Automated test suite: **457 tests, ~5 s** (`npm test`). Test files:
+Automated test suite: **478 tests, ~5 s** (`npm test`). Test files:
 
 | File | What it covers | Style |
 |------|---------------|-------|
@@ -254,6 +256,7 @@ Automated test suite: **457 tests, ~5 s** (`npm test`). Test files:
 | `tests/worker-admin.test.mjs` | Admin endpoints (user/plan management, data wipe, content) | ESM |
 | `tests/worker-paths.test.mjs` | Path CRUD + OSM proxy behaviour | ESM |
 | `tests/worker-savedroutes.test.mjs` | Saved-route CRUD and share-token endpoints | ESM |
+| `tests/worker-activities.test.mjs` | Hike-journal CRUD — save/validation/sanitisation, list summary shape, rename, delete, per-user scoping | ESM |
 | `tests/worker-forum.test.mjs` | Forum topics/replies — Silver+ posting, free-tier 5-topic read limit, locked detail, author/admin edit + deletion | ESM |
 | `tests/worker-rating.test.mjs` | Site rating — public aggregate, one-per-account overwrite, star validation, admin-only comment list + delete | ESM |
 | `tests/worker-inbox.test.mjs` | In-app inbox — admin-only send, broadcast vs direct delivery, per-user read state, sent list + delete, deletion purge | ESM |

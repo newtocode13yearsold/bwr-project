@@ -613,6 +613,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const { passwordHash: _ph, salt: _s, hashVersion: _hv, ...profile } = user;
 
     const savedRoutes = await listItems(env, `savedroute:${user.id}:`);
+    const activities = await listItems(env, `activity:${user.id}:`);
     const walkedKeys = await listKeys(env, `walkedpath:${user.id}:`);
     const walkedPaths = await Promise.all(
       walkedKeys.map(async (k) => ({
@@ -626,6 +627,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       format: 'BWR personal-data export (RGPD art. 15 & 20)',
       profile,
       savedRoutes,
+      activities,
       walkedPaths,
     };
 
@@ -648,9 +650,11 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     // GDPR right to erasure (art. 17): purge every key tied to this user, not
     // just the account record. Saved routes carry a public share token that
     // must die with the route, walked-path markers are per-user, the site
-    // review holds a name + free-text comment, and push subscriptions are
-    // device-identifying — all must go with the account.
+    // review holds a name + free-text comment, push subscriptions are
+    // device-identifying, and recorded activities hold GPS tracks — all must
+    // go with the account.
     const savedRoutes = await listItems(env, `savedroute:${user.id}:`);
+    const activityKeys = await listKeys(env, `activity:${user.id}:`);
     const walkedKeys = await listKeys(env, `walkedpath:${user.id}:`);
     const pushKeys = await listKeys(env, `pushsub:${user.id}:`);
     const inboxReadKeys = await listKeys(env, `inboxread:${user.id}:`);
@@ -662,6 +666,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       env.BWR_KV.delete(`review:${user.id}`),
       ...savedRoutes.map(rt => env.BWR_KV.delete(`savedroute:${user.id}:${rt.id}`)),
       ...savedRoutes.filter(rt => rt.shareToken).map(rt => env.BWR_KV.delete(`routeshare:${rt.shareToken}`)),
+      ...activityKeys.map(k => env.BWR_KV.delete(k.name)),
       ...walkedKeys.map(k => env.BWR_KV.delete(k.name)),
       ...pushKeys.map(k => env.BWR_KV.delete(k.name)),
       ...inboxReadKeys.map(k => env.BWR_KV.delete(k.name)),

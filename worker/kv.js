@@ -11,6 +11,7 @@
 // reset:{token}      → JSON { userId, expiresAt }  (1-hour TTL, single-use password reset)
 // osm:{bbox}         → JSON OSM data  (7-day TTL)
 // savedroute:{userId}:{id} → JSON saved route (coords, stats, metadata)
+// activity:{userId}:{id}   → JSON recorded activity (hike journal: coords, elevations?, times?, meters, seconds, ascent, descent, startedAt)
 // routeshare:{token}       → JSON { userId, routeId }  (180-day TTL)
 // news:{id}                → JSON news item (incl. likes / dislikes counts)
 // forum:topic:{id}         → JSON forum topic { userId, authorName, title, body, createdAt, lastActivityAt, replyCount }
