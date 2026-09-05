@@ -269,3 +269,15 @@
   .lg-table { font-size: 12px; }
   .lg-table th, .lg-table td { padding: 8px; }
 }
+
+/* Placeholder marker for legal fields to fill in after registration */
+.lg-todo {
+  display: inline-block;
+  background: rgba(234, 179, 8, 0.16);
+  color: #a16207;
+  border: 1px dashed rgba(234, 179, 8, 0.55);
+  border-radius: 5px;
+  padding: 1px 7px;
+  font-size: 0.9em;
+  font-weight: 600;
+}
