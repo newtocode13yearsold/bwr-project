@@ -880,7 +880,7 @@ describe('wheel prize', () => {
   test('free user is rejected → 403', async () => {
     const { env, registerAndLogin } = freshEnv();
     const { token } = await registerAndLogin('wheel@bwr.fr', 'pass1234');
-    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'badge', plan: null, days: 0 }), env);
+    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'badge' }), env);
     assert.equal(res.status, 403);
   });
 
@@ -891,7 +891,7 @@ describe('wheel prize', () => {
     const stored = JSON.parse(kv.store.get(`user:${user.id}`));
     kv.store.set(`user:${user.id}`, JSON.stringify({ ...stored, plan: 'silver' }));
 
-    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', plan: 'gold', days: 7 }), env);
+    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', prizeId: 'gold_week' }), env);
     assert.equal(res.status, 200);
     const data = await res.json();
     assert.equal(data.plan, 'gold');
@@ -904,7 +904,7 @@ describe('wheel prize', () => {
     const stored = JSON.parse(kv.store.get(`user:${user.id}`));
     kv.store.set(`user:${user.id}`, JSON.stringify({ ...stored, plan: 'silver' }));
 
-    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', plan: 'silver', days: 7 }), env);
+    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', prizeId: 'silver_week' }), env);
     assert.equal(res.status, 400);
   });
 
@@ -916,7 +916,7 @@ describe('wheel prize', () => {
     kv.store.set(`user:${user.id}`, JSON.stringify({ ...stored, plan: 'silver' }));
 
     // First claim succeeds (silver → gold)
-    await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', plan: 'gold', days: 7 }), env);
+    await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', prizeId: 'gold_week' }), env);
 
     // Reset plan back to silver but keep lastWheelPrizeClaim → cooldown still active
     const afterClaim = JSON.parse(kv.store.get(`user:${user.id}`));
@@ -925,7 +925,7 @@ describe('wheel prize', () => {
       plan: 'silver', planBase: null, planExpiresAt: null,
     }));
 
-    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', plan: 'gold', days: 7 }), env);
+    const res = await worker.fetch(authed('POST', '/api/auth/wheel-prize', token, { prizeType: 'plan', prizeId: 'gold_week' }), env);
     assert.equal(res.status, 429);
   });
 });

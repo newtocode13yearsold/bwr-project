@@ -10,6 +10,17 @@ import {
 const REGISTER_RATE_LIMIT = { max: 5, window: 3600 };
 const FORGOT_RATE_LIMIT = { max: 5, window: 3600 };
 
+// Server-side source of truth for the daily-wheel plan prizes (mirrors the
+// `type:'plan'` entries in public/js/profile-wheel.js). The browser sends a
+// prize `id`; the server reads the granted plan + duration from THIS table so a
+// tampered client can't award itself an arbitrary plan or duration.
+const WHEEL_PRIZES = {
+  silver_week:  { plan: 'silver', days: 7  },
+  silver_month: { plan: 'silver', days: 30 },
+  gold_week:    { plan: 'gold',   days: 7  },
+  gold_month:   { plan: 'gold',   days: 30 },
+};
+
 /**
  * Auth endpoints: register, verify, login, logout, me, profile, password,
  * account deletion, plan management, stats, weekly quota, wheel prize.
@@ -409,8 +420,12 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
 
     if (effectivePlan(user) === 'free') return fail('La roue est disponible avec le plan Argent.', 403);
 
-    const { prizeType, plan: prizePlan, days } = await request.json();
+    const { prizeType, prizeId } = await request.json();
     if (prizeType !== 'plan') return json({ success: true });
+
+    const prize = WHEEL_PRIZES[prizeId];
+    if (!prize) return fail('Lot inconnu.', 400);
+    const { plan: prizePlan, days } = prize;
 
     const validUpgrades = { free: ['silver'], silver: ['gold'] };
     const currentPlan = user.plan || 'free';

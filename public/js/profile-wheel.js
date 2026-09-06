@@ -320,7 +320,7 @@ async function spinWheel(plan) {
       const res  = await fetch(`${API_URL}/api/auth/wheel-prize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader() },
-        body: JSON.stringify({ prizeType: 'plan', plan: prize.plan, days: prize.days }),
+        body: JSON.stringify({ prizeType: 'plan', prizeId: prize.id }),
       });
       const data = await res.json();
       if (!res.ok) {
