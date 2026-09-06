@@ -65,6 +65,42 @@ describe('GET /api/paths', () => {
     assert.equal(data.length, 1);
     assert.equal(data[0].id, 'p1');
   });
+
+  test('strips grader identity from the public list', async () => {
+    const { env, kv } = freshEnv();
+    kv.store.set('path:p1', JSON.stringify({
+      id: 'p1', name: 'X', status: 'easy', coordinates: sampleCoords,
+      gradedBy: 'u9', gradedByName: 'Alice', gradedAt: '2026-01-01T00:00:00.000Z',
+    }));
+    const res = await worker.fetch(r('GET', '/api/paths'), env);
+    const data = await res.json();
+    assert.equal(data[0].gradedByName, undefined);
+    assert.equal(data[0].gradedBy, undefined);
+    assert.equal(data[0].gradedAt, undefined);
+    assert.equal(data[0].status, 'easy'); // non-grader fields untouched
+  });
+
+  test('includes grader identity for an authenticated admin', async () => {
+    const { env, token, kv } = freshEnv('admin', 'gold');
+    kv.store.set('path:p1', JSON.stringify({
+      id: 'p1', name: 'X', status: 'easy', coordinates: sampleCoords,
+      gradedBy: 'u9', gradedByName: 'Alice', gradedAt: '2026-01-01T00:00:00.000Z',
+    }));
+    const res = await worker.fetch(authed('GET', '/api/paths', token), env);
+    const data = await res.json();
+    assert.equal(data[0].gradedByName, 'Alice');
+  });
+
+  test('still strips grader identity for a non-admin who sends a token', async () => {
+    const { env, token, kv } = freshEnv('user', 'silver');
+    kv.store.set('path:p1', JSON.stringify({
+      id: 'p1', name: 'X', status: 'easy', coordinates: sampleCoords,
+      gradedByName: 'Alice',
+    }));
+    const res = await worker.fetch(authed('GET', '/api/paths', token), env);
+    const data = await res.json();
+    assert.equal(data[0].gradedByName, undefined);
+  });
 });
 
 // ── POST /api/paths ───────────────────────────────────────────────────────────
@@ -170,6 +206,18 @@ describe('PATCH /api/paths/:id', () => {
     assert.equal(updated.status, 'medium');
     const user = JSON.parse(kv.store.get(`user:${userId}`));
     assert.equal(user.stats.pathGrades, 1);
+  });
+
+  test('stamps who set the current difficulty (grader name persisted on the path)', async () => {
+    const { env, token, kv } = freshEnv('user', 'silver');
+    const id = await createPath(env, token);
+    const res = await worker.fetch(authed('PATCH', `/api/paths/${id}`, token, { status: 'medium' }), env);
+    const updated = await res.json();
+    assert.equal(updated.gradedByName, 'Test');
+    assert.ok(updated.gradedAt);
+    const stored = JSON.parse(kv.store.get(`path:${id}`));
+    assert.equal(stored.gradedByName, 'Test');
+    assert.ok(stored.gradedAt);
   });
 
   test('does not double-count if same user patches same path twice', async () => {

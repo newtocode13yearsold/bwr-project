@@ -52,6 +52,20 @@ async function notifyStatusChange(channel, pathName, oldStatus, newStatus) {
  */
 export async function handlePaths(request, env, { pathname, json, fail, cors, waitUntil }) {
   if (pathname === '/api/paths' && request.method === 'GET') {
+    // Grader identity (who set each difficulty) is admin-only. Admins that send
+    // a token get the full objects, uncached; everyone else gets a grader-stripped
+    // list served from the shared edge cache. Only requests that actually carry an
+    // Authorization header pay the extra auth lookup, so the common anonymous /
+    // logged-in-non-admin page load still hits the fast cached path.
+    if (request.headers.get('Authorization')) {
+      const requester = await getUserFromToken(env, request);
+      if (requester?.role === 'admin') {
+        return new Response(JSON.stringify(await listItems(env, 'path:')), {
+          headers: { ...cors, 'Content-Type': 'application/json', 'X-Cache': 'BYPASS-ADMIN' },
+        });
+      }
+    }
+
     const cache = cacheAvailable() ? caches.default : null;
     const cacheKey = cache ? new Request(PATHS_CACHE_KEY) : null;
 
@@ -67,7 +81,9 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
       }
     }
 
-    const body = JSON.stringify(await listItems(env, 'path:'));
+    // Strip grader fields from the public list (kept in KV, hidden from non-admins).
+    const publicPaths = (await listItems(env, 'path:')).map(({ gradedBy, gradedByName, gradedAt, ...p }) => p);
+    const body = JSON.stringify(publicPaths);
 
     if (cache) {
       const store = new Response(body, {
@@ -103,6 +119,11 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
         : [],
       coordinates: body.coordinates,
       createdAt: new Date().toISOString(),
+      // Creating a path is itself the first classification — stamp the creator
+      // as the current grader so the map popup shows who set the difficulty.
+      gradedBy: user.id,
+      gradedByName: user.username || user.name || 'Membre',
+      gradedAt: new Date().toISOString(),
     };
 
     await putPath(env, newPath);
@@ -136,6 +157,11 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
 
     const oldStatus = existing.status;
     const updated = { ...existing, ...body, id };
+    if (body.status && body.status !== oldStatus) {
+      updated.gradedBy = user.id;
+      updated.gradedByName = user.username || user.name || 'Membre';
+      updated.gradedAt = new Date().toISOString();
+    }
     await putPath(env, updated);
 
     if (body.status && body.status !== oldStatus) {
@@ -222,7 +248,14 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
     const updated = { ...existing, status: body.status };
     // Skip the KV write (and cache purge) when the status doesn't change —
     // an idempotent re-PATCH still credits the grade below but is a no-op here.
-    if (body.status !== oldStatus) await putPath(env, updated);
+    // On a real change, stamp who set the current difficulty so the map popup
+    // can show "Difficulté notée par …" (publicly visible, like trail reviews).
+    if (body.status !== oldStatus) {
+      updated.gradedBy = user.id;
+      updated.gradedByName = user.username || user.name || 'Membre';
+      updated.gradedAt = new Date().toISOString();
+      await putPath(env, updated);
+    }
     updated._grade = gradeInfo;
 
     if (gradedUser) {

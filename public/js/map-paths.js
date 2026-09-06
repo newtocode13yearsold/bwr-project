@@ -33,7 +33,10 @@ async function loadPaths() {
   } catch { cachedRaw = null; }
 
   try {
-    const res = await fetch(`${API_URL}/api/paths`);
+    // Admins send auth so the response includes the (admin-only) grader identity
+    // shown in the popup; everyone else gets the grader-stripped cached list.
+    const isAdmin = (typeof _cachedUser !== 'undefined' && _cachedUser?.role === 'admin');
+    const res = await fetch(`${API_URL}/api/paths`, isAdmin ? { headers: { ...authHeader() } } : undefined);
     if (!res.ok) return;
     const data = await res.json();
     if (!Array.isArray(data)) return;
@@ -238,6 +241,23 @@ document.getElementById('btnEditPaths')?.addEventListener('click', async () => {
 const REPORT_ICONS  = { fallen_tree:'🪵', flooded:'💧', muddy:'🟤', rutted:'🛞', broken_sign:'🪧', closed:'🚫', danger:'⚠️', other:'📝' };
 const REPORT_LABELS = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', muddy:'Boueux', rutted:'Ornières', broken_sign:'Carrefour cassé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
 
+function _escPathHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// "Difficulté notée par X" line — publicly visible so hikers can weigh who set
+// the current grade. Absent on legacy paths that predate grader stamping.
+function gradedByHTML(path) {
+  if (!path.gradedByName) return '';
+  let when = '';
+  if (path.gradedAt) {
+    const d = new Date(path.gradedAt);
+    if (!isNaN(d)) when = ` le ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  }
+  return `<div class="popup-graded-by">🎨 Difficulté notée par <strong>${_escPathHtml(path.gradedByName)}</strong>${when}</div>`;
+}
+
 function openPathPopup(path, latlng) {
   const condHTML = path.conditions?.length
     ? `<div class="popup-cond-row">${path.conditions.map(c => {
@@ -297,6 +317,7 @@ function openPathPopup(path, latlng) {
       <div class="popup">
         <strong>${path.name || 'Chemin sans nom'}</strong>
         <span class="popup-status" style="background:${STATUS_COLORS[path.status]}">${STATUS_LABELS[path.status] || path.status}</span>
+        ${_cachedUser?.role === 'admin' ? gradedByHTML(path) : ''}
         ${condHTML}
         ${path.notes ? `<p class="popup-notes">${path.notes}</p>` : ''}
         ${difficultyHTML}
@@ -338,10 +359,13 @@ function openPathPopup(path, latlng) {
             });
             if (res.ok) {
               path.status = newStatus;
-              const idx = allPaths.findIndex(p => p.id === path.id);
-              if (idx !== -1) allPaths[idx].status = newStatus;
               // Only a "remote" grading (server: _grade.counted) uses a free slot.
               const data = await res.json().catch(() => ({}));
+              // Reflect the server's grader stamp locally so a reopened popup
+              // credits the right person without a page reload.
+              if (data.gradedByName) { path.gradedByName = data.gradedByName; path.gradedAt = data.gradedAt; }
+              const idx = allPaths.findIndex(p => p.id === path.id);
+              if (idx !== -1) { allPaths[idx].status = newStatus; allPaths[idx].gradedByName = path.gradedByName; allPaths[idx].gradedAt = path.gradedAt; }
               if (_cachedUser?.stats && data?._grade?.counted) {
                 _cachedUser.stats.unwalkedGrades = (_cachedUser.stats.unwalkedGrades || 0) + 1;
               }

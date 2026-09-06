@@ -920,7 +920,9 @@ window.addEventListener('online', async () => {
 // ── Load & render saved paths ─────────────────────────────────────────────────
 async function loadPaths() {
   try {
-    const res = await fetch(`${API_URL}/api/paths`);
+    // Send auth so the server returns the full objects incl. the (admin-only)
+    // grader identity for each path.
+    const res = await fetch(`${API_URL}/api/paths`, { headers: { ...authHeader() } });
     if (!res.ok) throw new Error();
     allPaths = await res.json();
     localStorage.setItem('bwr_cached_paths', JSON.stringify(allPaths));
@@ -1052,6 +1054,7 @@ function openColorPopup(path, latlng) {
     .setContent(`
       <div class="color-popup">
         <div class="color-popup-name">${path.name || 'Chemin sans nom'}</div>
+        ${path.gradedByName ? `<div class="popup-graded-by" style="font-size:0.72rem;color:var(--text-muted)">🎨 Difficulté notée par <strong>${String(path.gradedByName).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</strong></div>` : ''}
         <div class="color-popup-label">Changer la couleur :</div>
         <div class="color-popup-btns" id="colorBtns-${path.id}">${colorButtons}</div>
         <div class="color-popup-legend">

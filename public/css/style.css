@@ -524,6 +524,8 @@ body {
   width: fit-content;
 }
 .popup-notes { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+.popup-graded-by { font-size: 0.72rem; color: var(--text-muted); }
+.popup-graded-by strong { font-weight: 700; }
 .popup-cond-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 
 /* ── Edit mode status bar ── */
