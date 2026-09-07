@@ -79,18 +79,35 @@ async function downloadOfflineZone(zone, onProgress) {
   const report = (phase, done, total) =>
     onProgress && onProgress({ phase, pct: total ? Math.round(done / total * 100) : 100 });
 
-  // ── Phase 1: main download. Smaller batches + longer pauses than before so
-  //    the tile server rate-limits fewer requests in the first place. ──
-  const BATCH = 3;
+  // ── Phase 1: main download, with ADAPTIVE concurrency. ──
+  //    Every tile is fetched through our own Cloudflare edge proxy
+  //    (/tiles/topo/…), so a tile already warmed at the edge is an instant HIT
+  //    with zero upstream load — crawling through those 3-at-a-time was the main
+  //    source of slowness. So we start fast (many parallel requests, no pause)
+  //    and only throttle when the tile server actually starts rejecting: a clean
+  //    batch speeds up, a batch with failures halves the concurrency and pauses
+  //    so the rate-limit window can recover. Popular preset zones (already warm)
+  //    finish near-instantly; a cold zone self-throttles back to the old
+  //    cautious pace, so the blank-patch protection still holds.
+  const MAX_CONC = 12, MIN_CONC = 3;
+  let conc = MAX_CONC;
   const failed = [];
   let done = 0;
-  for (let i = 0; i < tiles.length; i += BATCH) {
-    const slice = tiles.slice(i, i + BATCH);
+  let i = 0;
+  while (i < tiles.length) {
+    const slice = tiles.slice(i, i + conc);
+    i += slice.length; // advance by what we actually took, not by the (mutable) conc
     const results = await Promise.all(slice.map(t => _fetchTileWithRetry(cache, t)));
-    results.forEach((okFlag, j) => { if (!okFlag) failed.push(slice[j]); });
+    let batchFails = 0;
+    results.forEach((okFlag, j) => { if (!okFlag) { failed.push(slice[j]); batchFails++; } });
     done += slice.length;
     report('download', done, tiles.length);
-    await _sleep(220); // brief pause between batches
+    if (batchFails === 0) {
+      conc = Math.min(MAX_CONC, conc + 2); // server is happy → push harder
+    } else {
+      conc = Math.max(MIN_CONC, conc >> 1); // getting throttled → back off + cool down
+      await _sleep(300 + batchFails * 200);
+    }
   }
 
   // ── Phase 2: fill the gaps. Up to 3 cooldown-spaced sweeps over only the
