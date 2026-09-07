@@ -178,6 +178,22 @@
         </div>
       </section>
 
+      <!-- Erreurs JS (client-side crash monitoring) -->
+      <section class="admin-card">
+        <h2>🐞 Erreurs JS <span id="errSummary" style="font-size:0.85rem;font-weight:400;color:var(--text-muted)"></span></h2>
+        <p style="margin:0 0 12px;font-size:0.8rem;color:var(--text-muted)">
+          Chaque plantage JavaScript sur l'appareil d'un utilisateur est remonté ici et vous envoie une notification (ntfy).
+          Les erreurs identiques sont regroupées avec leur nombre d'occurrences.
+        </p>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button class="btn-secondary" id="btnReloadErrors" style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">↻ Actualiser</button>
+          <button class="btn-secondary" id="btnClearErrors" style="width:auto;padding:5px 14px;font-size:0.82rem;font-weight:600">🗑 Tout effacer</button>
+        </div>
+        <div id="errList" style="display:flex;flex-direction:column;gap:10px">
+          <p style="color:var(--text-muted);font-size:0.85rem">Chargement…</p>
+        </div>
+      </section>
+
       <!-- Défis mensuels -->
       <section class="admin-card">
         <h2>🗓 Défi du mois <span style="font-size:0.8rem;font-weight:400;color:var(--text-muted)" id="chlMonthLabel"></span></h2>
@@ -377,6 +393,7 @@
 
   <script src="lib/chart.umd.min.js"></script>
   <script src="js/config.js"></script>
+  <script src="js/errors.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/admin.js"></script>
   <script defer src="js/ui-shared.js"></script>

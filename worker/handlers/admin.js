@@ -474,7 +474,7 @@ Utilise les vrais chiffres. Pas d'intro type "Bien sûr" ni de conclusion. Puces
 
     const prefixes = ['user:', 'uemail:', 'session:', 'path:', 'report:', 'contact:',
                       'event:', 'visitor:', 'savedroute:', 'routeshare:', 'osm:', 'pending:', 'pemail:',
-                      'photo:', 'aisugg:', 'walkedpath:', 'pathgrade:', 'leaderboard:'];
+                      'photo:', 'aisugg:', 'walkedpath:', 'pathgrade:', 'leaderboard:', 'errlog:'];
 
     const counts = {};
     let totalKeys = 0;

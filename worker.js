@@ -14,6 +14,7 @@ import { handleNotify }     from './worker/handlers/notify.js';
 import { handleRating }     from './worker/handlers/rating.js';
 import { handleInbox }      from './worker/handlers/inbox.js';
 import { handleQuests }     from './worker/handlers/quests.js';
+import { handleErrors }     from './worker/handlers/errors.js';
 import { handleTiles }      from './worker/handlers/tiles.js';
 
 const ALLOWED_ORIGINS = new Set([
@@ -115,7 +116,8 @@ export default {
       await handleNotify(request, env, ctx)      ??
       await handleRating(request, env, ctx)      ??
       await handleInbox(request, env, ctx)       ??
-      await handleQuests(request, env, ctx);
+      await handleQuests(request, env, ctx)      ??
+      await handleErrors(request, env, ctx);
 
     if (apiResponse) return apiResponse;
 

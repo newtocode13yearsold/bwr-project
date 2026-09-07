@@ -76,6 +76,7 @@ let editModeActive = false;
 async function initDashboard() {
   await loadMessages();
   await loadRatings();
+  await loadErrors();
   await loadMembers();
   await loadRevenue();
   if (window.__wireRevenueForecast) window.__wireRevenueForecast();
@@ -1353,6 +1354,70 @@ async function loadRatings() {
     list.innerHTML = '<p style="color:red">Erreur réseau</p>';
   }
 }
+
+// ── Client-side error monitoring (🐞 Erreurs JS) ──────────────────────────────
+// Lists every uncaught JS error/rejection reported from real users' devices,
+// grouped by signature with an occurrence count. See worker/handlers/errors.js.
+async function loadErrors() {
+  const list = document.getElementById('errList');
+  const sum  = document.getElementById('errSummary');
+  if (!list) return;
+  list.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Chargement…</p>';
+  try {
+    const res  = await fetch(`${API_URL}/api/errors`, { headers: authHeader() });
+    const data = await res.json();
+    if (!res.ok) { list.innerHTML = `<p style="color:red">${escapeHtml(data.error || 'Erreur')}</p>`; return; }
+    const errors = data.errors || [];
+    if (sum) sum.textContent = errors.length
+      ? `— ${data.distinct} type(s) · ${data.total} occurrence(s)`
+      : '';
+    if (errors.length === 0) {
+      list.innerHTML = '<p style="color:#16a34a;font-size:0.88rem">✅ Aucune erreur remontée. Tout roule.</p>';
+      return;
+    }
+    const fmt = iso => { try { return new Date(iso).toLocaleString('fr-FR'); } catch { return iso; } };
+    list.innerHTML = errors.map(e => {
+      const where = e.source
+        ? `${escapeHtml(e.source)}${e.line != null ? ':' + e.line : ''}`
+        : escapeHtml(e.page || '');
+      const kindLabel = e.kind === 'unhandledrejection' ? 'Promesse rejetée' : 'Erreur';
+      return `<div style="padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="min-width:0">
+            <div style="font-weight:600;font-size:0.9rem;color:#991b1b;word-break:break-word">${escapeHtml(e.message || '')}</div>
+            <div style="font-size:0.78rem;color:#6b7280;margin-top:3px;word-break:break-word">
+              ${kindLabel} · <code>${where}</code> · ${escapeHtml(e.page || '')}${e.device ? ' · ' + escapeHtml(e.device) : ''}
+            </div>
+            <div style="font-size:0.72rem;color:#9ca3af;margin-top:2px">
+              ${e.count}× · dernière ${fmt(e.lastSeen)}${e.count > 1 ? ` · première ${fmt(e.firstSeen)}` : ''}
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <span style="background:#dc2626;color:#fff;border-radius:999px;padding:2px 9px;font-size:0.78rem;font-weight:700;height:fit-content">${e.count}</span>
+            <button class="btn-secondary err-del-btn" data-sig="${escapeHtml(e.sig)}" style="width:auto;padding:4px 10px;font-size:0.78rem">Résoudre</button>
+          </div>
+        </div>
+        ${e.stack ? `<details style="margin-top:8px"><summary style="font-size:0.76rem;color:#6b7280;cursor:pointer">Trace</summary><pre style="margin:6px 0 0;font-size:0.72rem;white-space:pre-wrap;word-break:break-word;color:#374151;background:#fff;border:1px solid #f3f4f6;border-radius:8px;padding:8px;max-height:180px;overflow:auto">${escapeHtml(e.stack)}</pre></details>` : ''}
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.err-del-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.textContent = '…'; btn.disabled = true;
+        await fetch(`${API_URL}/api/errors/${encodeURIComponent(btn.dataset.sig)}`, { method: 'DELETE', headers: authHeader() });
+        await loadErrors();
+      });
+    });
+  } catch {
+    list.innerHTML = '<p style="color:red">Erreur réseau</p>';
+  }
+}
+
+document.getElementById('btnReloadErrors')?.addEventListener('click', () => loadErrors());
+document.getElementById('btnClearErrors')?.addEventListener('click', async () => {
+  if (!confirm('Effacer toutes les erreurs remontées ?')) return;
+  await fetch(`${API_URL}/api/errors`, { method: 'DELETE', headers: authHeader() });
+  await loadErrors();
+});
 
 // load badge count on startup
 (async () => {
