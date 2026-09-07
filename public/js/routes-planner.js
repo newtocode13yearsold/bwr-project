@@ -1004,6 +1004,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
 
   lastRoute = { coords, meters, seconds };
   setSaveShareEnabled(true);
+  enableRouteFollow(coords);
 
   // Gold users can override route color (free/silver get default difficulty colors)
   const plan = currentUser?.plan || 'free';

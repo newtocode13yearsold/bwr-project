@@ -333,6 +333,7 @@ async function handleSharedRouteParam() {
     if (routeLayer) map.removeLayer(routeLayer);
     routeLayer = drawRouteLine(route.coords, color).addTo(map);
     map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+    enableRouteFollow(route.coords);
 
     const km   = (route.meters / 1000).toFixed(2);
     const modeIcon = route.mode === 'loop' ? '🔄 Boucle' : '➡️ A → B';

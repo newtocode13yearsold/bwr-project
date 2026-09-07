@@ -1,0 +1,171 @@
+/* route-follow.css — full-screen live-guidance HUD (js/route-follow.js).
+   Intentionally a dark, high-contrast layer for outdoor readability, so it does
+   not follow the page's light/dark theme. */
+
+.rf-open { overflow: hidden; }
+
+.rf-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  flex-direction: column;
+  background: #0b1220;
+  color: #fff;
+  font-family: 'Inter', system-ui, sans-serif;
+  /* Respect notches / home indicators on phones. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* ── Top instruction banner ── */
+.rf-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: #16a34a;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .35);
+  transition: background .25s ease;
+}
+.rf-banner.off      { background: #dc2626; }
+.rf-banner.arrived  { background: #2563eb; }
+
+.rf-arrow {
+  font-size: 40px;
+  line-height: 1;
+  min-width: 46px;
+  text-align: center;
+}
+.rf-instr { min-width: 0; }
+.rf-instr-dist {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -.5px;
+}
+.rf-instr-text {
+  font-size: 15px;
+  font-weight: 500;
+  opacity: .95;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Map ── */
+.rf-map {
+  flex: 1;
+  min-height: 0;
+  background: #1a2433;
+}
+.rf-map .leaflet-container { background: #1a2433; }
+
+.rf-acc {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 84px);
+  left: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+  background: rgba(11, 18, 32, .7);
+  padding: 3px 8px;
+  border-radius: 999px;
+  z-index: 4100;
+}
+.rf-acc.poor { color: #fca5a5; }
+
+.rf-recenter {
+  position: absolute;
+  right: 14px;
+  bottom: 190px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: none;
+  background: #fff;
+  color: #111;
+  font-size: 20px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .4);
+  cursor: pointer;
+  z-index: 4100;
+}
+.rf-recenter:active { transform: scale(.94); }
+
+/* User heading arrow (Leaflet divIcon) */
+.rf-userdot-inner { transition: transform .2s linear; transform-origin: 50% 50%; }
+
+/* ── Bottom dashboard ── */
+.rf-bottom {
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: #0b1220;
+  box-shadow: 0 -2px 14px rgba(0, 0, 0, .5);
+}
+.rf-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: #1e293b;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.rf-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+  border-radius: 999px;
+  transition: width .35s ease;
+}
+.rf-stats {
+  display: flex;
+  justify-content: space-between;
+  text-align: center;
+  margin-bottom: 12px;
+}
+.rf-stat strong {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+}
+.rf-stat span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #94a3b8;
+}
+.rf-actions { display: flex; gap: 10px; }
+.rf-btn {
+  flex: 1;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.rf-voice { background: #1e293b; color: #fff; }
+.rf-voice.off { color: #94a3b8; }
+.rf-quit  { background: #ef4444; color: #fff; }
+.rf-btn:active { transform: scale(.97); }
+
+@media (min-width: 900px) {
+  /* Keep the HUD phone-width and centred on desktop — it's a mobile-first tool. */
+  .rf-overlay { max-width: 480px; margin: 0 auto; border-left: 1px solid #1e293b; border-right: 1px solid #1e293b; }
+}
+
+/* ── "Suivre l'itinéraire" launch button on the result panel ── */
+.btn-follow-route {
+  display: block;
+  width: 100%;
+  margin: 14px 0 4px;
+  padding: 15px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, .35);
+  transition: transform .1s ease, box-shadow .2s ease;
+}
+.btn-follow-route:hover { box-shadow: 0 6px 18px rgba(22, 163, 74, .45); }
+.btn-follow-route:active { transform: translateY(1px); }

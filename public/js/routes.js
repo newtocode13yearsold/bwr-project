@@ -29,6 +29,25 @@ function loadScript(src) {
 const _loadElevation  = () => loadScript('js/elevation.js');
 const _loadBreakdown  = () => loadScript('js/route-breakdown.js');
 const _loadRouteSave  = () => loadScript('js/route-save.js');
+const _loadRouteFollow = () => loadScript('js/route-follow.js');
+
+// ── Live guidance launch — wire the "Suivre l'itinéraire" button ───────────────
+// Called from displayRoute (routes-planner.js) and the shared-route path
+// (routes-map.js) with the coords of the route currently on screen.
+function enableRouteFollow(coords) {
+  const btn = document.getElementById('btnFollowRoute');
+  if (!btn) return;
+  if (!Array.isArray(coords) || coords.length < 2) { btn.classList.add('hidden'); return; }
+  btn.classList.remove('hidden');
+  btn.onclick = async () => {
+    try {
+      await _loadRouteFollow();
+      window.RouteFollow.start(coords, { transportMode });
+    } catch (_) {
+      showToast('Impossible de démarrer le guidage.');
+    }
+  };
+}
 let routingPriority = 'forest';
 let surfaceFilter = 'any';
 let startMarker = null;
