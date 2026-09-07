@@ -185,11 +185,28 @@ function todayUtcMs() {
 }
 
 // ── Form: update name / email ─────────────────────────────────────────────────
+// Changing the login email is sensitive, so we ask the user to re-confirm their
+// current password. The password field only appears once the email differs from
+// the one on file — a plain name change never asks for it.
+const emailInput   = document.getElementById('inputEmail');
+const emailPwField = document.getElementById('emailPwField');
+const emailPwInput = document.getElementById('inputEmailPw');
+function syncEmailPwField() {
+  const changed = emailInput.value.trim().toLowerCase() !== ((currentUser && currentUser.email) || '').toLowerCase();
+  emailPwField.hidden = !changed;
+  if (!changed) emailPwInput.value = '';
+}
+emailInput.addEventListener('input', syncEmailPwField);
+
 document.getElementById('formInfo').addEventListener('submit', async e => {
   e.preventDefault();
   const name        = document.getElementById('inputName').value.trim();
-  const email       = document.getElementById('inputEmail').value.trim().toLowerCase();
+  const email       = emailInput.value.trim().toLowerCase();
   if (!name || !email) return showMsg('infoMsg', 'Tous les champs sont obligatoires.');
+
+  const emailChanged = email !== (currentUser.email || '').toLowerCase();
+  const password     = emailPwInput.value;
+  if (emailChanged && !password) return showMsg('infoMsg', 'Confirmez votre mot de passe pour changer d\'adresse e-mail.');
 
   const btn = e.target.querySelector('button[type=submit]');
   btn.textContent = 'Enregistrement…';
@@ -199,19 +216,28 @@ document.getElementById('formInfo').addEventListener('submit', async e => {
     const res = await fetch(`${API_URL}/api/auth/profile`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ name, email }),
+      body: JSON.stringify(emailChanged ? { name, email, password } : { name, email }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erreur serveur');
 
-    // Update cached user
+    // The name is always applied immediately. The email, however, only changes
+    // once the user clicks the confirmation link sent to the NEW address, so we
+    // keep the old email locally and tell them to check their inbox.
+    const effectiveEmail = data.emailPending ? currentUser.email : email;
     const cached = getCachedUser();
-    setSession(localStorage.getItem('bwr_token'), { ...cached, name, email });
-    currentUser.name        = name;
-    currentUser.email       = email;
+    setSession(localStorage.getItem('bwr_token'), { ...cached, name, email: effectiveEmail });
+    currentUser.name  = name;
+    currentUser.email = effectiveEmail;
     document.getElementById('heroName').textContent = name;
+    if (data.emailPending) emailInput.value = effectiveEmail; // revert the box to the still-active address
+    syncEmailPwField(); // clears + hides the password field once the box matches
 
-    showMsg('infoMsg', 'Profil mis à jour avec succès !', 'success');
+    if (data.emailPending) {
+      showMsg('infoMsg', data.message || 'Un lien de confirmation a été envoyé à votre nouvelle adresse.', 'success');
+    } else {
+      showMsg('infoMsg', 'Profil mis à jour avec succès !', 'success');
+    }
   } catch (err) {
     showMsg('infoMsg', err.message);
   } finally {

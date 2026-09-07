@@ -4,7 +4,7 @@ import {
   isoMonday, checkRateLimit,
   getLoginAttempts, recordFailedLogin,
   PENDING_TTL, RESEND_COOLDOWN, RESET_TTL, RESET_COOLDOWN,
-  sendVerificationEmail, sendPasswordResetEmail,
+  sendVerificationEmail, sendPasswordResetEmail, sendEmailChangeVerification,
 } from '../auth-utils.js';
 
 const REGISTER_RATE_LIMIT = { max: 5, window: 3600 };
@@ -462,22 +462,97 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
 
-    const { name, email } = await request.json();
+    const { name, email, password } = await request.json();
     if (!name || !email) return fail('Nom et email obligatoires.');
 
     const newEmail = email.toLowerCase();
+
+    // The name can be changed freely; persist it right away.
+    let updated = { ...user, name };
+    await putUser(env, updated);
+
+    // Changing the login email does NOT take effect immediately. We re-confirm
+    // the current password, then email a one-time confirmation link to the NEW
+    // address; the swap only happens once that link is clicked
+    // (GET /api/auth/verify-email-change). Until then the old address stays live.
     if (newEmail !== user.email) {
+      // Re-confirm the password (same verification as /api/auth/login & /password).
+      if (!password) return fail('Mot de passe requis pour changer d\'adresse email.', 401);
+      const verifyHash = user.hashVersion === 2
+        ? await hashPassword(password, user.salt)
+        : await hashPasswordLegacy(password, user.salt);
+      if (verifyHash !== user.passwordHash) return fail('Mot de passe incorrect.', 401);
+
       const conflict = await env.BWR_KV.get(`uemail:${newEmail}`);
       if (conflict && conflict !== user.id) return fail('Cette adresse email est déjà utilisée.');
-      await Promise.all([
-        env.BWR_KV.delete(`uemail:${user.email}`),
-        env.BWR_KV.put(`uemail:${newEmail}`, user.id),
-      ]);
+
+      const token = crypto.randomUUID();
+      const record = {
+        userId: user.id,
+        oldEmail: user.email,
+        newEmail,
+        expiresAt: new Date(Date.now() + PENDING_TTL * 1000).toISOString(),
+      };
+      await env.BWR_KV.put(`emailchange:${token}`, JSON.stringify(record), { expirationTtl: PENDING_TTL });
+
+      const origin = new URL(request.url).origin;
+      try {
+        await sendEmailChangeVerification(env, origin, newEmail, name, token);
+      } catch (e) {
+        console.error('profile: email-change verification email failed:', e && e.message);
+        await env.BWR_KV.delete(`emailchange:${token}`);
+        return fail("L'envoi de l'email de confirmation a échoué. Réessayez plus tard.", 500);
+      }
+
+      return json({
+        id: updated.id, name: updated.name, email: updated.email, role: updated.role,
+        emailPending: true, pendingEmail: newEmail,
+        message: `Un lien de confirmation a été envoyé à ${newEmail}. Votre adresse actuelle reste active tant que vous ne l'avez pas cliqué.`,
+      });
     }
 
-    const updated = { ...user, name, email: newEmail };
-    await putUser(env, updated);
     return json({ id: updated.id, name: updated.name, email: updated.email, role: updated.role });
+  }
+
+  // Confirm a pending email change (link sent to the NEW address). One-time:
+  // the emailchange:{token} record is deleted on use, and the uemail index is
+  // moved from the old address to the new one atomically-ish.
+  if (pathname === '/api/auth/verify-email-change' && request.method === 'GET') {
+    const token = url.searchParams.get('token');
+    if (!token) return fail('Token manquant.', 400);
+
+    const raw = await env.BWR_KV.get(`emailchange:${token}`);
+    if (!raw) return fail('Lien invalide ou expiré.', 400);
+    const record = JSON.parse(raw);
+
+    if (new Date(record.expiresAt) < new Date()) {
+      await env.BWR_KV.delete(`emailchange:${token}`);
+      return fail('Lien invalide ou expiré.', 400);
+    }
+
+    const user = await getUser(env, record.userId);
+    if (!user) {
+      await env.BWR_KV.delete(`emailchange:${token}`);
+      return fail('Compte introuvable.', 404);
+    }
+
+    // Re-check the target address is still free (another account may have taken
+    // it since the link was issued).
+    const conflict = await env.BWR_KV.get(`uemail:${record.newEmail}`);
+    if (conflict && conflict !== user.id) {
+      await env.BWR_KV.delete(`emailchange:${token}`);
+      return fail('Cette adresse email est désormais utilisée par un autre compte.', 409);
+    }
+
+    await Promise.all([
+      putUser(env, { ...user, email: record.newEmail }),
+      env.BWR_KV.put(`uemail:${record.newEmail}`, user.id),
+      // Only drop the old index if it still points at this user.
+      user.email && user.email !== record.newEmail ? env.BWR_KV.delete(`uemail:${user.email}`) : Promise.resolve(),
+      env.BWR_KV.delete(`emailchange:${token}`),
+    ]);
+
+    return json({ message: 'Adresse email confirmée ! Utilisez-la désormais pour vous connecter.' });
   }
 
   if (pathname === '/api/auth/stats' && request.method === 'POST') {

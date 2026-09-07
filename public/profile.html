@@ -177,6 +177,11 @@
             <label for="inputEmail">Adresse e-mail</label>
             <input type="email" id="inputEmail" class="input-field" placeholder="vous@email.com" required />
           </div>
+          <div class="field" id="emailPwField" hidden>
+            <label for="inputEmailPw">Mot de passe actuel</label>
+            <input type="password" id="inputEmailPw" class="input-field" placeholder="Confirmez votre mot de passe" autocomplete="current-password" />
+            <small class="field-hint">Requis pour confirmer le changement d'adresse e-mail.</small>
+          </div>
           <div id="infoMsg"></div>
           <button type="submit" class="btn-save">Enregistrer les modifications</button>
         </form>

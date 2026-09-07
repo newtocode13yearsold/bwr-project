@@ -164,6 +164,43 @@ export async function sendVerificationEmail(env, origin, email, name, token) {
   }
 }
 
+/**
+ * Sends the "confirm your new email address" link when a signed-in user changes
+ * their account email. The link lands on the new address (proving ownership)
+ * before the change is applied. Silently no-ops if RESEND_API_KEY is unset (dev).
+ */
+export async function sendEmailChangeVerification(env, origin, newEmail, name, token) {
+  if (!env.RESEND_API_KEY) return; // skip in dev if key not set
+  const confirmUrl = `${origin}/verify-email?token=${token}`;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: env.RESEND_FROM || 'BWR <noreply@bwr.ciril8596.workers.dev>',
+      to: newEmail,
+      subject: 'Confirmez votre nouvelle adresse email — BWR',
+      html: `<p>Bonjour ${name},</p>
+<p>Vous avez demandé à utiliser cette adresse comme nouvel email de connexion pour votre compte BWR. Cliquez sur le lien ci-dessous pour confirmer le changement. Ce lien expire dans 24 heures.</p>
+<p><a href="${confirmUrl}">${confirmUrl}</a></p>
+<p>Tant que vous n'avez pas cliqué, votre ancienne adresse reste active. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>`,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    console.error(`Resend email-change verification failed for ${newEmail}: ${res.status} ${body}`);
+    await fetch('https://ntfy.sh/bwr-ciril8596', {
+      method: 'POST',
+      headers: { Title: 'BWR - email change verification FAILED', Priority: 'high', Tags: 'email' },
+      body: `Resend rejected email-change email to ${newEmail}. Status: ${res.status}. Details: ${body}`,
+    }).catch(() => {});
+    throw new Error(`Resend error ${res.status}: ${body}`);
+  }
+}
+
 /** Sends the password-reset email via Resend. Silently no-ops if RESEND_API_KEY is unset (dev). */
 export async function sendPasswordResetEmail(env, origin, email, name, token) {
   if (!env.RESEND_API_KEY) return; // skip in dev if key not set

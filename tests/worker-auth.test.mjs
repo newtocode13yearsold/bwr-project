@@ -629,6 +629,102 @@ describe('logout', () => {
   });
 });
 
+// ── PUT /api/auth/profile ─────────────────────────────────────────────────────
+
+describe('profile update', () => {
+  test('name-only change succeeds without a password', async () => {
+    const { env, registerAndLogin, getStoredUser } = freshEnv();
+    const { token, user } = await registerAndLogin('prof@bwr.fr', 'pass1234', 'Old Name');
+    const res = await worker.fetch(
+      authed('PUT', '/api/auth/profile', token, { name: 'New Name', email: 'prof@bwr.fr' }),
+      env,
+    );
+    assert.equal(res.status, 200);
+    assert.equal(getStoredUser(user.id).name, 'New Name');
+  });
+
+  test('email change without a password → 401 and email is unchanged', async () => {
+    const { env, registerAndLogin, kv, getStoredUser } = freshEnv();
+    const { token, user } = await registerAndLogin('prof2@bwr.fr', 'pass1234');
+    const res = await worker.fetch(
+      authed('PUT', '/api/auth/profile', token, { name: 'Test', email: 'moved@bwr.fr' }),
+      env,
+    );
+    assert.equal(res.status, 401);
+    assert.equal(getStoredUser(user.id).email, 'prof2@bwr.fr');
+    assert.ok(!kv.store.has('uemail:moved@bwr.fr'), 'new email index must not be created');
+    assert.ok(kv.store.has('uemail:prof2@bwr.fr'), 'old email index must be preserved');
+  });
+
+  test('email change with a wrong password → 401', async () => {
+    const { env, registerAndLogin, getStoredUser } = freshEnv();
+    const { token, user } = await registerAndLogin('prof3@bwr.fr', 'pass1234');
+    const res = await worker.fetch(
+      authed('PUT', '/api/auth/profile', token, { name: 'Test', email: 'moved3@bwr.fr', password: 'wrongpass' }),
+      env,
+    );
+    assert.equal(res.status, 401);
+    assert.equal(getStoredUser(user.id).email, 'prof3@bwr.fr');
+  });
+
+  test('email change with the correct password does NOT switch immediately — it goes pending', async () => {
+    const { env, registerAndLogin, kv, getStoredUser } = freshEnv();
+    const { token, user } = await registerAndLogin('prof4@bwr.fr', 'pass1234');
+    const res = await worker.fetch(
+      authed('PUT', '/api/auth/profile', token, { name: 'Test', email: 'Moved4@bwr.fr', password: 'pass1234' }),
+      env,
+    );
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.emailPending, true);
+    // Old address still active; new one not indexed yet.
+    assert.equal(getStoredUser(user.id).email, 'prof4@bwr.fr');
+    assert.equal(await kv.get('uemail:prof4@bwr.fr'), user.id);
+    assert.ok(!kv.store.has('uemail:moved4@bwr.fr'), 'new email index must not exist until confirmed');
+    // A pending-change token must have been stored.
+    const pendingKeys = [...kv.store.keys()].filter(k => k.startsWith('emailchange:'));
+    assert.equal(pendingKeys.length, 1);
+    const rec = JSON.parse(kv.store.get(pendingKeys[0]));
+    assert.equal(rec.newEmail, 'moved4@bwr.fr');
+    assert.equal(rec.userId, user.id);
+  });
+
+  test('confirming the emailchange token swaps the address and moves the index', async () => {
+    const { env, registerAndLogin, kv, getStoredUser } = freshEnv();
+    const { token, user } = await registerAndLogin('prof4b@bwr.fr', 'pass1234');
+    await worker.fetch(
+      authed('PUT', '/api/auth/profile', token, { name: 'Test', email: 'moved4b@bwr.fr', password: 'pass1234' }),
+      env,
+    );
+    const changeToken = [...kv.store.keys()].find(k => k.startsWith('emailchange:')).slice('emailchange:'.length);
+
+    const res = await worker.fetch(r('GET', `/api/auth/verify-email-change?token=${changeToken}`), env);
+    assert.equal(res.status, 200);
+    assert.equal(getStoredUser(user.id).email, 'moved4b@bwr.fr');
+    assert.equal(await kv.get('uemail:moved4b@bwr.fr'), user.id);
+    assert.ok(!kv.store.has('uemail:prof4b@bwr.fr'), 'old email index must be removed after confirmation');
+    assert.ok(!kv.store.has(`emailchange:${changeToken}`), 'token must be single-use');
+  });
+
+  test('verify-email-change with an unknown token → 400', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('GET', '/api/auth/verify-email-change?token=nope'), env);
+    assert.equal(res.status, 400);
+  });
+
+  test('email change to one already taken → 400 (no token created)', async () => {
+    const { env, registerAndVerify, registerAndLogin, kv } = freshEnv();
+    await registerAndVerify('taken@bwr.fr', 'pass1234');
+    const { token } = await registerAndLogin('prof5@bwr.fr', 'pass1234');
+    const res = await worker.fetch(
+      authed('PUT', '/api/auth/profile', token, { name: 'Test', email: 'taken@bwr.fr', password: 'pass1234' }),
+      env,
+    );
+    assert.equal(res.status, 400);
+    assert.equal([...kv.store.keys()].filter(k => k.startsWith('emailchange:')).length, 0);
+  });
+});
+
 // ── POST /api/auth/stats ──────────────────────────────────────────────────────
 
 describe('stats endpoint', () => {
