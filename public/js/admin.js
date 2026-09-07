@@ -1407,30 +1407,16 @@ let _chartRange = 'week';   // active tab
 function renderActivityChart(events, visitors, monthlyVisits) {
   _chartData = { events, visitors, monthlyVisits };
   drawActivityChart();
+  drawGrowthChart();
 }
 
-// Build { labels, visitorsData, loginsData } for the active range.
-function buildChartSeries(range) {
-  const { events, visitors, monthlyVisits } = _chartData;
-  const logins = events.filter(e => e.type !== 'signup'); // re-logins
+// Build the ordered bucket list for a range, shared by both charts.
+// Returns { buckets:[{key,label}], keyOf, monthly } — `monthly` true means the
+// buckets are calendar months (visitors read from monthlyVisits totals, not stamps).
+function buildBuckets(range) {
+  const { monthlyVisits } = _chartData;
   const now = new Date();
-
-  // Sum values into a fixed set of buckets. `keyOf(date)` maps a date to a bucket
-  // key; buckets is an ordered list of { key, label }.
-  const bucketize = (buckets, keyOf, stampList) => {
-    const idx = new Map(buckets.map((b, i) => [b.key, i]));
-    const out = buckets.map(() => 0);
-    for (const ts of stampList) {
-      const k = keyOf(new Date(ts));
-      if (idx.has(k)) out[idx.get(k)]++;
-    }
-    return out;
-  };
-
   const pad = n => String(n).padStart(2, '0');
-  const loginStamps   = logins.map(e => e.timestamp);
-  // Anonymous visitors are keyed by when they were first seen this month.
-  const visitorStamps = visitors.map(v => v.firstSeen).filter(Boolean);
 
   if (range === 'day') {
     // 24 hourly buckets ending at the current hour.
@@ -1441,9 +1427,7 @@ function buildChartSeries(range) {
                      label: i % 3 === 0 ? `${pad(d.getHours())}h` : '' });
     }
     const keyOf = d => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
-    return { labels: buckets.map(b => b.label),
-             visitorsData: bucketize(buckets, keyOf, visitorStamps),
-             loginsData:   bucketize(buckets, keyOf, loginStamps) };
+    return { buckets, keyOf, monthly: false };
   }
 
   if (range === 'week' || range === 'month') {
@@ -1456,9 +1440,7 @@ function buildChartSeries(range) {
       buckets.push({ key, label: show ? `${pad(d.getDate())}/${pad(d.getMonth() + 1)}` : '' });
     }
     const keyOf = d => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    return { labels: buckets.map(b => b.label),
-             visitorsData: bucketize(buckets, keyOf, visitorStamps),
-             loginsData:   bucketize(buckets, keyOf, loginStamps) };
+    return { buckets, keyOf, monthly: false };
   }
 
   // 'year' (12 months) or 'all' (every month we have data for).
@@ -1477,12 +1459,50 @@ function buildChartSeries(range) {
   const buckets = [];
   for (let i = span - 1; i >= 0; i--) {
     const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
-    buckets.push({ key: monthKey(d), label: MONTHS[d.getUTCMonth()], _d: d });
+    buckets.push({ key: monthKey(d), label: MONTHS[d.getUTCMonth()] });
   }
-  // Logins bucketed by month; visitors read straight from the monthly totals.
-  const loginsData = bucketize(buckets, d => monthKey(new Date(Date.UTC(d.getFullYear(), d.getMonth(), 1))), loginStamps);
-  const visitorsData = buckets.map(b => monthlyVisits[b.key] || 0);
+  const keyOf = d => monthKey(new Date(Date.UTC(d.getFullYear(), d.getMonth(), 1)));
+  return { buckets, keyOf, monthly: true };
+}
+
+// Count timestamps into buckets. keyOf(date) → bucket key.
+function bucketizeStamps(buckets, keyOf, stampList) {
+  const idx = new Map(buckets.map((b, i) => [b.key, i]));
+  const out = buckets.map(() => 0);
+  for (const ts of stampList) {
+    const k = keyOf(new Date(ts));
+    if (idx.has(k)) out[idx.get(k)]++;
+  }
+  return out;
+}
+
+// Per-period activity: red = anonymous visitors, blue = re-logins.
+function buildChartSeries(range) {
+  const { events, visitors, monthlyVisits } = _chartData;
+  const { buckets, keyOf, monthly } = buildBuckets(range);
+  const loginStamps   = events.filter(e => e.type !== 'signup').map(e => e.timestamp);
+  const visitorStamps = visitors.map(v => v.firstSeen).filter(Boolean);
+  const loginsData   = bucketizeStamps(buckets, keyOf, loginStamps);
+  const visitorsData = monthly ? buckets.map(b => monthlyVisits[b.key] || 0)
+                               : bucketizeStamps(buckets, keyOf, visitorStamps);
   return { labels: buckets.map(b => b.label), visitorsData, loginsData };
+}
+
+// Cumulative growth: running total of (visits + new accounts) across the window,
+// so the line only ever climbs — the "up and to the right" audience curve.
+function buildGrowthSeries(range) {
+  const { events, visitors, monthlyVisits } = _chartData;
+  const { buckets, keyOf, monthly } = buildBuckets(range);
+  const signupStamps  = events.filter(e => e.type === 'signup').map(e => e.timestamp);
+  const visitorStamps = visitors.map(v => v.firstSeen).filter(Boolean);
+  const signupsPer  = bucketizeStamps(buckets, keyOf, signupStamps);
+  const visitorsPer = monthly ? buckets.map(b => monthlyVisits[b.key] || 0)
+                              : bucketizeStamps(buckets, keyOf, visitorStamps);
+  // Cumulate visits + signups into a single ever-rising series.
+  let running = 0;
+  const cumulative = buckets.map((_, i) => (running += visitorsPer[i] + signupsPer[i]));
+  const newPeople  = buckets.map((_, i) => visitorsPer[i] + signupsPer[i]);
+  return { labels: buckets.map(b => b.label), cumulative, newPeople };
 }
 
 function drawActivityChart() {
@@ -1542,13 +1562,63 @@ function drawActivityChart() {
       ${dots(visitorsData, '#ef4444')}${dots(loginsData, '#2563eb')}
     </svg>`;
 
-  // Wire the tab buttons (CSP blocks inline onclick).
+  // Wire the tab buttons (CSP blocks inline onclick). Both charts share the range.
   el.querySelectorAll('[data-chart-range]').forEach(btn => {
     btn.addEventListener('click', () => {
       _chartRange = btn.getAttribute('data-chart-range');
       drawActivityChart();
+      drawGrowthChart();
     });
   });
+}
+
+// Cumulative audience-growth chart: a single green line that only ever rises,
+// summing anonymous visitors + new accounts across the selected window.
+function drawGrowthChart() {
+  const el = document.getElementById('growthChart');
+  if (!el || !_chartData) return;
+
+  const { labels, cumulative, newPeople } = buildGrowthSeries(_chartRange);
+
+  // SVG geometry (same frame as the activity chart).
+  const W = 640, H = 220, PADL = 40, PADR = 12, PADT = 14, PADB = 26;
+  const iw = W - PADL - PADR, ih = H - PADT - PADB;
+  const n = labels.length;
+  const maxV = Math.max(1, ...cumulative);
+  const x = i => PADL + (n <= 1 ? iw / 2 : (i / (n - 1)) * iw);
+  const y = v => PADT + ih - (v / maxV) * ih;
+
+  const linePath = data => data.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  // Filled area under the line for the "always climbing" feel.
+  const areaPath = cumulative.length
+    ? `${linePath(cumulative)} L${x(n - 1).toFixed(1)},${(PADT + ih).toFixed(1)} L${x(0).toFixed(1)},${(PADT + ih).toFixed(1)} Z`
+    : '';
+  const dots = cumulative.map((v, i) =>
+    `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.4" fill="#16a34a"><title>${v} (+${newPeople[i]})</title></circle>`).join('');
+
+  const gridN = 4;
+  let grid = '';
+  for (let g = 0; g <= gridN; g++) {
+    const val = Math.round((maxV * g) / gridN);
+    const gy = (PADT + ih - (g / gridN) * ih).toFixed(1);
+    grid += `<line x1="${PADL}" y1="${gy}" x2="${W - PADR}" y2="${gy}" stroke="#eef0f2" stroke-width="1"/>`;
+    grid += `<text x="${PADL - 6}" y="${(+gy + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#9ca3af">${val}</text>`;
+  }
+  const xlabels = labels.map((l, i) => l
+    ? `<text x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="9" fill="#9ca3af">${l}</text>` : '').join('');
+
+  const total = cumulative.length ? cumulative[cumulative.length - 1] : 0;
+
+  el.innerHTML = `
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:6px;font-size:0.78rem;font-weight:600">
+      <span style="display:flex;align-items:center;gap:5px;color:#374151"><span style="width:14px;height:3px;background:#16a34a;border-radius:2px;display:inline-block"></span>Croissance cumulée — visiteurs + nouveaux comptes <span style="color:#9ca3af">(${total.toLocaleString('fr-FR')})</span></span>
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:100%;background:#fff;border:1px solid #e5e7eb;border-radius:10px" preserveAspectRatio="xMidYMid meet">
+      ${grid}${xlabels}
+      <path d="${areaPath}" fill="#16a34a" fill-opacity="0.10" stroke="none"/>
+      <path d="${linePath(cumulative)}" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+    </svg>`;
 }
 
 // Shows real activity: anonymous visitors (counted only after ≥ 10 s, so bots and
