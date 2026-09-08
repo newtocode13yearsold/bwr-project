@@ -1,13 +1,17 @@
 /* ── BWR onboarding ───────────────────────────────────────────────────────────
- * First-visit experience for newly-signed-up users:
- *   • A welcome / quick-start modal (#3) shown once after the first login.
- *   • An interactive coach-mark tour (#1) that spotlights the real UI controls.
+ * ONE-TIME post-signup experience, shown exactly once per account and never
+ * again — there is deliberately no replay:
+ *   • A welcome / quick-start modal shown once, right after the first signup.
+ *   • An interactive coach-mark tour that spotlights the real UI controls.
  *
- * Auto-runs on the map page when a logged-in user has never seen it. Can be
- * replayed from anywhere via the nav-drawer "Revoir le tutoriel" link or the
- * guide page — those navigate to `map?tour=1` (tour) or `map?tour=welcome`.
+ * Gating is server-side: a brand-new account carries `onboarded:false` (set at
+ * email verification); the flag is flipped to `true` the instant the tour first
+ * appears, via POST /api/auth/onboarded — a one-way switch with no reset path.
+ * This makes it survive across devices and impossible to redo. A localStorage
+ * flag is kept only as a same-device anti-flicker guard. Legacy accounts (no
+ * `onboarded` field) map to `true` server-side, so they never see it.
  *
- * No build step, no dependencies. Exposes window.BWRTour for replay.
+ * No build step, no dependencies.
  * ──────────────────────────────────────────────────────────────────────────── */
 (function () {
   'use strict';
@@ -68,11 +72,47 @@
   function seen() {
     try { return localStorage.getItem(SEEN_KEY) === '1'; } catch (e) { return false; }
   }
+  // One-way: burn the tour for good. Sets the same-device guard immediately, then
+  // best-effort persists the permanent server flag so it never returns anywhere.
+  var marked = false;
   function markSeen() {
+    if (marked) return;
+    marked = true;
     try { localStorage.setItem(SEEN_KEY, '1'); } catch (e) {}
+    // Reflect it in the cached user so a mid-session /api/auth/me refresh in
+    // another script doesn't momentarily reopen the gate.
+    try {
+      var raw = localStorage.getItem('bwr_user');
+      if (raw) {
+        var u = JSON.parse(raw);
+        u.onboarded = true;
+        localStorage.setItem('bwr_user', JSON.stringify(u));
+      }
+    } catch (e) {}
+    try {
+      var token = localStorage.getItem('bwr_token');
+      var base = (typeof API_URL !== 'undefined' && API_URL != null) ? API_URL : '';
+      if (token) {
+        fetch(base + '/api/auth/onboarded', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + token },
+          keepalive: true
+        }).catch(function () {});
+      }
+    } catch (e) {}
   }
   function loggedIn() {
     try { return !!localStorage.getItem('bwr_token'); } catch (e) { return false; }
+  }
+  // Brand-new signup only: the account must explicitly carry onboarded===false.
+  // Legacy accounts (field absent → server sends true) and anyone who already
+  // saw it never qualify.
+  function isNewSignup() {
+    try {
+      var raw = localStorage.getItem('bwr_user');
+      if (!raw) return false;
+      return JSON.parse(raw).onboarded === false;
+    } catch (e) { return false; }
   }
   function onMapPage() { return !!document.getElementById('map'); }
 
@@ -98,6 +138,9 @@
 
   // ── Welcome / quick-start modal ───────────────────────────────────────────
   function showWelcome() {
+    // Burn it the instant it appears: closing, skipping ("Plus tard") or even a
+    // refresh must never bring it back. This is the "only once" guarantee.
+    markSeen();
     var overlay = el('div', 'bwr-tut-overlay bwr-tut-dim');
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
@@ -278,29 +321,11 @@
     }, 2600);
   }
 
-  // ── Public API (replay) ────────────────────────────────────────────────────
-  window.BWRTour = {
-    start: startTour,
-    welcome: showWelcome,
-    reset: function () { try { localStorage.removeItem(SEEN_KEY); } catch (e) {} }
-  };
-
   // ── Boot ───────────────────────────────────────────────────────────────────
+  // Auto-runs once for a brand-new signup on the map page. No replay entry point
+  // exists by design — the tour cannot be triggered again once seen.
   function boot() {
-    var params = new URLSearchParams(window.location.search);
-    var requested = params.get('tour');
-
-    if (requested) {
-      // Clean the URL so a refresh doesn't relaunch the tour.
-      params.delete('tour');
-      var qs = params.toString();
-      history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
-      // Wait a beat for the map controls to render.
-      setTimeout(requested === 'welcome' ? showWelcome : startTour, 600);
-      return;
-    }
-
-    if (onMapPage() && loggedIn() && !seen()) {
+    if (onMapPage() && loggedIn() && !seen() && isNewSignup()) {
       setTimeout(showWelcome, 900);
     }
   }

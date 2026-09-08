@@ -70,6 +70,9 @@ export async function handleActivities(request, env, { pathname, json, fail }) {
       movingSeconds: nonNeg(body.movingSeconds) || nonNeg(body.seconds),
       ascent: nonNeg(body.ascent),
       descent: nonNeg(body.descent),
+      // `shared` opts the walk into the social feed (worker/handlers/friends.js).
+      // Default private; the owner shares explicitly at save-time or later.
+      shared: body.shared === true,
       startedAt,
       savedAt: new Date().toISOString(),
     };
@@ -112,12 +115,15 @@ export async function handleActivities(request, env, { pathname, json, fail }) {
     if (!raw) return fail('Sortie introuvable.', 404);
 
     const body = await request.json().catch(() => ({}));
-    if (typeof body.name !== 'string' || !body.name.trim()) return fail('Nom invalide.');
+    const hasName = typeof body.name === 'string' && body.name.trim();
+    const hasShared = typeof body.shared === 'boolean';
+    if (!hasName && !hasShared) return fail('Rien à modifier.');
 
     const activity = JSON.parse(raw);
-    activity.name = body.name.trim().slice(0, MAX_NAME);
+    if (hasName) activity.name = body.name.trim().slice(0, MAX_NAME);
+    if (hasShared) activity.shared = body.shared; // toggle feed visibility
     await env.BWR_KV.put(key, JSON.stringify(activity));
-    return json({ success: true, name: activity.name });
+    return json({ success: true, name: activity.name, shared: !!activity.shared });
   }
 
   if (pathname.startsWith('/api/activities/') && request.method === 'DELETE') {

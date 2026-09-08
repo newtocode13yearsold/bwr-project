@@ -241,6 +241,16 @@
       borderRadius: '10px', padding: '10px 14px', fontSize: '1rem', marginBottom: '18px', outline: 'none',
     });
 
+    // Share-with-followers opt-in (social feed — worker/handlers/friends.js).
+    const shareRow = document.createElement('label');
+    Object.assign(shareRow.style, { display: 'flex', alignItems: 'center', gap: '9px', cursor: 'pointer', margin: '0 0 18px', fontSize: '0.88rem', color: '#374151', fontWeight: '600' });
+    const shareChk = document.createElement('input');
+    shareChk.type = 'checkbox';
+    Object.assign(shareChk.style, { width: '17px', height: '17px', accentColor: '#1e4d14', cursor: 'pointer' });
+    const shareTxt = document.createElement('span');
+    shareTxt.textContent = '👥 Partager avec mes abonnés';
+    shareRow.append(shareChk, shareTxt);
+
     const actions = document.createElement('div');
     Object.assign(actions.style, { display: 'flex', gap: '10px', justifyContent: 'flex-end' });
 
@@ -272,6 +282,7 @@
         movingSeconds: movingSeconds(pts),
         ascent, descent,
         startedAt: startIso,
+        shared: shareChk.checked,
       };
       try {
         const res = await fetch(`${API_URL}/api/activities`, {
@@ -290,7 +301,7 @@
     });
 
     actions.append(skip, save);
-    card.append(h, stat, label, input, actions);
+    card.append(h, stat, label, input, shareRow, actions);
     overlay.append(card);
     document.body.appendChild(overlay);
     input.focus();

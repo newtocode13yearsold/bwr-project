@@ -25,6 +25,9 @@
 //                            (one per account per path; comments are PUBLIC)
 // poi:{id}                 → JSON point of interest { id, type, name, lat, lon, note, createdBy, createdByName, createdAt, updatedAt }
 // walkedpath:{userId}:{pathId} → ISO timestamp string
+// follow:{followerId}:{followeeId}   → ISO ts (prefix follow:{me}:   = who I follow)
+// follower:{followeeId}:{followerId} → ISO ts (prefix follower:{me}: = who follows me)
+// kudos:{ownerId}:{activityId}:{userId} → ISO ts (a kudos on a shared activity)
 // aisugg:{userId}:{date}   → legacy AI-suggestion cache (feature removed; keys self-expire, 48h TTL)
 // leaderboard:cache        → JSON sorted entries array  (5-min TTL, "all-time" board)
 // leaderboard:cache:{week|month} → JSON sorted entries for the current period (5-min TTL)

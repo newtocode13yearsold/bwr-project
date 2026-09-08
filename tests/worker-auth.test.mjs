@@ -1250,3 +1250,50 @@ describe('/api/auth/account', () => {
     assert.ok(!kv.store.has(`session:${login.token}`), 'active session must be gone');
   });
 });
+
+// ── One-time post-signup onboarding flag ───────────────────────────────────────
+describe('onboarding flag (one-time post-signup tour)', () => {
+  test('a brand-new verified account starts onboarded:false', async () => {
+    const h = freshEnv();
+    await h.registerAndVerify('new@bwr.fr');
+    const uid = h.getAllUsers()[0].id;
+    assert.equal(h.getStoredUser(uid).onboarded, false, 'stored user must carry onboarded:false');
+  });
+
+  test('login and /me expose onboarded:false for a new signup', async () => {
+    const h = freshEnv();
+    const { token, user } = await h.registerAndLogin('new@bwr.fr');
+    assert.equal(user.onboarded, false, 'login payload must expose onboarded:false');
+    const me = await (await worker.fetch(authed('GET', '/api/auth/me', token), h.env)).json();
+    assert.equal(me.onboarded, false, '/me must expose onboarded:false');
+  });
+
+  test('POST /api/auth/onboarded flips the flag; it never comes back', async () => {
+    const h = freshEnv();
+    const { token, user } = await h.registerAndLogin('new@bwr.fr');
+    const res = await worker.fetch(authed('POST', '/api/auth/onboarded', token), h.env);
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { onboarded: true });
+    assert.equal(h.getStoredUser(user.id).onboarded, true, 'flag persisted server-side');
+    const me = await (await worker.fetch(authed('GET', '/api/auth/me', token), h.env)).json();
+    assert.equal(me.onboarded, true, '/me now reports onboarded:true — tour can never reappear');
+  });
+
+  test('POST /api/auth/onboarded is idempotent and requires auth', async () => {
+    const h = freshEnv();
+    const { token } = await h.registerAndLogin('new@bwr.fr');
+    await worker.fetch(authed('POST', '/api/auth/onboarded', token), h.env);
+    const again = await worker.fetch(authed('POST', '/api/auth/onboarded', token), h.env);
+    assert.equal(again.status, 200, 'second call is a harmless no-op');
+    const noauth = await worker.fetch(r('POST', '/api/auth/onboarded'), h.env);
+    assert.equal(noauth.status, 401, 'unauthenticated call is rejected');
+  });
+
+  test('legacy account (no onboarded field) is treated as already onboarded', async () => {
+    const h = freshEnv();
+    h.seedUser({ id: 'legacy1', name: 'Old', email: 'old@bwr.fr', role: 'free', plan: 'free', stats: { routes: 0, km: 0 } });
+    h.seedSession('legacytok', 'legacy1', new Date(Date.now() + 8.64e7).toISOString());
+    const me = await (await worker.fetch(authed('GET', '/api/auth/me', 'legacytok'), h.env)).json();
+    assert.equal(me.onboarded, true, 'legacy users must never see the first-run tour');
+  });
+});

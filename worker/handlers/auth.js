@@ -129,6 +129,10 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       role: 'free',
       plan: 'free',
       stats: { routes: 0, km: 0 },
+      // First-run onboarding: only brand-new accounts start `false`, so the
+      // one-time post-signup tour shows exactly once and never for legacy users
+      // (who lack this field entirely). Flipped to true the first time it shows.
+      onboarded: false,
       createdAt: pending.createdAt,
     };
 
@@ -312,7 +316,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
 
     return json({
       token,
-      user: { id: user.id, name: user.name, username: user.username || null, email: user.email, role: user.role, plan: user.plan || 'free', stats: user.stats || { routes: 0, km: 0 } },
+      user: { id: user.id, name: user.name, username: user.username || null, email: user.email, role: user.role, plan: user.plan || 'free', onboarded: user.onboarded !== false, stats: user.stats || { routes: 0, km: 0 } },
     });
   }
 
@@ -344,6 +348,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       visitorPlanCount: updated.visitorPlanCount || 0,
       silverTrialUsed: !!updated.silverTrialUsed,
       emailNotifications: updated.emailNotifications !== false, // default on
+      onboarded: updated.onboarded !== false, // legacy accounts (no field) = already onboarded
       questClaims: updated.questClaims || {},
       questBadges: updated.questBadges || [],
       stats: updated.stats || { routes: 0, km: 0, weeklyRoutes: 0, weekStart: isoMonday() },
@@ -358,6 +363,16 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const { emailNotifications } = await request.json().catch(() => ({}));
     await putUser(env, { ...user, emailNotifications: emailNotifications !== false });
     return json({ emailNotifications: emailNotifications !== false });
+  }
+
+  // One-way flag: mark the post-signup onboarding tour as seen. Idempotent, can
+  // only ever set the flag to true — there is deliberately no way to clear it, so
+  // the first-run tour shows exactly once per account and can never be replayed.
+  if (pathname === '/api/auth/onboarded' && request.method === 'POST') {
+    const user = await getUserFromToken(env, request);
+    if (!user) return fail('Non authentifié.', 401);
+    if (user.onboarded !== true) await putUser(env, { ...user, onboarded: true });
+    return json({ onboarded: true });
   }
 
   if (pathname.startsWith('/api/auth/plan/') && request.method === 'PUT') {
@@ -712,6 +727,13 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       })),
     );
 
+    const followingKeys = await listKeys(env, `follow:${user.id}:`);
+    const followerKeys  = await listKeys(env, `follower:${user.id}:`);
+    const social = {
+      following: followingKeys.map(k => k.name.slice(`follow:${user.id}:`.length)),
+      followers: followerKeys.map(k => k.name.slice(`follower:${user.id}:`.length)),
+    };
+
     const exportData = {
       exportedAt: new Date().toISOString(),
       format: 'BWR personal-data export (RGPD art. 15 & 20)',
@@ -719,6 +741,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       savedRoutes,
       activities,
       walkedPaths,
+      social,
     };
 
     const filename = `bwr-mes-donnees-${new Date().toISOString().slice(0, 10)}.json`;
@@ -755,6 +778,16 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     // POIs the user added carry a free-text name/note; purge them with the account.
     const ownPois = (await listItems(env, 'poi:')).filter(p => p.createdBy === user.id);
 
+    // Social graph: delete both directions of every follow edge involving this
+    // user, plus every kudos they gave (owner-first key, so scan + suffix-match)
+    // and every kudos left on their own activities (kudos:{me}: prefix).
+    const followingKeys = await listKeys(env, `follow:${user.id}:`);   // I follow X
+    const followerKeys  = await listKeys(env, `follower:${user.id}:`); // X follows me
+    const reverseFollowerKeys = followingKeys.map(k => `follower:${k.name.slice(`follow:${user.id}:`.length)}:${user.id}`);
+    const reverseFollowKeys   = followerKeys.map(k => `follow:${k.name.slice(`follower:${user.id}:`.length)}:${user.id}`);
+    const kudosGivenKeys = (await listKeys(env, 'kudos:')).filter(k => k.name.endsWith(`:${user.id}`));
+    const kudosOnMineKeys = await listKeys(env, `kudos:${user.id}:`);
+
     await Promise.all([
       env.BWR_KV.delete(`user:${user.id}`),
       env.BWR_KV.delete(`uemail:${user.email}`),
@@ -768,6 +801,12 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       ...inboxReadKeys.map(k => env.BWR_KV.delete(k.name)),
       ...pathReviewKeys.map(k => env.BWR_KV.delete(k.name)),
       ...ownPois.map(p => env.BWR_KV.delete(`poi:${p.id}`)),
+      ...followingKeys.map(k => env.BWR_KV.delete(k.name)),
+      ...followerKeys.map(k => env.BWR_KV.delete(k.name)),
+      ...reverseFollowerKeys.map(k => env.BWR_KV.delete(k)),
+      ...reverseFollowKeys.map(k => env.BWR_KV.delete(k)),
+      ...kudosGivenKeys.map(k => env.BWR_KV.delete(k.name)),
+      ...kudosOnMineKeys.map(k => env.BWR_KV.delete(k.name)),
     ]);
 
     const auth = request.headers.get('Authorization');

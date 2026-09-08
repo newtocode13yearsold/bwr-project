@@ -62,10 +62,14 @@
 
   function card(a) {
     const asc = a.ascent ? `<div class="act-stat"><b>↑ ${a.ascent} m</b><span>Dénivelé</span></div>` : '';
+    const badge = a.shared ? ' <span class="act-shared-badge" title="Visible dans le fil de vos abonnés">👥 Partagée</span>' : '';
+    const shareBtn = a.shared
+      ? `<button class="act-btn ghost" data-role="share">Ne plus partager</button>`
+      : `<button class="act-btn ghost" data-role="share">👥 Partager</button>`;
     return `
       <div class="act-card" data-id="${esc(a.id)}">
         <div class="act-card-head">
-          <div class="act-name" data-role="name" title="Cliquer pour renommer">${esc(a.name)}</div>
+          <div class="act-name" data-role="name" title="Cliquer pour renommer">${esc(a.name)}${badge}</div>
           <div class="act-date">${esc(fmtDate(a.startedAt || a.savedAt))}</div>
         </div>
         <div class="act-stats">
@@ -76,6 +80,7 @@
         </div>
         <div class="act-actions">
           <button class="act-btn primary" data-role="replay">▶ Rejouer</button>
+          ${shareBtn}
           <button class="act-btn ghost" data-role="gpx">⬇ GPX</button>
           <button class="act-btn ghost" data-role="rename">✎ Renommer</button>
           <button class="act-btn danger" data-role="delete">Supprimer</button>
@@ -123,6 +128,23 @@
       cardEl.querySelector('[data-role="name"]').textContent = name;
     } catch {
       alert('Le renommage a échoué. Réessayez.');
+    }
+  }
+
+  async function doShare(a, cardEl) {
+    const next = !a.shared;
+    try {
+      const res = await fetch(`${API_URL}/api/activities/${a.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ shared: next }),
+      });
+      if (!res.ok) throw new Error();
+      a.shared = next;
+      // Re-render just this card so badge + button label update.
+      cardEl.outerHTML = card(a);
+    } catch {
+      alert('La mise à jour du partage a échoué. Réessayez.');
     }
   }
 
@@ -245,6 +267,7 @@
     if (!a) return;
     const role = e.target.closest('[data-role]')?.dataset.role;
     if (role === 'replay') openReplay(a);
+    else if (role === 'share') doShare(a, cardEl);
     else if (role === 'gpx') doGpx(a);
     else if (role === 'rename' || role === 'name') doRename(a, cardEl);
     else if (role === 'delete') doDelete(a, cardEl);
