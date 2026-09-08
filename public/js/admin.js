@@ -1371,6 +1371,7 @@ async function loadErrors() {
     if (sum) sum.textContent = errors.length
       ? `— ${data.distinct} type(s) · ${data.total} occurrence(s)`
       : '';
+    if (window.__bwrRefreshErrBadge) window.__bwrRefreshErrBadge();
     if (errors.length === 0) {
       list.innerHTML = '<p style="color:#16a34a;font-size:0.88rem">✅ Aucune erreur remontée. Tout roule.</p>';
       return;

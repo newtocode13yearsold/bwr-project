@@ -1,5 +1,5 @@
 import { listKeys } from '../kv.js';
-import { getUserFromToken } from '../auth-utils.js';
+import { getUserFromToken, sendEmail } from '../auth-utils.js';
 import { isBotUA, describeDevice } from './admin.js';
 
 // ── Client-side error monitoring (homegrown, Sentry-lite) ────────────────────
@@ -31,6 +31,7 @@ function sig(str) {
 }
 
 const clean = (v, max) => (typeof v === 'string' ? v : '').replace(/\s+$/,'').slice(0, max);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // The first "at …" frame of a stack — the most stable part to group on (a line
 // number in bundled code shifts between deploys, the function name rarely does).
@@ -95,14 +96,34 @@ export async function handleErrors(request, env, { pathname, json, fail, cors, w
 
       if (shouldAlert) {
         const where = source ? `${source}${line != null ? ':' + line : ''}` : page;
-        const alert = () => fetch('https://ntfy.sh/bwr-ciril8596', {
+        const recur = rec.count > 1 ? `\n(revenu · ${rec.count}× au total)` : '';
+
+        // ntfy push (phone) — same channel as reports/contact.
+        const pushAlert = () => fetch('https://ntfy.sh/bwr-ciril8596', {
           method: 'POST',
           headers: { 'Title': 'BWR — Erreur JS', 'Tags': 'bug', 'Priority': 'default',
                      'Content-Type': 'text/plain; charset=utf-8' },
-          body: `${message}\n${where} · ${page}${device ? ' · ' + device : ''}` +
-                (rec.count > 1 ? `\n(revenu · ${rec.count}× au total)` : ''),
+          body: `${message}\n${where} · ${page}${device ? ' · ' + device : ''}${recur}`,
         }).catch(() => {});
-        if (waitUntil) waitUntil(alert()); else await alert();
+
+        // Email (inbox) — best-effort, reuses the Resend setup; no-ops in dev
+        // (no RESEND_API_KEY) or if no admin address is configured.
+        const emailAlert = () => (env.ADMIN_EMAIL
+          ? sendEmail(env, {
+              to: env.ADMIN_EMAIL,
+              subject: `🐞 BWR — ${kind === 'unhandledrejection' ? 'Promesse rejetée' : 'Erreur JS'} : ${message.slice(0, 80)}`,
+              html: `<p>Une erreur JavaScript a été détectée sur un appareil utilisateur&nbsp;:</p>
+<p style="font-family:monospace;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;color:#991b1b">
+<strong>${esc(message)}</strong><br>${esc(where)} · ${esc(page)}${device ? ' · ' + esc(device) : ''}
+</p>
+<p>Occurrences au total&nbsp;: <strong>${rec.count}</strong>${rec.count > 1 ? ` (première le ${esc(rec.firstSeen)})` : ''}</p>
+${stack ? `<pre style="font-size:12px;background:#f9fafb;border:1px solid #eee;border-radius:8px;padding:12px;overflow:auto">${esc(stack)}</pre>` : ''}
+<p style="color:#6b7280;font-size:13px">Détail dans le panneau admin → «&nbsp;🐞 Erreurs JS&nbsp;».</p>`,
+            }).catch(() => {})
+          : Promise.resolve());
+
+        if (waitUntil) { waitUntil(pushAlert()); waitUntil(emailAlert()); }
+        else { await pushAlert(); await emailAlert(); }
       }
 
       return json({ ok: true });
@@ -110,6 +131,16 @@ export async function handleErrors(request, env, { pathname, json, fail, cors, w
       // Monitoring must never break a visitor's page.
       return json({ ok: true });
     }
+  }
+
+  // ── Unresolved-error count (admin only) — cheap poll for the nav badge ─────
+  // Only lists keys (no value reads), so it's light enough to call on every
+  // admin page load. A resolved error is deleted, so distinct == unresolved.
+  if (pathname === '/api/errors/count' && request.method === 'GET') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+    const keys = await listKeys(env, 'errlog:');
+    return json({ count: keys.length });
   }
 
   // ── List errors (admin only) ─────────────────────────────────────────────

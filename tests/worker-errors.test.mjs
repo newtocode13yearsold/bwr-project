@@ -10,13 +10,19 @@ import worker from '../worker.js';
 // suite stays offline/deterministic and we can assert when an alert was sent.
 const CHROME_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120 Mobile Safari/604.1';
 let ntfyCalls = [];
+let emailCalls = [];
 const realFetch = globalThis.fetch;
 beforeEach(() => {
   ntfyCalls = [];
+  emailCalls = [];
   globalThis.fetch = async (url, opts) => {
     if (typeof url === 'string' && url.includes('ntfy.sh')) {
       ntfyCalls.push({ url, opts });
       return new Response('ok', { status: 200 });
+    }
+    if (typeof url === 'string' && url.includes('api.resend.com')) {
+      emailCalls.push({ url, body: opts && opts.body ? JSON.parse(opts.body) : null });
+      return new Response(JSON.stringify({ id: 'email_1' }), { status: 200 });
     }
     return new Response('{}', { status: 200 });
   };
@@ -152,6 +158,46 @@ describe('ntfy alerting is throttled', () => {
     await new Promise(r => setTimeout(r, 10));
     assert.equal(ntfyCalls.length, 1, 'only the first sighting of a signature should push');
     assert.match(ntfyCalls[0].opts.body, /TypeError: x is undefined/);
+  });
+});
+
+describe('email alerting (Resend)', () => {
+  test('a new error emails the admin when Resend + ADMIN_EMAIL are configured', async () => {
+    const { env } = freshEnv();
+    env.RESEND_API_KEY = 're_test';
+    env.ADMIN_EMAIL = 'admin@bwr.fr';
+    await worker.fetch(postError(sampleError), env);
+    await new Promise(r => setTimeout(r, 10));
+    assert.equal(emailCalls.length, 1);
+    assert.equal(emailCalls[0].body.to, 'admin@bwr.fr');
+    assert.match(emailCalls[0].body.subject, /Erreur JS/);
+    assert.match(emailCalls[0].body.html, /TypeError: x is undefined/);
+  });
+
+  test('no email when ADMIN_EMAIL is unset', async () => {
+    const { env } = freshEnv();
+    env.RESEND_API_KEY = 're_test'; // key present but no recipient
+    await worker.fetch(postError(sampleError), env);
+    await new Promise(r => setTimeout(r, 10));
+    assert.equal(emailCalls.length, 0);
+  });
+});
+
+describe('GET /api/errors/count (admin only)', () => {
+  test('non-admin is refused', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(authed('GET', '/api/errors/count', 'tok-user'), env);
+    assert.equal(res.status, 403);
+  });
+
+  test('admin gets the distinct unresolved count', async () => {
+    const { env } = freshEnv();
+    await worker.fetch(postError(sampleError), env);
+    await worker.fetch(postError(sampleError), env); // same signature → still 1 distinct
+    await worker.fetch(postError({ ...sampleError, message: 'Other' }), env);
+    const res = await worker.fetch(authed('GET', '/api/errors/count', 'tok-admin'), env);
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { count: 2 });
   });
 });
 
