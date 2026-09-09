@@ -1801,6 +1801,15 @@ body {
   flex: 1;
   overflow-y: auto;
 }
+.nav-drawer-section {
+  padding: 16px 24px 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #9aa79a;
+}
+.nav-drawer-section:first-child { padding-top: 4px; }
 .nav-drawer-item {
   display: flex;
   align-items: center;
@@ -2416,6 +2425,7 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
 
 /* ── Nav drawer ── */
 [data-theme="dark"] .nav-drawer          { background: #16201a; }
+[data-theme="dark"] .nav-drawer-section  { color: #7a8f72; }
 [data-theme="dark"] .nav-drawer-item     { color: #c8dcc0; }
 [data-theme="dark"] .nav-drawer-item:hover    { background: #1c2a20; color: var(--lime-500); }
 [data-theme="dark"] .nav-drawer-item.active   { background: #1c2a20; color: var(--lime-500); border-left-color: var(--lime-500); }
