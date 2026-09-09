@@ -2032,14 +2032,20 @@ async function loadMembers() {
           <div style="margin-top:3px">${planIcon[u.plan] || '🌿'} <strong>${uPlan}</strong> ${expiry} ${compedBadge}</div>
           ${joined ? `<div style="margin-top:2px">${joined}</div>` : ''}
         </div>
-        ${u.role !== 'admin' ? `<div style="display:flex;gap:6px">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn-secondary member-grades-btn" style="width:auto;padding:6px 12px;font-size:0.8rem"
+            data-id="${u.id}" data-name="${uName}">🎨 Chemins notés</button>
+          ${u.role !== 'admin' ? `
           <button class="btn-secondary member-plan-btn" style="width:auto;padding:6px 12px;font-size:0.8rem"
             data-id="${u.id}" data-name="${uName}" data-plan="${uPlan}" data-base="${escapeHtml(u.planBase||'free')}" data-comped="${u.comped ? '1' : ''}">Modifier plan</button>
           <button class="btn-secondary member-delete-btn" style="width:auto;padding:6px 12px;font-size:0.8rem;color:#dc2626;border-color:#fca5a5"
-            data-id="${u.id}" data-name="${uName}">Supprimer</button>
-        </div>` : ''}
+            data-id="${u.id}" data-name="${uName}">Supprimer</button>` : ''}
+        </div>
       </div>`;
     }).join('');
+    list.querySelectorAll('.member-grades-btn').forEach(btn => {
+      btn.addEventListener('click', () => showUserGrades(btn.dataset.id, btn.dataset.name));
+    });
     list.querySelectorAll('.member-plan-btn').forEach(btn => {
       btn.addEventListener('click', () =>
         openMemberPlan(btn.dataset.id, btn.dataset.name, btn.dataset.plan, btn.dataset.base, btn, btn.dataset.comped === '1'));
@@ -2064,6 +2070,69 @@ async function loadMembers() {
     });
   } catch (e) {
     list.innerHTML = `<p style="color:red">Erreur réseau</p>`;
+  }
+}
+
+// ── "Chemins notés par ce membre" modal ────────────────────────────────────────
+// Lists the paths a given user graded (GET /api/users/:id/grades). Paths whose
+// CURRENT difficulty this user set are flagged; the others they graded earlier
+// but someone re-graded since (only the latest vote lives on the path).
+const GRADE_STATUS_LABEL = {
+  easy: 'Facile', medium: 'Moyen', hard: 'Difficile',
+  not_passable: 'Impraticable', no_bike: 'Vélo interdit',
+};
+const GRADE_STATUS_COLOR = {
+  easy: '#22c55e', medium: '#f97316', hard: '#ef4444',
+  not_passable: '#9ca3af', no_bike: '#6b7280',
+};
+async function showUserGrades(userId, name) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.innerHTML = `
+    <div class="modal-card" style="max-width:520px;width:92%;max-height:80vh;display:flex;flex-direction:column">
+      <button class="modal-close-x" aria-label="Fermer">✕</button>
+      <h3 style="margin-bottom:4px">🎨 Chemins notés par ${escapeHtml(name)}</h3>
+      <div class="grades-body" style="overflow-y:auto;margin-top:10px">
+        <p style="color:#6b7280;font-size:0.88rem">Chargement…</p>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  overlay.querySelector('.modal-close-x').addEventListener('click', close);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  document.addEventListener('keydown', onKey);
+
+  const body = overlay.querySelector('.grades-body');
+  try {
+    const res = await fetch(`${API_URL}/api/users/${encodeURIComponent(userId)}/grades`, { headers: authHeader() });
+    const data = await res.json();
+    if (!res.ok) { body.innerHTML = `<p style="color:red">${escapeHtml(data.error || 'Erreur')}</p>`; return; }
+    if (!data.paths.length) {
+      body.innerHTML = `<p style="color:#6b7280;font-size:0.9rem">Ce membre n'a encore noté aucun chemin.</p>`;
+      return;
+    }
+    const current = data.paths.filter(p => p.isCurrentGrader).length;
+    const rows = data.paths.map(p => {
+      const label = GRADE_STATUS_LABEL[p.status] || p.status || '—';
+      const color = GRADE_STATUS_COLOR[p.status] || '#9ca3af';
+      const when = p.gradedAt ? new Date(p.gradedAt).toLocaleDateString('fr-FR') : '';
+      const stale = p.isCurrentGrader
+        ? ''
+        : `<span style="font-size:0.72rem;color:#9ca3af" title="Un autre membre a noté ce chemin depuis">· re-noté depuis</span>`;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:6px">
+        <div style="min-width:0">
+          <div style="font-weight:600;font-size:0.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.name)}</div>
+          <div style="font-size:0.74rem;color:#6b7280">${when ? `📅 ${when} ` : ''}${stale}</div>
+        </div>
+        <span style="flex:none;font-size:0.74rem;font-weight:700;color:#fff;background:${color};padding:3px 9px;border-radius:999px">${escapeHtml(label)}</span>
+      </div>`;
+    }).join('');
+    body.innerHTML = `<p style="font-size:0.82rem;color:#6b7280;margin-bottom:10px">${data.count} chemin${data.count > 1 ? 's' : ''} noté${data.count > 1 ? 's' : ''} · ${current} avec la difficulté actuelle</p>${rows}`;
+  } catch (e) {
+    body.innerHTML = `<p style="color:red">Erreur réseau</p>`;
   }
 }
 

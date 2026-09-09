@@ -1066,3 +1066,54 @@ describe('/api/analytics/exclude-ip + /api/track/visit guard', () => {
     assert.ok(kv.store.get(`visitor:${month()}:other`), 'a different IP is tracked');
   });
 });
+
+// ── GET /api/users/:id/grades (which paths a user graded) ──────────────────────
+describe('GET /api/users/:id/grades', () => {
+  test('admin gets the paths a user graded, flagging current-difficulty ones', async () => {
+    const { env, kv, seedAdmin, seedFree, seedPath } = freshEnv();
+    const { token } = seedAdmin();
+    seedFree('u1');
+    // p1: u1 set the current difficulty. p2: u1 graded but someone re-graded since.
+    seedPath({ id: 'p1', name: 'Sentier A', status: 'hard', pathType: 'foot', gradedBy: 'u1', gradedByName: 'Free', gradedAt: '2026-09-01T10:00:00Z' });
+    seedPath({ id: 'p2', name: 'Sentier B', status: 'easy', pathType: 'foot', gradedBy: 'other', gradedByName: 'X' });
+    kv.store.set('pathgrade:p1:u1', JSON.stringify({ walkedWhenGraded: true }));
+    kv.store.set('pathgrade:p2:u1', JSON.stringify({ walkedWhenGraded: false }));
+    kv.store.set('pathgrade:p2:other', JSON.stringify({ walkedWhenGraded: false })); // must NOT match u1
+
+    const res = await worker.fetch(authed('GET', '/api/users/u1/grades', token), env);
+    const data = await res.json();
+    assert.equal(res.status, 200);
+    assert.equal(data.count, 2, 'both of u1 grades returned, not other-user grade');
+    const p1 = data.paths.find(p => p.id === 'p1');
+    const p2 = data.paths.find(p => p.id === 'p2');
+    assert.equal(p1.isCurrentGrader, true);
+    assert.equal(p1.status, 'hard');
+    assert.equal(p2.isCurrentGrader, false, 're-graded since → not current grader');
+    assert.equal(data.paths[0].id, 'p1', 'current-grader paths sort first');
+  });
+
+  test('skips paths deleted since they were graded', async () => {
+    const { env, kv, seedAdmin, seedFree } = freshEnv();
+    const { token } = seedAdmin();
+    seedFree('u1');
+    kv.store.set('pathgrade:ghost:u1', JSON.stringify({ walkedWhenGraded: false })); // no path:ghost
+    const res = await worker.fetch(authed('GET', '/api/users/u1/grades', token), env);
+    const data = await res.json();
+    assert.equal(res.status, 200);
+    assert.equal(data.count, 0);
+  });
+
+  test('non-admin is refused', async () => {
+    const { env, seedFree } = freshEnv();
+    const { token } = seedFree('u1');
+    const res = await worker.fetch(authed('GET', '/api/users/u1/grades', token), env);
+    assert.equal(res.status, 403);
+  });
+
+  test('unknown user → 404', async () => {
+    const { env, seedAdmin } = freshEnv();
+    const { token } = seedAdmin();
+    const res = await worker.fetch(authed('GET', '/api/users/nope/grades', token), env);
+    assert.equal(res.status, 404);
+  });
+});

@@ -207,6 +207,42 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     return json(safe);
   }
 
+  // Which paths did this user grade? Reads every `pathgrade:{pathId}:{userId}`
+  // key ending in the target's id, then loads each path for its name + current
+  // difficulty. The per-user difficulty vote isn't stored historically (the path
+  // keeps only the latest grader's status), so `isCurrentGrader` flags the paths
+  // whose difficulty this user actually set right now.
+  if (pathname.match(/^\/api\/users\/[^/]+\/grades$/) && request.method === 'GET') {
+    const admin = await getUserFromToken(env, request);
+    if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
+
+    const targetId = pathname.split('/')[3];
+    const target = await getUser(env, targetId);
+    if (!target) return fail('Utilisateur introuvable.', 404);
+
+    const suffix = `:${targetId}`;
+    const gradeKeys = (await listKeys(env, 'pathgrade:')).filter(k => k.name.endsWith(suffix));
+    const paths = [];
+    for (const k of gradeKeys) {
+      const pathId = k.name.slice('pathgrade:'.length, k.name.length - suffix.length);
+      const raw = await env.BWR_KV.get(`path:${pathId}`);
+      if (!raw) continue; // path deleted since it was graded
+      const p = JSON.parse(raw);
+      paths.push({
+        id: pathId,
+        name: p.name || 'Chemin sans nom',
+        status: p.status || null,
+        pathType: p.pathType || null,
+        isCurrentGrader: p.gradedBy === targetId,
+        gradedAt: p.gradedBy === targetId ? (p.gradedAt || null) : null,
+      });
+    }
+    // Paths this user currently sets the difficulty on first, then the rest;
+    // most-recently graded within each group.
+    paths.sort((a, b) => (b.isCurrentGrader - a.isCurrentGrader) || String(b.gradedAt || '').localeCompare(String(a.gradedAt || '')));
+    return json({ userId: targetId, name: target.name, count: paths.length, paths });
+  }
+
   if (pathname.startsWith('/api/users/') && request.method === 'DELETE') {
     const admin = await getUserFromToken(env, request);
     if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
