@@ -113,6 +113,29 @@
     .replay-scrub { flex: 1; }
     .replay-time { font-size: 0.82rem; color: #6b7280; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
+    /* Person cards & feed authors are tappable to open a profile */
+    .fr-person { cursor: pointer; }
+    .fr-person:hover { box-shadow: 0 8px 24px -12px rgba(11,36,16,0.18); }
+    .fr-feed-head { cursor: pointer; }
+
+    /* Profile modal */
+    .fr-profile-overlay { position: fixed; inset: 0; z-index: 3000; background: rgba(11,36,16,0.6); display: none; align-items: center; justify-content: center; padding: 16px; }
+    .fr-profile-overlay.open { display: flex; }
+    .fr-profile-card { background: #fff; border-radius: 18px; width: 100%; max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 70px -20px rgba(0,0,0,0.5);
+      --text-strong: #0b2410; --text: #374151; --text-muted: #6b7280; --surface-2: #f3f4f0; --border-soft: #ebeee5; --forest-700: #1e4d14; --forest-600: #2d6b1f; }
+    .fr-profile-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border-soft, #ebeee5); }
+    .fr-profile-head h3 { font-family: var(--font-display); font-size: 1.15rem; color: #0b2410; margin: 0; }
+    .fr-profile-body { padding: 18px 20px; overflow-y: auto; }
+    .fr-profile-top { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .fr-profile-counts { display: flex; gap: 22px; margin-bottom: 18px; }
+    .fr-profile-counts b { display: block; font-size: 1.15rem; color: var(--text-strong, #0b2410); font-weight: 700; }
+    .fr-profile-counts span { font-size: 0.72rem; color: var(--text-muted, #6b7280); text-transform: uppercase; letter-spacing: 0.04em; }
+    .fr-profile-h { font-family: var(--font-display); font-weight: 700; color: var(--text-strong,#0b2410); font-size: 0.95rem; margin: 6px 0 12px; }
+    .fr-act { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--border-soft,#ebeee5); border-radius: 12px; margin-bottom: 10px; }
+    .fr-act-main { min-width: 0; }
+    .fr-act-name { font-weight: 700; color: var(--text-strong,#0b2410); font-size: 0.95rem; }
+    .fr-act-meta { font-size: 0.78rem; color: var(--text-muted,#6b7280); margin-top: 2px; }
+
     .act-footer { background: #0b2410; color: rgba(255,255,255,0.55); text-align: center; padding: 32px 24px; font-size: 0.85rem; }
     .act-footer a { color: #a3e635; text-decoration: none; }
 
@@ -170,10 +193,6 @@
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
         <span>Forum</span>
       </a>
-      <a href="friends" class="nav-drawer-item active">
-        <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-        <span>Communauté</span>
-      </a>
       <a href="plans" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
         <span>Plans &amp; abonnements</span>
@@ -218,6 +237,19 @@
         <button class="replay-play" id="replayPlay" aria-label="Lecture">▶</button>
         <input type="range" class="replay-scrub" id="replayScrub" min="0" max="1000" value="0" />
         <span class="replay-time" id="replayTime">0 %</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Profile modal (a person's public activities) ── -->
+  <div class="fr-profile-overlay" id="profileOverlay">
+    <div class="fr-profile-card">
+      <div class="fr-profile-head">
+        <h3 id="profileTitle">Profil</h3>
+        <button class="replay-close" id="profileClose" aria-label="Fermer">✕</button>
+      </div>
+      <div class="fr-profile-body" id="profileBody">
+        <div class="fr-loading">Chargement…</div>
       </div>
     </div>
   </div>

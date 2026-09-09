@@ -238,6 +238,8 @@
       const role = e.target.closest('[data-role]')?.dataset.role;
       if (role === 'kudos') return toggleKudos(feedCardEl.dataset.owner, feedCardEl.dataset.act, e.target.closest('.fr-kudos'));
       if (role === 'replay') return openReplay(feedCardEl.dataset.owner, feedCardEl.dataset.act);
+      // Tapping the author's avatar/name opens their public profile.
+      if (e.target.closest('.fr-feed-head')) return openProfile(feedCardEl.dataset.owner);
     }
 
     const personEl = e.target.closest('.fr-person');
@@ -245,8 +247,92 @@
       const role = e.target.closest('[data-role]')?.dataset.role;
       if (role === 'follow')   return setFollow(personEl.dataset.uid, true, personEl);
       if (role === 'unfollow') return setFollow(personEl.dataset.uid, false, personEl);
+      // A tap anywhere else on the card opens the person's public profile.
+      return openProfile(personEl.dataset.uid);
     }
   });
+
+  // ── PROFILE (a person's public / shared activities) ──────────────────────────
+  const profileOverlay = document.getElementById('profileOverlay');
+  const profileBody = document.getElementById('profileBody');
+  let profileUid = null;
+
+  function closeProfile() { profileOverlay.classList.remove('open'); }
+
+  async function openProfile(uid) {
+    if (!uid) return;
+    profileUid = uid;
+    document.getElementById('profileTitle').textContent = 'Profil';
+    profileBody.innerHTML = '<div class="fr-loading">Chargement…</div>';
+    profileOverlay.classList.add('open');
+    let p;
+    try { p = await api(`/api/social/profile/${encodeURIComponent(uid)}`); }
+    catch { profileBody.innerHTML = errHtml(); return; }
+    renderProfile(p);
+  }
+
+  function renderProfile(p) {
+    document.getElementById('profileTitle').textContent = p.name || 'Profil';
+    const acts = p.sharedActivities || [];
+    const followBtn = p.isMe ? ''
+      : p.isFollowing
+        ? `<button class="fr-btn ghost" data-role="pf-unfollow">✓ Abonné</button>`
+        : `<button class="fr-btn primary" data-role="pf-follow">+ Suivre</button>`;
+    const km = (p.stats && p.stats.km) ? Number(p.stats.km).toLocaleString('fr-FR') : 0;
+    const actsHtml = acts.length
+      ? acts.map(a => `
+          <div class="fr-act">
+            <div class="fr-act-main">
+              <div class="fr-act-name">${esc(a.name || 'Sortie')}</div>
+              <div class="fr-act-meta">${fmtKm(a.meters)} · ${fmtDuration(a.seconds)} · ${esc(fmtAgo(a.startedAt || a.savedAt))}</div>
+            </div>
+            <button class="fr-btn ghost" data-role="pf-replay" data-act="${esc(a.id)}">▶ Rejouer</button>
+          </div>`).join('')
+      : `<div class="fr-empty" style="padding:24px 0"><p>${p.isMe ? "Vous n'avez pas encore partagé de sortie." : "Cette personne n'a pas encore partagé de sortie publique."}</p></div>`;
+    profileBody.innerHTML = `
+      <div class="fr-profile-top">
+        <div class="fr-avatar">${esc(initials(p.name))}</div>
+        <div class="fr-person-main">
+          <div class="fr-person-name">${esc(p.name)}</div>
+          <div class="fr-person-sub">${p.username ? '@' + esc(p.username) : 'Randonneur BWR'}</div>
+        </div>
+        ${followBtn}
+      </div>
+      <div class="fr-profile-counts">
+        <div><b>${p.followerCount || 0}</b><span>Abonnés</span></div>
+        <div><b>${p.followingCount || 0}</b><span>Abonnements</span></div>
+        <div><b>${km}</b><span>km</span></div>
+      </div>
+      <div class="fr-profile-h">Sorties publiques (${acts.length})</div>
+      ${actsHtml}`;
+  }
+
+  async function profileFollow(follow) {
+    try {
+      await api(`/api/social/follow/${encodeURIComponent(profileUid)}`, { method: follow ? 'POST' : 'DELETE' });
+      const p = await api(`/api/social/profile/${encodeURIComponent(profileUid)}`);
+      renderProfile(p);
+      // Keep the list behind the modal in sync.
+      if (currentTab === 'discover') {
+        const s = content.querySelector('#frSearch');
+        loadDiscover(s ? s.value.trim() : '');
+      } else if (currentTab === 'network') loadNetwork();
+      else if (currentTab === 'feed') loadFeed();
+    } catch { /* ignore */ }
+  }
+
+  profileOverlay.addEventListener('click', (e) => {
+    if (e.target === profileOverlay) return closeProfile();
+    const role = e.target.closest('[data-role]')?.dataset.role;
+    if (role === 'pf-follow')   return profileFollow(true);
+    if (role === 'pf-unfollow') return profileFollow(false);
+    if (role === 'pf-replay') {
+      const actId = e.target.closest('[data-role]').dataset.act;
+      closeProfile();               // avoid stacking two overlays
+      return openReplay(profileUid, actId);
+    }
+  });
+  document.getElementById('profileClose').addEventListener('click', closeProfile);
 
   // ── replay modal (shared walk track) ─────────────────────────────────────────
   const overlay = document.getElementById('replayOverlay');
