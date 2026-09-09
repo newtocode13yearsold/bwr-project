@@ -52,6 +52,10 @@ let offlineSelectMode = false;
 let splitModeActive = false;
 let splitTargetPath = null;
 let editModeActive = false;
+// When arriving from the admin panel via ?grader=<userId>, this holds the set of
+// path ids that member graded (+ their name) so renderPaths() can spotlight them
+// on the map and dim the rest. Null = no highlight.
+let graderHighlight = null;
 
 // ── Auth check ────────────────────────────────────────────────────────────────
 // admin.js is shared by two pages: admin.html (the map) and admin-panel.html (the
@@ -66,6 +70,7 @@ let editModeActive = false;
     initMap();
     await loadPaths();
     await loadReports();
+    await maybeHighlightGrader();
   }
   if (document.getElementById('adminDashboard')) {
     await initDashboard();
@@ -1014,12 +1019,25 @@ function renderPaths() {
       }
     };
 
+    // Grader-highlight mode: spotlight this member's graded paths, dim the rest.
+    const hi  = graderHighlight && graderHighlight.ids.has(path.id);
+    const dim = graderHighlight && !hi;
+
+    // Halo underlay that makes a highlighted path pop out from the map.
+    if (hi) {
+      const halo = L.polyline(path.coordinates, {
+        color: '#facc15', weight: pathWeight() + 8, opacity: 0.9, interactive: false,
+      });
+      halo.addTo(map);
+      (pathLayers[path.id] = pathLayers[path.id] || []).push(halo);
+    }
+
     // Visible line
     const pathColor = colorForPath(path);
     const line = L.polyline(path.coordinates, {
       color: pathColor,
-      weight: offlineSelectMode ? pathWeight() + 2 : pathWeight(),
-      opacity: 1,
+      weight: offlineSelectMode ? pathWeight() + 2 : (hi ? pathWeight() + 3 : pathWeight()),
+      opacity: dim ? 0.25 : 1,
       dashArray: offlineSelectMode ? '10 7' : null,
     });
     if (offlineSelectMode) {
@@ -1039,8 +1057,60 @@ function renderPaths() {
     hitTarget.on('click', clickHandler);
     hitTarget.addTo(map);
 
-    pathLayers[path.id] = [line, hitTarget];
+    // Keep any halo already pushed above so it's cleaned up on the next render.
+    pathLayers[path.id] = [...(pathLayers[path.id] || []), line, hitTarget];
   });
+}
+
+// ── Highlight a member's graded paths on the map ────────────────────────────────
+// Reached from the admin panel's "Chemins notés" modal via
+// admin?grader=<userId>[&focus=<pathId>]. Fetches that member's graded paths,
+// spotlights them (halo + dims the rest), fits the view, and shows a banner.
+async function maybeHighlightGrader() {
+  const params = new URLSearchParams(window.location.search);
+  const graderId = params.get('grader');
+  if (!graderId) return;
+  const focusId = params.get('focus');
+  try {
+    const res = await fetch(`${API_URL}/api/users/${encodeURIComponent(graderId)}/grades`, { headers: authHeader() });
+    if (!res.ok) return;
+    const data = await res.json();
+    const ids = new Set((data.paths || []).map(p => p.id).filter(id => allPaths.some(p => p.id === id)));
+    if (!ids.size) { showStatus(`${data.name || 'Ce membre'} n'a noté aucun chemin visible sur la carte.`, true); return; }
+    graderHighlight = { ids, name: data.name || 'Membre' };
+    renderPaths();
+    showGraderBanner(graderHighlight.name, ids.size);
+
+    // Focus a single path if requested, otherwise frame all of them.
+    const focusPath = focusId && allPaths.find(p => p.id === focusId && ids.has(p.id));
+    if (focusPath && focusPath.coordinates?.length) {
+      const mid = focusPath.coordinates[Math.floor(focusPath.coordinates.length / 2)];
+      map.setView(mid, Math.max(map.getZoom(), 16));
+      openColorPopup(focusPath, L.latLng(mid));
+    } else {
+      const pts = [];
+      allPaths.forEach(p => { if (ids.has(p.id)) pts.push(...p.coordinates); });
+      if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.15));
+    }
+  } catch { /* offline / network — leave the map as-is */ }
+}
+
+function clearGraderHighlight() {
+  graderHighlight = null;
+  document.getElementById('graderBanner')?.remove();
+  renderPaths();
+}
+
+function showGraderBanner(name, count) {
+  document.getElementById('graderBanner')?.remove();
+  const safe = String(name).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const bar = document.createElement('div');
+  bar.id = 'graderBanner';
+  bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:70px;z-index:1200;display:flex;align-items:center;gap:12px;background:#1e4d14;color:#fff;padding:8px 14px;border-radius:999px;box-shadow:0 4px 16px rgba(0,0,0,0.25);font-size:0.85rem;font-weight:600;max-width:92vw';
+  bar.innerHTML = `<span>🎨 ${count} chemin${count > 1 ? 's' : ''} noté${count > 1 ? 's' : ''} par ${safe}</span>
+    <button id="graderBannerClear" style="background:#facc15;color:#1e4d14;border:none;border-radius:999px;padding:4px 12px;font-size:0.8rem;font-weight:700;cursor:pointer;flex:none">Tout afficher ✕</button>`;
+  document.body.appendChild(bar);
+  document.getElementById('graderBannerClear').addEventListener('click', clearGraderHighlight);
 }
 
 // ── Color popup ───────────────────────────────────────────────────────────────
@@ -2115,6 +2185,7 @@ async function showUserGrades(userId, name) {
       return;
     }
     const current = data.paths.filter(p => p.isCurrentGrader).length;
+    const uid = encodeURIComponent(userId);
     const rows = data.paths.map(p => {
       const label = GRADE_STATUS_LABEL[p.status] || p.status || '—';
       const color = GRADE_STATUS_COLOR[p.status] || '#9ca3af';
@@ -2122,15 +2193,21 @@ async function showUserGrades(userId, name) {
       const stale = p.isCurrentGrader
         ? ''
         : `<span style="font-size:0.72rem;color:#9ca3af" title="Un autre membre a noté ce chemin depuis">· re-noté depuis</span>`;
-      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:6px">
+      // Clicking a path opens the admin map, framed on that path with the whole
+      // set spotlighted.
+      return `<a href="admin?grader=${uid}&focus=${encodeURIComponent(p.id)}" title="Voir sur la carte" style="text-decoration:none;color:inherit;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:6px">
         <div style="min-width:0">
-          <div style="font-weight:600;font-size:0.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.name)}</div>
+          <div style="font-weight:600;font-size:0.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🗺 ${escapeHtml(p.name)}</div>
           <div style="font-size:0.74rem;color:#6b7280">${when ? `📅 ${when} ` : ''}${stale}</div>
         </div>
         <span style="flex:none;font-size:0.74rem;font-weight:700;color:#fff;background:${color};padding:3px 9px;border-radius:999px">${escapeHtml(label)}</span>
-      </div>`;
+      </a>`;
     }).join('');
-    body.innerHTML = `<p style="font-size:0.82rem;color:#6b7280;margin-bottom:10px">${data.count} chemin${data.count > 1 ? 's' : ''} noté${data.count > 1 ? 's' : ''} · ${current} avec la difficulté actuelle</p>${rows}`;
+    body.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:0.82rem;color:#6b7280">${data.count} chemin${data.count > 1 ? 's' : ''} noté${data.count > 1 ? 's' : ''} · ${current} avec la difficulté actuelle</span>
+        <a href="admin?grader=${uid}" class="btn-primary" style="width:auto;padding:6px 12px;font-size:0.8rem;text-decoration:none">🗺 Voir tous sur la carte</a>
+      </div>${rows}`;
   } catch (e) {
     body.innerHTML = `<p style="color:red">Erreur réseau</p>`;
   }
