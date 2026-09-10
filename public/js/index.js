@@ -6,34 +6,8 @@ if (nav) {
   });
 }
 
-/* ── Nav drawer (index uses navBurger, not btnNavMenu) ───────────────── */
-(function () {
-  var overlay  = document.getElementById('navDrawerOverlay');
-  var drawer   = document.getElementById('navDrawer');
-  var burger   = document.getElementById('navBurger');
-  var closeBtn = document.getElementById('btnNavDrawerClose');
-  if (!overlay || !drawer || !burger) return;
-  function openDrawer() {
-    overlay.classList.remove('hidden');
-    drawer.classList.remove('hidden');
-    requestAnimationFrame(function () {
-      overlay.classList.add('open');
-      drawer.classList.add('open');
-    });
-  }
-  function closeDrawer() {
-    overlay.classList.remove('open');
-    drawer.classList.remove('open');
-    setTimeout(function () {
-      overlay.classList.add('hidden');
-      drawer.classList.add('hidden');
-    }, 250);
-  }
-  burger.addEventListener('click', openDrawer);
-  if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
-  overlay.addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeDrawer(); });
-})();
+/* Nav drawer + hamburger are built and wired by js/ui-shared.js (grouped,
+   labelled sections), shared with every other page. */
 
 /* ── Smooth scroll for anchor links ──────────────────────────────────── */
 document.querySelectorAll('a[href^="#"]').forEach(a => {
