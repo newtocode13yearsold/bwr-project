@@ -25,9 +25,13 @@
     updateIcons();
   };
 
-  document.addEventListener('DOMContentLoaded', function () {
-    updateIcons();
-    var btn = document.getElementById('btnThemeToggle');
-    if (btn) btn.addEventListener('click', window.__bwrToggleTheme);
+  document.addEventListener('DOMContentLoaded', updateIcons);
+
+  // Delegated so it also fires for toggles injected later — e.g. the nav-drawer
+  // theme entry (built by ui-shared.js), which replaces the header button on
+  // mobile where the toolbar is too crowded to keep it.
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('#btnThemeToggle, .js-theme-toggle');
+    if (t) { e.preventDefault(); window.__bwrToggleTheme(); }
   });
 })();

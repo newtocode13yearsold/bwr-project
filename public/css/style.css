@@ -1554,6 +1554,10 @@ body {
   .btn-label { display: none; }
   .header-nav-links { display: none; }
 
+  /* Theme toggle lives in the nav drawer on mobile to declutter the toolbar.
+     Two-class selector so it beats the later `.btn-icon { display:flex }`. */
+  .btn-icon.header-theme-toggle { display: none; }
+
   .header {
     padding: 0 10px;
     padding-top: env(safe-area-inset-top, 0px);

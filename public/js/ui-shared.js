@@ -64,6 +64,7 @@
     { href: 'changelog',   label: 'Changelog',             icon: IC.changelog },
     { href: 'guide',       label: 'Guide & aide',          icon: IC.guide },
     { href: 'map?offline=1', label: 'Cartes hors-ligne',   icon: IC.download },
+    { type: 'theme' },
     { type: 'install' },
 
     { type: 'section', label: 'Administration', admin: true },
@@ -89,6 +90,16 @@
       var scls = 'nav-drawer-section';
       if (it.admin) scls += ' nav-drawer-admin' + (isAdmin() ? '' : ' hidden');
       return '<div class="' + scls + '">' + it.label + '</div>';
+    }
+    if (it.type === 'theme') {
+      // Global dark/light toggle. Lives in the menu so the header toolbar can
+      // drop it on mobile (see #btnThemeToggle in the max-width:640px block).
+      // Icon reflects the theme already applied by theme.js in <head>; clicks
+      // are handled by theme.js's delegated listener (matches .js-theme-toggle).
+      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      return '<button type="button" class="nav-drawer-item js-theme-toggle">' +
+        '<span class="nav-drawer-icon theme-toggle-icon">' + (dark ? '☀️' : '🌙') + '</span>' +
+        '<span>Mode sombre / clair</span></button>';
     }
     if (it.type === 'install') {
       return '<button class="nav-drawer-item" id="btnInstallApp" style="display:none">' +
