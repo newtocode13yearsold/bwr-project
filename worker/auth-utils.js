@@ -58,20 +58,45 @@ export function isoMonday(d = new Date()) {
 }
 
 // Generic fixed-window rate limiter
-// KV key: ratelimit:{scope}:{key} → { count }  TTL = windowSeconds
+// KV key: ratelimit:{scope}:{key} → { count, resetAt }  (resetAt = window end, epoch ms)
 // Returns true when the request is allowed, false when the limit is exceeded.
 /**
  * Fixed-window rate limiter backed by KV.
+ *
+ * The window's end time (`resetAt`) is stored INSIDE the value and the count is
+ * reset once that time has passed. We do NOT rely on the KV key expiring to reset
+ * the window: KV treats `expirationTtl: undefined` as "no expiry at all", so a key
+ * first written with a TTL and later re-`put` without one would live forever and
+ * ban the caller permanently. Storing `resetAt` makes the reset explicit and
+ * independent of KV's TTL behaviour.
+ *
  * @returns true when the request is allowed, false when the limit is exceeded.
- * Note: TTL is set only on the first write; subsequent increments don't reset the window.
  */
 export async function checkRateLimit(env, scope, key, maxCount, windowSeconds) {
   const kvKey = `ratelimit:${scope}:${key}`;
+  const now = Date.now();
   const raw = await env.BWR_KV.get(kvKey);
-  const count = raw ? parseInt(raw, 10) : 0;
+  let count = 0;
+  let resetAt = now + windowSeconds * 1000;
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && parsed.resetAt > now) {
+        // Still inside the current window — keep counting toward it.
+        count = parsed.count || 0;
+        resetAt = parsed.resetAt;
+      }
+      // else: window elapsed (or unparseable shape) → start a fresh window.
+    } catch {
+      // Legacy bare-integer value from the old format → start a fresh window.
+    }
+  }
   if (count >= maxCount) return false;
-  await env.BWR_KV.put(kvKey, String(count + 1), {
-    expirationTtl: raw ? undefined : windowSeconds,
+  // TTL keeps KV tidy (expires a little after the window ends); the authoritative
+  // reset is resetAt, re-sent on every write so the key can never outlive its window.
+  const ttl = Math.max(60, Math.ceil((resetAt - now) / 1000));
+  await env.BWR_KV.put(kvKey, JSON.stringify({ count: count + 1, resetAt }), {
+    expirationTtl: ttl,
   });
   return true;
 }

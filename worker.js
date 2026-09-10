@@ -95,39 +95,50 @@ export default {
 
     const ctx = { pathname, url, json, fail, cors, waitUntil };
 
-    // Edge-cached tile proxy (/tiles/topo/:z/:x/:y.png) — runs before the /api/
-    // chain and the static-asset fallback. Same-origin, so no CORS reflection
-    // needed; it sets its own image headers.
-    const tileResponse = await handleTiles(request, env, ctx);
-    if (tileResponse) return tileResponse;
+    // One try/catch around the whole dispatch chain. Many handlers read the
+    // request body (request.json()/text()) without guarding against malformed
+    // input; an uncaught throw anywhere would otherwise surface as a bare
+    // Cloudflare 500 with NO CORS headers and NONE of our security headers, so
+    // the browser sees an opaque "failed to fetch" instead of a usable error.
+    // Catching here keeps CORS + headers intact for every crash at once.
+    try {
+      // Edge-cached tile proxy (/tiles/topo/:z/:x/:y.png) — runs before the /api/
+      // chain and the static-asset fallback. Same-origin, so no CORS reflection
+      // needed; it sets its own image headers.
+      const tileResponse = await handleTiles(request, env, ctx);
+      if (tileResponse) return tileResponse;
 
-    const apiResponse =
-      await handleAdmin(request, env, ctx)      ??
-      await handleAuth(request, env, ctx)        ??
-      await handlePathReviews(request, env, ctx) ??
-      await handlePaths(request, env, ctx)       ??
-      await handlePoi(request, env, ctx)         ??
-      await handleReports(request, env, ctx)     ??
-      await handleContent(request, env, ctx)     ??
-      await handleSavedRoutes(request, env, ctx) ??
-      await handleActivities(request, env, ctx)  ??
-      await handleSocial(request, env, ctx)      ??
-      await handleFriends(request, env, ctx)     ??
-      await handleForum(request, env, ctx)       ??
-      await handlePush(request, env, ctx)        ??
-      await handleNotify(request, env, ctx)      ??
-      await handleRating(request, env, ctx)      ??
-      await handleInbox(request, env, ctx)       ??
-      await handleQuests(request, env, ctx)      ??
-      await handleErrors(request, env, ctx);
+      const apiResponse =
+        await handleAdmin(request, env, ctx)      ??
+        await handleAuth(request, env, ctx)        ??
+        await handlePathReviews(request, env, ctx) ??
+        await handlePaths(request, env, ctx)       ??
+        await handlePoi(request, env, ctx)         ??
+        await handleReports(request, env, ctx)     ??
+        await handleContent(request, env, ctx)     ??
+        await handleSavedRoutes(request, env, ctx) ??
+        await handleActivities(request, env, ctx)  ??
+        await handleSocial(request, env, ctx)      ??
+        await handleFriends(request, env, ctx)     ??
+        await handleForum(request, env, ctx)       ??
+        await handlePush(request, env, ctx)        ??
+        await handleNotify(request, env, ctx)      ??
+        await handleRating(request, env, ctx)      ??
+        await handleInbox(request, env, ctx)       ??
+        await handleQuests(request, env, ctx)      ??
+        await handleErrors(request, env, ctx);
 
-    if (apiResponse) return apiResponse;
+      if (apiResponse) return apiResponse;
 
-    // Unmatched /api/* is a genuine 404; anything else is a static-asset
-    // request — hand it to the assets binding (the Worker runs first now).
-    if (pathname.startsWith('/api/')) {
-      return new Response('Not found', { status: 404, headers: cors });
+      // Unmatched /api/* is a genuine 404; anything else is a static-asset
+      // request — hand it to the assets binding (the Worker runs first now).
+      if (pathname.startsWith('/api/')) {
+        return new Response('Not found', { status: 404, headers: cors });
+      }
+      return env.ASSETS.fetch(request);
+    } catch (err) {
+      console.error('Unhandled worker error:', err && err.stack ? err.stack : err);
+      return fail('Internal server error', 500);
     }
-    return env.ASSETS.fetch(request);
   },
 };

@@ -10,15 +10,25 @@ async function fetchElevation(coords) {
 
   const locations = sampled.map(([lat, lon]) => ({ latitude: lat, longitude: lon }));
   const token = localStorage.getItem('bwr_token');
-  const res = await fetch(`${API_URL}/api/elevation`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-    body: JSON.stringify({ locations }),
-  });
-  if (!res.ok) throw new Error('elevation API error');
-  const data = await res.json();
-  if (data.status !== 'OK') throw new Error('elevation API error');
-  return data.results.map(r => r.elevation);
+  // The elevation provider (Open-Elevation, proxied through /api/elevation) is a
+  // third party that regularly times out or goes down. A bare rejection here used
+  // to bubble up as an uncaught error and get beaconed to the admin error monitor,
+  // making a normal upstream outage look like a code bug. Swallow it and return
+  // null — the elevation profile is a nice-to-have; drawElevationChart treats a
+  // null/short result as "no data" and simply hides the chart.
+  try {
+    const res = await fetch(`${API_URL}/api/elevation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ locations }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.status !== 'OK' || !Array.isArray(data.results)) return null;
+    return data.results.map(r => r.elevation);
+  } catch (e) {
+    return null;
+  }
 }
 
 function drawElevationChart(elevations, meters) {
