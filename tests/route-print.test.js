@@ -6,7 +6,10 @@
 const { test, describe } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { carrefoursAlongRoute, _rpHaversineM, _rpBuildMapSvg } = require('../public/js/route-print.js');
+const {
+  carrefoursAlongRoute, computeDirections, _rpBearing, _rpCardinal,
+  _rpHaversineM, _rpBuildMapSvg, _rpBuildDoc,
+} = require('../public/js/route-print.js');
 
 describe('_rpHaversineM', () => {
   test('zero distance for identical points', () => {
@@ -99,5 +102,78 @@ describe('_rpBuildMapSvg', () => {
     assert.ok(svg.includes('<polyline'), 'route polyline missing');
     assert.ok(svg.includes('#ef4444'), 'route colour not applied');
     assert.ok(svg.trim().startsWith('<svg'), 'not an SVG document');
+  });
+});
+
+describe('_rpBearing / _rpCardinal', () => {
+  test('due north / east / south / west bearings', () => {
+    assert.ok(Math.abs(_rpBearing(49.0, 2.0, 49.1, 2.0) - 0) < 1);    // north
+    assert.ok(Math.abs(_rpBearing(49.0, 2.0, 49.0, 2.1) - 90) < 1);   // east
+    assert.ok(Math.abs(_rpBearing(49.1, 2.0, 49.0, 2.0) - 180) < 1);  // south
+    assert.ok(Math.abs(_rpBearing(49.0, 2.1, 49.0, 2.0) - 270) < 1);  // west
+  });
+
+  test('cardinal buckets to the 8-point compass', () => {
+    assert.equal(_rpCardinal(0), 'N');
+    assert.equal(_rpCardinal(45), 'N-E');
+    assert.equal(_rpCardinal(90), 'E');
+    assert.equal(_rpCardinal(315), 'N-O');
+    assert.equal(_rpCardinal(359), 'N'); // wraps back to North
+  });
+});
+
+describe('computeDirections', () => {
+  // Heading east, then a 90° turn to head north (a LEFT turn — north is to the
+  // left of east), then later a leg heading east again.
+  const coords = [];
+  for (let i = 0; i <= 10; i++) coords.push([49.350, 2.900 + i * 0.001]); // east, ~1.1 km
+  for (let i = 1; i <= 10; i++) coords.push([49.350 + i * 0.001, 2.910]);  // north
+
+  test('start hit has no turn, only a heading', () => {
+    const hits = [{ name: 'Start', idx: 0 }];
+    const [d] = computeDirections(coords, hits);
+    assert.equal(d.turn, null);
+    assert.equal(d.cardinal, 'E'); // route leaves heading east
+  });
+
+  test('detects a left turn at the corner (east → north)', () => {
+    const corner = 10; // the vertex where east flips to north
+    const [d] = computeDirections(coords, [{ name: 'Corner', idx: corner }], { lookM: 40 });
+    assert.equal(d.turn, 'à gauche'); // east→north is a left turn
+    assert.equal(d.cardinal, 'N');
+  });
+
+  test('a straight passage reads "tout droit"', () => {
+    const [d] = computeDirections(coords, [{ name: 'Mid', idx: 5 }], { lookM: 30 });
+    assert.equal(d.turn, 'tout droit');
+    assert.equal(d.cardinal, 'E');
+  });
+
+  test('output is aligned 1:1 with the hits', () => {
+    const hits = [{ name: 'A', idx: 0 }, { name: 'B', idx: 5 }, { name: 'C', idx: 15 }];
+    assert.equal(computeDirections(coords, hits).length, 3);
+  });
+});
+
+describe('_rpBuildDoc roadbook directions', () => {
+  const coords = [];
+  for (let i = 0; i <= 10; i++) coords.push([49.350, 2.900 + i * 0.001]);
+  for (let i = 1; i <= 10; i++) coords.push([49.350 + i * 0.001, 2.910]);
+  let m = 0;
+  for (let i = 1; i < coords.length; i++) m += _rpHaversineM(coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1]);
+  const hits = [
+    { name: 'Carrefour Départ', lat: 49.350, lon: 2.900, distM: 0, cumM: 0, idx: 0 },
+    { name: 'Carrefour Coude',  lat: 49.350, lon: 2.910, distM: 0, cumM: 700, idx: 10 },
+  ];
+
+  test('renders a Direction column with heading + turn', () => {
+    const html = _rpBuildDoc({ coords, meters: m, seconds: m / 1.11 }, {
+      hits, contextPaths: [], color: '#22c55e', isLoop: false,
+      title: 'Test', typeLabel: 'Chemin forestier', modeLabel: 'Trajet A → B', diffLabel: 'facile',
+    });
+    assert.ok(html.includes('Direction à suivre'), 'direction column header missing');
+    assert.ok(html.includes('Départ'), 'start heading missing');
+    assert.ok(html.includes('cap'), 'compass heading missing');
+    assert.ok(html.includes('Arrivée'), 'arrival row missing for A→B');
   });
 });

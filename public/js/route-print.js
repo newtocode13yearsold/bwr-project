@@ -50,12 +50,12 @@ function carrefoursAlongRoute(coords, carrefours, opts = {}) {
   const hits = [];
   for (const c of carrefours) {
     if (!c || !isFinite(c.lat) || !isFinite(c.lon)) continue;
-    let best = Infinity, bestCum = 0;
+    let best = Infinity, bestCum = 0, bestIdx = 0;
     for (let i = 0; i < coords.length; i++) {
       const d = _rpHaversineM(c.lat, c.lon, coords[i][0], coords[i][1]);
-      if (d < best) { best = d; bestCum = cum[i]; }
+      if (d < best) { best = d; bestCum = cum[i]; bestIdx = i; }
     }
-    if (best <= thresholdM) hits.push({ name: c.name, lat: c.lat, lon: c.lon, distM: best, cumM: bestCum });
+    if (best <= thresholdM) hits.push({ name: c.name, lat: c.lat, lon: c.lon, distM: best, cumM: bestCum, idx: bestIdx });
   }
 
   hits.sort((a, b) => a.cumM - b.cumM);
@@ -69,6 +69,85 @@ function carrefoursAlongRoute(coords, carrefours, opts = {}) {
     kept.push(h);
   }
   return kept;
+}
+
+// ── Turn-by-turn directions ────────────────────────────────────────────────
+// For each carrefour: which way to turn (relative to how you arrived) and the
+// compass heading you leave on. This is what makes the roadbook navigable — the
+// hiker reads "au Carrefour X, tout droit, cap N-E" at each junction.
+
+function _rpBearing(lat1, lon1, lat2, lon2) {
+  const toRad = d => d * Math.PI / 180;
+  const φ1 = toRad(lat1), φ2 = toRad(lat2), Δλ = toRad(lon2 - lon1);
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+// 8-point compass, French abbreviations.
+function _rpCardinal(bearing) {
+  const dirs = ['N', 'N-E', 'E', 'S-E', 'S', 'S-O', 'O', 'N-O'];
+  return dirs[Math.round(((bearing % 360) + 360) % 360 / 45) % 8];
+}
+
+// A point `deltaM` metres before (<0) / after (>0) vertex `idx`, interpolated
+// along the route so bearings aren't thrown off by a single noisy GPS vertex.
+function _rpPointAtOffset(coords, cum, idx, deltaM) {
+  const target = cum[idx] + deltaM;
+  const total = cum[cum.length - 1];
+  if (target <= 0) return coords[0];
+  if (target >= total) return coords[coords.length - 1];
+  for (let i = 0; i < cum.length - 1; i++) {
+    if (cum[i] <= target && target <= cum[i + 1]) {
+      const seg = cum[i + 1] - cum[i];
+      const f = seg > 0 ? (target - cum[i]) / seg : 0;
+      return [
+        coords[i][0] + (coords[i + 1][0] - coords[i][0]) * f,
+        coords[i][1] + (coords[i + 1][1] - coords[i][1]) * f,
+      ];
+    }
+  }
+  return coords[idx];
+}
+
+/**
+ * Direction annotation for each hit, aligned 1:1 with `hits`.
+ * @returns {Array<{turn:string|null, cardinal:string, bearing:number}>}
+ *   turn — 'tout droit' | 'à gauche' | 'à droite' | 'demi-tour' | null (at the start)
+ *   cardinal — the compass heading you leave the carrefour on (N, N-E, …)
+ */
+function computeDirections(coords, hits, opts = {}) {
+  const lookM = opts.lookM != null ? opts.lookM : 35;
+  if (!Array.isArray(coords) || coords.length < 2 || !Array.isArray(hits)) {
+    return (hits || []).map(() => ({ turn: null, cardinal: null, bearing: 0 }));
+  }
+  const cum = new Array(coords.length);
+  cum[0] = 0;
+  for (let i = 1; i < coords.length; i++) {
+    cum[i] = cum[i - 1] + _rpHaversineM(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+  }
+
+  return hits.map(h => {
+    const idx = h.idx != null ? h.idx : 0;
+    const here   = coords[idx];
+    const before = _rpPointAtOffset(coords, cum, idx, -lookM);
+    const after  = _rpPointAtOffset(coords, cum, idx, lookM);
+    const outB = _rpBearing(here[0], here[1], after[0], after[1]);
+    const cardinal = _rpCardinal(outB);
+
+    // No incoming leg at the very start → just a heading.
+    if (idx === 0 || (before[0] === here[0] && before[1] === here[1])) {
+      return { turn: null, cardinal, bearing: outB };
+    }
+    const inB = _rpBearing(before[0], before[1], here[0], here[1]);
+    const delta = ((outB - inB + 540) % 360) - 180; // [-180,180]; + = right
+    const a = Math.abs(delta);
+    let turn;
+    if (a < 25) turn = 'tout droit';
+    else if (a <= 140) turn = delta > 0 ? 'à droite' : 'à gauche';
+    else turn = 'demi-tour';
+    return { turn, cardinal, bearing: outB };
+  });
 }
 
 // ── Rendering (browser only) ────────────────────────────────────────────────
@@ -227,21 +306,39 @@ function _rpBuildDoc(route, meta) {
 
   const svg = _rpBuildMapSvg(coords, hits, meta.contextPaths, { color, isLoop: meta.isLoop });
 
+  const dirs = computeDirections(coords, hits);
+  const TURN_ARROW = { 'tout droit': '↑', 'à gauche': '←', 'à droite': '→', 'demi-tour': '↩' };
+
   const rows = hits.map((h, i) => {
     const badge = `<span class="rp-num">${i + 1}</span>`;
+    const d = dirs[i] || {};
+    let dirText;
+    if (i === 0 || !d.turn) {
+      dirText = `<span class="rp-dir-go">Départ</span> · cap ${_rpEsc(d.cardinal || '—')}`;
+    } else {
+      const arrow = TURN_ARROW[d.turn] || '↑';
+      dirText = `<span class="rp-arrow">${arrow}</span> ${_rpEsc(d.turn)} · cap ${_rpEsc(d.cardinal || '—')}`;
+    }
     return `<tr>
       <td class="rp-c-num">${badge}</td>
       <td class="rp-c-name">${_rpEsc(h.name)}</td>
+      <td class="rp-c-dir">${dirText}</td>
       <td class="rp-c-km">km ${(h.cumM / 1000).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
     </tr>`;
   }).join('');
 
+  const endKm = 'km ' + (route.meters / 1000).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const endRow = `<tr class="rp-return">
+      <td class="rp-c-num">🏁</td>
+      <td class="rp-c-name">${meta.isLoop ? 'Retour au point de départ' : 'Arrivée'}</td>
+      <td class="rp-c-dir">—</td>
+      <td class="rp-c-km">${endKm}</td>
+    </tr>`;
+
   const roadbook = hits.length
     ? `<table class="rp-roadbook">
-        <thead><tr><th></th><th>Carrefour</th><th>Distance</th></tr></thead>
-        <tbody>${rows}
-          ${meta.isLoop ? '<tr class="rp-return"><td class="rp-c-num">🏁</td><td class="rp-c-name">Retour au point de départ</td><td class="rp-c-km">km ' + (route.meters / 1000).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '</td></tr>' : ''}
-        </tbody>
+        <thead><tr><th></th><th>Carrefour</th><th>Direction à suivre</th><th>Distance</th></tr></thead>
+        <tbody>${rows}${endRow}</tbody>
       </table>`
     : `<p class="rp-empty">Aucun carrefour nommé n'a été détecté le long de cet itinéraire. Suivez le tracé sur la carte ci-dessus.</p>`;
 
@@ -281,6 +378,9 @@ function _rpBuildDoc(route, meta) {
   .rp-roadbook tr { page-break-inside: avoid; }
   .rp-c-num { width: 38px; }
   .rp-c-name { font-weight: 700; }
+  .rp-c-dir { font-size: 15px; color: var(--ink); white-space: nowrap; }
+  .rp-c-dir .rp-arrow { display: inline-block; font-weight: 800; color: var(--green); margin-right: 3px; }
+  .rp-c-dir .rp-dir-go { font-weight: 700; color: var(--green); }
   .rp-c-km { white-space: nowrap; text-align: right; color: var(--green); font-weight: 700; }
   .rp-num { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 13px; font-weight: 700; }
   .rp-return td { background: #f0fdf4; font-weight: 700; }
@@ -382,5 +482,5 @@ function printCurrentRoute() {
 
 // Node CJS export for the unit tests (no-op in the browser).
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { carrefoursAlongRoute, _rpHaversineM, _rpBuildDoc, _rpBuildMapSvg, _rpContextPaths, _rpBounds };
+  module.exports = { carrefoursAlongRoute, computeDirections, _rpBearing, _rpCardinal, _rpHaversineM, _rpBuildDoc, _rpBuildMapSvg, _rpContextPaths, _rpBounds };
 }
