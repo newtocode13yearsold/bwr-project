@@ -235,11 +235,15 @@ function _rpBuildMapSvg(coords, hits, contextPaths, opts) {
 
   const parts = [];
   parts.push(`<svg viewBox="0 0 ${VBW} ${VBH}" xmlns="http://www.w3.org/2000/svg" class="rp-svg">`);
-  parts.push(`<rect x="0" y="0" width="${VBW}" height="${VBH}" fill="#f8faf7"/>`);
+  // Forest-green ground so the sheet reads as a real map in colour (prints in
+  // colour via print-color-adjust:exact), with a subtle inner frame.
+  parts.push(`<rect x="0" y="0" width="${VBW}" height="${VBH}" fill="#e6f0d8"/>`);
+  parts.push(`<rect x="6" y="6" width="${VBW - 12}" height="${VBH - 12}" fill="none" stroke="#bcd29a" stroke-width="1.5"/>`);
 
-  // Faint context paths.
+  // Context paths — warm trail brown, so the surrounding forest tracks are
+  // visible around the coloured route.
   for (const p of contextPaths) {
-    parts.push(`<polyline points="${ptStr(p.coordinates)}" fill="none" stroke="#c3cdbb" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>`);
+    parts.push(`<polyline points="${ptStr(p.coordinates)}" fill="none" stroke="#b08054" stroke-width="1.3" stroke-opacity="0.65" stroke-linecap="round" stroke-linejoin="round"/>`);
   }
 
   // Route — white casing then colour.
@@ -308,17 +312,20 @@ function _rpBuildDoc(route, meta) {
 
   const dirs = computeDirections(coords, hits);
   const TURN_ARROW = { 'tout droit': '↑', 'à gauche': '←', 'à droite': '→', 'demi-tour': '↩' };
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  const endName = meta.isLoop ? 'le point de départ' : 'l\'arrivée';
 
   const rows = hits.map((h, i) => {
     const badge = `<span class="rp-num">${i + 1}</span>`;
     const d = dirs[i] || {};
-    let dirText;
-    if (i === 0 || !d.turn) {
-      dirText = `<span class="rp-dir-go">Départ</span> · cap ${_rpEsc(d.cardinal || '—')}`;
-    } else {
-      const arrow = TURN_ARROW[d.turn] || '↑';
-      dirText = `<span class="rp-arrow">${arrow}</span> ${_rpEsc(d.turn)} · cap ${_rpEsc(d.cardinal || '—')}`;
-    }
+    // Name the NEXT carrefour so each line reads like a forest signpost:
+    // "au Carrefour X, prendre à gauche vers Carrefour Y".
+    const nextName = i < hits.length - 1 ? hits[i + 1].name : endName;
+    const turn = (i === 0 || !d.turn) ? 'tout droit' : d.turn;
+    const arrow = TURN_ARROW[turn] || '↑';
+    const lead = i === 0 ? 'Départ' : cap(turn);
+    const capTxt = d.cardinal ? ` <span class="rp-cap">cap ${_rpEsc(d.cardinal)}</span>` : '';
+    const dirText = `<span class="rp-arrow">${arrow}</span> ${_rpEsc(lead)} vers <strong>${_rpEsc(nextName)}</strong>${capTxt}`;
     return `<tr>
       <td class="rp-c-num">${badge}</td>
       <td class="rp-c-name">${_rpEsc(h.name)}</td>
@@ -378,9 +385,10 @@ function _rpBuildDoc(route, meta) {
   .rp-roadbook tr { page-break-inside: avoid; }
   .rp-c-num { width: 38px; }
   .rp-c-name { font-weight: 700; }
-  .rp-c-dir { font-size: 15px; color: var(--ink); white-space: nowrap; }
+  .rp-c-dir { font-size: 15px; color: var(--ink); }
   .rp-c-dir .rp-arrow { display: inline-block; font-weight: 800; color: var(--green); margin-right: 3px; }
-  .rp-c-dir .rp-dir-go { font-weight: 700; color: var(--green); }
+  .rp-c-dir strong { color: var(--green); }
+  .rp-c-dir .rp-cap { color: var(--muted); font-size: 13px; white-space: nowrap; }
   .rp-c-km { white-space: nowrap; text-align: right; color: var(--green); font-weight: 700; }
   .rp-num { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 13px; font-weight: 700; }
   .rp-return td { background: #f0fdf4; font-weight: 700; }

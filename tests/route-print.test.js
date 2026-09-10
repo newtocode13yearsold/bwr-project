@@ -166,13 +166,15 @@ describe('_rpBuildDoc roadbook directions', () => {
     { name: 'Carrefour Coude',  lat: 49.350, lon: 2.910, distM: 0, cumM: 700, idx: 10 },
   ];
 
-  test('renders a Direction column with heading + turn', () => {
+  test('renders a Direction column naming the next carrefour', () => {
     const html = _rpBuildDoc({ coords, meters: m, seconds: m / 1.11 }, {
       hits, contextPaths: [], color: '#22c55e', isLoop: false,
       title: 'Test', typeLabel: 'Chemin forestier', modeLabel: 'Trajet A → B', diffLabel: 'facile',
     });
     assert.ok(html.includes('Direction à suivre'), 'direction column header missing');
-    assert.ok(html.includes('Départ'), 'start heading missing');
+    assert.ok(html.includes('Départ'), 'start row missing');
+    // Each instruction names the NEXT carrefour: "… vers Carrefour Coude".
+    assert.ok(html.includes('vers <strong>Carrefour Coude</strong>'), 'next-carrefour instruction missing');
     assert.ok(html.includes('cap'), 'compass heading missing');
     assert.ok(html.includes('Arrivée'), 'arrival row missing for A→B');
   });
