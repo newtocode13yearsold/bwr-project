@@ -148,6 +148,7 @@ async function fetchAndRenderHistory() {
           </div>
           <div class="history-item-actions">
             <button class="btn-history-replay" title="Afficher sur la carte">▶</button>
+            <button class="btn-history-print"  title="Imprimer / PDF">🖨</button>
             <button class="btn-history-share"  title="Copier le lien de partage">🔗</button>
             <button class="btn-history-delete" title="Supprimer">🗑</button>
           </div>
@@ -158,6 +159,7 @@ async function fetchAndRenderHistory() {
       const id    = el.dataset.id;
       const token = el.dataset.token;
       el.querySelector('.btn-history-replay').onclick = () => replaySavedRoute(id);
+      el.querySelector('.btn-history-print').onclick  = () => printSavedRoute(id);
       el.querySelector('.btn-history-share').onclick  = () => copyShareLink(token);
       el.querySelector('.btn-history-delete').onclick = () => deleteSavedRoute(id, el);
     });
@@ -177,6 +179,25 @@ async function replaySavedRoute(id) {
     routeLayer = drawRouteLine(route.coords, color).addTo(map);
     map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
     showToast('Trajet affiché sur la carte.');
+  } catch (e) {
+    showToast(`Erreur : ${e.message}`);
+  }
+}
+
+// Reprint a saved route without regenerating it — fetch the full track, then
+// hand it to the shared printer (route-print.js, lazy-loaded on first use).
+async function printSavedRoute(id) {
+  try {
+    const res = await fetch(`${API_URL}/api/savedroutes/${id}`, { headers: authHeader() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const route = await res.json();
+    await _loadRoutePrint();
+    printRouteData(route, {
+      difficulty: route.difficulty,
+      pathType:   route.pathType,
+      mode:       route.mode,
+      name:       route.name,
+    });
   } catch (e) {
     showToast(`Erreur : ${e.message}`);
   }

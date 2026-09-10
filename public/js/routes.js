@@ -30,6 +30,7 @@ const _loadElevation  = () => loadScript('js/elevation.js');
 const _loadBreakdown  = () => loadScript('js/route-breakdown.js');
 const _loadRouteSave  = () => loadScript('js/route-save.js');
 const _loadRouteFollow = () => loadScript('js/route-follow.js');
+const _loadRoutePrint = () => loadScript('js/route-print.js');
 
 // ── Live guidance launch — wire the "Suivre l'itinéraire" button ───────────────
 // Called from displayRoute (routes-planner.js) and the shared-route path

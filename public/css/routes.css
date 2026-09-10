@@ -730,6 +730,16 @@
   transition: background 0.15s;
 }
 .btn-gpx:hover { background: var(--forest-600); }
+.btn-gpx:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Print / PDF roadbook — the paper you carry into the forest (no signal there).
+   Free for everyone, so it gets its own full-width accent row under the exports. */
+.result-actions .btn-print {
+  flex: 1 1 100%;
+  background: #4338ca;
+}
+.result-actions .btn-print:hover { background: #3730a3; }
+.result-actions .btn-print:disabled { background: #4338ca; }
 
 .btn-reset {
   flex: 1;
@@ -837,6 +847,17 @@
   cursor: pointer;
 }
 .btn-history-share:hover { background: #ddd6fe; }
+.btn-history-print {
+  padding: 5px 9px;
+  background: #eef2ff;
+  color: #4338ca;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-history-print:hover { background: #e0e7ff; }
 .btn-history-delete {
   padding: 5px 9px;
   background: #fef2f2;

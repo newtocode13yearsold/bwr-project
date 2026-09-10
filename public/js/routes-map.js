@@ -217,6 +217,9 @@ function setSaveShareEnabled(enabled) {
   const btnShare = document.getElementById('btnShareRoute');
   if (btnSave)  btnSave.disabled  = !enabled || !canSave;
   if (btnShare) btnShare.disabled = !enabled || !canSave;
+  // Print / PDF roadbook is free for everyone — it just needs a route on screen.
+  const btnPrint = document.getElementById('btnPrint');
+  if (btnPrint) btnPrint.disabled = !enabled;
 }
 
 function initSaveShareButtons() {
@@ -230,6 +233,13 @@ function initSaveShareButtons() {
 
   btnSave.disabled  = true;
   btnShare.disabled = true;
+
+  // Print / PDF roadbook — free for all tiers, lazy-loads route-print.js.
+  const btnPrint = document.getElementById('btnPrint');
+  if (btnPrint) {
+    btnPrint.disabled = true;
+    btnPrint.onclick = async () => { await _loadRoutePrint(); printCurrentRoute(); };
+  }
 
   if (!canSave) {
     btnSave.onclick  = () => showUpgradeModal('silver', 'La sauvegarde de trajets');
