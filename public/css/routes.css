@@ -740,6 +740,18 @@
 }
 .result-actions .btn-print:hover { background: #3730a3; }
 .result-actions .btn-print:disabled { background: #4338ca; }
+.print-topo-opt {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.85rem;
+  color: #4338ca;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: -2px;
+}
+.print-topo-opt input { accent-color: #4338ca; cursor: pointer; }
 
 .btn-reset {
   flex: 1;

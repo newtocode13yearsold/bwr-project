@@ -8,7 +8,7 @@ const assert = require('node:assert/strict');
 
 const {
   carrefoursAlongRoute, computeDirections, _rpBearing, _rpCardinal,
-  _rpHaversineM, _rpBuildMapSvg, _rpBuildDoc,
+  _rpHaversineM, _rpBuildMapSvg, _rpBuildTileMap, _rpMercator, _rpBuildDoc,
 } = require('../public/js/route-print.js');
 
 describe('_rpHaversineM', () => {
@@ -102,6 +102,38 @@ describe('_rpBuildMapSvg', () => {
     assert.ok(svg.includes('<polyline'), 'route polyline missing');
     assert.ok(svg.includes('#ef4444'), 'route colour not applied');
     assert.ok(svg.trim().startsWith('<svg'), 'not an SVG document');
+  });
+});
+
+describe('_rpMercator / _rpBuildTileMap (topo map)', () => {
+  const coords = [];
+  for (let i = 0; i <= 20; i++) coords.push([49.350, 2.900 + i * 0.001]);
+  const hits = [{ name: "Carrefour de l'Étoile", lat: 49.3501, lon: 2.9005, distM: 5, cumM: 40, idx: 5 }];
+
+  test('mercator x grows with longitude, y grows southward', () => {
+    const [x0, y0] = _rpMercator(49.35, 2.90, 14);
+    const [x1] = _rpMercator(49.35, 2.91, 14);
+    const [, y1] = _rpMercator(49.34, 2.90, 14); // more south → larger y
+    assert.ok(x1 > x0);
+    assert.ok(y1 > y0);
+  });
+
+  test('embeds same-origin topo tiles as SVG images + the route + a carrefour', () => {
+    const svg = _rpBuildTileMap(coords, hits, [], { color: '#22c55e', isLoop: true });
+    assert.ok(svg.includes('<image href="/tiles/topo/'), 'topo tile images missing');
+    assert.ok(svg.includes('<polyline'), 'route polyline missing');
+    assert.ok(svg.includes("Carrefour de l&#39;Étoile"), 'carrefour label missing');
+    assert.ok(svg.trim().startsWith('<svg'), 'not an SVG document');
+  });
+
+  test('_rpBuildDoc uses tiles when useTiles is set', () => {
+    let m = 0;
+    for (let i = 1; i < coords.length; i++) m += _rpHaversineM(coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1]);
+    const html = _rpBuildDoc({ coords, meters: m, seconds: m }, {
+      hits, contextPaths: [], color: '#22c55e', isLoop: true, useTiles: true,
+      title: 'T', typeLabel: 'x', modeLabel: 'Boucle', diffLabel: 'facile',
+    });
+    assert.ok(html.includes('/tiles/topo/'), 'tile background not used when useTiles set');
   });
 });
 

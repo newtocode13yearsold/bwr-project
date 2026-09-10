@@ -192,11 +192,14 @@ async function printSavedRoute(id) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const route = await res.json();
     await _loadRoutePrint();
+    let useTiles = false;
+    try { useTiles = localStorage.getItem('bwr_print_topo') === '1'; } catch (_) {}
     printRouteData(route, {
       difficulty: route.difficulty,
       pathType:   route.pathType,
       mode:       route.mode,
       name:       route.name,
+      useTiles,
     });
   } catch (e) {
     showToast(`Erreur : ${e.message}`);

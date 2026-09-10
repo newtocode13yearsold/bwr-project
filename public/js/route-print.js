@@ -196,57 +196,47 @@ function _rpFmtDuration(seconds) {
  * route (coloured, white-cased), faint context paths, numbered carrefour
  * markers keyed to the roadbook, a north arrow and a scale bar.
  */
-function _rpBuildMapSvg(coords, hits, contextPaths, opts) {
-  const color = opts.color || '#22c55e';
-  const isLoop = opts.isLoop;
-
-  // Bounds over the route + its carrefours, padded so a ring of the surrounding
-  // path network is visible around the route (like the live map, not a lone line).
+// Padded bounds over the route + its carrefours, so a ring of the surrounding
+// network is visible around the route (like the live map, not a lone line).
+function _rpPaddedBounds(coords, hits) {
   const all = coords.slice();
   hits.forEach(h => all.push([h.lat, h.lon]));
-  let b = _rpBounds(all);
+  const b = _rpBounds(all);
   const padLat = Math.max((b.maxLat - b.minLat) * 0.13, 0.0012);
   const padLon = Math.max((b.maxLon - b.minLon) * 0.13, 0.0016);
-  b = { minLat: b.minLat - padLat, maxLat: b.maxLat + padLat,
-        minLon: b.minLon - padLon, maxLon: b.maxLon + padLon };
+  return { minLat: b.minLat - padLat, maxLat: b.maxLat + padLat,
+           minLon: b.minLon - padLon, maxLon: b.maxLon + padLon };
+}
 
-  const midLat   = (b.minLat + b.maxLat) / 2;
-  const lonScale = Math.cos(midLat * Math.PI / 180);
-  const geoW = (b.maxLon - b.minLon) * lonScale; // degrees, aspect-corrected
-  const geoH = (b.maxLat - b.minLat);
+// Web-Mercator pixel coordinate at a zoom level (256-px tiles) — for the topo
+// tile map, so our overlay lines up exactly with the /tiles/topo XYZ scheme.
+function _rpMercator(lat, lon, z) {
+  const n = Math.pow(2, z) * 256;
+  const x = (lon + 180) / 360 * n;
+  const latRad = lat * Math.PI / 180;
+  const y = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n;
+  return [x, y];
+}
 
-  const landscape = geoW >= geoH;
-  const VBW = landscape ? 1000 : 720;
-  const VBH = landscape ? 700  : 1000;
-  const M = 42;
-  const availW = VBW - 2 * M, availH = VBH - 2 * M;
-  const scale = Math.min(availW / geoW, availH / geoH); // svg units per degree-lat
-  const drawW = geoW * scale, drawH = geoH * scale;
-  const offX = M + (availW - drawW) / 2;
-  const offY = M + (availH - drawH) / 2;
-
-  const project = (lat, lon) => [
-    offX + (lon - b.minLon) * lonScale * scale,
-    offY + (b.maxLat - lat) * scale,
-  ];
+// The shared overlay: surrounding paths (optional), the coloured route, numbered
+// carrefour markers + names, start/end pins, north arrow and scale bar. Projection
+// agnostic — the caller passes project(lat,lon)->[x,y] and the pixel dimensions —
+// so the vector map and the topo-tile map draw identically on top of their ground.
+function _rpDrawOverlay(project, VBW, VBH, opts) {
+  const { coords, hits, contextPaths, color, isLoop, unitsPerMeter, drawContext } = opts;
+  const M = opts.M != null ? opts.M : 42;
   const ptStr = cs => cs.map(([lat, lon]) => {
     const [x, y] = project(lat, lon);
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
-
   const parts = [];
-  parts.push(`<svg viewBox="0 0 ${VBW} ${VBH}" xmlns="http://www.w3.org/2000/svg" class="rp-svg">`);
-  // Forest-green ground so the sheet reads as a real map in colour (prints in
-  // colour via print-color-adjust:exact), with a subtle inner frame.
-  parts.push(`<rect x="0" y="0" width="${VBW}" height="${VBH}" fill="#e6f0d8"/>`);
-  parts.push(`<rect x="6" y="6" width="${VBW - 12}" height="${VBH - 12}" fill="none" stroke="#bcd29a" stroke-width="1.5"/>`);
 
-  // The surrounding path network — every track in view, thin so the map reads
-  // like the real one without drowning the coloured route.
-  for (const p of contextPaths) {
-    const cs = p && p.coordinates;
-    if (!Array.isArray(cs) || cs.length < 2) continue;
-    parts.push(`<polyline points="${ptStr(cs)}" fill="none" stroke="#9a7b57" stroke-width="0.9" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/>`);
+  if (drawContext) {
+    for (const p of contextPaths) {
+      const cs = p && p.coordinates;
+      if (!Array.isArray(cs) || cs.length < 2) continue;
+      parts.push(`<polyline points="${ptStr(cs)}" fill="none" stroke="#9a7b57" stroke-width="0.9" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/>`);
+    }
   }
 
   // Route — white casing then colour.
@@ -254,12 +244,9 @@ function _rpBuildMapSvg(coords, hits, contextPaths, opts) {
   parts.push(`<polyline points="${routePts}" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`);
   parts.push(`<polyline points="${routePts}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`);
 
-  // Carrefour markers (numbered, keyed to the roadbook) + their NAME printed in
-  // place. Because this is vector text it stays sharp at any zoom / on a photocopy
-  // — the whole point of the print sheet vs. a blurry screenshot. The label sits on
-  // the outer side of the marker (left of the pin on the map's left half, right on
-  // the right half) so names lean away from the route instead of over it, and a
-  // white halo (paint-order:stroke) keeps them readable across lines.
+  // Carrefour markers (numbered, keyed to the roadbook) + their NAME in place.
+  // Vector text stays sharp at any zoom / on a photocopy. Labels lean to the
+  // outer side of the pin with a white halo so they read over lines/tiles.
   hits.forEach((h, i) => {
     const [x, y] = project(h.lat, h.lon);
     const onRight = x > VBW / 2;
@@ -287,23 +274,113 @@ function _rpBuildMapSvg(coords, hits, contextPaths, opts) {
     <text x="${nx}" y="${ny + 16}" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">N</text>
   </g>`);
 
-  // Scale bar — pick a "nice" length that stays under a quarter of the drawing.
-  const metersPerDeg = 111320;
-  const unitsPerMeter = scale / metersPerDeg;
+  // Scale bar — a "nice" length under a quarter of the drawing width.
   const niceMeters = [100, 200, 250, 500, 1000, 2000, 5000];
   let barM = niceMeters[0];
-  for (const n of niceMeters) { if (n * unitsPerMeter <= availW * 0.25) barM = n; }
+  for (const n of niceMeters) { if (n * unitsPerMeter <= (VBW - 2 * M) * 0.25) barM = n; }
   const barW = barM * unitsPerMeter;
-  const bx = M, by = VBH - 26;
+  const bx = M, by = VBH - 24;
   const barLabel = barM >= 1000 ? `${barM / 1000} km` : `${barM} m`;
   parts.push(`<g>
+    <rect x="${bx - 3}" y="${by - 15}" width="${(barW + 46).toFixed(1)}" height="24" rx="4" fill="#ffffff" fill-opacity="0.82"/>
     <rect x="${bx}" y="${by - 4}" width="${barW.toFixed(1)}" height="5" fill="#1f2937"/>
     <rect x="${bx}" y="${by - 4}" width="${(barW / 2).toFixed(1)}" height="5" fill="#ffffff" stroke="#1f2937" stroke-width="0.8"/>
     <text x="${(bx + barW + 8).toFixed(1)}" y="${(by + 1).toFixed(1)}" font-size="12" font-weight="600" fill="#1f2937">${barLabel}</text>
   </g>`);
 
-  parts.push('</svg>');
   return parts.join('');
+}
+
+// Vector map — clean forest-green ground, all surrounding paths drawn, crisp and
+// offline. This is the default look.
+function _rpBuildMapSvg(coords, hits, contextPaths, opts) {
+  const color = opts.color || '#22c55e';
+  const b = _rpPaddedBounds(coords, hits);
+  const midLat   = (b.minLat + b.maxLat) / 2;
+  const lonScale = Math.cos(midLat * Math.PI / 180);
+  const geoW = (b.maxLon - b.minLon) * lonScale;
+  const geoH = (b.maxLat - b.minLat);
+
+  const landscape = geoW >= geoH;
+  const VBW = landscape ? 1000 : 720;
+  const VBH = landscape ? 700  : 1000;
+  const M = 42;
+  const availW = VBW - 2 * M, availH = VBH - 2 * M;
+  const scale = Math.min(availW / geoW, availH / geoH);
+  const offX = M + (availW - geoW * scale) / 2;
+  const offY = M + (availH - geoH * scale) / 2;
+  const project = (lat, lon) => [
+    offX + (lon - b.minLon) * lonScale * scale,
+    offY + (b.maxLat - lat) * scale,
+  ];
+
+  const overlay = _rpDrawOverlay(project, VBW, VBH, {
+    coords, hits, contextPaths, color, isLoop: opts.isLoop,
+    unitsPerMeter: scale / 111320, drawContext: true, M,
+  });
+  return `<svg viewBox="0 0 ${VBW} ${VBH}" xmlns="http://www.w3.org/2000/svg" class="rp-svg">`
+    + `<rect x="0" y="0" width="${VBW}" height="${VBH}" fill="#e6f0d8"/>`
+    + `<rect x="6" y="6" width="${VBW - 12}" height="${VBH - 12}" fill="none" stroke="#bcd29a" stroke-width="1.5"/>`
+    + overlay + '</svg>';
+}
+
+// Topographic map — real IGN/OpenTopoMap tiles (same-origin /tiles/topo proxy) as
+// the ground, so contour lines, spot heights and place names come for free, with
+// the vector route + carrefours crisp on top. Tiles are <image> elements INSIDE
+// the SVG so they scale with the viewBox like the overlay and stay aligned.
+function _rpBuildTileMap(coords, hits, contextPaths, opts) {
+  const color = opts.color || '#22c55e';
+  const b = _rpPaddedBounds(coords, hits);
+  const MAX_Z = 15; // /tiles/topo maxNativeZoom — above this the proxy has no tiles
+  const MAX_PX = 1280; // cap the tile grid so the doc stays light
+
+  // Largest zoom whose pixel span fits our budget.
+  let z = MAX_Z;
+  for (; z > 9; z--) {
+    const [x0] = _rpMercator(b.minLat, b.minLon, z);
+    const [x1] = _rpMercator(b.minLat, b.maxLon, z);
+    const [, y0] = _rpMercator(b.maxLat, b.minLon, z);
+    const [, y1] = _rpMercator(b.minLat, b.minLon, z);
+    if ((x1 - x0) <= MAX_PX && (y1 - y0) <= MAX_PX) break;
+  }
+  const [oxRaw] = _rpMercator(b.maxLat, b.minLon, z);
+  const [, oyRaw] = _rpMercator(b.maxLat, b.minLon, z);
+  const [exRaw] = _rpMercator(b.minLat, b.maxLon, z);
+  const [, eyRaw] = _rpMercator(b.minLat, b.maxLon, z);
+  const originX = Math.min(oxRaw, exRaw), originY = Math.min(oyRaw, eyRaw);
+  const VBW = Math.max(1, Math.round(Math.abs(exRaw - oxRaw)));
+  const VBH = Math.max(1, Math.round(Math.abs(eyRaw - oyRaw)));
+
+  const project = (lat, lon) => {
+    const [mx, my] = _rpMercator(lat, lon, z);
+    return [mx - originX, my - originY];
+  };
+
+  // Tile grid covering the view.
+  const tiles = [];
+  const tx0 = Math.floor(originX / 256), tx1 = Math.floor((originX + VBW) / 256);
+  const ty0 = Math.floor(originY / 256), ty1 = Math.floor((originY + VBH) / 256);
+  const nMax = Math.pow(2, z);
+  for (let tx = tx0; tx <= tx1; tx++) {
+    for (let ty = ty0; ty <= ty1; ty++) {
+      if (tx < 0 || ty < 0 || tx >= nMax || ty >= nMax) continue;
+      const left = tx * 256 - originX, top = ty * 256 - originY;
+      tiles.push(`<image href="/tiles/topo/${z}/${tx}/${ty}.png" x="${left.toFixed(1)}" y="${top.toFixed(1)}" width="256" height="256" preserveAspectRatio="none"/>`);
+    }
+  }
+
+  const midLat = (b.minLat + b.maxLat) / 2;
+  const metersPerPixel = 156543.03392 * Math.cos(midLat * Math.PI / 180) / Math.pow(2, z);
+  const overlay = _rpDrawOverlay(project, VBW, VBH, {
+    coords, hits, contextPaths, color, isLoop: opts.isLoop,
+    unitsPerMeter: 1 / metersPerPixel, drawContext: false, M: 16,
+  });
+
+  return `<svg viewBox="0 0 ${VBW} ${VBH}" xmlns="http://www.w3.org/2000/svg" class="rp-svg">`
+    + `<rect x="0" y="0" width="${VBW}" height="${VBH}" fill="#e6f0d8"/>`
+    + tiles.join('')
+    + `<rect x="1" y="1" width="${VBW - 2}" height="${VBH - 2}" fill="none" stroke="#00000022" stroke-width="2"/>`
+    + overlay + '</svg>';
 }
 
 function _rpBuildDoc(route, meta) {
@@ -311,7 +388,9 @@ function _rpBuildDoc(route, meta) {
   const hits = meta.hits;
   const color = meta.color;
 
-  const svg = _rpBuildMapSvg(coords, hits, meta.contextPaths, { color, isLoop: meta.isLoop });
+  const svg = meta.useTiles
+    ? _rpBuildTileMap(coords, hits, meta.contextPaths, { color, isLoop: meta.isLoop })
+    : _rpBuildMapSvg(coords, hits, meta.contextPaths, { color, isLoop: meta.isLoop });
 
   const dirs = computeDirections(coords, hits);
   const TURN_ARROW = { 'tout droit': '↑', 'à gauche': '←', 'à droite': '→', 'demi-tour': '↩' };
@@ -470,10 +549,11 @@ function printRouteData(route, opts = {}) {
   const diffLabel = { easy: 'facile', medium: 'moyen', hard: 'difficile' }[diff] || diff;
   const title = opts.name ? opts.name : `${modeLabel} · ${_rpFmtKm(route.meters)}`;
 
+  const useTiles = !!opts.useTiles;
   const finish = (contextPaths) => {
     const html = _rpBuildDoc(route, {
       hits, contextPaths, color, isLoop: md === 'loop',
-      title, typeLabel, modeLabel, diffLabel,
+      title, typeLabel, modeLabel, diffLabel, useTiles,
     });
     try {
       w.document.open();
@@ -485,10 +565,11 @@ function printRouteData(route, opts = {}) {
     setTimeout(() => { try { w.print(); } catch (_) {} }, 500);
   };
 
-  // Draw ALL the surrounding paths — the whole forest network in view, like the
-  // live map — not just the curated ones. Pull it from the same source the
-  // planner uses (fetchOsmPathsForBbox → the pre-baked forest bundle), then merge
-  // the admin-curated paths on top. Falls back to curated-only if unavailable.
+  // Topo tiles already draw the whole network + contour lines, so no path fetch
+  // is needed there. For the vector map, pull ALL the surrounding paths from the
+  // same source the planner uses (fetchOsmPathsForBbox → pre-baked forest bundle)
+  // and merge the admin-curated paths on top; fall back to curated-only.
+  if (useTiles) { finish([]); return; }
   const curated = _rpContextPaths(typeof savedPaths !== 'undefined' ? savedPaths : [], padded);
   if (typeof fetchOsmPathsForBbox === 'function') {
     Promise.resolve()
@@ -510,10 +591,19 @@ function printCurrentRoute() {
     difficulty: typeof difficulty !== 'undefined' ? difficulty : 'easy',
     pathType:   typeof pathType   !== 'undefined' ? pathType   : 'foot',
     mode:       typeof mode       !== 'undefined' ? mode       : 'loop',
+    useTiles:   printTopoEnabled(),
   });
+}
+
+// The per-print topo toggle. The planner checkbox writes the choice to
+// localStorage so both the planner and the saved-routes reprint honour it.
+function printTopoEnabled() {
+  const box = document.getElementById('printTopo');
+  if (box) return !!box.checked;
+  try { return localStorage.getItem('bwr_print_topo') === '1'; } catch (_) { return false; }
 }
 
 // Node CJS export for the unit tests (no-op in the browser).
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { carrefoursAlongRoute, computeDirections, _rpBearing, _rpCardinal, _rpHaversineM, _rpBuildDoc, _rpBuildMapSvg, _rpContextPaths, _rpBounds };
+  module.exports = { carrefoursAlongRoute, computeDirections, _rpBearing, _rpCardinal, _rpHaversineM, _rpBuildDoc, _rpBuildMapSvg, _rpBuildTileMap, _rpMercator, _rpContextPaths, _rpBounds };
 }

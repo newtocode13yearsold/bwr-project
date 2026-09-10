@@ -240,6 +240,14 @@ function initSaveShareButtons() {
     btnPrint.disabled = true;
     btnPrint.onclick = async () => { await _loadRoutePrint(); printCurrentRoute(); };
   }
+  // Topo-map toggle: persist the choice so the saved-routes reprint honours it too.
+  const printTopo = document.getElementById('printTopo');
+  if (printTopo) {
+    try { printTopo.checked = localStorage.getItem('bwr_print_topo') === '1'; } catch (_) {}
+    printTopo.addEventListener('change', () => {
+      try { localStorage.setItem('bwr_print_topo', printTopo.checked ? '1' : '0'); } catch (_) {}
+    });
+  }
 
   if (!canSave) {
     btnSave.onclick  = () => showUpgradeModal('silver', 'La sauvegarde de trajets');
