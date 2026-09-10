@@ -27,7 +27,6 @@ async function loadPaths() {
       if (Array.isArray(arr) && arr.length) {
         allPaths = arr;
         renderPaths();
-        showPathHintIfNeeded();
       }
     }
   } catch { cachedRaw = null; }
@@ -44,7 +43,6 @@ async function loadPaths() {
     if (fresh !== cachedRaw) {
       allPaths = data;
       renderPaths();
-      showPathHintIfNeeded();
       try { localStorage.setItem('bwr_cached_paths', fresh); } catch {}
     }
     if (_userPlan === 'gold') loadWalkedOverlay();
@@ -147,25 +145,6 @@ function renderWalkedOverlay(walkedIds) {
     }).addTo(walkedPathLayer);
   });
   walkedPathLayer.addTo(map);
-}
-
-// ── Silver path-edit hint chip ────────────────────────────────────────────────
-let _pathHintDismissed = false;
-function showPathHintIfNeeded() {
-  if (_pathHintDismissed) return;
-  if (!BWR.can('path_difficulty_edit', _userPlan)) return;
-  if (document.getElementById('pathEditHint')) return;
-  const chip = document.createElement('div');
-  chip.id = 'pathEditHint';
-  chip.className = 'path-edit-hint';
-  chip.innerHTML = '✎ Cliquez sur un chemin pour modifier sa difficulté <button id="pathEditHintClose" title="Fermer">✕</button>';
-  document.getElementById('map').appendChild(chip);
-  document.getElementById('pathEditHintClose').addEventListener('click', dismissPathHint);
-  setTimeout(dismissPathHint, 8000);
-}
-function dismissPathHint() {
-  _pathHintDismissed = true;
-  document.getElementById('pathEditHint')?.remove();
 }
 
 // ── Click detection on tile-rendered paths ────────────────────────────────────
