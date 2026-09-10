@@ -200,12 +200,13 @@ function _rpBuildMapSvg(coords, hits, contextPaths, opts) {
   const color = opts.color || '#22c55e';
   const isLoop = opts.isLoop;
 
-  // Bounds over the route + its carrefours, padded 8 %.
+  // Bounds over the route + its carrefours, padded so a ring of the surrounding
+  // path network is visible around the route (like the live map, not a lone line).
   const all = coords.slice();
   hits.forEach(h => all.push([h.lat, h.lon]));
   let b = _rpBounds(all);
-  const padLat = Math.max((b.maxLat - b.minLat) * 0.08, 0.0008);
-  const padLon = Math.max((b.maxLon - b.minLon) * 0.08, 0.0012);
+  const padLat = Math.max((b.maxLat - b.minLat) * 0.13, 0.0012);
+  const padLon = Math.max((b.maxLon - b.minLon) * 0.13, 0.0016);
   b = { minLat: b.minLat - padLat, maxLat: b.maxLat + padLat,
         minLon: b.minLon - padLon, maxLon: b.maxLon + padLon };
 
@@ -240,10 +241,12 @@ function _rpBuildMapSvg(coords, hits, contextPaths, opts) {
   parts.push(`<rect x="0" y="0" width="${VBW}" height="${VBH}" fill="#e6f0d8"/>`);
   parts.push(`<rect x="6" y="6" width="${VBW - 12}" height="${VBH - 12}" fill="none" stroke="#bcd29a" stroke-width="1.5"/>`);
 
-  // Context paths — warm trail brown, so the surrounding forest tracks are
-  // visible around the coloured route.
+  // The surrounding path network — every track in view, thin so the map reads
+  // like the real one without drowning the coloured route.
   for (const p of contextPaths) {
-    parts.push(`<polyline points="${ptStr(p.coordinates)}" fill="none" stroke="#b08054" stroke-width="1.3" stroke-opacity="0.65" stroke-linecap="round" stroke-linejoin="round"/>`);
+    const cs = p && p.coordinates;
+    if (!Array.isArray(cs) || cs.length < 2) continue;
+    parts.push(`<polyline points="${ptStr(cs)}" fill="none" stroke="#9a7b57" stroke-width="0.9" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/>`);
   }
 
   // Route — white casing then colour.
@@ -436,16 +439,26 @@ function printRouteData(route, opts = {}) {
     if (typeof showToast === 'function') showToast('Itinéraire indisponible pour l\'impression.');
     return;
   }
+
+  // Open the window NOW, synchronously in the click, so the pop-up blocker lets
+  // it through — then fill it once the surrounding path network has loaded.
+  const w = window.open('', '_blank');
+  if (!w) {
+    if (typeof showToast === 'function') showToast('Autorisez les fenêtres pop-up pour imprimer.');
+    return;
+  }
+  w.document.write('<!doctype html><meta charset="utf-8"><title>Préparation…</title>'
+    + '<body style="font-family:system-ui,sans-serif;padding:26px;color:#166534">Préparation de la feuille de route…</body>');
+
   const coords = route.coords;
   const carrefours = (typeof CARREFOURS !== 'undefined' && Array.isArray(CARREFOURS)) ? CARREFOURS : [];
   const hits = carrefoursAlongRoute(coords, carrefours);
 
   const b0 = _rpBounds(coords);
-  const padLat = Math.max((b0.maxLat - b0.minLat) * 0.12, 0.001);
-  const padLon = Math.max((b0.maxLon - b0.minLon) * 0.12, 0.0015);
+  const padLat = Math.max((b0.maxLat - b0.minLat) * 0.18, 0.0015);
+  const padLon = Math.max((b0.maxLon - b0.minLon) * 0.18, 0.002);
   const padded = { minLat: b0.minLat - padLat, maxLat: b0.maxLat + padLat,
                    minLon: b0.minLon - padLon, maxLon: b0.maxLon + padLon };
-  const contextPaths = _rpContextPaths(typeof savedPaths !== 'undefined' ? savedPaths : [], padded);
 
   const diff = opts.difficulty || 'easy';
   const pt   = opts.pathType || 'foot';
@@ -457,22 +470,34 @@ function printRouteData(route, opts = {}) {
   const diffLabel = { easy: 'facile', medium: 'moyen', hard: 'difficile' }[diff] || diff;
   const title = opts.name ? opts.name : `${modeLabel} · ${_rpFmtKm(route.meters)}`;
 
-  const html = _rpBuildDoc(route, {
-    hits, contextPaths, color, isLoop: md === 'loop',
-    title, typeLabel, modeLabel, diffLabel,
-  });
+  const finish = (contextPaths) => {
+    const html = _rpBuildDoc(route, {
+      hits, contextPaths, color, isLoop: md === 'loop',
+      title, typeLabel, modeLabel, diffLabel,
+    });
+    try {
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+    } catch (_) { return; }
+    // Give the SVG a beat to lay out before the print dialog opens.
+    setTimeout(() => { try { w.print(); } catch (_) {} }, 500);
+  };
 
-  const w = window.open('', '_blank');
-  if (!w) {
-    if (typeof showToast === 'function') showToast('Autorisez les fenêtres pop-up pour imprimer.');
-    return;
+  // Draw ALL the surrounding paths — the whole forest network in view, like the
+  // live map — not just the curated ones. Pull it from the same source the
+  // planner uses (fetchOsmPathsForBbox → the pre-baked forest bundle), then merge
+  // the admin-curated paths on top. Falls back to curated-only if unavailable.
+  const curated = _rpContextPaths(typeof savedPaths !== 'undefined' ? savedPaths : [], padded);
+  if (typeof fetchOsmPathsForBbox === 'function') {
+    Promise.resolve()
+      .then(() => fetchOsmPathsForBbox(padded.minLat, padded.minLon, padded.maxLat, padded.maxLon))
+      .then(net => finish((Array.isArray(net) ? net : []).concat(curated)))
+      .catch(() => finish(curated));
+  } else {
+    finish(curated);
   }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  w.focus();
-  // Give the SVG a beat to lay out before the print dialog opens.
-  setTimeout(() => { try { w.print(); } catch (_) {} }, 450);
 }
 
 // Wired from the planner's "Imprimer / PDF" button — reads the route on screen.
