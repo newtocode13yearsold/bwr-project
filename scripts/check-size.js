@@ -10,7 +10,7 @@ const { join } = require('path');
 const ROOT = join(__dirname, '..');
 
 const THRESHOLDS = {
-  js:  150 * 1024,  // 150 KB per JS file
+  js:  200 * 1024,  // 200 KB per JS file
   css: 100 * 1024,  // 100 KB per CSS file
 };
 

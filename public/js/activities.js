@@ -173,6 +173,124 @@
     }
   }
 
+  // ── GPX import — bring a Strava / Garmin / Komoot track into the journal ──────
+  // Round-trips the app: an imported track is saved as a real activity, so it
+  // gets the same list card, replay, share, GPX re-export and delete as a walk
+  // recorded in-app. Available to every signed-in user (like recording itself).
+  const ELE_THRESHOLD_M = 3; // ignore altitude wobble below this when summing ascent/descent (mirrors gps-tracker.js)
+
+  function haversineM(lat1, lon1, lat2, lon2) {
+    const R = 6371000, toRad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * toRad, dLon = (lon2 - lon1) * toRad;
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  // Cumulative ascent / descent from the parallel elevation array, ignoring
+  // sub-threshold wobble. Both 0 when the GPX carried no elevation data.
+  function elevationStats(elevations) {
+    if (!Array.isArray(elevations)) return { ascent: 0, descent: 0 };
+    let ascent = 0, descent = 0, ref = null;
+    for (const e of elevations) {
+      if (e == null || !Number.isFinite(e)) continue;
+      if (ref == null) { ref = e; continue; }
+      const d = e - ref;
+      if (d >= ELE_THRESHOLD_M) { ascent += d; ref = e; }
+      else if (d <= -ELE_THRESHOLD_M) { descent += -d; ref = e; }
+    }
+    return { ascent: Math.round(ascent), descent: Math.round(descent) };
+  }
+
+  // Moving time from the timestamps, per-gap capped at 30 s so a pause (coffee,
+  // photo, phone in pocket) doesn't inflate the total. Mirrors gps-tracker.js.
+  function movingSecondsFrom(times) {
+    if (!Array.isArray(times)) return 0;
+    let s = 0;
+    for (let i = 1; i < times.length; i++) {
+      if (times[i] == null || times[i - 1] == null) continue;
+      const gap = (times[i] - times[i - 1]) / 1000;
+      if (gap > 0) s += Math.min(gap, 30);
+    }
+    return Math.round(s);
+  }
+
+  async function importGpxFile(file, btn) {
+    const original = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Lecture…'; }
+    try {
+      const text = await file.text();
+      const { coords, elevations, times, name } = parseGPX(text);
+
+      // Total distance from the geometry.
+      let meters = 0;
+      for (let i = 1; i < coords.length; i++) {
+        meters += haversineM(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+      }
+
+      // Real timing when the track carries timestamps; otherwise estimate a
+      // walking duration from the distance (~4.8 km/h) so the card still reads.
+      let seconds, movingSeconds, startedAt, relTimes = null;
+      const firstT = times && times.find((t) => t != null);
+      const lastT = times && [...times].reverse().find((t) => t != null);
+      if (firstT != null && lastT != null && lastT > firstT) {
+        seconds = Math.round((lastT - firstT) / 1000);
+        movingSeconds = movingSecondsFrom(times) || seconds;
+        startedAt = new Date(firstT).toISOString();
+        // Store times as seconds-since-start (parallel to coords) like recorded walks.
+        relTimes = times.map((t) => (t == null ? null : Math.round((t - firstT) / 1000)));
+      } else {
+        seconds = Math.round(meters / 1.33); // ~4.8 km/h
+        movingSeconds = seconds;
+        startedAt = new Date().toISOString();
+      }
+
+      const { ascent, descent } = elevationStats(elevations);
+
+      const payload = {
+        name: (name || 'Trajet importé').slice(0, 80),
+        coords,
+        meters: Math.round(meters),
+        seconds,
+        movingSeconds,
+        ascent,
+        descent,
+        startedAt,
+      };
+      if (Array.isArray(elevations) && elevations.length === coords.length) payload.elevations = elevations;
+      if (relTimes && relTimes.length === coords.length) payload.times = relTimes;
+
+      const res = await fetch(`${API_URL}/api/activities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('save failed');
+
+      await load();
+      alert(`« ${payload.name} » importé — ${fmtKm(payload.meters)}. Vous pouvez le rejouer et l'exporter.`);
+    } catch (err) {
+      console.error('GPX import error:', err);
+      alert(err && err.message && /GPX|tracé|fichier/i.test(err.message)
+        ? err.message
+        : "Impossible d'importer ce fichier GPX.");
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = original; }
+    }
+  }
+
+  (function wireImport() {
+    const btn = document.getElementById('btnImportActivity');
+    const input = document.getElementById('gpxImportInput');
+    if (!btn || !input) return;
+    btn.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      if (file) importGpxFile(file, btn);
+      input.value = ''; // allow re-importing the same file
+    });
+  })();
+
   // ── replay ──────────────────────────────────────────────────────────────────
   const overlay = document.getElementById('replayOverlay');
   const replay = { map: null, marker: null, doneLine: null, coords: [], raf: null, playing: false, progress: 0 };

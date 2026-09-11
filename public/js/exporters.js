@@ -104,7 +104,10 @@ ${trkpts}
    * Multiple <trkseg> segments are concatenated in document order.
    *
    * @param {string} xml  Raw GPX XML text.
-   * @returns {{ coords: Array<[number, number]>, elevations: number[]|null, name: string }}
+   * @returns {{ coords: Array<[number, number]>, elevations: number[]|null, times: number[]|null, name: string }}
+   *          `elevations` are metres (parallel to coords, nulls where absent).
+   *          `times` are epoch-millisecond timestamps (parallel to coords), or
+   *          null when the track carries no `<time>` data (a planned route).
    * @throws {Error} if the file isn't valid GPX or has no usable points.
    */
   function parseGPX(xml) {
@@ -121,7 +124,9 @@ ${trkpts}
 
     const coords = [];
     const elevations = [];
+    const times = [];
     let hasEle = false;
+    let hasTime = false;
     for (const p of pts) {
       const lat = parseFloat(p.getAttribute('lat'));
       const lon = parseFloat(p.getAttribute('lon'));
@@ -131,6 +136,10 @@ ${trkpts}
       const ele = eleEl ? parseFloat(eleEl.textContent) : NaN;
       if (Number.isFinite(ele)) { elevations.push(ele); hasEle = true; }
       else { elevations.push(null); }
+      const timeEl = p.getElementsByTagName('time')[0];
+      const t = timeEl ? Date.parse(timeEl.textContent.trim()) : NaN;
+      if (Number.isFinite(t)) { times.push(t); hasTime = true; }
+      else { times.push(null); }
     }
 
     if (coords.length < 2) throw new Error('Ce GPX ne contient pas de tracé exploitable.');
@@ -138,7 +147,12 @@ ${trkpts}
     const nameEl = doc.querySelector('trk > name') || doc.querySelector('metadata > name') || doc.querySelector('name');
     const name = (nameEl && nameEl.textContent.trim()) || 'Trajet importé';
 
-    return { coords, elevations: hasEle ? elevations : null, name };
+    return {
+      coords,
+      elevations: hasEle ? elevations : null,
+      times: hasTime ? times : null,
+      name,
+    };
   }
 
   /** Trigger a browser download for a generated text payload. */
