@@ -285,6 +285,12 @@ function initRouteHistory() {
   panelEl.classList.remove('hidden');
   document.getElementById('historyBody').style.display = 'none';
   document.getElementById('historyToggle').addEventListener('click', lazyToggle);
+
+  // Deep-link from the profile "Tout voir →" link: routes#history opens and
+  // scrolls to the saved-trajets panel instead of landing on a collapsed one.
+  if (location.hash === '#history') {
+    lazyToggle().then(() => panelEl.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
 }
 
 // ── Best tour deep-link (?lat=&lng=&distance=&mode=&type=&diff=) ──────────────
