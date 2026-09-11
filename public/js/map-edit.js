@@ -3,7 +3,7 @@
 // is tapped inside a path popup.
 // All globals (map, allPaths, pathEditModeActive, _userPlan, STATUS_COLORS,
 // STATUS_LABELS, REPORT_ICONS, REPORT_LABELS, API_URL, authHeader, showToast,
-// renderPaths, queueMapReport, queueMapPatch, dismissPathHint) come from
+// renderPaths, queueMapReport, queueMapPatch) come from
 // map.js / config.js, which execute before this file is injected.
 
 // ── Edit-mode internal state ──────────────────────────────────────────────────
@@ -160,7 +160,6 @@ function openNewPathPopupUser(coords, name, latlng) {
 // ── Enter / exit edit mode ────────────────────────────────────────────────────
 function enterPathEditMode() {
   pathEditModeActive = true;
-  dismissPathHint();
   const btn = document.getElementById('btnEditPaths');
   btn.querySelector('.btn-emoji').textContent = '✕';
   btn.querySelector('.btn-label').textContent = 'Terminer';

@@ -192,7 +192,6 @@ map.on('click', e => {
   }
   const path = _pathAtClick(e.latlng);
   if (path) {
-    dismissPathHint();
     if (pathEditModeActive) openDifficultyPopup(path, e.latlng);
     else openPathPopup(path, e.latlng);
   }
