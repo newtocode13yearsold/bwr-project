@@ -947,28 +947,29 @@
 /* Downward-pointing triangle fixed at top-centre of the wheel */
 .wheel-pointer {
   position: absolute;
-  top: -4px;
+  top: -6px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 12px solid transparent;
-  border-right: 12px solid transparent;
-  border-top: 22px solid #14532d;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 18px solid #c8a04a;
   z-index: 2;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
 }
 #wheelCanvas {
   display: block;
   border-radius: 50%;
-  box-shadow: 0 6px 28px rgba(0,0,0,0.18);
+  box-shadow: 0 4px 18px rgba(15,61,33,0.15);
 }
 .wheel-result {
   font-size: 0.92rem;
   color: #1a2e12;
   text-align: center;
-  padding: 10px 12px;
-  background: #f0fdf4;
+  padding: 11px 14px;
+  background: #f6faf5;
+  border: 1px solid #e3ede1;
   border-radius: 10px;
   margin-bottom: 10px;
   min-height: 42px;
@@ -1235,9 +1236,9 @@
 [data-theme="dark"] .btn-modal-cancel            { background: #2a3a30; color: #c8dcc0; }
 [data-theme="dark"] .btn-modal-cancel:hover      { background: #334d3b; }
 
-[data-theme="dark"] .wheel-result                { background: #1c3020; color: #d4edbc; }
+[data-theme="dark"] .wheel-result                { background: #1c3020; color: #d4edbc; border-color: #2a4230; }
 [data-theme="dark"] .wheel-text                  { color: #d4edbc; }
-[data-theme="dark"] .wheel-pointer               { border-top-color: #a3e635; }
+[data-theme="dark"] .wheel-pointer               { border-top-color: #d8b968; }
 [data-theme="dark"] .prize-chip                  { background: #2a3a30; border-color: #334d3b; color: #c8dcc0; }
 [data-theme="dark"] .prize-chip.prize-rare       { background: #1a2240; border-color: #3b5bdb; color: #93c5fd; }
 [data-theme="dark"] .prizes-title                { color: #8fa887; }

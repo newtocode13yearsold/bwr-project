@@ -42,16 +42,18 @@ function ownedCollectibles() {
 
 // ── Canvas roulette wheel ──────────────────────────────────────────────────────
 const WHEEL_SIZE = 260; // logical px (CSS pixels)
-const WHEEL_COLORS = [
-  '#16a34a', // green
-  '#d97706', // amber
-  '#2563eb', // blue
-  '#9333ea', // purple
-  '#dc2626', // red
-  '#0891b2', // cyan
-  '#ea580c', // orange
-  '#65a30d', // lime
+// Restrained, brand-aligned two-tone palette (deep forest ↔ warm parchment)
+// instead of a rainbow — reads far more premium. The array alternates a dark
+// and a light tone so adjacent segments always contrast; each segment picks its
+// own label colour from `light` so text stays legible either way.
+const WHEEL_SEGMENT_STYLES = [
+  { fill: '#14532d', light: false }, // deep forest
+  { fill: '#f4efe2', light: true  }, // warm parchment
+  { fill: '#1f6b45', light: false }, // pine
+  { fill: '#e8e0cd', light: true  }, // sand
 ];
+const WHEEL_RIM   = '#0f3d21'; // dark green rim / hub
+const WHEEL_GOLD  = '#c8a04a'; // slim accent line
 
 let _wheelRotation = 0;   // current cumulative rotation (radians)
 let _wheelSegments = null; // built once per plan on render
@@ -63,7 +65,8 @@ function _buildWheelSegments(plan) {
   let angle = 0;
   prizes.forEach((p, i) => {
     const sweep = (p.weight / total) * Math.PI * 2;
-    segs.push({ prize: p, startAngle: angle, sweep, color: WHEEL_COLORS[i % WHEEL_COLORS.length] });
+    const style = WHEEL_SEGMENT_STYLES[i % WHEEL_SEGMENT_STYLES.length];
+    segs.push({ prize: p, startAngle: angle, sweep, color: style.fill, light: style.light });
     angle += sweep;
   });
   return segs;
@@ -93,13 +96,18 @@ function _drawWheelCanvas(rotation) {
 
   const cx = WHEEL_SIZE / 2;
   const cy = WHEEL_SIZE / 2;
-  const r  = cx - 8;
+  const r  = cx - 10;
 
-  // ── Outer decorative ring ──
+  // ── Outer bezel: solid dark rim with a slim gold accent line ──
   ctx.beginPath();
-  ctx.arc(cx, cy, r + 7, 0, Math.PI * 2);
-  ctx.fillStyle = '#14532d';
+  ctx.arc(cx, cy, r + 8, 0, Math.PI * 2);
+  ctx.fillStyle = WHEEL_RIM;
   ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+  ctx.strokeStyle = WHEEL_GOLD;
+  ctx.lineWidth   = 1.5;
+  ctx.stroke();
 
   // ── Pass 1 : filled segments ──
   _wheelSegments.forEach(seg => {
@@ -114,24 +122,24 @@ function _drawWheelCanvas(rotation) {
     ctx.fillStyle = seg.color;
     ctx.fill();
 
-    // Radial highlight
+    // Subtle depth: gentle darkening toward the rim, no glare
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, r, startA, endA);
     ctx.closePath();
     ctx.clip();
-    const grad = ctx.createRadialGradient(cx, cy, r * 0.25, cx, cy, r);
-    grad.addColorStop(0,   'rgba(255,255,255,0.20)');
-    grad.addColorStop(0.6, 'rgba(255,255,255,0.04)');
-    grad.addColorStop(1,   'rgba(0,0,0,0.15)');
+    const grad = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r);
+    grad.addColorStop(0, 'rgba(255,255,255,0.05)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.12)');
     ctx.fillStyle = grad;
     ctx.fill();
     ctx.restore();
 
-    // ── Icon ──
+    // ── Icon + label (colour adapts to the segment tone) ──
+    const ink = seg.light ? WHEEL_RIM : '#f6f1e5';
     ctx.save();
-    ctx.translate(cx + Math.cos(midA) * r * 0.68, cy + Math.sin(midA) * r * 0.68);
+    ctx.translate(cx + Math.cos(midA) * r * 0.66, cy + Math.sin(midA) * r * 0.66);
     ctx.rotate(midA + Math.PI / 2);
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
@@ -139,19 +147,17 @@ function _drawWheelCanvas(rotation) {
     ctx.fillText(seg.prize.icon, 0, 0);
 
     if (seg.sweep > 0.6) {
-      ctx.font        = `bold ${seg.sweep > 1.1 ? 9 : 7.5}px system-ui, sans-serif`;
-      ctx.fillStyle   = '#fff';
-      ctx.shadowColor = 'rgba(0,0,0,0.7)';
-      ctx.shadowBlur  = 3;
+      ctx.font      = `600 ${seg.sweep > 1.1 ? 9 : 7.5}px system-ui, sans-serif`;
+      ctx.fillStyle = ink;
       const line = seg.prize.label.length > 13 ? seg.prize.label.slice(0, 12) + '…' : seg.prize.label;
       ctx.fillText(line, 0, 14);
     }
     ctx.restore();
   });
 
-  // ── Pass 2 : thick white spokes drawn over everything ──
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth   = 4;
+  // ── Pass 2 : hairline dividers between segments ──
+  ctx.strokeStyle = 'rgba(15,61,33,0.28)';
+  ctx.lineWidth   = 1;
   _wheelSegments.forEach(seg => {
     const angle = seg.startAngle + rotation - Math.PI / 2;
     ctx.beginPath();
@@ -160,27 +166,27 @@ function _drawWheelCanvas(rotation) {
     ctx.stroke();
   });
 
-  // Outer rim
+  // Inner rim line
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-  ctx.lineWidth   = 2;
+  ctx.strokeStyle = 'rgba(15,61,33,0.35)';
+  ctx.lineWidth   = 1;
   ctx.stroke();
 
   // ── Center hub ──
   ctx.beginPath();
-  ctx.arc(cx, cy, 22, 0, Math.PI * 2);
-  ctx.fillStyle = '#14532d';
+  ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+  ctx.fillStyle = WHEEL_RIM;
   ctx.fill();
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth   = 2.5;
+  ctx.strokeStyle = WHEEL_GOLD;
+  ctx.lineWidth   = 1.5;
   ctx.stroke();
 
-  ctx.font = '15px serif';
+  ctx.font = '14px serif';
   ctx.textAlign    = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#fff';
-  ctx.fillText('⭐', cx, cy);
+  ctx.fillStyle = '#f6f1e5';
+  ctx.fillText('★', cx, cy);
 }
 
 function _animateWheelSpin(prizeIndex, onDone) {
@@ -287,7 +293,7 @@ function renderDailyWheel(plan) {
       wheelText.textContent = saved || 'Vous avez déjà tourné la roue aujourd\'hui — revenez demain !';
     }
     wheelBtn.disabled = true;
-    wheelBtn.textContent = '✓ Tournée';
+    wheelBtn.textContent = '✓ Effectué';
   } else {
     _wheelRotation = 0;
     _drawWheelCanvas(0);
@@ -305,7 +311,7 @@ async function spinWheel(plan) {
   const prizeIndex = prizes.findIndex(p => p.id === prize.id);
 
   wheelBtn.disabled    = true;
-  wheelBtn.textContent = '🎡 En cours…';
+  wheelBtn.textContent = 'Tirage en cours…';
   wheelText.textContent = '';
 
   // ── 1. Spin the wheel visually ───────────────────────────────────────────────
@@ -336,7 +342,7 @@ async function spinWheel(plan) {
         wheelText.textContent = `🌲 ${fallback}`;
         localStorage.setItem('bwr_wheel_last', today);
         localStorage.setItem('bwr_wheel_result', JSON.stringify({ icon: '🌲', label: 'Conseil sentier', desc: fallback }));
-        wheelBtn.textContent = '✓ Tournée';
+        wheelBtn.textContent = '✓ Effectué';
         return;
       }
       const cached = getCachedUser();
@@ -344,7 +350,7 @@ async function spinWheel(plan) {
     } catch {
       wheelText.textContent = '❌ Erreur réseau — réessayez.';
       wheelBtn.disabled    = false;
-      wheelBtn.textContent = '🎡 Tourner la roue';
+      wheelBtn.textContent = 'Lancer le tirage';
       return;
     }
   } else if (prize.type === 'bonus_route') {
@@ -390,7 +396,7 @@ async function spinWheel(plan) {
   wheelText.innerHTML = `${prize.icon} <strong>${prize.label}</strong> — ${prize.desc}`;
   localStorage.setItem('bwr_wheel_last', today);
   localStorage.setItem('bwr_wheel_result', JSON.stringify({ icon: prize.icon, label: prize.label, desc: prize.desc }));
-  wheelBtn.textContent = '✓ Tournée';
+  wheelBtn.textContent = '✓ Effectué';
 
   if (prize.type === 'plan') {
     setTimeout(() => window.location.reload(), 1800);
