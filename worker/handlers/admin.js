@@ -196,14 +196,28 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     if (!admin || admin.role !== 'admin') return fail('Accès refusé.', 403);
 
     const allUsers = await listItems(env, 'user:');
-    const safe = allUsers.map(u => ({
-      id: u.id, name: u.name, email: u.email, role: u.role,
-      plan: u.plan || 'free',
-      planExpiresAt: u.planExpiresAt || null,
-      planBase: u.planBase || null,
-      comped: u.comped || false,
-      createdAt: u.createdAt || null,
-    }));
+    const safe = allUsers.map(u => {
+      const s = u.stats || {};
+      return {
+        id: u.id, name: u.name, username: u.username || null, email: u.email, role: u.role,
+        plan: u.plan || 'free',
+        planExpiresAt: u.planExpiresAt || null,
+        planBase: u.planBase || null,
+        comped: u.comped || false,
+        createdAt: u.createdAt || null,
+        onboarded: u.onboarded !== false,
+        silverTrialUsed: u.silverTrialUsed || false,
+        emailNotifications: u.emailNotifications !== false,
+        // Contribution stats surfaced for the admin members list + engagement card.
+        stats: {
+          km: s.km || 0,
+          routes: s.routes || 0,
+          reports: s.reports || 0,
+          pathGrades: s.pathGrades || 0,
+          walkedPathsCount: s.walkedPathsCount || 0,
+        },
+      };
+    });
     return json(safe);
   }
 

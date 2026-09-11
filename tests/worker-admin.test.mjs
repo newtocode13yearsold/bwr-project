@@ -471,6 +471,30 @@ describe('GET /api/users', () => {
       assert.equal(u.salt, undefined, 'salt must not be exposed');
     }
   });
+
+  test('admin list exposes contribution stats + onboarding fields (never secrets)', async () => {
+    const { env, kv, seedAdmin } = freshEnv();
+    const { token } = seedAdmin('admin-stats-list');
+    const id = 'member-stats';
+    kv.store.set(`user:${id}`, JSON.stringify({
+      id, name: 'Contributor', username: 'contrib', email: `${id}@bwr.fr`,
+      role: 'silver', plan: 'silver', passwordHash: 'secret', salt: 'secret',
+      onboarded: true, silverTrialUsed: true,
+      stats: { km: 12.5, routes: 3, reports: 2, pathGrades: 4, walkedPathsCount: 1 },
+    }));
+    const res = await worker.fetch(authed('GET', '/api/users', token), env);
+    assert.equal(res.status, 200);
+    const list = await res.json();
+    const m = list.find(u => u.id === id);
+    assert.ok(m, 'seeded member present in list');
+    assert.equal(m.username, 'contrib');
+    assert.equal(m.onboarded, true);
+    assert.equal(m.silverTrialUsed, true);
+    assert.equal(m.stats.km, 12.5);
+    assert.equal(m.stats.pathGrades, 4);
+    assert.equal(m.passwordHash, undefined, 'passwordHash must not be exposed');
+    assert.equal(m.salt, undefined, 'salt must not be exposed');
+  });
 });
 
 // ── PUT /api/auth/plan/:userId — admin only ───────────────────────────────────
