@@ -17,6 +17,7 @@ import { handleInbox }      from './worker/handlers/inbox.js';
 import { handleQuests }     from './worker/handlers/quests.js';
 import { handleErrors }     from './worker/handlers/errors.js';
 import { handleTiles }      from './worker/handlers/tiles.js';
+import { handlePublicPages } from './worker/handlers/publicpages.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://bwrmaps.com',
@@ -107,6 +108,12 @@ export default {
       // needed; it sets its own image headers.
       const tileResponse = await handleTiles(request, env, ctx);
       if (tileResponse) return tileResponse;
+
+      // Public, SEO-indexable HTML pages (/balade/:slug, /r/:token, /sitemap.xml).
+      // Runs before the /api/ chain and the static-asset fallback; sets its own
+      // CSP + security headers (the /public _headers file only covers assets).
+      const publicPage = await handlePublicPages(request, env, ctx);
+      if (publicPage) return publicPage;
 
       const apiResponse =
         await handleAdmin(request, env, ctx)      ??

@@ -12,7 +12,7 @@
 // osm:{bbox}         → JSON OSM data  (7-day TTL)
 // savedroute:{userId}:{id} → JSON saved route (coords, stats, metadata)
 // activity:{userId}:{id}   → JSON recorded activity (hike journal: coords, elevations?, times?, meters, seconds, ascent, descent, startedAt)
-// routeshare:{token}       → JSON { userId, routeId }  (180-day TTL)
+// routeshare:{token}       → JSON { userId, routeId }  (no TTL: public /r/:token SEO page; purged on route delete)
 // news:{id}                → JSON news item (incl. likes / dislikes counts)
 // forum:topic:{id}         → JSON forum topic { userId, authorName, title, body, createdAt, lastActivityAt, replyCount }
 // forum:reply:{topicId}:{paddedTs}:{id} → JSON reply { topicId, userId, authorName, body, createdAt }

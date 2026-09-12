@@ -40,7 +40,10 @@ export async function handleSavedRoutes(request, env, { pathname, json, fail }) 
 
     await Promise.all([
       env.BWR_KV.put(`savedroute:${user.id}:${id}`, JSON.stringify(route)),
-      env.BWR_KV.put(`routeshare:${shareToken}`, JSON.stringify({ userId: user.id, routeId: id }), { expirationTtl: 15552000 }),
+      // No TTL: the /r/:token page is public, SEO-indexed content — it must not
+      // expire out from under Google (or a shared link) after a few months.
+      // Deleting the saved route still purges this key (see the DELETE branch).
+      env.BWR_KV.put(`routeshare:${shareToken}`, JSON.stringify({ userId: user.id, routeId: id })),
     ]);
 
     return json({ id, shareToken }, 201);

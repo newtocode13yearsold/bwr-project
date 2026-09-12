@@ -14,7 +14,7 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
-Run all automated tests (507 tests, ~6 s):
+Run all automated tests (543 tests, ~7 s):
   npm test
 
 Run tests in watch mode (re-runs on file save):
@@ -62,6 +62,7 @@ Main endpoint groups:
 - Social / friends layer (`worker/handlers/friends.js`, all endpoints under `/api/social/*`, auth required): a lightweight follow graph + a shared-activity feed that turns the solo hike journal into a retention loop. **A walk is private until its owner explicitly shares it** (the `shared` flag on an `activity:` record, written by `worker/handlers/activities.js` on POST/PATCH). POST/DELETE /api/social/follow/:userId (follow / unfollow — writes both `follow:{me}:{them}` and the reverse `follower:{them}:{me}`; first follow drops a heads-up in the followee's inbox via `notifyNewFollower`), GET /api/social/following + GET /api/social/followers (my graph; followers carry an `iFollow` back-follow flag), GET /api/social/users?q= (directory to find people — excludes self, never leaks email, flags `isFollowing`), GET /api/social/profile/:userId (mini public profile: counts + stats + up-to-10 shared activities), GET /api/social/feed (shared walks from everyone I follow + my own, newest-first, geometry stripped, each with `ownerName` + `kudos` count + `iKudosed`), GET /api/social/activity/:ownerId/:activityId (full track of a *shared* walk for the feed replay — owner can read own private walks, others get 403 on private), POST /api/social/kudos/:ownerId/:activityId (toggle a "kudos"/applause on a shared walk; notifies the owner via inbox). The feed fans out by parsing each followee's `activity:` records to read the `shared` flag (fine at current scale; a hot feed would want a per-user shared index). Frontend: `public/friends.html` + `public/js/friends.js` — three tabs (Fil d'actu / Découvrir / Mon réseau), kudos, and an inline Leaflet replay of any shared walk (reuses the `activities.js` replay pattern). Sharing is toggled per-walk from `public/js/activities.js` (a "Partager" button + badge) and opted into at save-time via a checkbox in the `gps-tracker.js` save modal. Account deletion purges both directions of every follow edge, every kudos the user gave, and every kudos on their own walks; the follow graph is also included in the GDPR export. Tests: `tests/worker-friends.test.mjs`.
 - Share route (public): GET /api/savedroutes/share/:token — returns route by share token, no auth required
 - Forum (community): GET /api/forum/topics (list — reading is public, but free accounts only get the 5 most recent topics unlocked; older ones come back `locked:true` with no body), GET /api/forum/topics/:id (topic + replies — free users get 403 on a locked topic), POST /api/forum/topics (create — Silver/Gold/admin only), POST /api/forum/topics/:id/replies (reply — Silver/Gold/admin only), PUT /api/forum/topics/:id (edit topic title/body) + PUT /api/forum/topics/:id/replies/:replyId (edit reply body) — author or admin, stamps `editedAt` and keeps thread order (no `lastActivityAt` bump), DELETE /api/forum/topics/:id + DELETE /api/forum/topics/:id/replies/:replyId (author or admin). The free-tier visible count is `FREE_VISIBLE_TOPICS` in `worker/handlers/forum.js`, mirrored by `FEATURES.forum_topics_visible` / `forum_post` in `public/js/features.js`. Frontend: `public/forum.html` + `public/js/forum.js` (single page; list ↔ detail swapped via the `#t/:id` URL hash).
+- Public SEO pages (`worker/handlers/publicpages.js`, **no login, server-rendered HTML** for organic search traffic — runs on the same Worker, dispatched right after `handleTiles` and before the `/api/` chain in `worker.js`): three GET routes rendered as full crawlable pages with `<title>`/meta/OG/Twitter/canonical/JSON-LD (`TouristTrip` + `BreadcrumbList`) baked into the first byte, matching the blog article chrome (`css/blog.css`). **GET /balade/:slug** — a curated trail (`besttour:`) as its own URL; slug = `slugify(name)-<8-hex id prefix>` (`trailPath()`), resolved by matching the trailing 8-hex against `id.slice(0,8)`; a drifted name-part 301-redirects to the canonical slug. **GET /r/:token** — a shared saved route (extends the existing `routeshare:` token → `savedroute:`); coords are embedded as a non-executable `<script type="application/json" id="bwr-route">` block and drawn by `public/js/public-route-map.js` (Leaflet from `/lib`, tiles from the same-origin `/tiles/topo` proxy), so the text content indexes without JS. **GET /sitemap.xml** — fetches the static `public/sitemap.xml` asset and injects one `<url>` per curated trail before `</urlset>` (falls back to a minimal sitemap if the asset is missing). These responses set their **own** strict CSP + security headers (the `/public/_headers` file only covers ASSETS responses, not Worker responses); missing/expired items render a branded 404 page. The share link copied by `public/js/route-save.js` now points at the clean `/r/:token` page (was `routes?share=…`, which still works as an authed planner deep-link). `public/best-tours.html` cards link to `/balade/:slug` (mirrored `slugify` in `public/js/best-tours.js`). Tests: `tests/worker-publicpages.test.mjs`.
 
 Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - user:{id} — JSON user object
@@ -85,7 +86,7 @@ Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - kudos:{ownerId}:{activityId}:{userId} — ISO timestamp (a "kudos"/applause on a shared activity; owner-first key so one walk's kudos gather in a single prefix scan)
 - savedroute:{userId}:{id} — JSON saved route (coords, stats, name, shareToken, etc.)
 - activity:{userId}:{id} — JSON recorded activity / hike-journal entry (coords, elevations?, times?, meters, seconds, movingSeconds, ascent, descent, startedAt, savedAt)
-- routeshare:{token} — JSON {userId, routeId}, 180-day TTL; maps share token → route
+- routeshare:{token} — JSON {userId, routeId}; maps share token → route. **No TTL** (permanent): the `/r/:token` page is public SEO-indexed content, so the token must not expire; it's purged only when the saved route is deleted.
 - forum:topic:{id} — JSON forum topic {userId, authorName, title, body, createdAt, lastActivityAt, replyCount}
 - forum:reply:{topicId}:{paddedTs}:{id} — JSON reply {topicId, userId, authorName, body, createdAt}; ts in the key keeps replies ordered within a topic
 - review:{userId} — JSON site review {userId, name, stars, comment, createdAt, updatedAt} (one per account)
@@ -257,7 +258,7 @@ Cloudflare Config (wrangler.jsonc):
 
 ## Testing Notes
 
-Automated test suite: **507 tests, ~6 s** (`npm test`). Test files:
+Automated test suite: **543 tests, ~7 s** (`npm test`). Test files:
 
 | File | What it covers | Style |
 |------|---------------|-------|
@@ -277,6 +278,7 @@ Automated test suite: **507 tests, ~6 s** (`npm test`). Test files:
 | `tests/worker-friends.test.mjs` | Social layer — follow/unfollow (+ reverse index + inbox notify), following/followers, directory search, mini-profile, shared feed, kudos toggle, shared-walk visibility guard, activity `shared` flag, account-deletion social purge | ESM |
 | `tests/worker-quests.test.mjs` | Quest rewards — auth guard, unachieved/unknown quests, real plan grant + inbox notify, claimed-once idempotency, badge grant, no-downgrade safety | ESM |
 | `tests/worker-errors.test.mjs` | Error monitoring — public ingest, signature grouping + count, bot/empty drop, throttled ntfy + email alert, admin-only count/list/delete/clear | ESM |
+| `tests/worker-publicpages.test.mjs` | Public SEO pages — trail (`/balade/:slug`) + shared-route (`/r/:token`) rendering, canonical-slug 301 redirect, 404s, dynamic sitemap injection, slug helpers | ESM |
 | `tests/sw.test.js` | Service-worker cache-version sync | CJS |
 
 E2E (Playwright, `npx playwright test`) runs against the live prod URL — see `tests/e2e/`.

@@ -107,8 +107,10 @@
              <button class="tour-btn-delete" data-id="${t.id}">Supprimer</button>
            </div>` : '';
 
+      const detailUrl = baladeUrl(t);
+
       return `<article class="tour-card" data-id="${t.id}">
-        ${imgHtml}
+        <a href="${detailUrl}" class="tour-card-imglink" aria-label="${escHtml(t.name)}">${imgHtml}</a>
         <div class="tour-card-body">
           ${rankBadge}
           <div class="tour-badges">
@@ -116,11 +118,15 @@
             <span class="tour-badge tour-badge-type">${TYPE_LABEL[t.type] || t.type}</span>
             ${distBadge}
           </div>
-          <h2 class="tour-name">${escHtml(t.name)}</h2>
+          <h2 class="tour-name"><a href="${detailUrl}">${escHtml(t.name)}</a></h2>
           ${startHtml}
           ${t.description ? `<p class="tour-description">${escHtml(t.description)}</p>` : ''}
           <div class="tour-actions">
-            <a class="btn-plan" href="${planUrl}">
+            <a class="btn-plan" href="${detailUrl}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+              Voir la balade
+            </a>
+            <a class="btn-external" href="${planUrl}">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
               Planifier ce trajet
             </a>
@@ -144,6 +150,18 @@
 
   function escHtml(s) {
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Canonical public URL for a trail — must match trailPath() in
+  // worker/handlers/publicpages.js (slug + 8-hex id prefix).
+  function baladeUrl(t) {
+    const slug = String(t.name || 'balade')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'balade';
+    return `/balade/${slug}-${String(t.id).slice(0, 8)}`;
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────

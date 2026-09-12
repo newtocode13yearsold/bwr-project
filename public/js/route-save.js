@@ -89,7 +89,8 @@ async function shareCurrentRoute() {
 }
 
 function copyShareLink(token) {
-  const url = `${location.origin}${location.pathname}?share=${token}`;
+  // Clean, public, SEO-friendly page (server-rendered by worker/handlers/publicpages.js).
+  const url = `${location.origin}/r/${token}`;
   if (navigator.clipboard) {
     navigator.clipboard.writeText(url).then(() => showToast('Lien copié dans le presse-papiers !'));
   } else {
