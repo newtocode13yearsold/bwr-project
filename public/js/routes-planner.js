@@ -999,6 +999,24 @@ async function handleGpxFile(file) {
   }
 }
 
+// Render the duration stat + its caption + the résumé echo. Called first with the
+// router's flat-pace estimate, then again (graded=true) once the elevation profile
+// lets us recompute a dénivelé-aware time. Returns the formatted "1h05" / "42 min".
+function renderDuration(seconds, graded = false) {
+  const h = Math.floor(seconds / 3600);
+  const min = Math.round((seconds % 3600) / 60);
+  const text = h > 0 ? `${h}h${String(min).padStart(2, '0')}` : `${min} min`;
+  const dur = document.getElementById('statDuration');
+  if (dur) dur.textContent = text;
+  const small = document.querySelector('#statDuration + small');
+  if (small) small.textContent =
+    (transportMode === 'bike' ? 'Durée estimée (vélo)' : 'Durée estimée (à pied)')
+    + (graded ? ' · dénivelé inclus' : '');
+  const resumeDur = document.getElementById('resumeDuration');
+  if (resumeDur) resumeDur.textContent = text;
+  return text;
+}
+
 function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   if (routeLayer) map.removeLayer(routeLayer);
 
@@ -1025,13 +1043,8 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
       `${m.toLocaleString('fr-FR')} mètres`;
   }
 
-  // Duration
-  const h = Math.floor(seconds / 3600);
-  const min = Math.round((seconds % 3600) / 60);
-  document.getElementById('statDuration').textContent =
-    h > 0 ? `${h}h${String(min).padStart(2, '0')}` : `${min} min`;
-  document.querySelector('#statDuration + small').textContent =
-    transportMode === 'bike' ? 'Durée estimée (vélo)' : 'Durée estimée (à pied)';
+  // Duration — flat-pace estimate now; refined for dénivelé once elevation loads (Silver+).
+  const durText = renderDuration(seconds, false);
 
   // Badges
   const badgeDiff = { easy: 'Facile', medium: 'Moyen', hard: 'Difficile' }[difficulty];
@@ -1086,7 +1099,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
       en <strong>${typeLabel}</strong>, niveau <strong>${diffLabel}</strong>.
       ${modeDesc}
     </p>
-    <p>Durée estimée : <strong>${document.getElementById('statDuration').textContent}</strong>. ${typeDescMap[pathType]}</p>
+    <p>Durée estimée : <strong id="resumeDuration">${durText}</strong>. ${typeDescMap[pathType]}</p>
   `;
 
   // Warning if loop distance is more than 1 km off
@@ -1191,7 +1204,15 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   if (BWR.can('elevation_profile', plan)) {
     _loadElevation()
       .then(() => fetchElevation(coords))
-      .then(elevs => drawElevationChart(elevs, meters))
+      .then(elevs => {
+        drawElevationChart(elevs, meters);
+        // Refine the flat-pace duration using the real slope of each segment.
+        const adj = gradeAdjustedSeconds(elevs, meters, transportMode);
+        if (adj != null) {
+          renderDuration(adj, true);
+          lastRoute.seconds = adj; // saved routes / share reflect the graded estimate
+        }
+      })
       .catch(() => { document.getElementById('statAscent').textContent = '—'; });
   } else {
     const wrap = document.getElementById('elevationWrap');

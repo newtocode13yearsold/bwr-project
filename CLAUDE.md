@@ -14,7 +14,7 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
-Run all automated tests (543 tests, ~7 s):
+Run all automated tests (560 tests, ~7 s):
   npm test
 
 Run tests in watch mode (re-runs on file save):
@@ -218,7 +218,7 @@ Leaderboard (`GET /api/leaderboard?period=week|month|all`, default `all`):
 
 2. Token Format: Random UUID, no JWT. Sessions stored in KV as session:{token} → {userId, expiresAt}. Bearer header required for auth.
 
-3. Elevation Profile: Async fetch to Open-Elevation API after route displays. Samples evenly-spaced 100-point max to avoid rate limits. Draws SVG sparkline with ascent/descent totals.
+3. Elevation Profile: Async fetch to Open-Elevation API after route displays. Samples evenly-spaced 100-point max to avoid rate limits. Draws SVG sparkline with ascent/descent totals. **Grade-adjusted duration:** the router's own time estimate uses a flat speed (`graphToResult` in `graph-router.js`, 1.11 m/s walk / 4.17 m/s bike). Once the elevation profile loads (Silver+ only), `gradeAdjustedSeconds(elevations, meters, mode)` in `public/js/elevation.js` recomputes the duration from the per-segment slope — Tobler's hiking function (normalised so flat ground == the flat baseline, so nothing regresses on a flat route) for foot, a steeper cycling factor for bike — and `displayRoute` re-renders the "Durée estimée" stat + résumé via `renderDuration()` (caption gains "· dénivelé inclus"), also updating `lastRoute.seconds` so saved/shared routes carry the graded time. Free users (no elevation) keep the flat estimate. Pure helpers unit-tested in `tests/elevation.test.js`.
 
 4. Report Photos: Resized client-side to 800px max, converted to JPEG data-URI, stored in report object (not separate blob storage). Displayed inline in popups.
 
@@ -258,12 +258,13 @@ Cloudflare Config (wrangler.jsonc):
 
 ## Testing Notes
 
-Automated test suite: **543 tests, ~7 s** (`npm test`). Test files:
+Automated test suite: **560 tests, ~7 s** (`npm test`). Test files:
 
 | File | What it covers | Style |
 |------|---------------|-------|
 | `tests/graph-router.test.js` | Pure graph-routing functions (haversine, buildGraph, dijkstra, graphAtob, graphLoop) | CJS, Node test runner |
 | `tests/routes-engine.test.js` | Forest-bundle fast-path helpers — `bboxWithinForest`, `filterPathsToBbox` | CJS, Node test runner |
+| `tests/elevation.test.js` | Grade-adjusted duration — Tobler/bike slope factors, flat-profile == baseline, uphill slower / gentle-descent faster, floors & fallbacks | CJS, Node test runner |
 | `tests/features.test.js` | Plan-gating matrix — `can()`, `limitOf()`, `requiredTier()`, weekly quota helpers | CJS, browser shim for `window`/`localStorage` |
 | `tests/worker-auth.test.mjs` | Auth API endpoints with in-memory KV mock (register, login, session, plan change, stats, wheel prize) | ESM |
 | `tests/worker-admin.test.mjs` | Admin endpoints (user/plan management, data wipe, content) | ESM |
