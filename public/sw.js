@@ -2,7 +2,7 @@
 // the `sync` handler below can drain queued reports even when no page is open.
 importScripts('/js/outbox.js');
 
-const CACHE = 'bwr-v65';
+const CACHE = 'bwr-v66';
 // Tiles live in two separate caches:
 //   • TILE_CACHE — forests the user explicitly downloaded ("Cartes hors-ligne").
 //     Permanent: never expired, never evicted, so a downloaded forest stays
@@ -21,6 +21,20 @@ const TILE_MAX_AGE_MS  = 7 * 24 * 60 * 60 * 1000; // 7 days
 // app cache is safe. Strategy: network-first (fresh when online) with a cache
 // fallback, so the map still shows trails and reports with no signal.
 const CACHEABLE_API = ['/api/paths', '/api/reports', '/api/pois'];
+
+// Network-first timeout caps (ms). On a weak forest signal fetch() doesn't fail —
+// it hangs — and a plain network-first strategy has no way to reach the cache
+// until the network gives up. So when we already hold a cached copy we race the
+// network against a short timer: whichever answers first is served, while the
+// in-flight fetch keeps running to refresh the cache for next time. On a decent
+// signal the network wins in well under these caps, so nothing changes there;
+// only a genuine hang falls back to cache instead of blocking the page.
+//   • SHELL — app pages / JS / CSS. Longer, because "latest when online" matters
+//     for code; on any real connection the fetch still wins.
+//   • DATA  — read-only map data (paths/reports/pois). Shorter, because trails
+//     and hazards change slowly and an instant map beats a few-second-fresher one.
+const SHELL_TIMEOUT_MS = 2500;
+const DATA_TIMEOUT_MS  = 1500;
 
 const APP_SHELL = [
   '/',
@@ -218,6 +232,37 @@ self.addEventListener('sync', e => {
   if (e.tag === 'bwr-sync-reports') e.waitUntil(replayReportOutbox());
 });
 
+// Network-first, but cap the wait when we already have something cached.
+// Returns the network response if it arrives (good) within `timeoutMs`; otherwise
+// serves the cached copy immediately. The fetch is never abandoned — if it was
+// only slow (not dead), it still completes and refreshes the cache for next time.
+// With no cached copy we can't shortcut, so we simply await the network.
+async function networkFirstRace(request, cacheName, timeoutMs) {
+  const cached = await caches.match(request, { ignoreVary: true });
+
+  // Kick off the network. A good 200 (non-opaque) is written back to the cache.
+  const fromNet = fetch(request).then(res => {
+    if (res && res.status === 200 && res.type !== 'opaque') {
+      const clone = res.clone();
+      caches.open(cacheName).then(c => c.put(request, clone));
+    }
+    return res;
+  });
+
+  // Nothing cached → no shortcut; return the network result (or undefined offline).
+  if (!cached) return fromNet.catch(() => undefined);
+
+  // Cached copy in hand → race the network against the timer.
+  return new Promise(resolve => {
+    let settled = false;
+    const finish = v => { if (!settled) { settled = true; resolve(v); } };
+    const timer = setTimeout(() => finish(cached), timeoutMs);
+    fromNet
+      .then(res => { clearTimeout(timer); finish(res && res.status === 200 ? res : cached); })
+      .catch(() => { clearTimeout(timer); finish(cached); });
+  });
+}
+
 // Fetch — network first for HTML/JS/CSS, cache fallback when offline
 self.addEventListener('fetch', e => {
   const url = e.request.url;
@@ -228,15 +273,9 @@ self.addEventListener('fetch', e => {
   // generic /api/ branch below (which always returns 503 offline).
   if (e.request.method === 'GET' && CACHEABLE_API.includes(new URL(url).pathname)) {
     e.respondWith(
-      fetch(e.request).then(res => {
-        if (res && res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
-        }
-        return res;
-      }).catch(() => caches.match(e.request, { ignoreVary: true }).then(cached =>
-        cached || new Response('{"error":"offline"}', { status: 503, headers: { 'Content-Type': 'application/json' } })
-      ))
+      networkFirstRace(e.request, CACHE, DATA_TIMEOUT_MS).then(res =>
+        res || new Response('{"error":"offline"}', { status: 503, headers: { 'Content-Type': 'application/json' } })
+      )
     );
     return;
   }
@@ -305,17 +344,12 @@ self.addEventListener('fetch', e => {
       (e.request.mode === 'navigate' ||
        url.endsWith('.html') || url.endsWith('.js') || url.endsWith('.css') ||
        url.includes('unpkg.com') || url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com'))) {
-    e.respondWith(
-      fetch(e.request).then(res => {
-        if (res && res.status === 200 && res.type !== 'opaque') {
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
-          return res;
-        }
-        // Non-200 from network (e.g. CDN 503) → fall back to cache
-        return caches.match(e.request).then(cached => cached || res);
-      }).catch(() => caches.match(e.request))
-    );
+    // Network-first with a cache race: keeps "latest when online" on any usable
+    // signal, but a hanging fetch on one weak bar no longer blocks a page we've
+    // already cached — after SHELL_TIMEOUT_MS we serve the cached copy and let
+    // the fetch finish in the background to refresh it. A non-200 (e.g. CDN 503)
+    // also falls back to cache, matching the previous behaviour.
+    e.respondWith(networkFirstRace(e.request, CACHE, SHELL_TIMEOUT_MS));
     return;
   }
 

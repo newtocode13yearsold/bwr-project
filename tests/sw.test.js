@@ -97,6 +97,10 @@ function makeSWContext() {
     Response: globalThis.Response,
     URL: globalThis.URL,
     Promise,
+    // Real service workers expose these; the network-first cache race in sw.js
+    // uses them to cap a hanging fetch, so the sandbox must provide them too.
+    setTimeout,
+    clearTimeout,
     console,
   });
   vm.runInContext(swSource, ctx);
@@ -370,6 +374,75 @@ describe('fetch handler: app files → network-first with cache fallback', () =>
     const res = await getResponse().catch(() => null);
     // Just verify it doesn't crash — res may be undefined or null
     assert.ok(res === null || res === undefined || res instanceof Response);
+  });
+});
+
+// ── Network-first race: weak-signal fast path ────────────────────────────────
+// The real fix: on a weak signal fetch() hangs instead of failing, so a plain
+// network-first strategy blocks the page even though a cached copy exists. The
+// race serves the cache after a short timeout and lets the fetch finish in the
+// background. We drive the SW's timer with an accelerated setTimeout so these
+// tests prove the logic without waiting the real 1.5-2.5s caps.
+
+describe('fetch handler: network-first race (weak-signal fast path)', () => {
+  test('app file: hanging network + cached copy → cached page served (no hang)', async () => {
+    const { handlers, mockCaches, ctx, makeFetchEvent } = makeSWContext();
+    ctx.setTimeout = (fn) => setTimeout(fn, 0); // fire the SW's timeout immediately
+
+    const url = 'https://bwrmaps.com/js/map.js';
+    const appCache = await mockCaches.open(CURRENT_CACHE);
+    await appCache.put(url, new Response('// cached', { status: 200 }));
+
+    // Weak signal: the network never settles.
+    ctx.fetch = () => new Promise(() => {});
+
+    const { event, getResponse } = makeFetchEvent(url);
+    handlers.fetch(event);
+    const res = await getResponse();
+    assert.equal(await res.text(), '// cached', 'a hanging fetch must not block a cached page');
+  });
+
+  test('map data: slow network serves cache now, then refreshes cache for next load', async () => {
+    const { handlers, mockCaches, ctx, makeFetchEvent } = makeSWContext();
+    ctx.setTimeout = (fn) => setTimeout(fn, 0);
+
+    const url = 'https://bwrmaps.com/api/paths';
+    const appCache = await mockCaches.open(CURRENT_CACHE);
+    await appCache.put(url, new Response(JSON.stringify([{ id: 'stale' }]), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+    // Network is only slow, not dead: it resolves with fresh data after the timer.
+    let resolveNet;
+    ctx.fetch = () => new Promise(r => { resolveNet = r; });
+
+    const { event, getResponse } = makeFetchEvent(url);
+    handlers.fetch(event);
+    const res = await getResponse();
+    const body = await res.json();
+    assert.equal(body[0].id, 'stale', 'a slow network serves the cached map immediately');
+
+    // The in-flight fetch finally lands → its response must refresh the cache.
+    resolveNet(new Response(JSON.stringify([{ id: 'fresh' }]), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    await new Promise(r => setTimeout(r, 0));
+    await new Promise(r => setTimeout(r, 0));
+    const stored = await mockCaches.match(url);
+    assert.deepEqual((await stored.json())[0].id, 'fresh', 'the background fetch must refresh the cache for next load');
+  });
+
+  test('fast network still wins the race → freshest copy served (behaviour unchanged online)', async () => {
+    const { handlers, mockCaches, ctx, makeFetchEvent } = makeSWContext();
+    // Timer set far out; the (instant) network must win before it fires.
+    ctx.setTimeout = (fn) => setTimeout(fn, 10000);
+
+    const url = 'https://bwrmaps.com/js/map.js';
+    const appCache = await mockCaches.open(CURRENT_CACHE);
+    await appCache.put(url, new Response('// cached', { status: 200 }));
+
+    ctx.fetch = () => Promise.resolve(new Response('// fresh', { status: 200 }));
+
+    const { event, getResponse } = makeFetchEvent(url);
+    handlers.fetch(event);
+    const res = await getResponse();
+    assert.equal(await res.text(), '// fresh', 'a responsive network still serves the latest copy');
   });
 });
 
