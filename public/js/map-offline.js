@@ -22,6 +22,19 @@ const OISE_OFFLINE_ZONES = [
 
 const _zoneCacheKey = id => `bwr_zone_cached:${id}`;
 
+// The forest nearest a given point (used by the Silver auto-download to pick the
+// forest the user is actually in / looking at, so this generalises for free if
+// more régions are ever added — no code change, just more zones above).
+function _nearestZone(lat, lon) {
+  let best = null, bestD = Infinity;
+  for (const z of OISE_OFFLINE_ZONES) {
+    const cy = (z.bbox.north + z.bbox.south) / 2, cx = (z.bbox.west + z.bbox.east) / 2;
+    const d = (lat - cy) * (lat - cy) + (lon - cx) * (lon - cx); // planar is fine at this scale
+    if (d < bestD) { bestD = d; best = z; }
+  }
+  return best;
+}
+
 function _zoneTiles(bbox) {
   const tiles = [];
   for (let z = 10; z <= 15; z++) {
@@ -73,11 +86,15 @@ async function _fetchTileWithRetry(cache, tileUrl, attempts = 4) {
 //      misses cluster into a blank patch; re-grabbing just those tiles after
 //      the limit window resets fills the holes instead of leaving a gap.
 // onProgress is called with { phase, pct } so the UI can show both phases.
-async function downloadOfflineZone(zone, onProgress) {
+// opts.shouldAbort() is polled between batches/sweeps so a long download can be
+// cancelled (used by the Silver auto-download banner). An aborted run leaves the
+// zone UN-flagged so it's retried next time rather than trusted half-empty.
+async function downloadOfflineZone(zone, onProgress, opts = {}) {
   const tiles = _zoneTiles(zone.bbox);
   const cache = await caches.open('bwr-offline-tiles');
   const report = (phase, done, total) =>
     onProgress && onProgress({ phase, pct: total ? Math.round(done / total * 100) : 100 });
+  const aborted = () => !!(opts.shouldAbort && opts.shouldAbort());
 
   // ── Phase 1: main download, with ADAPTIVE concurrency. ──
   //    Every tile is fetched through our own Cloudflare edge proxy
@@ -95,6 +112,7 @@ async function downloadOfflineZone(zone, onProgress) {
   let done = 0;
   let i = 0;
   while (i < tiles.length) {
+    if (aborted()) return { total: tiles.length, ok: done - failed.length, failed: tiles.length - (done - failed.length), aborted: true };
     const slice = tiles.slice(i, i + conc);
     i += slice.length; // advance by what we actually took, not by the (mutable) conc
     const results = await Promise.all(slice.map(t => _fetchTileWithRetry(cache, t)));
@@ -115,10 +133,12 @@ async function downloadOfflineZone(zone, onProgress) {
   //    burst gets another chance instead of leaving a blank patch. ──
   let gaps = failed;
   for (let sweep = 0; sweep < 3 && gaps.length; sweep++) {
+    if (aborted()) return { total: tiles.length, ok: tiles.length - gaps.length, failed: gaps.length, aborted: true };
     await _sleep(1500); // let the server's rate-limit window cool down
     const stillFailed = [];
     let filled = 0;
     for (const tileUrl of gaps) {
+      if (aborted()) { gaps = stillFailed.concat(gaps.slice(filled)); return { total: tiles.length, ok: tiles.length - gaps.length, failed: gaps.length, aborted: true }; }
       if (!(await _fetchTileWithRetry(cache, tileUrl, 5))) stillFailed.push(tileUrl);
       report('fill', ++filled, gaps.length);
     }
@@ -209,4 +229,82 @@ function openOfflineZonePicker() {
       }
     });
   });
+}
+
+// ── Silver auto-download ────────────────────────────────────────────────────────
+// When a Silver+ user opens the map, quietly download the forest they're in so
+// "works offline" is a real promise, not a hope they happened to pan over the
+// right tiles. It downloads exactly the nearest preset forest (a few thousand
+// tiles / tens of MB), NOT the whole department — that would be gigabytes and
+// blow the browser's storage quota.
+//
+// Politeness rules:
+//   • runs only once a download isn't already in flight,
+//   • skips a forest that's already fully cached,
+//   • skips if the user cancelled the auto-download for that forest before
+//     (opt-out remembered per-forest — never nags again),
+//   • needs a connection (can't download while offline).
+// A failed/partial run is NOT opted-out, so it self-heals toward complete on the
+// next map open.
+const _autoOptOutKey = id => `bwr_auto_offline_optout:${id}`;
+let _autoRunning = false;
+
+function _autoBanner(zone) {
+  document.getElementById('bwrAutoOffline')?.remove();
+  const el = document.createElement('div');
+  el.id = 'bwrAutoOffline';
+  el.setAttribute('role', 'status');
+  el.style.cssText =
+    'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:4000;' +
+    'display:flex;align-items:center;gap:12px;max-width:92vw;' +
+    'background:var(--card,#fff);color:var(--text,#111);border:1px solid var(--border,#e5e7eb);' +
+    'box-shadow:0 6px 24px rgba(0,0,0,.18);border-radius:12px;padding:10px 14px;font-size:0.85rem';
+  el.innerHTML =
+    `<span id="bwrAutoOfflineTxt">📥 Téléchargement de ${zone.name} pour la carte hors-ligne… 0%</span>` +
+    `<button id="bwrAutoOfflineCancel" class="btn-secondary" style="white-space:nowrap;padding:4px 10px;font-size:0.8rem">Annuler</button>`;
+  document.body.appendChild(el);
+  return el;
+}
+
+async function autoDownloadNearestZone() {
+  if (_autoRunning) return;
+  if (!navigator.onLine) return;
+
+  // Which forest? The one nearest the current map view (falls back to centre).
+  let lat, lon;
+  try { const c = (typeof map !== 'undefined') && map.getCenter(); if (c) { lat = c.lat; lon = c.lng; } } catch {}
+  if (lat == null && typeof MAP_CENTER !== 'undefined') { lat = MAP_CENTER[0]; lon = MAP_CENTER[1]; }
+  const zone = (lat != null) ? _nearestZone(lat, lon) : OISE_OFFLINE_ZONES[0];
+  if (!zone) return;
+
+  if (localStorage.getItem(_zoneCacheKey(zone.id)) === '1') return; // already have it
+  if (localStorage.getItem(_autoOptOutKey(zone.id)) === '1') return; // user said no before
+
+  _autoRunning = true;
+  let cancelled = false;
+  const banner = _autoBanner(zone);
+  const txt = banner.querySelector('#bwrAutoOfflineTxt');
+  banner.querySelector('#bwrAutoOfflineCancel').addEventListener('click', () => {
+    cancelled = true;
+    localStorage.setItem(_autoOptOutKey(zone.id), '1'); // remember: don't auto-nag again
+    banner.remove();
+  });
+
+  try {
+    const res = await downloadOfflineZone(zone, info => {
+      if (txt) txt.textContent =
+        `📥 ${zone.name} hors-ligne… ${info.pct}%${info.phase === 'fill' ? ' (finalisation)' : ''}`;
+    }, { shouldAbort: () => cancelled });
+
+    if (cancelled || res.aborted) return; // banner already removed on cancel
+    banner.remove();
+    if (res.failed === 0 || res.ok / res.total >= 0.995) {
+      if (typeof showToast === 'function') showToast(`✅ ${zone.name} disponible hors-ligne`);
+    }
+    // A patchy run stays silent + un-flagged; it'll retry on the next map open.
+  } catch {
+    banner.remove();
+  } finally {
+    _autoRunning = false;
+  }
 }

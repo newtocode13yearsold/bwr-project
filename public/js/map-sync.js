@@ -337,3 +337,18 @@ migrateLegacyReports().then(() => {
 
 const btnMapSync = document.getElementById('btnMapSync');
 if (btnMapSync) btnMapSync.addEventListener('click', function () { replayMapPatches(); replayMapReports(); });
+
+// ── Silver auto-download of the nearby forest for offline use ───────────────────
+// Silver+ get "works offline" for real: on first map open we quietly cache the
+// forest they're in (js/map-offline.js decides which, skips if already cached or
+// previously cancelled). Deferred until after load + a beat so it never competes
+// with the initial map render, and only when online.
+if (BWR.can('offline_cache', _userPlan)) {
+  const kickAutoOffline = () => {
+    if (!navigator.onLine) return;
+    _loadMapOffline()
+      .then(() => { if (typeof autoDownloadNearestZone === 'function') autoDownloadNearestZone(); })
+      .catch(() => {});
+  };
+  window.addEventListener('load', () => setTimeout(kickAutoOffline, 2500));
+}
