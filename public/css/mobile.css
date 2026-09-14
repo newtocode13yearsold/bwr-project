@@ -1,0 +1,808 @@
+/* ============================================================================
+   mobile.css — phone hardening, loaded LAST on every page.
+
+   Everything here is scoped to a mobile media query (or is a no-op on desktop),
+   so it can only change how the app renders on a phone. It fixes four classes
+   of problem found by auditing every page at 320/375/414 px:
+
+     1. Flex-squash — the global `body { height:100vh; display:flex }` rule is
+        meant for the full-screen map pages. On a document-scrolling page it
+        gives body a DEFINITE height, so its flex children shrink; any child
+        with `overflow:hidden` loses its automatic minimum size and collapses.
+        That is what crushed the whole profile hero to a 56 px strip.
+     2. Content wider than the viewport getting clipped by an `overflow:hidden`
+        ancestor — buttons then become permanently unreachable (admin panel).
+     3. Controls sitting underneath the fixed bottom nav.
+     4. Tap targets below the 44 px minimum.
+
+   Hit areas are enlarged with an ::after overlay rather than padding wherever
+   the button's size is load-bearing, so nothing moves visually.
+   ========================================================================== */
+
+/* ── 1. Page shell ────────────────────────────────────────────────────────── */
+
+/* Document-scrolling pages must not inherit the map shell's fixed 100vh height.
+   `.map-body` / `.routes-body` / `#adminPanel` pages deliberately keep it. */
+@media (max-width: 900px) {
+  .profile-body,
+  .plans-body,
+  .lb-body,
+  .legal-body,
+  .guide-body,
+  .changelog-body {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+
+  /* A column flex container with a definite height shrinks its children.
+     Pin the direct children of the page wrappers so sections keep their
+     natural height and the page scrolls instead. */
+  .profile-main > *,
+  .plans-body > *,
+  .lb-body > *,
+  body > main > * {
+    flex-shrink: 0;
+  }
+  .profile-main,
+  .lb-main {
+    flex: 0 0 auto;
+    height: auto;
+  }
+}
+
+/* Nothing may push the page sideways. */
+@media (max-width: 900px) {
+  img,
+  svg:not(.leaflet-zoom-animated svg),
+  video,
+  canvas,
+  iframe,
+  table {
+    max-width: 100%;
+  }
+  pre,
+  code {
+    max-width: 100%;
+    overflow-x: auto;
+    word-break: break-word;
+  }
+  /* Long unbroken strings (emails, URLs, tokens) must wrap rather than widen
+     their container. */
+  .msg-body,
+  .topic-body,
+  .reply-body,
+  .article-body,
+  .legal-section p,
+  .err-message,
+  .err-stack {
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ── 2. Forms: stop iOS Safari zooming in on focus ────────────────────────── */
+/* Safari zooms the viewport whenever a focused field's text is under 16px. */
+@media (max-width: 900px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="date"],
+  input[type="datetime-local"],
+  select,
+  textarea,
+  .input-field,
+  .form-input,
+  .form-select,
+  .form-textarea,
+  .search-input {
+    font-size: 16px;
+  }
+
+  /* Give the same fields a comfortable height while we are here. */
+  .input-field,
+  .form-input,
+  .form-select,
+  select {
+    min-height: 44px;
+  }
+  textarea,
+  .form-textarea {
+    min-height: 88px;
+  }
+}
+
+/* ── 2b. Buttons that lost their label ────────────────────────────────────── */
+/* `style.css` hides `.btn-label` below 640px so the header toolbar can go
+   icon-only. That rule is global, so it also blanked out two buttons that have
+   no icon to fall back on: "Reset km" in the admin panel and "Télécharger
+   hors-ligne" in the admin nav drawer. Put their text back. */
+@media (max-width: 640px) {
+  .btn-danger .btn-label,
+  .nav-drawer-item .btn-label,
+  .admin-card .btn-label,
+  .map-bottom-btns .btn-label,
+  .modal .btn-label {
+    display: inline-flex;
+  }
+}
+
+/* ── 3. Tap targets ───────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  /* Generic: any real button gets a 44px minimum unless it opts out below.
+     Wrapped in :where() so its specificity is zero — a single class further
+     down (the icon buttons that keep their own size) can then override it. */
+  :where(
+    button,
+    .btn-icon,
+    .btn-primary,
+    .btn-secondary,
+    .btn-generate,
+    a.btn,
+    a.btn-icon,
+    [role="button"]
+  ) {
+    min-height: 44px;
+  }
+  /* Leaflet draws its own controls; they are sized in section 12. */
+  :where(.leaflet-container button, .leaflet-container a) {
+    min-height: 0;
+  }
+
+  /* …but several small chrome buttons are sized on purpose. For those, keep the
+     pixel size and overlay an invisible 44×44 hit area instead. */
+  .swatch,
+  .fcar-dot,
+  .pw-eye,
+  .grade-banner-close,
+  .nav-drawer-close,
+  .modal-close,
+  .msg-delete,
+  .toast-close,
+  .install-banner-close {
+    min-height: 0;
+  }
+  /* Only the ones that are statically positioned need a containing block —
+     `.pw-eye` and `.modal-close` are already `position:absolute` and must keep
+     their own offsets. */
+  .swatch,
+  .fcar-dot,
+  .grade-banner-close,
+  .nav-drawer-close,
+  .msg-delete,
+  .toast-close,
+  .install-banner-close {
+    position: relative;
+  }
+  .swatch::after,
+  .fcar-dot::after,
+  .pw-eye::after,
+  .grade-banner-close::after,
+  .nav-drawer-close::after,
+  .modal-close::after,
+  .msg-delete::after,
+  .toast-close::after,
+  .install-banner-close::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    min-width: 100%;
+    min-height: 100%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* The avatar swatches sit in a tight wrapped row. Widen the gaps so the 44px
+     hit areas never overlap (32 + 14 = 46px centre to centre), and cap the row
+     so the eight colours wrap 4 + 4 instead of 7 + 1. */
+  .color-swatches {
+    gap: 14px;
+    justify-content: center;
+    max-width: 190px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .swatch {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Carousel dots: same treatment, plus breathing room between them. */
+  .fcar-dots {
+    gap: 14px;
+  }
+
+  /* Burger: 32×24 → a real 44×44 target. */
+  .nav-burger {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Header icon buttons were squeezed to 38px (36px, then 32px on narrower
+     phones) so six or seven of them would fit on one row. Give them a real
+     44×44 target and let the toolbar wrap instead — see the admin header
+     below, which is the only bar that actually needs the second row. */
+  .btn-icon,
+  .header-right .btn-icon {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+  }
+  /* Fixed squares in the header so a row of them has a predictable width. */
+  .header-right .btn-icon,
+  .header-right .notif-bell-btn {
+    width: 44px;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+  .user-avatar,
+  .user-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .header-right {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 4px;
+  }
+  /* `.header` has a fixed 54px height and the map pages clip their body, so a
+     wrapped toolbar used to be cut off entirely — the menu button included.
+     Let the bar grow instead; the map simply gets the remaining space. */
+  .header {
+    height: auto;
+    min-height: calc(54px + env(safe-area-inset-top, 0px));
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  /* Footer / inline navigation links read as buttons on a phone. */
+  .footer-links a,
+  .footer-nav a,
+  .blog-footer-links a,
+  .news-footer-links a,
+  .act-footer a,
+  .forum-footer a,
+  .inbox-footer a,
+  .lg-toc a,
+  .legal-footer a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .footer-links,
+  .footer-nav,
+  .blog-footer-links,
+  .news-footer-links {
+    row-gap: 0;
+  }
+
+  /* Bottom-nav items are already 56px tall; keep them from shrinking. */
+  .bnav-item {
+    min-height: 56px;
+  }
+
+  /* Standalone navigation links — a logo, a "← back", a CTA at the end of a
+     card. These read as buttons, so they get button-sized targets. Links that
+     sit inside a run of prose are deliberately left alone. */
+  a.logo,
+  .lg-logo, .cl-logo, .nf-logo, .blog-nav-logo, .footer-logo, .pf-logo,
+  .back-link, .lg-back, .cl-back, .nf-back,
+  .card-header-link,
+  .plan-upgrade-link,
+  .pqs-cta,
+  .qs-cta,
+  .grade-banner-cta,
+  .pc-toggle,
+  .btn-app,
+  .guide-topbar-cta,
+  .bwr-tut-btn,
+  .pf-links a,
+  .lg-toc a,
+  .guide-topbar a,
+  .auth-back a,
+  #showForgotLink,
+  #showResendLink {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  /* `<summary>` keeps its disclosure marker, so grow it with padding instead. */
+  summary {
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+
+  /* Links sitting inside a run of text stay `display:inline` so they can still
+     break across lines. Vertical padding on an inline box grows the clickable
+     area without moving a single pixel of layout, which takes a 16px line of
+     text past the 24px WCAG 2.2 AA target minimum. */
+  p a,
+  li a,
+  td a,
+  dd a,
+  footer a,
+  .footer a,
+  .footer-tagline a,
+  .feature-desc a,
+  .article-body a,
+  .lg-block a,
+  .lg-section a {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  /* Reference links that carry their own line get a real 44px block. */
+  .lg-block a,
+  .lg-section a,
+  .lg-content li a,
+  .feature-desc a {
+    display: inline-block;
+    min-height: 44px;
+    padding: 12px 5px;
+  }
+
+  /* …and the ones that stand alone — in a table cell, a status panel, the
+     table of contents — get a full square target. */
+  .sidebar-contact a,
+  .lg-content td a,
+  .lg-info-box a,
+  .lg-right-card a,
+  #status a,
+  #resetStatus a,
+  #verifyStatus a,
+  .lg-toc a,
+  .guide-section > p:last-child > a:only-child {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+    padding: 0 6px;
+  }
+
+  /* Footer navigation links: already 44px tall, but a 4-letter word is only
+     ~30px wide. Pad them out so the target is square. */
+  .footer-links a,
+  .blog-footer-links a,
+  .pf-links a,
+  .news-footer-links a {
+    min-width: 44px;
+    justify-content: center;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  /* Range sliders are 16px tall by default — unusable with a thumb. */
+  input[type="range"] {
+    height: 40px;
+    min-height: 40px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    width: 26px;
+    height: 26px;
+  }
+  input[type="checkbox"],
+  input[type="radio"],
+  .consent-row input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* ── 4. Fixed bottom nav: keep content clear of it ────────────────────────── */
+/* Every page that renders `.bottom-nav` reserves room for it. The map and the
+   route planner manage their own layout (the map shrinks, the planner sidebar
+   pads itself), so they are excluded. */
+@media (max-width: 768px) {
+  body:has(> .bottom-nav):not(.map-body):not(.routes-body) {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 16px);
+  }
+
+  /* Page footers sit above the nav — give the last one a little extra air. */
+  body:has(> .bottom-nav):not(.map-body):not(.routes-body) > footer:last-of-type {
+    margin-bottom: 8px;
+  }
+
+  /* Floating pieces that are positioned from the bottom edge must clear it. */
+  .badge-toast {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ── 5. Profile ───────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* The hero is `overflow:hidden`, which removes its automatic minimum size and
+     let the flex parent crush it to a strip. Pin its height explicitly. */
+  .profile-hero {
+    flex: 0 0 auto;
+    min-height: 0;
+    height: auto;
+    padding: 24px 16px;
+  }
+  .profile-main {
+    padding: 20px 16px 40px;
+    gap: 20px;
+  }
+  .profile-card {
+    padding: 18px 16px;
+  }
+  /* Stat and badge grids stay readable rather than squeezing 4 across. */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .badges-grid {
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  }
+}
+
+/* ── 6. Inbox ─────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* The section was shrink-to-fit inside a flex body and ended up 8px wider
+     than the viewport, so its right edge was cut off. */
+  .inbox-section {
+    width: 100%;
+    max-width: 100%;
+    padding: 28px 16px 32px;
+  }
+  .inbox-toolbar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .msg-head,
+  .sent-row {
+    flex-wrap: wrap;
+  }
+  .msg-date {
+    white-space: normal;
+  }
+  .page-hero {
+    padding: 36px 18px;
+  }
+}
+
+/* ── 7. Community / journal / forum / quests / leaderboard ────────────────── */
+@media (max-width: 768px) {
+  .act-section,
+  .friends-section,
+  .forum-section,
+  .quests-section,
+  .lb-main {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  /* Tab rows scroll sideways instead of overflowing the page. */
+  .friends-tabs,
+  .lb-tabs,
+  .quests-tabs,
+  .members-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 8px;
+  }
+  .friends-tabs::-webkit-scrollbar,
+  .lb-tabs::-webkit-scrollbar,
+  .quests-tabs::-webkit-scrollbar,
+  .members-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .friends-tabs > *,
+  .lb-tabs > *,
+  .quests-tabs > *,
+  .members-tabs > * {
+    flex: 0 0 auto;
+  }
+}
+
+/* ── 8. Plans ─────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* "Tout voir" sat right on top of the bottom nav at the end of the page. */
+  .plans-body {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 32px);
+  }
+  .pc-toggle {
+    min-height: 44px;
+  }
+}
+
+/* ── 9. Admin — dashboard (admin-panel.html) ──────────────────────────────── */
+/* `#adminPanel` is a 100vh flex column with `overflow:hidden`, and the dashboard
+   grid resolved `repeat(auto-fit, minmax(320px, 1fr))` against its max-content
+   width — 1032px inside a 375px window. Everything past the first column was
+   clipped away and unreachable: the members list, revenue tabs, challenge form,
+   error controls. Force the grid to the container and let it wrap to 1 column. */
+@media (max-width: 1100px) {
+  #adminDashboard.admin-dashboard {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  #adminDashboard.admin-dashboard {
+    padding: 16px 12px calc(72px + env(safe-area-inset-bottom, 0px));
+    gap: 14px;
+  }
+  .admin-card {
+    padding: 16px 14px;
+    min-width: 0;
+  }
+  .admin-card.span-2 {
+    grid-column: 1 / -1;
+  }
+  .admin-dash-head h1 {
+    font-size: 1.35rem;
+  }
+
+  /* Cards hold wide tables and chart canvases — let those scroll inside the
+     card rather than blow out the page. */
+  .admin-card table,
+  .admin-card .table-wrap,
+  .admin-card .members-table-wrap {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Chart.js sizes its canvas to the card, so it only needs a width cap — do
+     NOT force `height:auto`, which collapses the chart to its attribute ratio. */
+  .admin-card canvas {
+    max-width: 100%;
+  }
+
+  /* Button rows inside cards wrap instead of running off the edge. */
+  .admin-card .row,
+  .admin-card .btn-row,
+  .member-actions,
+  .rev-tabs,
+  .members-tabs {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .admin-card button,
+  .member-actions button {
+    width: auto;
+  }
+
+  /* Member rows: identity on one line, actions on the next, so the buttons stop
+     crowding the name/email column. The row is rendered with inline styles in
+     js/admin.js, so these need !important to win. */
+  .member-row,
+  .member-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px;
+  }
+  .member-identity {
+    min-width: 0;
+  }
+  .member-actions {
+    justify-content: flex-start !important;
+    width: 100%;
+  }
+  .member-actions button {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* The status strip is absolutely positioned and was landing off-screen. */
+  .admin-status {
+    left: 12px;
+    right: 12px;
+    max-width: none;
+    transform: none;
+  }
+}
+
+/* ── 10. Admin — map (admin.html) ─────────────────────────────────────────── */
+/* The admin map keeps the desktop centred pill row (no FAB collapse), so at
+   375px it overhung both edges and collided with the legend. Stack it in the
+   bottom-left corner, the same corner the member map uses. */
+@media (max-width: 768px) {
+  body:not(.map-body) .map-bottom-btns {
+    left: max(12px, env(safe-area-inset-left, 0px));
+    right: auto;
+    bottom: max(20px, env(safe-area-inset-bottom, 0px));
+    transform: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: calc(100vw - 24px);
+  }
+  body:not(.map-body) .map-fab-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  body:not(.map-body) .map-locate-btn,
+  body:not(.map-body) .map-select-path-btn {
+    height: 44px;
+  }
+
+  /* The admin header carries six icon buttons plus the avatar. At a 44px tap
+     target those cannot share a 375px row with the logo, so the bar grows to
+     exactly TWO rows — logo on top, the whole toolbar underneath — rather than
+     shrinking the buttons below the minimum or spilling onto a third row. */
+  #adminPanel .header {
+    height: auto;
+    min-height: calc(54px + env(safe-area-inset-top, 0px));
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 4px;
+    padding-bottom: 6px;
+  }
+  #adminPanel .header-left {
+    flex: 1 1 auto;
+  }
+  #adminPanel .header-right {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+  /* Fixed 44px squares so six buttons + the avatar total 332px and stay on one
+     row at 375px (and still fit at 320px once the gap tightens below). */
+  #adminPanel .header-right .btn-icon {
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+  /* Size the BUTTON, never the `.user-menu` wrapper — the wrapper also holds the
+     dropdown, so clipping or fixing its height would hide the menu. */
+  #adminPanel .user-menu {
+    flex: 0 0 auto;
+  }
+  #adminPanel .user-btn,
+  #adminPanel .user-avatar {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+  /* The avatar button also prints the user's first name in a `.btn-label`,
+     which style.css already hides below 640px — make sure the rule that
+     restores labels elsewhere does not bring it back here. */
+  #adminPanel .user-btn .btn-label,
+  .header-right .user-btn .btn-label {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  /* 6×40 + 40 + 6×3 = 298 — still one row on the narrowest phones. */
+  #adminPanel .header-right {
+    gap: 3px;
+  }
+  #adminPanel .header-right .btn-icon,
+  #adminPanel .user-avatar,
+  #adminPanel .user-btn {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    height: 40px;
+  }
+}
+
+/* ── 11. Route planner ────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* The sidebar is the scroll region; its last controls must clear the nav. */
+  .planner-sidebar {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+  /* While the grade banner is up it floats over the bottom of that scroll
+     region, hiding the last controls (GPX import, footer contact) even at full
+     scroll. The banner sits 74px off the bottom and is ~126px tall once its
+     text wraps on a phone, so reserve a little over 200px for as long as it
+     is showing. */
+  body:has(.grade-banner.grade-banner-show) .planner-sidebar {
+    padding-bottom: calc(212px + env(safe-area-inset-bottom, 0px));
+  }
+  /* The quick-loop CTA is the first thing a user reaches for — make sure it is
+     never the row sitting under the nav bar. */
+  .btn-quick-loop {
+    min-height: 48px;
+  }
+  .qs-customize,
+  .step-header {
+    min-height: 44px;
+  }
+}
+
+/* ── 12. Map page chrome ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Leaflet's own zoom buttons are 30px by default — bump to a usable size. */
+  .leaflet-touch .leaflet-bar a,
+  .leaflet-control-zoom-in,
+  .leaflet-control-zoom-out {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    font-size: 20px;
+  }
+  /* Layer switcher and legend must not overlap the header or each other. */
+  .map-layers {
+    max-width: calc(100vw - 24px);
+    flex-wrap: wrap;
+  }
+  .legend {
+    max-width: min(220px, calc(100vw - 24px));
+  }
+  /* The member map wraps its legend in a collapsible `.legend-body`, which
+     carries the padding. The admin map uses the plain markup and so had none —
+     its labels ran flush into the rounded corner. */
+  .legend:not(:has(.legend-body)) {
+    padding: 10px 14px;
+  }
+  /* The banner is centred with `left:50% + translateX(-50%)`; only cap its
+     width here — overriding left/right would fight the transform and push it
+     off the left edge. */
+  .grade-banner {
+    max-width: calc(100vw - 16px);
+  }
+  .grade-banner-cta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+}
+
+/* ── 13. Small phones (≤360px) ────────────────────────────────────────────── */
+@media (max-width: 360px) {
+  .profile-main,
+  .inbox-section,
+  .act-section,
+  .friends-section,
+  .forum-section {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  #adminDashboard.admin-dashboard {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .mode-cards {
+    gap: 6px;
+  }
+  .mode-card {
+    padding: 8px 4px;
+  }
+  .header-nav-links {
+    display: none;
+  }
+}
+
+/* ── 14. Landscape phones ─────────────────────────────────────────────────── */
+/* A 400px-tall viewport cannot afford a 56px hero on top of a bottom nav. */
+@media (max-width: 900px) and (max-height: 480px) and (orientation: landscape) {
+  .page-hero,
+  .profile-hero {
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+  .planner-layout #map {
+    min-height: 40vh;
+    height: 40vh;
+  }
+}

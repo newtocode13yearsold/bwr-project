@@ -2,7 +2,7 @@
 // the `sync` handler below can drain queued reports even when no page is open.
 importScripts('/js/outbox.js');
 
-const CACHE = 'bwr-v64';
+const CACHE = 'bwr-v65';
 // Tiles live in two separate caches:
 //   • TILE_CACHE — forests the user explicitly downloaded ("Cartes hors-ligne").
 //     Permanent: never expired, never evicted, so a downloaded forest stays
@@ -116,6 +116,8 @@ const APP_SHELL = [
   'css/blog.css',
   'css/onboarding.css',
   'css/guide.css',
+  'css/grade-banner.css',
+  'css/mobile.css',
 ];
 
 // CDN resources still fetched from external CDN (leaflet-draw, admin only)

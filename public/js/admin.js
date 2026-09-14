@@ -2109,15 +2109,17 @@ async function loadMembers() {
       const uHandle = u.username ? `<span style="font-size:0.75rem;color:#9ca3af">@${escapeHtml(u.username)}</span>` : '';
       // Contribution chips (built in admin-dashboard-extra.js) — empty on the map page.
       const statsLine = typeof memberStatsChips === 'function' ? memberStatsChips(u.stats) : '';
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px">
-        <div>
+      // The `member-row` / `member-actions` classes are what css/mobile.css uses
+      // to stack the row on a phone — inline styles alone would win over it.
+      return `<div class="member-row" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px">
+        <div class="member-identity">
           <div style="font-weight:600;font-size:0.9rem">${uName} ${uHandle}</div>
           <div style="font-size:0.78rem;color:#6b7280">${escapeHtml(u.email)}</div>
           <div style="margin-top:3px">${planIcon[u.plan] || '🌿'} <strong>${uPlan}</strong> ${expiry} ${compedBadge}</div>
           ${joined ? `<div style="margin-top:2px">${joined}</div>` : ''}
           ${statsLine}
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <div class="member-actions" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
           <button class="btn-secondary member-grades-btn" style="width:auto;padding:6px 12px;font-size:0.8rem"
             data-id="${u.id}" data-name="${uName}">🎨 Chemins notés</button>
           ${u.role !== 'admin' ? `

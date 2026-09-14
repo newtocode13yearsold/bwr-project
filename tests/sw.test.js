@@ -21,6 +21,10 @@ const path = require('node:path');
 
 const swSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'sw.js'), 'utf-8');
 
+// The cache name is bumped on every release; read it from the source so these
+// tests keep asserting against whatever version sw.js currently declares.
+const CURRENT_CACHE = swSource.match(/const CACHE\s*=\s*'([^']+)'/)[1];
+
 // ── Minimal Service Worker mock factory ───────────────────────────────────────
 // Each call returns a fresh, isolated context so tests don't share state.
 
@@ -455,7 +459,7 @@ describe('activate handler: old caches deleted', () => {
 
     // Seed old + current caches
     await mockCaches.open('bwr-v1');           // old → must be deleted
-    await mockCaches.open('bwr-v64');          // current CACHE → keep
+    await mockCaches.open(CURRENT_CACHE);      // current CACHE → keep
     await mockCaches.open('bwr-offline-tiles'); // TILE_CACHE → keep
 
     let waitUntilPromise;
@@ -465,7 +469,7 @@ describe('activate handler: old caches deleted', () => {
 
     const remaining = await mockCaches.keys();
     assert.ok(!remaining.includes('bwr-v1'), 'old cache bwr-v1 must be deleted');
-    assert.ok(remaining.includes('bwr-v64'), 'current CACHE must be kept');
+    assert.ok(remaining.includes(CURRENT_CACHE), 'current CACHE must be kept');
     assert.ok(remaining.includes('bwr-offline-tiles'), 'TILE_CACHE must be kept');
   });
 });
