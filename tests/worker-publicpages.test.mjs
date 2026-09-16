@@ -65,6 +65,7 @@ describe('GET /balade/:slug (curated trail)', () => {
     assert.match(html, /application\/ld\+json/);
     assert.match(html, /TouristTrip/);
     assert.match(res.headers.get('Content-Security-Policy') || '', /script-src 'self'/);
+    assert.match(html, /\/js\/track\.js/); // organic search landings are tracked too
   });
 
   test('redirects a stale slug to the canonical URL (same id)', async () => {
@@ -112,6 +113,7 @@ describe('GET /r/:token (shared route)', () => {
     assert.match(html, /id="bwr-route"/);
     assert.match(html, /49\.35/);            // coords embedded as JSON
     assert.match(html, /public-route-map\.js/);
+    assert.match(html, /\/js\/track\.js/); // shared-route landings are tracked too
     assert.match(html, /canonical" href="https:\/\/bwrmaps\.com\/r\/abc123token"/);
   });
 

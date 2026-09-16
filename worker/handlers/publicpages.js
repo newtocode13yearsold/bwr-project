@@ -130,6 +130,15 @@ ${body}
     </div>
     <p>© 2026 <a href="/">BWR</a> · Balades en forêt de Compiègne · <a href="mailto:thomaslegros71@gmail.com">Contact</a></p>
   </footer>
+
+  <!-- Anonymous visitor + dwell tracking, same as the rest of the site, so
+       organic search landings on these public SEO pages are counted too.
+       config.js first (resolves API_URL per-origin → beacon stays same-origin,
+       satisfying the strict connect-src 'self' CSP and never polluting prod
+       analytics from a preview deploy). All three are same-origin → CSP-safe. -->
+  <script src="/js/config.js"></script>
+  <script src="/js/errors.js"></script>
+  <script src="/js/track.js"></script>
 </body>
 </html>`;
 }
