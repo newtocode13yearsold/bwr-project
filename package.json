@@ -13,7 +13,9 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "check:size": "node scripts/check-size.js",
-    "promo": "node scripts/promo/make-promo.mjs"
+    "promo": "node scripts/promo/make-promo.mjs",
+    "campagne:vids": "node scripts/promo/make-vids.mjs",
+    "campagne:affiches": "node scripts/promo/make-affiches.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

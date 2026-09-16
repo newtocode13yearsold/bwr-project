@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BWR — Campagne affiches A4 (5 visuels)</title>
+<meta name="robots" content="noindex" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&family=Fraunces:opsz,wght@9..144,700;9..144,900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest-900:#0b2410; --forest-800:#0e2c14; --forest-700:#12351a;
+    --forest-500:#2f6b25; --lime:#a3e635; --lime-400:#bef264;
+    --cream:#f4f7ee; --ink:#05140a;
+    --easy:#22c55e; --med:#f97316; --hard:#ef4444; --imp:#9ca3af;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#3a3a3a;font-family:Inter,sans-serif}
+
+  /* ── the A4 sheet (shared by the 5 affiches) ── */
+  @page{ size:A4 portrait; margin:0; }
+  .sheet{
+    position:relative;
+    width:210mm; height:297mm;
+    margin:12mm auto;
+    color:var(--cream);
+    overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+    display:flex; flex-direction:column;
+    background:radial-gradient(130% 80% at 50% 0%, #16451f 0%, #0e2c14 45%, #081d0d 100%);
+  }
+  .sheet > *{ position:relative; z-index:1; }
+
+  /* subtle topographic contour texture, shared */
+  .topo::before{
+    content:""; position:absolute; inset:0; z-index:0; opacity:.10; pointer-events:none;
+    background-image:
+      repeating-radial-gradient(circle at 22% 30%, transparent 0 26px, rgba(163,230,53,.7) 26px 27px),
+      repeating-radial-gradient(circle at 80% 78%, transparent 0 30px, rgba(163,230,53,.55) 30px 31px);
+  }
+  .vign::after{
+    content:""; position:absolute; left:0; right:0; bottom:0; height:34mm; z-index:0;
+    background:linear-gradient(180deg, transparent, rgba(4,14,8,.85));
+  }
+
+  /* ── shared brand bits ── */
+  .top{ display:flex; align-items:center; gap:5mm; padding:13mm 16mm 0; }
+  .mark{ width:15mm; height:15mm; border-radius:4.5mm; flex:none;
+    background:var(--forest-700); display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 1.5px rgba(163,230,53,.35), 0 8px 20px rgba(0,0,0,.4); }
+  .mark svg{ width:10mm; height:10mm; display:block; }
+  .brand .logo{ font:900 28pt/1 Fraunces; letter-spacing:.5pt; }
+  .brand .logo b{ color:var(--lime); }
+  .brand .sub{ font:800 9.5pt/1 Inter; color:var(--lime-400); letter-spacing:.32em; margin-top:2mm; text-transform:uppercase; }
+  .top .num{ margin-left:auto; font:900 9pt/1 Inter; letter-spacing:.2em; color:rgba(244,247,238,.45); text-transform:uppercase; }
+
+  .kicker{ display:inline-block; font:900 10.5pt/1 Inter; letter-spacing:.14em;
+    color:var(--ink); background:linear-gradient(120deg,var(--lime),var(--lime-400));
+    padding:2.6mm 4.5mm; border-radius:2.5mm; text-transform:uppercase; }
+  h1{ font:900 40pt/1.02 Fraunces; letter-spacing:-.5pt; margin-top:6mm; }
+  h1 .hl{ color:var(--lime); }
+  .lead{ font:600 12.5pt/1.5 Inter; color:rgba(244,247,238,.86); margin-top:5mm; max-width:145mm; }
+
+  /* footer CTA block, shared */
+  .cta{ margin-top:auto; display:flex; align-items:center; gap:7mm; padding:0 16mm 14mm; }
+  .qr{ background:#fff; padding:4.5mm; border-radius:5mm; flex:none;
+    box-shadow:0 10px 26px rgba(0,0,0,.4); }
+  .qr svg{ width:38mm; height:38mm; display:block; }
+  .qr .scan{ text-align:center; font:900 8pt/1 Inter; color:var(--forest-700); letter-spacing:.12em; margin-top:2.5mm; text-transform:uppercase; }
+  .ctatext .go{ font:800 14pt/1.3 Inter; }
+  .ctatext .url{ font:900 25pt/1 Fraunces; color:var(--lime); margin-top:3mm; letter-spacing:.3pt; }
+  .ctatext .free{ font:600 9.5pt/1.45 Inter; color:rgba(244,247,238,.66); margin-top:3mm; }
+
+  /* ── 1 · LA FORÊT EN COULEURS ── */
+  .a1 .shot{ margin:7mm 16mm 0; border-radius:4mm; overflow:hidden; height:96mm;
+    border:1.2mm solid rgba(163,230,53,.28); box-shadow:0 14px 36px rgba(0,0,0,.45); }
+  .a1 .shot img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .a1 .legend{ display:flex; gap:4mm; flex-wrap:wrap; padding:6mm 16mm 0; }
+  .a1 .legend .l{ display:flex; align-items:center; gap:2.2mm; font:800 10.5pt/1 Inter;
+    background:rgba(255,255,255,.07); border:.3mm solid rgba(255,255,255,.14);
+    padding:2.8mm 4mm; border-radius:99mm; }
+  .a1 .legend .swatch{ width:7mm; height:2.2mm; border-radius:99mm; display:inline-block; }
+
+  /* ── 2 · ON FAIT QUOI DIMANCHE ── */
+  .a2{ background:radial-gradient(120% 75% at 12% 0%, #24306b 0%, #141a3c 48%, #090c1e 100%); }
+  .a2 .kicker{ background:linear-gradient(120deg,#c7d2fe,var(--lime-400)); }
+  .a2 .steps{ display:flex; flex-direction:column; gap:4mm; padding:8mm 16mm 0; }
+  .a2 .step{ display:flex; align-items:center; gap:5mm; padding:4.5mm 5mm; border-radius:3.5mm;
+    background:rgba(255,255,255,.06); border:.3mm solid rgba(255,255,255,.13); }
+  .a2 .step .n{ width:12mm; height:12mm; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--lime); color:var(--ink); font:900 15pt/1 Inter; }
+  .a2 .step .t{ font:900 13pt/1.2 Inter; }
+  .a2 .step .s{ font:600 10pt/1.35 Inter; color:rgba(244,247,238,.66); margin-top:1.2mm; }
+  .a2 .shot{ margin:7mm 16mm 0; border-radius:4mm; overflow:hidden; height:70mm;
+    border:1.2mm solid rgba(163,230,53,.25); box-shadow:0 14px 36px rgba(0,0,0,.45); }
+  .a2 .shot img{ width:100%; height:100%; object-fit:cover; object-position:center 30%; display:block; }
+
+  /* ── 3 · ZÉRO RÉSEAU ── */
+  .a3{ background:radial-gradient(120% 80% at 50% 8%, #1c2b33 0%, #0d161b 46%, #05090c 100%); }
+  .a3 .huge{ padding:14mm 16mm 0; text-align:center; }
+  .a3 .bars{ font:900 66pt/1 Inter; letter-spacing:6pt; color:#64748b; }
+  .a3 .arrow{ font:900 30pt/1 Inter; color:var(--lime); margin:5mm 0; }
+  .a3 h1{ font-size:46pt; text-align:center; margin-top:2mm; }
+  .a3 .lead{ margin:6mm auto 0; text-align:center; }
+  .a3 .pills{ display:flex; gap:3.5mm; justify-content:center; flex-wrap:wrap; padding:9mm 16mm 0; }
+  .a3 .pill{ font:800 10.5pt/1 Inter; padding:3.2mm 5mm; border-radius:99mm;
+    background:rgba(163,230,53,.12); border:.3mm solid rgba(163,230,53,.4); color:var(--lime-400); }
+
+  /* ── 4 · SIGNALE. PARTAGE. ÉVITE. ── */
+  .a4{ background:radial-gradient(120% 78% at 85% 0%, #4a2408 0%, #2a1406 45%, #120802 100%); }
+  .a4 .kicker{ background:linear-gradient(120deg,#fdba74,var(--lime-400)); }
+  .a4 h1 .hl{ color:#fdba74; }
+  .a4 .cards{ display:flex; flex-direction:column; gap:3.5mm; padding:8mm 16mm 0; }
+  .a4 .card{ display:flex; align-items:center; gap:4.5mm; padding:4mm 5mm; border-radius:3.5mm;
+    background:rgba(255,255,255,.06); border:.3mm solid rgba(255,255,255,.13); }
+  .a4 .card .e{ font-size:17pt; flex:none; }
+  .a4 .card .t{ font:900 12pt/1.2 Inter; }
+  .a4 .card .s{ font:600 9.5pt/1.3 Inter; color:rgba(244,247,238,.62); margin-top:1mm; }
+  .a4 .card .when{ margin-left:auto; font:900 9pt/1 Inter; color:#fdba74; white-space:nowrap; }
+  .a4 .shot{ margin:7mm 16mm 0; border-radius:4mm; overflow:hidden; height:58mm;
+    border:1.2mm solid rgba(253,186,116,.3); box-shadow:0 14px 36px rgba(0,0,0,.45); }
+  .a4 .shot img{ width:100%; height:100%; object-fit:cover; object-position:center 42%; display:block; }
+
+  /* ── 5 · 100 % GRATUIT ── */
+  .a5{ background:radial-gradient(120% 80% at 50% 0%, #2c5a10 0%, #16340a 46%, #071204 100%); }
+  .a5 .big{ padding:10mm 16mm 0; text-align:center; }
+  .a5 .pct{ font:900 92pt/.9 Fraunces; color:var(--lime); letter-spacing:-2pt; }
+  .a5 .pctsub{ font:900 20pt/1 Inter; letter-spacing:.3em; text-transform:uppercase; margin-top:3mm; }
+  .a5 .checks{ display:grid; grid-template-columns:1fr 1fr; gap:3mm 5mm; padding:9mm 16mm 0; }
+  .a5 .ck{ display:flex; align-items:flex-start; gap:2.8mm; font:700 10.5pt/1.35 Inter; }
+  .a5 .ck i{ color:var(--lime); font-style:normal; font-weight:900; }
+  .a5 .note{ margin:8mm 16mm 0; padding:4.5mm 5mm; border-radius:3.5mm; text-align:center;
+    background:rgba(163,230,53,.1); border:.3mm solid rgba(163,230,53,.35);
+    font:700 10.5pt/1.45 Inter; color:var(--lime-400); }
+
+  /* ── screen-only toolbar (never printed) ── */
+  .bar{ position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+    justify-content:center; padding:10px; background:#111; color:#cfe6b6; font:600 13px Inter; }
+  .bar button{ cursor:pointer; border:1px solid rgba(163,230,53,.35); background:rgba(163,230,53,.1);
+    color:#d8efc7; border-radius:9px; padding:8px 13px; font:800 13px Inter; }
+  .bar button.on{ background:var(--lime); color:#05140a; border-color:var(--lime); }
+  .bar .sep{ opacity:.45; padding:0 4px; }
+  body.capturing .bar{ display:none !important; }
+  .chips{ display:flex; gap:3.5mm; flex-wrap:wrap; padding:6mm 16mm 0; }
+  .chips .c{ font:800 10pt/1 Inter; padding:3mm 4.5mm; border-radius:99mm;
+    background:rgba(163,230,53,.12); border:.3mm solid rgba(163,230,53,.38); color:var(--lime-400); }
+  .a3 .shot{ margin:9mm 16mm 0; border-radius:4mm; overflow:hidden; height:56mm;
+    border:1.2mm solid rgba(163,230,53,.22); box-shadow:0 14px 36px rgba(0,0,0,.45); }
+  .a3 .shot img{ width:100%; height:100%; object-fit:cover; object-position:center 32%; display:block; }
+  body.solo .sheet{ display:none; }
+  body.solo .sheet.show{ display:flex; }
+  @media print{
+    .bar{ display:none !important; }
+    .sheet{ margin:0; box-shadow:none; page-break-after:always; break-after:page; }
+    .sheet:last-of-type{ page-break-after:auto; break-after:auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <button id="printBtn">🖨️ Imprimer / PDF</button>
+  <span class="sep">|</span>
+  <button data-n="0" class="on">Les 5</button>
+  <button data-n="1">1 · Couleurs</button>
+  <button data-n="2">2 · Dimanche</button>
+  <button data-n="3">3 · Hors ligne</button>
+  <button data-n="4">4 · Signale</button>
+  <button data-n="5">5 · Gratuit</button>
+  <span class="sep">|</span>
+  <span>A4 · imprime « à la taille réelle » (100 %), sans marges si possible.</span>
+</div>
+
+<!-- ════════════ 1 · LA FORÊT EN COULEURS ════════════ -->
+<div class="sheet a1 topo vign" data-affiche="1">
+  <div class="top">
+    <div class="mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><polygon points="32,6 43,26 37,26 47,42 36,42 42,56 22,56 28,42 17,42 27,26 21,26" fill="#a3e635"/></svg></div>
+    <div class="brand"><div class="logo">B<b>W</b>R</div><div class="sub">Balades en forêt de Compiègne</div></div>
+    <div class="num">Affiche 1 / 5</div>
+  </div>
+
+  <div style="padding:8mm 16mm 0">
+    <span class="kicker">Marche · Vélo · Course</span>
+    <h1>La forêt,<br>enfin <span class="hl">en couleurs</span>.</h1>
+    <p class="lead">Chaque sentier de Compiègne est <b>parcouru, noté et coloré</b> selon sa difficulté réelle — par des randonneurs, pas par un algorithme.</p>
+  </div>
+
+  <div class="shot"><img src="img/grades-all.png" alt="La carte BWR : les sentiers colorés par difficulté"></div>
+
+  <div class="legend">
+    <div class="l"><span class="swatch" style="background:var(--easy)"></span>Facile</div>
+    <div class="l"><span class="swatch" style="background:var(--med)"></span>Moyen</div>
+    <div class="l"><span class="swatch" style="background:var(--hard)"></span>Difficile</div>
+    <div class="l"><span class="swatch" style="background:var(--imp)"></span>Impraticable</div>
+  </div>
+
+  <div class="chips">
+    <span class="c">✓ Itinéraires A → B &amp; boucles</span>
+    <span class="c">✓ Alertes chemins en direct</span>
+    <span class="c">✓ Fonctionne hors ligne</span>
+  </div>
+
+  <div class="cta">
+    <div class="qr">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h25v25H0z"/><path stroke="#000000" d="M0 0.5h7m3 0h1m1 0h2m2 0h1m1 0h7M0 1.5h1m5 0h1m5 0h5m1 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m1 0h1m3 0h1m1 0h1m3 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h4m2 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m2 0h1m1 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m1 0h2m2 0h1m1 0h2m2 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M8 7.5h1m1 0h1m1 0h1m1 0h1m1 0h1M0 8.5h1m1 0h5m3 0h1m7 0h5M4 9.5h2m1 0h1m1 0h3m1 0h1m3 0h1m1 0h1m3 0h1M2 10.5h1m1 0h5m2 0h1m1 0h6m1 0h2m1 0h2M1 11.5h4m2 0h7m3 0h1m6 0h1M4 12.5h1m1 0h1m1 0h5m1 0h5m1 0h1m1 0h3M0 13.5h1m1 0h2m3 0h1m1 0h1m6 0h2m1 0h1m1 0h1m1 0h1M0 14.5h1m2 0h2m1 0h1m4 0h2m2 0h1m2 0h4m1 0h2M0 15.5h1m1 0h1m1 0h1m2 0h1m3 0h1m2 0h2m3 0h2m3 0h1M0 16.5h1m1 0h2m1 0h7m3 0h6m1 0h1M8 17.5h3m1 0h3m1 0h1m3 0h2M0 18.5h7m2 0h1m3 0h2m1 0h1m1 0h1m1 0h1m1 0h3M0 19.5h1m5 0h1m1 0h1m1 0h1m1 0h2m2 0h1m3 0h2m1 0h1M0 20.5h1m1 0h3m1 0h1m1 0h2m2 0h1m1 0h7m1 0h1m1 0h1M0 21.5h1m1 0h3m1 0h1m1 0h1m8 0h2m1 0h5M0 22.5h1m1 0h3m1 0h1m1 0h1m1 0h3m2 0h1m5 0h2m1 0h1M0 23.5h1m5 0h1m2 0h3m2 0h4m1 0h3m2 0h1M0 24.5h7m1 0h4m5 0h8"/></svg>
+      <div class="scan">Scanne-moi</div>
+    </div>
+    <div class="ctatext">
+      <div class="go">Ouvre la carte sur<br><b>ton téléphone</b> 👇</div>
+      <div class="url">bwrmaps.com</div>
+      <div class="free">Aucune appli à installer · <b>gratuit</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ 2 · ON FAIT QUOI DIMANCHE ════════════ -->
+<div class="sheet a2 topo vign" data-affiche="2">
+  <div class="top">
+    <div class="mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><polygon points="32,6 43,26 37,26 47,42 36,42 42,56 22,56 28,42 17,42 27,26 21,26" fill="#a3e635"/></svg></div>
+    <div class="brand"><div class="logo">B<b>W</b>R</div><div class="sub">Balades en forêt de Compiègne</div></div>
+    <div class="num">Affiche 2 / 5</div>
+  </div>
+
+  <div style="padding:8mm 16mm 0">
+    <span class="kicker">Générateur de boucles</span>
+    <h1>« On fait quoi<br>dimanche ? »<br><span class="hl">Ça.</span></h1>
+    <p class="lead">Tu dis d'où tu pars et combien de kilomètres tu veux. BWR construit la boucle — <b>départ = arrivée</b>, et jamais le même chemin au retour.</p>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div><div class="t">Choisis ton point de départ</div><div class="s">Un parking, un carrefour, ta position GPS.</div></div></div>
+    <div class="step"><div class="n">2</div><div><div class="t">Donne une distance</div><div class="s">5 km avec les enfants, 22 km pour la forme.</div></div></div>
+    <div class="step"><div class="n">3</div><div><div class="t">Marche</div><div class="s">La boucle est prête en 3 secondes, hors ligne comprise.</div></div></div>
+  </div>
+
+  <div class="shot"><img src="img/loop-1.png" alt="Une boucle générée par BWR en forêt de Compiègne"></div>
+
+  <div class="cta">
+    <div class="qr">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h25v25H0z"/><path stroke="#000000" d="M0 0.5h7m3 0h1m1 0h2m2 0h1m1 0h7M0 1.5h1m5 0h1m5 0h5m1 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m1 0h1m3 0h1m1 0h1m3 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h4m2 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m2 0h1m1 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m1 0h2m2 0h1m1 0h2m2 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M8 7.5h1m1 0h1m1 0h1m1 0h1m1 0h1M0 8.5h1m1 0h5m3 0h1m7 0h5M4 9.5h2m1 0h1m1 0h3m1 0h1m3 0h1m1 0h1m3 0h1M2 10.5h1m1 0h5m2 0h1m1 0h6m1 0h2m1 0h2M1 11.5h4m2 0h7m3 0h1m6 0h1M4 12.5h1m1 0h1m1 0h5m1 0h5m1 0h1m1 0h3M0 13.5h1m1 0h2m3 0h1m1 0h1m6 0h2m1 0h1m1 0h1m1 0h1M0 14.5h1m2 0h2m1 0h1m4 0h2m2 0h1m2 0h4m1 0h2M0 15.5h1m1 0h1m1 0h1m2 0h1m3 0h1m2 0h2m3 0h2m3 0h1M0 16.5h1m1 0h2m1 0h7m3 0h6m1 0h1M8 17.5h3m1 0h3m1 0h1m3 0h2M0 18.5h7m2 0h1m3 0h2m1 0h1m1 0h1m1 0h1m1 0h3M0 19.5h1m5 0h1m1 0h1m1 0h1m1 0h2m2 0h1m3 0h2m1 0h1M0 20.5h1m1 0h3m1 0h1m1 0h2m2 0h1m1 0h7m1 0h1m1 0h1M0 21.5h1m1 0h3m1 0h1m1 0h1m8 0h2m1 0h5M0 22.5h1m1 0h3m1 0h1m1 0h1m1 0h3m2 0h1m5 0h2m1 0h1M0 23.5h1m5 0h1m2 0h3m2 0h4m1 0h3m2 0h1M0 24.5h7m1 0h4m5 0h8"/></svg>
+      <div class="scan">Scanne-moi</div>
+    </div>
+    <div class="ctatext">
+      <div class="go">Ta boucle du dimanche,<br>en <b>3 secondes</b> 👇</div>
+      <div class="url">bwrmaps.com</div>
+      <div class="free">10 itinéraires / semaine · <b>gratuit</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ 3 · ZÉRO RÉSEAU ════════════ -->
+<div class="sheet a3 vign" data-affiche="3">
+  <div class="top">
+    <div class="mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><polygon points="32,6 43,26 37,26 47,42 36,42 42,56 22,56 28,42 17,42 27,26 21,26" fill="#a3e635"/></svg></div>
+    <div class="brand"><div class="logo">B<b>W</b>R</div><div class="sub">Balades en forêt de Compiègne</div></div>
+    <div class="num">Affiche 3 / 5</div>
+  </div>
+
+  <div class="huge">
+    <div class="bars">📵</div>
+    <div class="arrow">▼</div>
+    <span class="kicker">Carte hors ligne</span>
+    <h1>Zéro réseau.<br><span class="hl">Zéro problème.</span></h1>
+    <p class="lead">En forêt de Compiègne, ton téléphone ne capte pas. BWR télécharge la carte <b>avant</b> que tu partes : les sentiers, leur difficulté et ton itinéraire restent affichés, même sans une seule barre.</p>
+  </div>
+
+  <div class="pills">
+    <span class="pill">✓ Carte téléchargée</span>
+    <span class="pill">✓ Itinéraire consultable</span>
+    <span class="pill">✓ 0 Mo de data</span>
+    <span class="pill">✓ Aucune appli à installer</span>
+  </div>
+
+  <div class="shot"><img src="img/grades-all.png" alt="La carte BWR consultable sans réseau"></div>
+
+  <div class="cta">
+    <div class="qr">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h25v25H0z"/><path stroke="#000000" d="M0 0.5h7m3 0h1m1 0h2m2 0h1m1 0h7M0 1.5h1m5 0h1m5 0h5m1 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m1 0h1m3 0h1m1 0h1m3 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h4m2 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m2 0h1m1 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m1 0h2m2 0h1m1 0h2m2 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M8 7.5h1m1 0h1m1 0h1m1 0h1m1 0h1M0 8.5h1m1 0h5m3 0h1m7 0h5M4 9.5h2m1 0h1m1 0h3m1 0h1m3 0h1m1 0h1m3 0h1M2 10.5h1m1 0h5m2 0h1m1 0h6m1 0h2m1 0h2M1 11.5h4m2 0h7m3 0h1m6 0h1M4 12.5h1m1 0h1m1 0h5m1 0h5m1 0h1m1 0h3M0 13.5h1m1 0h2m3 0h1m1 0h1m6 0h2m1 0h1m1 0h1m1 0h1M0 14.5h1m2 0h2m1 0h1m4 0h2m2 0h1m2 0h4m1 0h2M0 15.5h1m1 0h1m1 0h1m2 0h1m3 0h1m2 0h2m3 0h2m3 0h1M0 16.5h1m1 0h2m1 0h7m3 0h6m1 0h1M8 17.5h3m1 0h3m1 0h1m3 0h2M0 18.5h7m2 0h1m3 0h2m1 0h1m1 0h1m1 0h1m1 0h3M0 19.5h1m5 0h1m1 0h1m1 0h1m1 0h2m2 0h1m3 0h2m1 0h1M0 20.5h1m1 0h3m1 0h1m1 0h2m2 0h1m1 0h7m1 0h1m1 0h1M0 21.5h1m1 0h3m1 0h1m1 0h1m8 0h2m1 0h5M0 22.5h1m1 0h3m1 0h1m1 0h1m1 0h3m2 0h1m5 0h2m1 0h1M0 23.5h1m5 0h1m2 0h3m2 0h4m1 0h3m2 0h1M0 24.5h7m1 0h4m5 0h8"/></svg>
+      <div class="scan">Scanne-moi</div>
+    </div>
+    <div class="ctatext">
+      <div class="go">Télécharge la forêt<br><b>avant de partir</b> 👇</div>
+      <div class="url">bwrmaps.com</div>
+      <div class="free">Fonctionne dans ton navigateur · <b>gratuit</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ 4 · SIGNALE. PARTAGE. ÉVITE. ════════════ -->
+<div class="sheet a4 topo vign" data-affiche="4">
+  <div class="top">
+    <div class="mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><polygon points="32,6 43,26 37,26 47,42 36,42 42,56 22,56 28,42 17,42 27,26 21,26" fill="#a3e635"/></svg></div>
+    <div class="brand"><div class="logo">B<b>W</b>R</div><div class="sub">Balades en forêt de Compiègne</div></div>
+    <div class="num">Affiche 4 / 5</div>
+  </div>
+
+  <div style="padding:8mm 16mm 0">
+    <span class="kicker">Alertes de la communauté</span>
+    <h1>Signale.<br>Partage.<br><span class="hl">Évite.</span></h1>
+    <p class="lead">Un arbre en travers, un chemin inondé, de la boue jusqu'aux chevilles ? <b>Trois secondes</b> pour le signaler — et tous les autres randonneurs le voient.</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="e">🪵</div><div><div class="t">Arbre en travers</div><div class="s">Route Eugénie · signalé par Thomas</div></div><div class="when">il y a 2 h</div></div>
+    <div class="card"><div class="e">💧</div><div><div class="t">Chemin inondé</div><div class="s">Étangs de Saint-Pierre · signalé par Marie</div></div><div class="when">hier</div></div>
+    <div class="card"><div class="e">🥾</div><div><div class="t">Boue profonde</div><div class="s">Beaux-Monts · signalé par Karim</div></div><div class="when">il y a 3 j</div></div>
+  </div>
+
+  <div class="shot"><img src="img/grades-zoom.png" alt="La carte BWR, mise à jour par les signalements de la communauté"></div>
+
+  <div class="cta">
+    <div class="qr">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h25v25H0z"/><path stroke="#000000" d="M0 0.5h7m3 0h1m1 0h2m2 0h1m1 0h7M0 1.5h1m5 0h1m5 0h5m1 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m1 0h1m3 0h1m1 0h1m3 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h4m2 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m2 0h1m1 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m1 0h2m2 0h1m1 0h2m2 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M8 7.5h1m1 0h1m1 0h1m1 0h1m1 0h1M0 8.5h1m1 0h5m3 0h1m7 0h5M4 9.5h2m1 0h1m1 0h3m1 0h1m3 0h1m1 0h1m3 0h1M2 10.5h1m1 0h5m2 0h1m1 0h6m1 0h2m1 0h2M1 11.5h4m2 0h7m3 0h1m6 0h1M4 12.5h1m1 0h1m1 0h5m1 0h5m1 0h1m1 0h3M0 13.5h1m1 0h2m3 0h1m1 0h1m6 0h2m1 0h1m1 0h1m1 0h1M0 14.5h1m2 0h2m1 0h1m4 0h2m2 0h1m2 0h4m1 0h2M0 15.5h1m1 0h1m1 0h1m2 0h1m3 0h1m2 0h2m3 0h2m3 0h1M0 16.5h1m1 0h2m1 0h7m3 0h6m1 0h1M8 17.5h3m1 0h3m1 0h1m3 0h2M0 18.5h7m2 0h1m3 0h2m1 0h1m1 0h1m1 0h1m1 0h3M0 19.5h1m5 0h1m1 0h1m1 0h1m1 0h2m2 0h1m3 0h2m1 0h1M0 20.5h1m1 0h3m1 0h1m1 0h2m2 0h1m1 0h7m1 0h1m1 0h1M0 21.5h1m1 0h3m1 0h1m1 0h1m8 0h2m1 0h5M0 22.5h1m1 0h3m1 0h1m1 0h1m1 0h3m2 0h1m5 0h2m1 0h1M0 23.5h1m5 0h1m2 0h3m2 0h4m1 0h3m2 0h1M0 24.5h7m1 0h4m5 0h8"/></svg>
+      <div class="scan">Scanne-moi</div>
+    </div>
+    <div class="ctatext">
+      <div class="go">La forêt se met à jour<br><b>toute seule</b> 👇</div>
+      <div class="url">bwrmaps.com</div>
+      <div class="free">Signaler prend 3 secondes · <b>gratuit</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ 5 · 100 % GRATUIT ════════════ -->
+<div class="sheet a5 topo vign" data-affiche="5">
+  <div class="top">
+    <div class="mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><polygon points="32,6 43,26 37,26 47,42 36,42 42,56 22,56 28,42 17,42 27,26 21,26" fill="#a3e635"/></svg></div>
+    <div class="brand"><div class="logo">B<b>W</b>R</div><div class="sub">Balades en forêt de Compiègne</div></div>
+    <div class="num">Affiche 5 / 5</div>
+  </div>
+
+  <div class="big">
+    <div class="pct">100 %</div>
+    <div class="pctsub">Gratuit</div>
+    <p class="lead" style="margin:6mm auto 0;text-align:center">Pas d'appli à installer, pas de carte bancaire, pas de pub. Tu ouvres l'adresse dans ton navigateur et tu marches.</p>
+  </div>
+
+  <div class="checks">
+    <div class="ck"><i>✓</i><span>Tous les sentiers notés par difficulté</span></div>
+    <div class="ck"><i>✓</i><span>Itinéraires A → B, 100 % forêt</span></div>
+    <div class="ck"><i>✓</i><span>10 boucles générées par semaine</span></div>
+    <div class="ck"><i>✓</i><span>Alertes chemins de la communauté</span></div>
+    <div class="ck"><i>✓</i><span>Carte consultable hors ligne</span></div>
+    <div class="ck"><i>✓</i><span>Carnet de balades &amp; classement</span></div>
+    <div class="ck"><i>✓</i><span>Parkings, points d'eau, points de vue</span></div>
+    <div class="ck"><i>✓</i><span>Forum &amp; communauté de randonneurs</span></div>
+  </div>
+
+  <div class="note">Envie de plus ? <b>Silver</b> ajoute la météo, le dénivelé et les boucles illimitées — mais l'essentiel restera toujours gratuit.</div>
+
+  <div class="cta">
+    <div class="qr">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h25v25H0z"/><path stroke="#000000" d="M0 0.5h7m3 0h1m1 0h2m2 0h1m1 0h7M0 1.5h1m5 0h1m5 0h5m1 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m1 0h1m3 0h1m1 0h1m3 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h4m2 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m2 0h1m1 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m1 0h2m2 0h1m1 0h2m2 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M8 7.5h1m1 0h1m1 0h1m1 0h1m1 0h1M0 8.5h1m1 0h5m3 0h1m7 0h5M4 9.5h2m1 0h1m1 0h3m1 0h1m3 0h1m1 0h1m3 0h1M2 10.5h1m1 0h5m2 0h1m1 0h6m1 0h2m1 0h2M1 11.5h4m2 0h7m3 0h1m6 0h1M4 12.5h1m1 0h1m1 0h5m1 0h5m1 0h1m1 0h3M0 13.5h1m1 0h2m3 0h1m1 0h1m6 0h2m1 0h1m1 0h1m1 0h1M0 14.5h1m2 0h2m1 0h1m4 0h2m2 0h1m2 0h4m1 0h2M0 15.5h1m1 0h1m1 0h1m2 0h1m3 0h1m2 0h2m3 0h2m3 0h1M0 16.5h1m1 0h2m1 0h7m3 0h6m1 0h1M8 17.5h3m1 0h3m1 0h1m3 0h2M0 18.5h7m2 0h1m3 0h2m1 0h1m1 0h1m1 0h1m1 0h3M0 19.5h1m5 0h1m1 0h1m1 0h1m1 0h2m2 0h1m3 0h2m1 0h1M0 20.5h1m1 0h3m1 0h1m1 0h2m2 0h1m1 0h7m1 0h1m1 0h1M0 21.5h1m1 0h3m1 0h1m1 0h1m8 0h2m1 0h5M0 22.5h1m1 0h3m1 0h1m1 0h1m1 0h3m2 0h1m5 0h2m1 0h1M0 23.5h1m5 0h1m2 0h3m2 0h4m1 0h3m2 0h1M0 24.5h7m1 0h4m5 0h8"/></svg>
+      <div class="scan">Scanne-moi</div>
+    </div>
+    <div class="ctatext">
+      <div class="go">Ouvre-la maintenant,<br>c'est <b>gratuit</b> 👇</div>
+      <div class="url">bwrmaps.com</div>
+      <div class="free">Aucune appli · aucune carte bancaire</div>
+    </div>
+  </div>
+</div>
+
+<script src="js/affiches-campagne.js"></script>
+</body>
+</html>
