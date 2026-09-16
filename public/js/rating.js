@@ -58,7 +58,22 @@
       + '.bwr-rating-submit:hover{background:var(--forest-700,#1e4d14)}'
       + '.bwr-rating-submit:disabled{opacity:.5;cursor:default}'
       + '.bwr-rating-cancel{background:transparent;border-color:var(--border,#e2e8da);color:var(--text,#1f2937)}'
-      + '.bwr-rating-note{font-size:.82rem;color:var(--text-muted,#6b7280);margin-top:12px;min-height:1em}';
+      + '.bwr-rating-note{font-size:.82rem;color:var(--text-muted,#6b7280);margin-top:12px;min-height:1em}'
+      // Floating "rate us" prompt (bottom-right; bottom-center is taken by the offline banner)
+      + '.bwr-rating-fab{position:fixed;right:18px;bottom:18px;z-index:4500;max-width:min(320px,92vw);'
+      + 'display:flex;align-items:center;gap:12px;background:var(--card,#fff);color:var(--text,#1f2937);'
+      + 'border:1px solid var(--border,#e2e8da);border-radius:14px;padding:12px 14px;'
+      + 'box-shadow:0 12px 32px -12px rgba(11,36,16,.35);font-size:.88rem;line-height:1.35;'
+      + 'transform:translateY(140%);opacity:0;transition:transform .28s ease,opacity .28s ease}'
+      + '.bwr-rating-fab.show{transform:translateY(0);opacity:1}'
+      + '.bwr-rating-fab__stars{color:#f59e0b;letter-spacing:1px;font-size:1rem}'
+      + '.bwr-rating-fab__txt{flex:1;min-width:0}'
+      + '.bwr-rating-fab__txt strong{display:block;color:var(--text-strong,#0b2410);font-size:.92rem}'
+      + '.bwr-rating-fab__cta{border:none;background:var(--forest-600,#2d6b1f);color:#fff;border-radius:999px;'
+      + 'padding:7px 14px;font:inherit;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap}'
+      + '.bwr-rating-fab__cta:hover{background:var(--forest-700,#1e4d14)}'
+      + '.bwr-rating-fab__close{position:absolute;top:4px;right:8px;border:none;background:transparent;'
+      + 'color:var(--text-muted,#9ca3af);font-size:1.1rem;line-height:1;cursor:pointer;padding:2px}';
     var el = document.createElement('style');
     el.id = 'bwr-rating-styles';
     el.textContent = css;
@@ -188,9 +203,67 @@
     });
   }
 
+  // ── Floating "rate us" prompt ──────────────────────────────────────────────
+  // A gentle, dismissible nudge that reaches engaged users on pages without a
+  // footer (map, routes, profile…). Shows once per browser, only for a signed-in
+  // user who hasn't rated yet, after a little engagement — never nags again once
+  // dismissed or once a rating is left.
+  var PROMPT_KEY = 'bwr_rating_prompt_done';
+  function promptDone() { try { return localStorage.getItem(PROMPT_KEY) === '1'; } catch (e) { return false; } }
+  function markPromptDone() { try { localStorage.setItem(PROMPT_KEY, '1'); } catch (e) {} }
+
+  function maybeShowPrompt() {
+    if (promptDone()) return;              // already dismissed / already rated before
+    if (!token()) return;                  // rating needs an account — don't nag anonymous visitors
+    if (mine) { markPromptDone(); return; } // they've already rated
+    if (document.getElementById('bwr-rating-fab')) return;
+
+    var shown = false;
+    function show() {
+      if (shown || promptDone() || mine) return;
+      shown = true;
+      cleanup();
+      var fab = document.createElement('div');
+      fab.id = 'bwr-rating-fab';
+      fab.className = 'bwr-rating-fab';
+      fab.setAttribute('role', 'dialog');
+      fab.setAttribute('aria-label', 'Donner votre avis sur BWR');
+      fab.innerHTML =
+        '<button type="button" class="bwr-rating-fab__close" aria-label="Fermer">×</button>'
+        + '<span class="bwr-rating-fab__stars" aria-hidden="true">' + STAR + STAR + STAR + STAR + STAR + '</span>'
+        + '<span class="bwr-rating-fab__txt"><strong>Vous aimez BWR ?</strong>'
+        + 'Notez le site en un clic, ça nous aide beaucoup.</span>'
+        + '<button type="button" class="bwr-rating-fab__cta">Noter</button>';
+      document.body.appendChild(fab);
+      requestAnimationFrame(function () { fab.classList.add('show'); });
+
+      function dismiss(rememberDone) {
+        if (rememberDone) markPromptDone();
+        fab.classList.remove('show');
+        setTimeout(function () { if (fab.parentNode) fab.parentNode.removeChild(fab); }, 300);
+      }
+      fab.querySelector('.bwr-rating-fab__close').addEventListener('click', function () { dismiss(true); });
+      fab.querySelector('.bwr-rating-fab__cta').addEventListener('click', function () { dismiss(true); openModal(); });
+    }
+    function cleanup() {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', onScroll);
+    }
+    function onScroll() {
+      var h = document.documentElement;
+      var scrolled = (h.scrollTop || document.body.scrollTop);
+      var max = (h.scrollHeight - h.clientHeight) || 1;
+      if (scrolled / max > 0.35) show();
+    }
+    // Show after ~25 s of engagement, or once the visitor scrolls a bit — whichever first.
+    var timer = setTimeout(show, 25000);
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+
   // ── Boot ─────────────────────────────────────────────────────────────────
   function boot() {
-    if (!document.querySelector('.footer-inner, .blog-footer')) return; // no footer on this page
+    var hasFooter = !!document.querySelector('.footer-inner, .blog-footer');
+    if (!hasFooter && !token()) return; // no footer and can't rate → nothing to do
     injectStyles();
     var headers = {};
     var t = token();
@@ -199,9 +272,10 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         if (d) { summary = { avg: d.avg, count: d.count, dist: d.dist }; mine = d.mine || null; }
-        renderFooter();
+        if (hasFooter) renderFooter();
+        maybeShowPrompt();
       })
-      .catch(function () { renderFooter(); });
+      .catch(function () { if (hasFooter) renderFooter(); });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
