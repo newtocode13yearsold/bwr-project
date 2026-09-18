@@ -72,6 +72,99 @@
     }
     .admin-card.danger { border-color: rgba(220,38,38,0.35); }
     .admin-card.danger h2 { color: #dc2626; }
+
+    /* ── Vue toggle : Nouveau / Ancien ───────────────────────────────────── */
+    .admin-view-toggle {
+      display: inline-flex;
+      gap: 2px;
+      padding: 4px;
+      background: var(--surface-1, #f1f5f9);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 14px;
+    }
+    .admin-view-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 8px 18px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+    .admin-view-btn.active {
+      background: var(--surface-0);
+      color: var(--text-strong);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    /* When "Nouveau" is active, show only the pro view; otherwise hide it. */
+    .admin-dashboard.view-new > section:not(.admin-pro) { display: none !important; }
+    .admin-dashboard:not(.view-new) .admin-pro { display: none !important; }
+
+    /* ── Pro executive view ──────────────────────────────────────────────── */
+    .admin-pro { padding: 0 !important; border: none !important; background: transparent !important; box-shadow: none !important; }
+    .pro-hero {
+      background: linear-gradient(135deg, #0a1f0d, #1e4d14);
+      border-radius: 18px;
+      padding: 24px 26px;
+      margin-bottom: 20px;
+      color: #fff;
+      box-shadow: 0 10px 30px rgba(10,31,13,0.28);
+    }
+    .pro-hero-title { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 700; margin: 0 0 4px; }
+    .pro-hero-sub   { margin: 0; font-size: 0.85rem; opacity: 0.8; }
+    .pro-kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .pro-kpi {
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 13px;
+      padding: 14px 16px;
+      backdrop-filter: blur(4px);
+    }
+    .pro-kpi .k-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; opacity: 0.72; font-weight: 700; }
+    .pro-kpi .k-value { font-size: 1.7rem; font-weight: 800; line-height: 1.1; margin-top: 4px; }
+    .pro-kpi .k-hint  { font-size: 0.7rem; opacity: 0.7; margin-top: 3px; }
+    .pro-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 760px) { .pro-grid { grid-template-columns: 1fr; } }
+    .pro-panel {
+      background: var(--surface-0);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      min-width: 0;
+    }
+    .pro-panel h3 {
+      margin: 0 0 4px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      font-weight: 800;
+    }
+    .pro-panel .p-sub { margin: 0 0 16px; font-size: 0.8rem; color: var(--text-muted); }
+    .pro-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .pro-bar-row .b-label { flex: 0 0 90px; font-size: 0.82rem; font-weight: 600; color: var(--text-strong); }
+    .pro-bar-track { flex: 1; height: 22px; background: var(--surface-1, #f1f5f9); border-radius: 999px; overflow: hidden; }
+    .pro-bar-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+    .pro-bar-row .b-val { flex: 0 0 auto; font-size: 0.82rem; font-weight: 800; color: var(--text-strong); }
+    .pro-snap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pro-snap-tile { background: var(--surface-1, #f9fafb); border: 1px solid var(--border); border-radius: 12px; padding: 13px; }
+    .pro-snap-tile .s-val { font-size: 1.35rem; font-weight: 800; color: var(--text-strong); line-height: 1; }
+    .pro-snap-tile .s-lab { font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; font-weight: 500; }
   </style>
 </head>
 <body>
@@ -147,9 +240,46 @@
     <div id="adminDashboard" class="admin-dashboard">
 
       <div class="admin-dash-head">
+        <div class="admin-view-toggle" role="tablist" aria-label="Affichage du panneau">
+          <button type="button" class="admin-view-btn active" data-view="old" role="tab">Ancien</button>
+          <button type="button" class="admin-view-btn" data-view="new" role="tab">Nouveau ✨</button>
+        </div>
         <h1>Panneau admin</h1>
         <p>Messages, membres, revenus et défis. Pour dessiner et colorer les chemins, ouvrez la <a href="admin">carte admin</a>.</p>
       </div>
+
+      <!-- ── Vue « Nouveau » : tableau de bord exécutif ─────────────────────── -->
+      <section class="admin-card span-2 admin-pro" id="adminProView">
+        <div class="pro-hero">
+          <div class="pro-hero-title">Vue d'ensemble exécutive</div>
+          <p class="pro-hero-sub">Les indicateurs clés de BWR en un coup d'œil · actualisé en direct</p>
+          <div class="pro-kpis" id="proKpis">
+            <p style="opacity:0.8;font-size:0.85rem;margin:0">Chargement…</p>
+          </div>
+        </div>
+        <div class="pro-grid">
+          <div class="pro-panel">
+            <h3>Croissance des membres</h3>
+            <p class="p-sub">Total cumulé d'inscrits sur les 12 derniers mois</p>
+            <canvas id="proGrowthChart" height="190"></canvas>
+          </div>
+          <div class="pro-panel">
+            <h3>Répartition des plans</h3>
+            <p class="p-sub">Part de chaque abonnement</p>
+            <div id="proPlanBars"></div>
+          </div>
+          <div class="pro-panel">
+            <h3>État de la plateforme</h3>
+            <p class="p-sub">Contenu et contributions</p>
+            <div class="pro-snap" id="proSnap"></div>
+          </div>
+          <div class="pro-panel">
+            <h3>Trafic &amp; conversion</h3>
+            <p class="p-sub">Audience du mois en cours</p>
+            <div class="pro-snap" id="proTraffic"></div>
+          </div>
+        </div>
+      </section>
 
       <!-- Analyse IA globale -->
       <section class="admin-card span-2">
@@ -430,6 +560,7 @@
   <script src="js/admin-badge.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/admin-dashboard-extra.js"></script>
+  <script src="js/admin-pro.js"></script>
   <script src="js/admin.js"></script>
   <script defer src="js/ui-shared.js"></script>
 </body>

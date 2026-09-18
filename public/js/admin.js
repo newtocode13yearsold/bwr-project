@@ -89,6 +89,7 @@ async function initDashboard() {
   if (window.__wireRevenueForecast) window.__wireRevenueForecast();
   await loadChallenges();
   await wireGlobalAnalysis();
+  if (window.__initProDashboard) window.__initProDashboard();
 }
 
 // ── AI Global Analysis — one AI read of the whole dashboard ───────────────────
