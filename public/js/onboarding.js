@@ -1,8 +1,11 @@
 /* ── BWR onboarding ───────────────────────────────────────────────────────────
  * ONE-TIME post-signup experience, shown exactly once per account and never
  * again — there is deliberately no replay:
- *   • A welcome / quick-start modal shown once, right after the first signup.
- *   • An interactive coach-mark tour that spotlights the real UI controls.
+ *   • It arms on the map page for a brand-new account and launches only when the
+ *     user first touches/clicks the map — never on a timer, nothing auto-plays.
+ *   • A welcome / quick-start modal, then an interactive coach-mark tour that
+ *     spotlights the real UI controls — including opening the real navigation
+ *     drawer to walk through the menu.
  *
  * Gating is server-side: a brand-new account carries `onboarded:false` (set at
  * email verification); the flag is flipped to `true` the instant the tour first
@@ -46,22 +49,25 @@
       placement: 'top'
     },
     {
+      target: '#btnGpsTracker',
+      title: 'Enregistrez votre balade',
+      body: 'Lancez le suivi GPS avant de partir : BWR compte vos kilomètres et votre dénivelé, puis vous propose de sauvegarder la sortie dans votre journal pour la rejouer plus tard.',
+      placement: 'top'
+    },
+    {
       target: '.bnav-item[href="routes"], .header-nav-links a[href="routes"]',
       title: 'Planifiez un trajet',
       body: 'Le cœur de BWR : indiquez un départ et une distance, et l’app génère une boucle ou un A→B en forêt, avec dénivelé et export GPX.',
-      placement: 'top'
-    },
-    {
-      target: '.bnav-item[href="profile"], .header-nav-links a[href="profile"]',
-      title: 'Votre profil',
-      body: 'Suivez vos kilomètres, débloquez des badges, fixez-vous des objectifs et tournez la roue du jour.',
-      placement: 'top'
-    },
-    {
-      target: '#btnNavMenu',
-      title: 'Tout le reste',
-      body: 'Le menu donne accès au classement, aux meilleures balades, aux cartes hors-ligne et au guide complet.',
       placement: 'bottom'
+    },
+    {
+      // Special step: opens the real navigation drawer so the newcomer sees the
+      // actual menu, not just the ☰ button.
+      target: '#navDrawer',
+      openDrawer: true,
+      title: 'Le menu, tout le reste',
+      body: 'Voici le menu complet : <strong>Mon profil</strong> (kilomètres, badges, objectifs), <strong>Mes sorties</strong> (votre journal de balades), la <strong>Communauté</strong> et le <strong>Forum</strong> pour échanger, les <strong>Quêtes</strong> et le <strong>Classement</strong>, les <strong>meilleures balades</strong>, les <strong>cartes hors-ligne</strong> et le <strong>guide complet</strong>. Tout est ici, à portée de clic.',
+      placement: 'right'
     }
   ];
 
@@ -115,6 +121,27 @@
     } catch (e) { return false; }
   }
   function onMapPage() { return !!document.getElementById('map'); }
+
+  // ── Nav-drawer control (for the "explain the menu" step) ────────────────────
+  // We drive the drawer directly instead of clicking the ☰ button so the tour
+  // fully controls when it opens and closes. The overlay is left hidden: the
+  // tour's own spotlight already dims the page, and a second backdrop would just
+  // fight it.
+  var drawerOpened = false;
+  function openNavDrawer() {
+    var drawer = document.getElementById('navDrawer');
+    if (!drawer) return;
+    drawer.classList.remove('hidden');
+    drawer.getBoundingClientRect();           // force reflow so the slide-in animates
+    drawer.classList.add('open');
+    drawerOpened = true;
+  }
+  function closeNavDrawer() {
+    if (!drawerOpened) return;
+    var drawer = document.getElementById('navDrawer');
+    if (drawer) { drawer.classList.remove('open'); drawer.classList.add('hidden'); }
+    drawerOpened = false;
+  }
 
   // Resolve a step's CSS selector to the first *visible* match. A selector may
   // list several candidates (e.g. desktop header link + mobile bottom-nav link);
@@ -202,6 +229,7 @@
     ['blocker', 'spot', 'tip'].forEach(function (k) {
       if (els[k]) { els[k].remove(); els[k] = null; }
     });
+    closeNavDrawer();
     markSeen();
     if (completed) finishToast();
   }
@@ -239,6 +267,9 @@
     var def = step.def;
     var isLast = idx === order.length - 1;
 
+    // Open (or close) the real navigation drawer for menu steps.
+    if (def.openDrawer) openNavDrawer(); else closeNavDrawer();
+
     var dots = order.map(function (_, i) {
       return '<span class="bwr-tip-dot' + (i === idx ? ' active' : '') + '"></span>';
     }).join('');
@@ -275,6 +306,9 @@
         els.tip.classList.add('bwr-tip-show');
       });
     });
+    // The drawer slides in over ~250ms; re-measure once it has settled so the
+    // spotlight and tooltip land on its final position, not a mid-animation one.
+    if (def.openDrawer) setTimeout(reposition, 300);
   }
 
   function reposition() {
@@ -297,13 +331,27 @@
     var placement = order[idx].def.placement || 'bottom';
     var top, left;
 
-    if (placement === 'top' && r.top - th - gap < 8) placement = 'bottom';
-    if (placement === 'bottom' && r.bottom + th + gap > vh - 8) placement = 'top';
+    // 'right' is used for the side nav drawer: sit the tooltip beside it. If
+    // there isn't room (narrow / mobile viewport where the drawer eats most of
+    // the width), fall back to a bottom-centred card.
+    if (placement === 'right') {
+      if (r.right + tw + gap <= vw - 8) {
+        left = r.right + gap;
+        top = r.top + r.height / 2 - th / 2;
+      } else {
+        left = vw / 2 - tw / 2;
+        top = vh - th - 16;
+      }
+    } else {
+      if (placement === 'top' && r.top - th - gap < 8) placement = 'bottom';
+      if (placement === 'bottom' && r.bottom + th + gap > vh - 8) placement = 'top';
 
-    if (placement === 'top') top = r.top - th - gap;
-    else top = r.bottom + gap;
+      if (placement === 'top') top = r.top - th - gap;
+      else top = r.bottom + gap;
 
-    left = r.left + r.width / 2 - tw / 2;
+      left = r.left + r.width / 2 - tw / 2;
+    }
+
     left = Math.max(12, Math.min(left, vw - tw - 12));
     top = Math.max(12, Math.min(top, vh - th - 12));
 
@@ -322,12 +370,29 @@
   }
 
   // ── Boot ───────────────────────────────────────────────────────────────────
-  // Auto-runs once for a brand-new signup on the map page. No replay entry point
+  // Fully user-driven: nothing appears on its own. For a brand-new signup on the
+  // map page we simply wait for the user to actually engage with the map (tap /
+  // click / pan); that first interaction — and only that — launches the welcome.
+  // From there the user advances each step themselves (Next / Previous / Skip);
+  // no step auto-advances and there is no timed pop-up. No replay entry point
   // exists by design — the tour cannot be triggered again once seen.
   function boot() {
-    if (onMapPage() && loggedIn() && !seen() && isNewSignup()) {
-      setTimeout(showWelcome, 900);
+    if (!(onMapPage() && loggedIn() && !seen() && isNewSignup())) return;
+
+    var map = document.getElementById('map');
+    if (!map) return;
+
+    var launched = false;
+    function launch() {
+      if (launched) return;
+      launched = true;
+      map.removeEventListener('pointerdown', launch, true);
+      map.removeEventListener('touchstart', launch, true);
+      showWelcome();
     }
+    // The first interaction with the map surface is what starts it — never a timer.
+    map.addEventListener('pointerdown', launch, true);
+    map.addEventListener('touchstart', launch, true);
   }
 
   if (document.readyState === 'loading') {
