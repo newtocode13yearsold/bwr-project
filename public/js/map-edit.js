@@ -368,8 +368,9 @@ async function submitReport(path, type, note, photo = null, latlng = null) {
       const report = await res.json();
       if (latlng) { report.lat = latlng.lat; report.lon = latlng.lng; }
       if (photo) report.photo = photo;
-      const marker = placeReportMarker(report, path?.coordinates);
-      if (marker) marker.openPopup();
+      // Feed the new report into the clustered report layer (map-sync.js) so it
+      // groups with its neighbours like every other pin, then re-render.
+      if (typeof addReportToMap === 'function') addReportToMap(report, path?.coordinates);
       showToast('✅ Signalement envoyé — merci !');
     } else if (res.status === 503) {
       queueMapReport(payload);
@@ -391,6 +392,9 @@ function placeReportMarker(report, coords) {
   const icon  = REPORT_ICONS[report.type]  || '⚠️';
   const label = REPORT_LABELS[report.type] || report.type;
   const photoSrc = report.photo || (report.hasPhoto ? `${API_URL}/api/photos/${report.id}` : null);
+  // Returns the marker WITHOUT adding it to the map — the caller decides where it
+  // lives (the clustered report layer in map-sync.js). This keeps every report
+  // pin inside one layer that the clusterer can clear and re-group on zoom.
   return L.marker(mid, {
     icon: L.divIcon({ className: 'report-marker', html: `<div class="report-dot">${icon}</div>`, iconAnchor: [16, 16], iconSize: [32, 32] }),
   }).bindPopup(`
@@ -400,5 +404,5 @@ function placeReportMarker(report, coords) {
       ${photoSrc ? `<img src="${photoSrc}" class="report-popup-photo" alt="photo">` : ''}
       <small style="color:#9ca3af">${new Date(report.date).toLocaleDateString('fr-FR')}</small>
     </div>
-  `).addTo(map);
+  `);
 }

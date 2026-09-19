@@ -62,7 +62,10 @@ async function requireAuth(requiredRole = null, notice = null) {
   if (!user) {
     sessionStorage.setItem('bwr_redirect', window.location.href);
     if (notice) sessionStorage.setItem('bwr_login_notice', notice);
-    window.location.href = 'login';
+    // Land on the signup tab: a redirected visitor almost always has no account
+    // yet (the planner and other gates say "compte gratuit requis"). Returning
+    // users can still switch to the login tab in one click.
+    window.location.href = 'login?signup=1';
     return null;
   }
   if (requiredRole && user.role !== requiredRole) {

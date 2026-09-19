@@ -20,6 +20,8 @@
   'use strict';
 
   var SEEN_KEY = 'bwr_tutorial_seen';
+  var GUEST_SEEN_KEY = 'bwr_guest_tour_seen'; // logged-out visitors (per browser)
+  var guestRun = false;                       // true when the current run is a guest tour
 
   // Steps target elements that exist on the map page. Missing targets are
   // skipped gracefully so the tour never dead-ends if the markup changes.
@@ -78,12 +80,20 @@
   function seen() {
     try { return localStorage.getItem(SEEN_KEY) === '1'; } catch (e) { return false; }
   }
+  function guestSeen() {
+    try { return localStorage.getItem(GUEST_SEEN_KEY) === '1'; } catch (e) { return false; }
+  }
   // One-way: burn the tour for good. Sets the same-device guard immediately, then
   // best-effort persists the permanent server flag so it never returns anywhere.
   var marked = false;
   function markSeen() {
     if (marked) return;
     marked = true;
+    // Guest run: only a per-browser flag, no account to persist against.
+    if (guestRun) {
+      try { localStorage.setItem(GUEST_SEEN_KEY, '1'); } catch (e) {}
+      return;
+    }
     try { localStorage.setItem(SEEN_KEY, '1'); } catch (e) {}
     // Reflect it in the cached user so a mid-session /api/auth/me refresh in
     // another script doesn't momentarily reopen the gate.
@@ -274,23 +284,47 @@
       return '<span class="bwr-tip-dot' + (i === idx ? ' active' : '') + '"></span>';
     }).join('');
 
+    // On the last step of a guest tour, swap the "Terminer" button for a clear
+    // sign-up / log-in choice — the whole point of showing the tour to visitors.
+    // The two CTAs stack full-width below so they never squeeze on one row.
+    var footHtml;
+    if (isLast && guestRun) {
+      footHtml =
+        '<div class="bwr-tip-foot">' +
+          '<div class="bwr-tip-dots">' + dots + '</div>' +
+          (idx > 0 ? '<button class="bwr-tut-btn bwr-tut-btn-ghost bwr-tut-btn-sm" id="bwrTipPrev">Précédent</button>' : '') +
+        '</div>' +
+        '<div class="bwr-tip-cta">' +
+          '<button class="bwr-tut-btn bwr-tut-btn-primary" id="bwrTipSignup">Créer un compte gratuit</button>' +
+          '<button class="bwr-tut-btn bwr-tut-btn-ghost" id="bwrTipLogin">J’ai déjà un compte — se connecter</button>' +
+        '</div>';
+    } else {
+      footHtml =
+        '<div class="bwr-tip-foot">' +
+          '<div class="bwr-tip-dots">' + dots + '</div>' +
+          '<div class="bwr-tip-nav">' +
+            (idx > 0 ? '<button class="bwr-tut-btn bwr-tut-btn-ghost bwr-tut-btn-sm" id="bwrTipPrev">Précédent</button>' : '') +
+            '<button class="bwr-tut-btn bwr-tut-btn-primary bwr-tut-btn-sm" id="bwrTipNext">' +
+              (isLast ? 'Terminer ✓' : 'Suivant →') +
+            '</button>' +
+          '</div>' +
+        '</div>';
+    }
+
     els.tip.innerHTML =
       '<button class="bwr-tip-skip" id="bwrTipSkip">Passer ✕</button>' +
       '<div class="bwr-tip-step">Étape ' + (idx + 1) + ' / ' + order.length + '</div>' +
       '<h3>' + def.title + '</h3>' +
       '<p>' + def.body + '</p>' +
-      '<div class="bwr-tip-foot">' +
-        '<div class="bwr-tip-dots">' + dots + '</div>' +
-        '<div class="bwr-tip-nav">' +
-          (idx > 0 ? '<button class="bwr-tut-btn bwr-tut-btn-ghost bwr-tut-btn-sm" id="bwrTipPrev">Précédent</button>' : '') +
-          '<button class="bwr-tut-btn bwr-tut-btn-primary bwr-tut-btn-sm" id="bwrTipNext">' +
-            (isLast ? 'Terminer ✓' : 'Suivant →') +
-          '</button>' +
-        '</div>' +
-      '</div>';
+      footHtml;
 
     els.tip.querySelector('#bwrTipSkip').addEventListener('click', function () { teardown(false); });
-    els.tip.querySelector('#bwrTipNext').addEventListener('click', function () { go(1); });
+    var nextBtn = els.tip.querySelector('#bwrTipNext');
+    if (nextBtn) nextBtn.addEventListener('click', function () { go(1); });
+    var signupBtn = els.tip.querySelector('#bwrTipSignup');
+    if (signupBtn) signupBtn.addEventListener('click', function () { markSeen(); window.location.href = 'login?signup=1'; });
+    var loginBtn = els.tip.querySelector('#bwrTipLogin');
+    if (loginBtn) loginBtn.addEventListener('click', function () { markSeen(); window.location.href = 'login'; });
     var prev = els.tip.querySelector('#bwrTipPrev');
     if (prev) prev.addEventListener('click', function () { go(-1); });
 
@@ -377,7 +411,15 @@
   // no step auto-advances and there is no timed pop-up. No replay entry point
   // exists by design — the tour cannot be triggered again once seen.
   function boot() {
-    if (!(onMapPage() && loggedIn() && !seen() && isNewSignup())) return;
+    if (!onMapPage()) return;
+
+    // Two audiences, each shown the tour exactly once:
+    //  • a brand-new signed-in member (server `onboarded:false`), or
+    //  • a logged-out visitor who has never seen the guest tour on this browser.
+    var isNewMember = loggedIn() && !seen() && isNewSignup();
+    var isGuestNew  = !loggedIn() && !guestSeen();
+    if (!isNewMember && !isGuestNew) return;
+    guestRun = isGuestNew;
 
     var map = document.getElementById('map');
     if (!map) return;

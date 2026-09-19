@@ -9,7 +9,10 @@
 const pathLayer = L.layerGroup().addTo(map);
 
 function pathWeight() {
-  return Math.max(2, Math.min(8, map.getZoom() - 10));
+  // Thinner lines when zoomed out so the whole-forest overview reads as a calm
+  // network instead of green spaghetti; they thicken back up as you zoom in to a
+  // specific area. Still ≥1px so every trail stays visible at any zoom.
+  return Math.max(1, Math.min(7, map.getZoom() - 11));
 }
 
 // ── Paths ─────────────────────────────────────────────────────────────────────

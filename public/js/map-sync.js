@@ -198,19 +198,79 @@ document.getElementById('toggleFilters').addEventListener('click', () => {
   document.getElementById('filterPanel').classList.toggle('hidden');
 });
 
-// ── Reports overlay ─────────────────────────────────────────────────────────
+// ── Reports overlay (clustered) ───────────────────────────────────────────────
+// Report pins used to pile directly on the map and overlap into unreadable heaps
+// in busy spots. They now live in one layer and are grouped by screen proximity:
+// pins closer than one grid cell merge into a numbered bubble that splits apart as
+// you zoom in. Pure Leaflet + a little maths — no plugin, so no CSP / SW changes.
+let _openReports = [];                                    // { report, coords, mid:[lat,lon] }
+const reportClusterLayer = L.layerGroup().addTo(map);
+
+function _reportMid(r, coords) {
+  if (r.lat && r.lon) return [r.lat, r.lon];
+  if (coords && coords.length) return coords[Math.floor(coords.length / 2)];
+  return null;
+}
+
+// Add a single (e.g. just-submitted) report to the clustered layer.
+function addReportToMap(report, coords) {
+  const mid = _reportMid(report, coords);
+  if (!mid) return;
+  _openReports.push({ report, coords, mid });
+  renderReportClusters();
+}
+
+function renderReportClusters() {
+  if (!reportClusterLayer) return;
+  reportClusterLayer.clearLayers();
+  if (!_openReports.length) return;
+  const CELL = 46; // px — pins closer than this on screen merge into one bubble
+  const buckets = new Map();
+  for (const item of _openReports) {
+    const p = map.latLngToLayerPoint(L.latLng(item.mid[0], item.mid[1]));
+    const key = Math.floor(p.x / CELL) + ':' + Math.floor(p.y / CELL);
+    let b = buckets.get(key);
+    if (!b) buckets.set(key, b = []);
+    b.push(item);
+  }
+  buckets.forEach(items => {
+    if (items.length === 1) {
+      const m = placeReportMarker(items[0].report, items[0].coords);
+      if (m) m.addTo(reportClusterLayer);
+      return;
+    }
+    const lat = items.reduce((s, i) => s + i.mid[0], 0) / items.length;
+    const lon = items.reduce((s, i) => s + i.mid[1], 0) / items.length;
+    L.marker([lat, lon], {
+      icon: L.divIcon({
+        className: 'report-cluster',
+        html: `<div class="report-cluster-bubble">${items.length}</div>`,
+        iconSize: [38, 38], iconAnchor: [19, 19],
+      }),
+    })
+      .on('click', () => map.setView([lat, lon], Math.min((map.getZoom() || 13) + 2, map.getMaxZoom()), { animate: true }))
+      .addTo(reportClusterLayer);
+  });
+}
+
+// Re-group on zoom (screen distances change); panning keeps layer points stable.
+map.on('zoomend', renderReportClusters);
+
 async function loadReports() {
   try {
     const res = await fetch(`${API_URL}/api/reports`);
     if (!res.ok) return;
     const reports = await res.json();
     const open = reports.filter(r => r.status === 'open');
-    if (!open.length) return;
+    if (!open.length) { _openReports = []; renderReportClusters(); return; }
     await _loadMapEdit();
-    open.forEach(r => {
+    _openReports = open.map(r => {
       const path = allPaths.find(p => p.id === r.pathId);
-      placeReportMarker(r, path?.coordinates);
-    });
+      const coords = path?.coordinates;
+      const mid = _reportMid(r, coords);
+      return mid ? { report: r, coords, mid } : null;
+    }).filter(Boolean);
+    renderReportClusters();
   } catch {}
 }
 
