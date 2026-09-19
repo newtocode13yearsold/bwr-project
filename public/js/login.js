@@ -37,6 +37,12 @@ tabSignup.addEventListener('click', () => {
   loginForm.classList.add('hidden');
 });
 
+// Open directly on the signup tab when arriving from a "Commencer gratuitement" CTA
+// (?signup=1 or #signup) so new visitors land on account creation, not login.
+if (/[?&]signup=1/.test(location.search) || location.hash === '#signup') {
+  tabSignup.click();
+}
+
 // Login
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
