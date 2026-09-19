@@ -1152,7 +1152,8 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
     if (BWR.can('gpx_export', plan)) {
       btnGPX.classList.remove('locked-feature');
       btnGPX.querySelector('.lock-badge')?.remove();
-      btnGPX.onclick = () => downloadGPX(coords, routeName);
+      btnGPX.onclick = () => downloadGPX(coords, routeName,
+        (lastRoute && lastRoute.elevations) ? { elevations: lastRoute.elevations } : {});
     } else {
       btnGPX.classList.add('locked-feature');
       btnGPX.setAttribute('data-tier', 'silver');
@@ -1205,6 +1206,10 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
     _loadElevation()
       .then(() => fetchElevation(coords))
       .then(elevs => {
+        // fetchElevation returns a ≤100-point *sample*, not one point per
+        // coordinate, so interpolate it back to full track length before the
+        // GPX export tags each <trkpt> with an <ele> (else altitudes misalign).
+        lastRoute.elevations = resampleToLength(elevs, coords.length);
         drawElevationChart(elevs, meters);
         // Refine the flat-pace duration using the real slope of each segment.
         const adj = gradeAdjustedSeconds(elevs, meters, transportMode);

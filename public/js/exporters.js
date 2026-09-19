@@ -155,6 +155,30 @@ ${trkpts}
     };
   }
 
+  /**
+   * Linearly resample an array of numbers to `targetLen` points, preserving the
+   * first and last values. Used to stretch a downsampled elevation profile
+   * (≤100 pts) back to one value per track coordinate for GPX export.
+   * @param {number[]} values
+   * @param {number} targetLen
+   * @returns {number[]|null}  null when there's nothing usable to resample.
+   */
+  function resampleToLength(values, targetLen) {
+    if (!Array.isArray(values) || values.length < 2 || !(targetLen > 0)) return null;
+    if (values.length === targetLen) return values.slice();
+    if (targetLen === 1) return [values[0]];
+    const out = new Array(targetLen);
+    const last = values.length - 1;
+    for (let i = 0; i < targetLen; i++) {
+      const pos = (i / (targetLen - 1)) * last; // fractional index into `values`
+      const lo = Math.floor(pos);
+      const hi = Math.min(lo + 1, last);
+      const frac = pos - lo;
+      out[i] = values[lo] + (values[hi] - values[lo]) * frac;
+    }
+    return out;
+  }
+
   /** Trigger a browser download for a generated text payload. */
   function downloadFile(content, filename, mime = 'application/octet-stream') {
     const blob = new Blob([content], { type: mime });
@@ -186,17 +210,26 @@ ${trkpts}
    * support pre-filled URL upload without OAuth, we download the GPX *and*
    * open the upload page; the user drops/selects the freshly downloaded file.
    * Lightweight MVP — real OAuth integration is on the v2 roadmap.
+   *
+   * NB: the upload tab is opened *synchronously* inside the click gesture — a
+   * deferred window.open (e.g. from setTimeout) is treated as an unsolicited
+   * popup and blocked by default, so the tab would silently never open.
    */
-  function pushToStrava(coords, name) {
+  function openUpload(coords, name, url) {
+    const win = window.open(url, '_blank');
     downloadGPX(coords, name);
-    setTimeout(() => window.open('https://www.strava.com/upload/select', '_blank'), 250);
+    return win;
+  }
+
+  function pushToStrava(coords, name) {
+    return openUpload(coords, name, 'https://www.strava.com/upload/select');
   }
 
   function pushToKomoot(coords, name) {
-    downloadGPX(coords, name);
-    setTimeout(() => window.open('https://www.komoot.com/upload', '_blank'), 250);
+    return openUpload(coords, name, 'https://www.komoot.com/upload');
   }
 
+  global.resampleToLength = resampleToLength;
   global.routeToGPX   = routeToGPX;
   global.parseGPX     = parseGPX;
   global.routeToKML   = routeToKML;
