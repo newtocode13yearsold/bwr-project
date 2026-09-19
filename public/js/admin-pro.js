@@ -20,6 +20,7 @@
 
   let _rendered = false;
   let _growthChart = null;
+  let _visitsChart = null;
 
   // ── Toggle wiring ───────────────────────────────────────────────────────
   function applyView(view) {
@@ -114,19 +115,23 @@
       ].join('');
 
       // ── Plan distribution bars ─────────────────────────────────────────────
+      // Comped (offered) Silver/Gold don't count as paying subscribers — they are
+      // shown on their own "Offerts" row, excluded from the Argent/Or tally.
+      const compedTot = comped.silver + comped.gold;
       const barBox = document.getElementById('proPlanBars');
       if (barBox) {
         const rows = [
-          { label: 'Gratuit',  n: counts.free,   color: '#9ca3af' },
-          { label: 'Argent 🥈', n: counts.silver, color: '#64748b' },
-          { label: 'Or 🥇',     n: counts.gold,   color: '#d97706' },
+          { label: 'Gratuit',  n: counts.free, color: '#9ca3af' },
+          { label: 'Argent 🥈', n: paySilver,   color: '#64748b' },
+          { label: 'Or 🥇',     n: payGold,     color: '#d97706' },
         ];
+        if (compedTot) rows.push({ label: '🎁 Offerts', n: compedTot, color: '#c4b5fd', note: 'hors décompte' });
         const max = Math.max(1, total);
         barBox.innerHTML = rows.map(r => `
           <div class="pro-bar-row">
             <div class="b-label">${r.label}</div>
             <div class="pro-bar-track"><div class="pro-bar-fill" style="width:${Math.round(r.n / max * 100)}%;background:${r.color}"></div></div>
-            <div class="b-val">${r.n} · ${total ? Math.round(r.n / total * 100) : 0}%</div>
+            <div class="b-val">${r.n}${r.note ? ` · ${r.note}` : ` · ${total ? Math.round(r.n / total * 100) : 0}%`}</div>
           </div>`).join('');
       }
 
@@ -151,6 +156,8 @@
 
       // ── Growth chart : cumulative members over the last 12 months ──────────
       renderGrowthChart(memberArr);
+      // ── Monthly visits bar chart ────────────────────────────────────────────
+      renderVisitsChart(events.monthlyVisits || {});
 
     } catch {
       const kbox = document.getElementById('proKpis');
@@ -225,6 +232,53 @@
         plugins: {
           legend: { display: false },
           tooltip: { callbacks: { label: c => ` ${fmt(c.raw)} membre${c.raw !== 1 ? 's' : ''} au total` } }
+        }
+      }
+    });
+  }
+
+  function renderVisitsChart(monthlyVisits) {
+    const canvas = document.getElementById('proVisitsChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    // monthlyVisits is { 'YYYY-MM': count }; keep the last 12 months in order.
+    const keys = Object.keys(monthlyVisits).sort().slice(-12);
+    const labels = keys.map(k => {
+      const [y, m] = k.split('-');
+      return new Date(Number(y), Number(m) - 1, 1)
+        .toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+    });
+    const data = keys.map(k => Number(monthlyVisits[k]) || 0);
+
+    const isDark    = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#d1d5db' : '#374151';
+    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+
+    if (_visitsChart) _visitsChart.destroy();
+    _visitsChart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Visiteurs',
+          data,
+          backgroundColor: 'rgba(37,99,235,0.75)',
+          borderColor: '#2563eb',
+          borderWidth: 1,
+          borderRadius: 6,
+          borderSkipped: false,
+          maxBarThickness: 44,
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { ticks: { color: textColor, font: { size: 10 }, maxRotation: 45 }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { color: textColor, precision: 0 }, grid: { color: gridColor } }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => ` ${fmt(c.raw)} visiteur${c.raw !== 1 ? 's' : ''}` } }
         }
       }
     });
