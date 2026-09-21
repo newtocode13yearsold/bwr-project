@@ -189,17 +189,49 @@ async function renderRecentRoutes(plan) {
       const href  = r.shareToken ? `routes?share=${encodeURIComponent(r.shareToken)}` : 'routes';
       const name  = escapeHtml(r.name || 'Trajet sans nom');
       return `
-        <a class="recent-route" href="${href}">
-          <span class="rr-dot" style="background:${color}"></span>
-          <span class="rr-main">
-            <span class="rr-name">${icon} ${name}</span>
-            <span class="rr-meta">📏 ${km} · ⏱ ${dur}${date ? ` · 🗓 ${date}` : ''}</span>
-          </span>
-          <span class="rr-go">→</span>
-        </a>`;
+        <div class="recent-route" data-id="${r.id}">
+          <a class="rr-link" href="${href}">
+            <span class="rr-dot" style="background:${color}"></span>
+            <span class="rr-main">
+              <span class="rr-name">${icon} ${name}</span>
+              <span class="rr-meta">📏 ${km} · ⏱ ${dur}${date ? ` · 🗓 ${date}` : ''}</span>
+            </span>
+            <span class="rr-go">→</span>
+          </a>
+          <button class="rr-download" type="button" data-id="${r.id}" title="Télécharger l'itinéraire (GPX — Garmin, Strava, Komoot…)" aria-label="Télécharger l'itinéraire en GPX">⬇</button>
+        </div>`;
     }).join('');
+
+    list.querySelectorAll('.rr-download').forEach(btn => {
+      btn.addEventListener('click', () => downloadSavedRouteGpx(btn.dataset.id, btn));
+    });
   } catch {
     list.innerHTML = `<p class="rr-empty">Impossible de charger vos trajets.</p>`;
+  }
+}
+
+// Re-download a previously saved itinerary as a GPX file. The list summary from
+// GET /api/savedroutes strips coords (to stay light), so fetch the full track by
+// id first, then hand it to the shared exporter (js/exporters.js — downloadGPX).
+async function downloadSavedRouteGpx(id, btn) {
+  if (typeof downloadGPX !== 'function') { alert('Export GPX indisponible.'); return; }
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  try {
+    const res = await fetch(`${API_URL}/api/savedroutes/${id}`, { headers: authHeader() });
+    if (!res.ok) throw new Error();
+    const route = await res.json();
+    if (!Array.isArray(route.coords) || route.coords.length < 2) throw new Error();
+    downloadGPX(route.coords, route.name || 'Itinéraire BWR', {
+      description: `Itinéraire BWR — ${route.name || ''}`.trim(),
+    });
+    btn.textContent = '✓';
+  } catch {
+    btn.textContent = '⚠';
+  } finally {
+    btn.disabled = false;
+    setTimeout(() => { btn.textContent = orig; }, 1600);
   }
 }
 

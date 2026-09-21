@@ -1460,6 +1460,32 @@
   transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 .recent-route:hover { background: var(--forest-100); border-color: var(--border); }
+.rr-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+.rr-download {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--forest-100);
+  color: var(--forest-700);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.rr-download:hover { background: var(--forest-200); }
+.rr-download:disabled { cursor: default; opacity: 0.6; }
 .rr-dot {
   width: 12px;
   height: 12px;
@@ -1565,6 +1591,8 @@
 [data-theme="dark"] .card-header-link { color: #a3e635; }
 [data-theme="dark"] .recent-route     { background: #1c2a20; }
 [data-theme="dark"] .recent-route:hover { background: #233828; }
+[data-theme="dark"] .rr-download      { background: #233828; color: #a3e635; border-color: #2f4a36; }
+[data-theme="dark"] .rr-download:hover { background: #2d4a34; }
 [data-theme="dark"] .rr-name          { color: #e2e8f0; }
 [data-theme="dark"] .rr-meta          { color: #8fa887; }
 [data-theme="dark"] .rr-empty         { color: #8fa887; }

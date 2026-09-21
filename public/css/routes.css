@@ -848,6 +848,17 @@
   cursor: pointer;
 }
 .btn-history-replay:hover { background: var(--forest-600); }
+.btn-history-download {
+  padding: 5px 9px;
+  background: #ecfdf5;
+  color: #047857;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-history-download:hover { background: #d1fae5; }
 .btn-history-share {
   padding: 5px 9px;
   background: #ede9fe;

@@ -148,10 +148,11 @@ async function fetchAndRenderHistory() {
             <div class="history-item-meta">${modeIcon} ${km} km · ${date}</div>
           </div>
           <div class="history-item-actions">
-            <button class="btn-history-replay" title="Afficher sur la carte">▶</button>
-            <button class="btn-history-print"  title="Imprimer / PDF">🖨</button>
-            <button class="btn-history-share"  title="Copier le lien de partage">🔗</button>
-            <button class="btn-history-delete" title="Supprimer">🗑</button>
+            <button class="btn-history-replay"   title="Afficher sur la carte">▶</button>
+            <button class="btn-history-download" title="Télécharger (GPX — Garmin, Strava…)">⬇</button>
+            <button class="btn-history-print"    title="Imprimer / PDF">🖨</button>
+            <button class="btn-history-share"    title="Copier le lien de partage">🔗</button>
+            <button class="btn-history-delete"   title="Supprimer">🗑</button>
           </div>
         </div>`;
     }).join('');
@@ -159,10 +160,11 @@ async function fetchAndRenderHistory() {
     listEl.querySelectorAll('.history-item').forEach(el => {
       const id    = el.dataset.id;
       const token = el.dataset.token;
-      el.querySelector('.btn-history-replay').onclick = () => replaySavedRoute(id);
-      el.querySelector('.btn-history-print').onclick  = () => printSavedRoute(id);
-      el.querySelector('.btn-history-share').onclick  = () => copyShareLink(token);
-      el.querySelector('.btn-history-delete').onclick = () => deleteSavedRoute(id, el);
+      el.querySelector('.btn-history-replay').onclick   = () => replaySavedRoute(id);
+      el.querySelector('.btn-history-download').onclick = () => downloadSavedRoute(id);
+      el.querySelector('.btn-history-print').onclick    = () => printSavedRoute(id);
+      el.querySelector('.btn-history-share').onclick    = () => copyShareLink(token);
+      el.querySelector('.btn-history-delete').onclick   = () => deleteSavedRoute(id, el);
     });
   } catch (e) {
     loadEl.style.display = 'none';
@@ -180,6 +182,25 @@ async function replaySavedRoute(id) {
     routeLayer = drawRouteLine(route.coords, color).addTo(map);
     map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
     showToast('Trajet affiché sur la carte.');
+  } catch (e) {
+    showToast(`Erreur : ${e.message}`);
+  }
+}
+
+// Re-download a saved route as a GPX file (Garmin / Strava / Komoot / phone GPS
+// apps). The history list carries no coords, so fetch the full track by id then
+// hand it to the shared exporter (js/exporters.js — loaded on the routes page).
+async function downloadSavedRoute(id) {
+  try {
+    const res = await fetch(`${API_URL}/api/savedroutes/${id}`, { headers: authHeader() });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const route = await res.json();
+    if (typeof downloadGPX !== 'function') throw new Error('Export indisponible');
+    if (!Array.isArray(route.coords) || route.coords.length < 2) throw new Error('Tracé introuvable');
+    downloadGPX(route.coords, route.name || 'Itinéraire BWR', {
+      description: `Itinéraire BWR — ${route.name || ''}`.trim(),
+    });
+    showToast('Téléchargement du GPX…');
   } catch (e) {
     showToast(`Erreur : ${e.message}`);
   }
