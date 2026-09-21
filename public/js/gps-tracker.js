@@ -14,13 +14,10 @@
   const btn = document.getElementById('btnGpsTracker');
   if (!btn) return;
 
-  const MIN_ACCURACY_M = 40;    // discard fixes worse than 40 m (forest canopy is noisy)
-  const MIN_MOVE_KM    = 0.005; // 5 m minimum displacement — filters GPS jitter
-  const MAX_SPEED_KMH  = 50;    // reject only teleport/noise spikes (covers fast cycling)
   const ELE_THRESHOLD_M = 3;    // ignore altitude wobble below 3 m when summing ascent/descent
 
   let watchId    = null;
-  let lastPos    = null;
+  let gps        = null;  // Kalman distance filter (js/gps-filter.js)
   let sessionKm  = 0;
   let active     = false;
   let userMarker = null;
@@ -47,16 +44,6 @@
     el._timer = setTimeout(() => el.classList.remove('visible'), 3200);
   }
 
-  function haversine(lat1, lng1, lat2, lng2) {
-    const R    = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a    = Math.sin(dLat / 2) ** 2
-               + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
-               * Math.sin(dLng / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  }
-
   function fmtKm(km) {
     return km.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' km';
   }
@@ -68,41 +55,36 @@
 
   function onPosition(pos) {
     const { latitude, longitude, accuracy, altitude } = pos.coords;
-    if (accuracy > MIN_ACCURACY_M) return; // wait for a usable fix
     const ele = Number.isFinite(altitude) ? altitude : null;
 
+    // Kalman-smooth the fix + decide how much real distance it adds.
+    const r = gps.push(latitude, longitude, accuracy, pos.timestamp);
+    if (!r.accepted) return; // fix too vague — wait for a usable one
+
+    // Draw the marker at the SMOOTHED position, not the raw jittery one.
     const m = leafletMap();
     if (m) {
       if (!userMarker) {
-        userMarker = L.circleMarker([latitude, longitude], {
+        userMarker = L.circleMarker([r.lat, r.lng], {
           radius: 7, color: '#2563eb', fillColor: '#3b82f6',
           fillOpacity: 0.9, weight: 2,
         }).addTo(m).bindTooltip('📍 Vous êtes ici', { permanent: false });
       } else {
-        userMarker.setLatLng([latitude, longitude]);
+        userMarker.setLatLng([r.lat, r.lng]);
       }
     }
 
-    if (!lastPos) {
-      lastPos = { lat: latitude, lng: longitude, t: pos.timestamp };
-      track.push({ lat: latitude, lng: longitude, ele, t: pos.timestamp });
+    // Seed the recorded track on the first accepted fix so replay/GPX has a start.
+    if (track.length === 0) {
+      track.push({ lat: r.lat, lng: r.lng, ele, t: pos.timestamp });
       return;
     }
 
-    const dtH  = (pos.timestamp - lastPos.t) / 3_600_000;
-    const dist = haversine(lastPos.lat, lastPos.lng, latitude, longitude);
-    const kmh  = dtH > 0 ? dist / dtH : 0;
+    if (r.added <= 0) return; // no real movement counted this tick
 
-    // Teleport/noise spike: ignore but keep lastPos anchored to the last good fix.
-    if (kmh > MAX_SPEED_KMH) return;
-    // Below the jitter floor: keep lastPos so slow walking accumulates across
-    // fixes instead of being discarded (and lost) on every tick.
-    if (dist < MIN_MOVE_KM) return;
-
-    sessionKm += dist;
-    track.push({ lat: latitude, lng: longitude, ele, t: pos.timestamp });
+    sessionKm = gps.totalKm;
+    track.push({ lat: r.lat, lng: r.lng, ele, t: pos.timestamp });
     setLabel();
-    lastPos = { lat: latitude, lng: longitude, t: pos.timestamp };
   }
 
   function start() {
@@ -111,8 +93,12 @@
       return;
     }
     if (active) return;
+    if (typeof createGpsDistanceFilter !== 'function') {
+      toast('Suivi GPS indisponible — rechargez la page.');
+      return;
+    }
     sessionKm = 0;
-    lastPos   = null;
+    gps       = createGpsDistanceFilter();
     track     = [];
     startedAt = new Date().toISOString();
     active    = true;
@@ -179,7 +165,7 @@
     if (userMarker && m) { m.removeLayer(userMarker); userMarker = null; }
 
     const finishedTrack = track.slice();
-    const finishedKm    = sessionKm;
+    const finishedKm    = gps ? gps.totalKm : sessionKm;
     const finishedStart = startedAt;
 
     if (finishedKm >= 0.05) {
@@ -194,6 +180,7 @@
       toast('Balade trop courte — moins de 50 m enregistrés.');
     }
     sessionKm = 0;
+    gps = null;
     track = [];
     startedAt = null;
     setLabel();

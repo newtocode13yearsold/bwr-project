@@ -152,66 +152,40 @@ function escapeHtml(s) {
 // generated route length. Filters out GPS noise via accuracy, min-move,
 // and max-speed thresholds.
 const GpsTracker = (() => {
-  const MIN_ACCURACY_M = 40;   // discard fixes worse than 40 m (forest canopy is noisy)
-  const MIN_MOVE_KM    = 0.005; // 5 m minimum displacement — filters GPS jitter
-  const MAX_SPEED_KMH  = 50;   // reject only teleport/noise spikes (covers fast cycling)
-
   let watchId    = null;
-  let lastPos    = null;
+  let gps        = null;  // Kalman distance filter (js/gps-filter.js)
   let sessionKm  = 0;
   let active     = false;
   let userMarker = null;
 
-  function haversine(lat1, lng1, lat2, lng2) {
-    const R    = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a    = Math.sin(dLat / 2) ** 2
-               + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
-               * Math.sin(dLng / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  }
-
   function onPosition(pos) {
     const { latitude, longitude, accuracy } = pos.coords;
-    if (accuracy > MIN_ACCURACY_M) {
+
+    // Kalman-smooth the fix + decide how much real distance it adds.
+    const r = gps.push(latitude, longitude, accuracy, pos.timestamp);
+    if (!r.accepted) {
       setAccuracyLabel(`GPS faible (±${Math.round(accuracy)} m) — en attente…`);
       return;
     }
     setAccuracyLabel(`Précision GPS : ±${Math.round(accuracy)} m`);
 
-    // Update map marker
+    // Draw the marker at the SMOOTHED position, not the raw jittery one.
     if (map) {
       if (!userMarker) {
-        userMarker = L.circleMarker([latitude, longitude], {
+        userMarker = L.circleMarker([r.lat, r.lng], {
           radius: 7, color: '#2563eb', fillColor: '#3b82f6',
           fillOpacity: 0.9, weight: 2,
         }).addTo(map).bindTooltip('📍 Vous êtes ici', { permanent: false });
       } else {
-        userMarker.setLatLng([latitude, longitude]);
+        userMarker.setLatLng([r.lat, r.lng]);
       }
     }
 
-    if (!lastPos) {
-      lastPos = { lat: latitude, lng: longitude, t: pos.timestamp };
-      return;
-    }
+    if (r.added <= 0) return; // no real movement counted this tick
 
-    const dtH  = (pos.timestamp - lastPos.t) / 3_600_000;
-    const dist = haversine(lastPos.lat, lastPos.lng, latitude, longitude);
-    const kmh  = dtH > 0 ? dist / dtH : 0;
-
-    // Teleport/noise spike: ignore the fix but KEEP lastPos so we don't jump the
-    // anchor to a bad point (which would then corrupt the next segment).
-    if (kmh > MAX_SPEED_KMH) return;
-    // Below the jitter floor: don't count AND don't advance lastPos, so slow
-    // walking accumulates across several fixes instead of being lost each tick.
-    if (dist < MIN_MOVE_KM) return;
-
-    sessionKm += dist;
+    sessionKm = gps.totalKm;
     const el = document.getElementById('trackerKm');
     if (el) el.textContent = sessionKm.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' km';
-    lastPos = { lat: latitude, lng: longitude, t: pos.timestamp };
   }
 
   function setAccuracyLabel(text) {
@@ -225,8 +199,12 @@ const GpsTracker = (() => {
       return;
     }
     if (active) return;
+    if (typeof createGpsDistanceFilter !== 'function') {
+      showToast('Suivi GPS indisponible — rechargez la page.');
+      return;
+    }
     sessionKm = 0;
-    lastPos   = null;
+    gps       = createGpsDistanceFilter();
     active    = true;
 
     const liveEl = document.getElementById('gpsTrackerLive');
@@ -251,6 +229,7 @@ const GpsTracker = (() => {
     if (!active) return;
     if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
     active = false;
+    if (gps) sessionKm = gps.totalKm;
 
     if (userMarker && map) { map.removeLayer(userMarker); userMarker = null; }
 
@@ -275,6 +254,7 @@ const GpsTracker = (() => {
     } else {
       showToast('Balade trop courte — moins de 50 m enregistrés.');
     }
+    gps = null;
   }
 
   return { start, stop, isActive: () => active };
