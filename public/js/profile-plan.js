@@ -646,7 +646,14 @@ function renderActivityStats() {
   const s = (currentUser && currentUser.stats) || {};
   const routes       = Math.max(s.routes || 0, parseInt(localStorage.getItem('bwr_route_count') || '0'));
   const earnedBadges = JSON.parse(localStorage.getItem('bwr_earned_badges') || '[]').length;
-  const streak       = s.streak || 0;
+  // A stored streak is only "live" when the last active day is today or yesterday.
+  // The server never decays the value — it just resets/rebuilds it on the next
+  // outing — so a run that lapsed weeks ago is still stored as e.g. 5. The streak
+  // banner and the quests engine already apply this freshness check; without it
+  // the stat block shows a stale streak long after it's actually been broken.
+  const todayKey = utcDayKey(todayUtcMs());
+  const yestKey  = utcDayKey(todayUtcMs() - 86400000);
+  const streak   = (s.lastRouteDate === todayKey || s.lastRouteDate === yestKey) ? (s.streak || 0) : 0;
   // Contribution points — same formula as the leaderboard / XP (grade=2, report=1)
   const points       = (s.reports || 0) + (s.pathGrades || 0) * 2;
 

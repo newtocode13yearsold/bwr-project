@@ -14,7 +14,7 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
-Run all automated tests (560 tests, ~7 s):
+Run all automated tests (561 tests, ~7 s):
   npm test
 
 Run tests in watch mode (re-runs on file save):
@@ -258,7 +258,7 @@ Cloudflare Config (wrangler.jsonc):
 
 ## Testing Notes
 
-Automated test suite: **560 tests, ~7 s** (`npm test`). Test files:
+Automated test suite: **561 tests, ~7 s** (`npm test`). Test files:
 
 | File | What it covers | Style |
 |------|---------------|-------|

@@ -789,6 +789,18 @@ describe('stats endpoint', () => {
     assert.equal(stats.streak, 2, 'streak must extend to 2');
     assert.equal(stats.bestStreak, 2, 'bestStreak must capture the peak streak');
   });
+
+  test('a GPS-only walk (routes:0, km>0) counts as an active day for the streak', async () => {
+    const { env, registerAndLogin } = freshEnv();
+    const { token } = await registerAndLogin('gpsstreak@bwr.fr', 'pass1234');
+    // The GPS tracker syncs a recorded walk as { routes: 0, km }. It must still
+    // mark the day active so the streak matches the heatmap, not sit at 0.
+    const res = await worker.fetch(authed('POST', '/api/auth/stats', token, { routes: 0, km: 2.3 }), env);
+    const { stats } = await res.json();
+    const today = new Date().toISOString().slice(0, 10);
+    assert.equal(stats.streak, 1, 'a GPS-only walk must start the streak at 1');
+    assert.equal(stats.lastRouteDate, today, 'the walk day must be recorded as the last active day');
+  });
 });
 
 // ── POST /api/auth/consume-route ─────────────────────────────────────────────

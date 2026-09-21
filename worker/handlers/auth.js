@@ -599,7 +599,12 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const lastDate = prev.lastRouteDate;
     let streak = prev.streak || 0;
     let lastRouteDate = lastDate;
-    if (deltaRoutes > 0) {
+    // A day counts as "active" for the streak when there's ANY activity that day —
+    // a planned route (deltaRoutes) OR a recorded GPS walk (deltaKm, which the GPS
+    // tracker syncs as { routes: 0, km }). This matches how the heatmap and quests
+    // define an active day (km > 0); keying the streak on routes alone meant a real
+    // logged walk lit up the heatmap but never advanced the streak.
+    if (deltaRoutes > 0 || deltaKm > 0) {
       if (lastDate === today) {
         // already counted today — keep streak as-is
       } else if (lastDate === yesterday) {
