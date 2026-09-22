@@ -48,6 +48,79 @@
     return km.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' km';
   }
 
+  // ── "It's about to rain on your walk" check ───────────────────────────────
+  // The moment a walk starts, peek at the next ~2 h of forecast near the walker
+  // and warn if rain is likely, so they can grab a coupe-vent or wait it out.
+  const RAIN_PROB_PCT = 50;   // % chance at/above which we warn
+  const RAIN_MM       = 0.3;  // mm/h at/above which we warn even if prob is missing
+  const RAIN_WINDOW_H = 2;    // how far ahead to look
+
+  // Pure decision helper (kept small so it can be reasoned about / unit-tested):
+  // scans Open-Meteo `hourly` arrays for the soonest rainy hour within
+  // `windowH` hours of `nowMs`. Returns { minutes, prob, mm } or null.
+  function rainWarningFrom(hourly, nowMs, windowH) {
+    if (!hourly || !Array.isArray(hourly.time)) return null;
+    const probs = hourly.precipitation_probability || [];
+    const mms   = hourly.precipitation || [];
+    for (let i = 0; i < hourly.time.length; i++) {
+      const t = new Date(hourly.time[i]).getTime();
+      if (!Number.isFinite(t)) continue;
+      const dtMin = Math.round((t - nowMs) / 60000);
+      if (dtMin < -60) continue;              // skip fully-past hours
+      if (dtMin > windowH * 60) break;         // beyond the window — arrays are time-ordered
+      const p = Number(probs[i]);
+      const q = Number(mms[i]);
+      const rainy = (Number.isFinite(p) && p >= RAIN_PROB_PCT)
+                 || (Number.isFinite(q) && q >= RAIN_MM);
+      if (rainy) {
+        return {
+          minutes: Math.max(0, dtMin),
+          prob: Number.isFinite(p) ? p : null,
+          mm:   Number.isFinite(q) ? q : null,
+        };
+      }
+    }
+    return null;
+  }
+
+  // Best-effort current position, falling back to the forest centre so the check
+  // still runs if GPS is slow or denied. One geolocation prompt covers this and
+  // the tracker's own watchPosition (permission is per-origin).
+  function quickPosition(cb) {
+    const cx = (typeof MAP_CENTER !== 'undefined' && MAP_CENTER) ? MAP_CENTER[0] : 49.35;
+    const cy = (typeof MAP_CENTER !== 'undefined' && MAP_CENTER) ? MAP_CENTER[1] : 2.90;
+    if (!navigator.geolocation) { cb(cx, cy); return; }
+    let done = false;
+    const fallback = () => { if (!done) { done = true; cb(cx, cy); } };
+    navigator.geolocation.getCurrentPosition(
+      p => { if (!done) { done = true; cb(p.coords.latitude, p.coords.longitude); } },
+      fallback,
+      { enableHighAccuracy: false, maximumAge: 300000, timeout: 4000 }
+    );
+  }
+
+  function fmtWhen(minutes) {
+    if (minutes <= 5) return 'bientôt';
+    if (minutes < 60) return `dans ~${minutes} min`;
+    return `dans ~${Math.round(minutes / 60)} h`;
+  }
+
+  async function warnIfRainSoon() {
+    quickPosition(async (lat, lon) => {
+      try {
+        const url = 'https://api.open-meteo.com/v1/forecast'
+          + `?latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}`
+          + '&hourly=precipitation_probability,precipitation'
+          + '&forecast_days=1&timezone=Europe%2FParis';
+        const data = await (await fetch(url)).json();
+        const w = rainWarningFrom(data.hourly, Date.now(), RAIN_WINDOW_H);
+        if (!w) return;
+        const prob = w.prob != null ? ` (${w.prob}%)` : '';
+        toast(`🌧 Pluie prévue ${fmtWhen(w.minutes)}${prob} — pensez à prendre un coupe-vent !`);
+      } catch { /* forecast is a nicety — never block the walk on it */ }
+    });
+  }
+
   function setLabel() {
     btn.textContent = active ? `⏹ ${fmtKm(sessionKm)}` : '▶ Suivi GPS';
     btn.title = active ? 'Terminer le suivi de distance' : 'Compter ma distance parcourue';
@@ -105,6 +178,8 @@
     btn.classList.add('tracking');
     setLabel();
     toast('🏃 Suivi démarré — bonne balade !');
+    // Heads-up if rain is likely on the walk that's just starting.
+    warnIfRainSoon();
 
     watchId = navigator.geolocation.watchPosition(
       onPosition,
