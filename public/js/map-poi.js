@@ -194,6 +194,7 @@ function exitPoiAddMode() {
 // out early while poiAddModeActive is true (see js/map-paths.js), so only one
 // acts on a given click.
 map.on('click', e => {
+  if (window.measureModeActive) return; // measure mode (js/map-measure.js) owns the click
   if (!window.poiAddModeActive) return;
   openPoiForm(null, [e.latlng.lat, e.latlng.lng]);
   // Leave add mode immediately so a mis-click doesn't open a second form; the

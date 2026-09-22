@@ -189,6 +189,8 @@ const inDeployedZone = latlng => DEPLOYED_ZONES.some(b => b.contains(latlng));
 map.on('click', e => {
   // POI placement mode (js/map-poi.js) owns the click: let it handle the drop.
   if (window.poiAddModeActive) return;
+  // Measure mode (js/map-measure.js) owns the click: it drops a measure point.
+  if (window.measureModeActive) return;
   if (!inDeployedZone(e.latlng)) {
     showToast('Désolé, nous n\'avons pas encore déployé à cet endroit.');
     return;
@@ -203,6 +205,8 @@ map.on('click', e => {
 // Cursor pointer when hovering near a path
 let _hoverThrottle = null;
 map.on('mousemove', e => {
+  // While measuring, map-measure.js owns the cursor (crosshair) + rubber band.
+  if (window.measureModeActive) return;
   if (_hoverThrottle) return;
   _hoverThrottle = setTimeout(() => { _hoverThrottle = null; }, 40);
   const hit = _pathAtClick(e.latlng);

@@ -2648,6 +2648,105 @@ textarea.poi-input { resize: vertical; }
 .poi-ctrl-add { font-size: 1rem; padding: 7px 10px; }
 .poi-add-cursor { cursor: crosshair !important; }
 
+/* ── Measure-distance tool (js/map-measure.js) ── */
+.measure-vertex {
+  background: #fff;
+  border: 3px solid #1e4d14;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  cursor: grab;
+}
+.measure-vertex:active { cursor: grabbing; }
+
+.measure-menu {
+  position: fixed;
+  z-index: 3000;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.22);
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  min-width: 210px;
+  overflow: hidden;
+}
+.measure-menu-item {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 9px 12px;
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: #1f2937;
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.measure-menu-item:hover { background: #f0f5ec; color: #1e4d14; }
+
+/* The measure panel takes the top-centre slot the search bar occupies, so hide
+   the search while a measurement is on screen (it isn't needed mid-measure). */
+body.measuring-active .map-search-wrap { visibility: hidden; }
+
+.measure-panel {
+  position: fixed;
+  top: 66px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200;
+  background: rgba(255,255,255,0.96);
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.2);
+  padding: 10px 14px;
+  min-width: 220px;
+  max-width: calc(100vw - 24px);
+  text-align: center;
+}
+.measure-panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.measure-total { font-size: 1.15rem; font-weight: 800; color: #1e4d14; }
+.measure-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 0.95rem; color: #6b7280; line-height: 1; padding: 2px 4px;
+}
+.measure-close:hover { color: #1f2937; }
+.measure-hint { font-size: 0.72rem; color: #6b7280; margin: 4px 0 8px; }
+.measure-actions { display: flex; gap: 8px; justify-content: center; }
+.measure-btn {
+  background: #1e4d14; color: #fff; border: none; border-radius: 8px;
+  padding: 6px 14px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+}
+.measure-btn:hover { background: #163a0f; }
+.measure-btn-ghost { background: #eef2f0; color: #374151; }
+.measure-btn-ghost:hover { background: #e2e8e4; }
+
+[data-theme="dark"] .measure-menu       { background: #16201a; box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
+[data-theme="dark"] .measure-menu-item  { color: #d4edbc; }
+[data-theme="dark"] .measure-menu-item:hover { background: #24303a; color: #a3e635; }
+[data-theme="dark"] .measure-panel      { background: rgba(22,32,26,0.97); box-shadow: 0 4px 18px rgba(0,0,0,0.5); }
+[data-theme="dark"] .measure-total      { color: #a3e635; }
+[data-theme="dark"] .measure-hint       { color: #93a89b; }
+[data-theme="dark"] .measure-close      { color: #93a89b; }
+[data-theme="dark"] .measure-close:hover { color: #d4edbc; }
+[data-theme="dark"] .measure-btn-ghost  { background: #24303a; color: #cbd5e1; }
+[data-theme="dark"] .measure-btn-ghost:hover { background: #2d3a45; }
+[data-theme="dark"] .measure-vertex     { border-color: #a3e635; background: #16201a; }
+
+/* Mobile: the top-centre slot is too narrow (the panel would cover the layer
+   switcher), so drop the panel to the free band above the bottom controls and
+   keep the search bar usable at the top. */
+@media (max-width: 600px) {
+  .measure-panel {
+    top: auto;
+    bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+  }
+  body.measuring-active .map-search-wrap { visibility: visible; }
+}
+
 /* ── Dark theme ── */
 [data-theme="dark"] .popup-reviews       { border-top-color: #2a3a30; }
 [data-theme="dark"] .popup-reviews-title { color: #a3e635; }
