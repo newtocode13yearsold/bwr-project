@@ -1,0 +1,132 @@
+/* ── First-run notification opt-in banner ──────────────────────────────────
+ * A one-time, dismissible banner shown to a signed-in member who has never
+ * been asked about browser notifications, inviting them to enable obstacle
+ * alerts on their saved routes. Injected by js/notif-optin.js. Styles live
+ * here (the site CSP forbids inline <script>, so JS stays external).
+ * ────────────────────────────────────────────────────────────────────────── */
+.notif-optin {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 74px);
+  transform: translateX(-50%) translateY(20px);
+  z-index: 1200;
+  width: min(520px, calc(100vw - 24px));
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  color: #eff6ff;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  font-family: 'Inter', system-ui, sans-serif;
+  opacity: 0;
+  transition: opacity .28s ease, transform .28s ease;
+  pointer-events: none;
+}
+.notif-optin.notif-optin-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.notif-optin-emoji {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+.notif-optin-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.notif-optin-body p {
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+.notif-optin-body strong { font-weight: 700; }
+.notif-optin-hint {
+  display: block;
+  margin: -4px 0 10px !important;
+  font-size: 0.76rem !important;
+  color: #bfdbfe;
+}
+.notif-optin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.notif-optin-btn {
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 9px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background .16s ease, opacity .16s ease;
+}
+.notif-optin-btn:disabled { opacity: .6; cursor: default; }
+.notif-optin-primary {
+  background: #ffffff;
+  color: #1d4ed8;
+}
+.notif-optin-primary:hover:not(:disabled) { background: #e0e7ff; }
+.notif-optin-ghost {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+.notif-optin-ghost:hover:not(:disabled) { background: rgba(255, 255, 255, 0.28); }
+.notif-optin-close {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.notif-optin-close:hover { background: rgba(255, 255, 255, 0.28); }
+
+/* On the map page the FAB, legend and tab bar sit low — lift the banner clear. */
+.map-body .notif-optin {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 134px);
+}
+
+/* Desktop: no bottom-nav, so the banner can sit near the bottom edge. */
+@media (min-width: 780px) {
+  .notif-optin,
+  .map-body .notif-optin { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
+}
+
+/* ── Tiny confirmation toast (reuses the banner's look) ─────────────────────── */
+.notif-optin-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 90px);
+  transform: translateX(-50%) translateY(16px);
+  z-index: 1300;
+  max-width: min(440px, calc(100vw - 24px));
+  padding: 12px 18px;
+  background: #111827;
+  color: #f9fafb;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.86rem;
+  line-height: 1.35;
+  text-align: center;
+  opacity: 0;
+  transition: opacity .28s ease, transform .28s ease;
+  pointer-events: none;
+}
+.notif-optin-toast.notif-optin-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+@media (min-width: 780px) {
+  .notif-optin-toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 32px); }
+}
