@@ -1,8 +1,9 @@
 /* ── BWR first-run notification opt-in banner ──────────────────────────────
  * The first time a signed-in member reaches a core app page — right after
  * sign-up — a friendly, dismissible banner asks whether they want to turn on
- * browser notifications for obstacle alerts on their saved routes. It makes
- * clear the choice can be changed later from the profile.
+ * browser notifications for the map: obstacle alerts on their saved routes and
+ * weather turning during a walk. It states plainly there is NEVER any
+ * advertising, and that the choice can be changed later from the profile.
  *
  * Shown at most ONCE per browser, and only when the browser hasn't already
  * been asked (Notification.permission === 'default'), so it never nags. It is
@@ -126,9 +127,11 @@
     banner.innerHTML =
       '<span class="notif-optin-emoji" aria-hidden="true">🔔</span>' +
       '<div class="notif-optin-body">' +
-        '<p><strong>Activer les notifications&nbsp;?</strong> Soyez prévenu dès qu’un obstacle ' +
-          '(arbre tombé, inondation…) est signalé sur l’un de vos trajets enregistrés.</p>' +
-        '<span class="notif-optin-hint">Vous pourrez changer ce choix à tout moment dans votre profil.</span>' +
+        '<p><strong>Activer les notifications de la carte&nbsp;?</strong> Soyez prévenu dès qu’un ' +
+          'obstacle (arbre tombé, inondation…) est signalé sur l’un de vos trajets, ou quand la ' +
+          'météo tourne pendant votre balade.</p>' +
+        '<span class="notif-optin-hint">Uniquement des infos utiles sur la forêt&nbsp;— jamais de ' +
+          'publicité. Vous pourrez changer ce choix à tout moment dans votre profil.</span>' +
         '<div class="notif-optin-actions">' +
           '<button class="notif-optin-btn notif-optin-primary" id="notifOptinYes">Activer</button>' +
           '<button class="notif-optin-btn notif-optin-ghost" id="notifOptinNo">Plus tard</button>' +
