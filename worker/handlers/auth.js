@@ -1,4 +1,4 @@
-import { putUser, getUserByEmail, getUser, effectivePlan, recordAuthEvent, listKeys, listItems } from '../kv.js';
+import { putUser, getUserByEmail, getUser, effectivePlan, recordAuthEvent, listKeys, listItems, putReport } from '../kv.js';
 import {
   hashPasswordLegacy, hashPassword, getUserFromToken,
   isoMonday, checkRateLimit,
@@ -724,6 +724,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
 
     const savedRoutes = await listItems(env, `savedroute:${user.id}:`);
     const activities = await listItems(env, `activity:${user.id}:`);
+    const reports = (await listItems(env, 'report:')).filter(r => r.userId === user.id);
     const walkedKeys = await listKeys(env, `walkedpath:${user.id}:`);
     const walkedPaths = await Promise.all(
       walkedKeys.map(async (k) => ({
@@ -745,6 +746,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       profile,
       savedRoutes,
       activities,
+      reports,
       walkedPaths,
       social,
     };
@@ -782,6 +784,10 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       .filter(k => k.name.endsWith(`:${user.id}`));
     // POIs the user added carry a free-text name/note; purge them with the account.
     const ownPois = (await listItems(env, 'poi:')).filter(p => p.createdBy === user.id);
+    // Hazard reports stay (community-safety value outlives the account, like an
+    // OSM edit), but the link to the deleted account must not: strip userId
+    // rather than delete the report outright.
+    const ownReports = (await listItems(env, 'report:')).filter(r => r.userId === user.id);
 
     // Social graph: delete both directions of every follow edge involving this
     // user, plus every kudos they gave (owner-first key, so scan + suffix-match)
@@ -806,6 +812,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       ...inboxReadKeys.map(k => env.BWR_KV.delete(k.name)),
       ...pathReviewKeys.map(k => env.BWR_KV.delete(k.name)),
       ...ownPois.map(p => env.BWR_KV.delete(`poi:${p.id}`)),
+      ...ownReports.map(r => putReport(env, { ...r, userId: null })),
       ...followingKeys.map(k => env.BWR_KV.delete(k.name)),
       ...followerKeys.map(k => env.BWR_KV.delete(k.name)),
       ...reverseFollowerKeys.map(k => env.BWR_KV.delete(k)),

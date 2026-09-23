@@ -1195,9 +1195,12 @@ describe('/api/auth/export', () => {
     const { env, kv, registerAndLogin } = freshEnv();
     const login = await registerAndLogin('exp@bwr.fr', 'exportme1', 'Exp');
 
-    // Seed a saved route + walked path so the export is non-trivial.
+    // Seed a saved route + walked path + own report (and someone else's report,
+    // to prove the export is scoped) so the export is non-trivial.
     kv.store.set(`savedroute:${login.user.id}:rt1`, JSON.stringify({ id: 'rt1', userId: login.user.id, name: 'Boucle', coords: [[1, 2], [3, 4]], shareToken: 'tok1' }));
     kv.store.set(`walkedpath:${login.user.id}:p9`, '2026-06-01T10:00:00.000Z');
+    kv.store.set('report:rep1', JSON.stringify({ id: 'rep1', userId: login.user.id, type: 'fallen_tree', note: 'Arbre', lat: 49.35, lon: 2.9, date: '2026-06-01T00:00:00.000Z', status: 'open' }));
+    kv.store.set('report:rep2', JSON.stringify({ id: 'rep2', userId: 'someone-else', type: 'muddy', note: 'Boueux', lat: 49.36, lon: 2.91, date: '2026-06-02T00:00:00.000Z', status: 'open' }));
 
     const res = await worker.fetch(authed('GET', '/api/auth/export', login.token), env);
     assert.equal(res.status, 200);
@@ -1212,6 +1215,8 @@ describe('/api/auth/export', () => {
     assert.equal(data.walkedPaths.length, 1);
     assert.equal(data.walkedPaths[0].pathId, 'p9');
     assert.equal(data.walkedPaths[0].walkedAt, '2026-06-01T10:00:00.000Z');
+    assert.equal(data.reports.length, 1, 'export must include only the caller\'s own reports');
+    assert.equal(data.reports[0].id, 'rep1');
   });
 });
 
@@ -1260,6 +1265,28 @@ describe('/api/auth/account', () => {
     assert.ok(!kv.store.has(`review:${uid}`), 'site review must be gone');
     assert.ok(!kv.store.has(`pushsub:${uid}:hash1`), 'push subscription must be gone');
     assert.ok(!kv.store.has(`session:${login.token}`), 'active session must be gone');
+  });
+
+  test('deletion anonymises (does not erase) the user\'s own hazard reports', async () => {
+    const { env, kv } = freshEnv();
+    await worker.fetch(r('POST', '/api/auth/register', { name: 'Rep', username: 'repuser', email: 'rep@bwr.fr', password: 'deleteme1' }), env);
+    const vt = kv.store.get('pemail:rep@bwr.fr');
+    await worker.fetch(r('GET', `/api/auth/verify?token=${vt}`), env);
+    const login = await (await worker.fetch(r('POST', '/api/auth/login', { email: 'rep@bwr.fr', password: 'deleteme1' }), env)).json();
+    const uid = login.user.id;
+
+    kv.store.set('report:rep1', JSON.stringify({
+      id: 'rep1', userId: uid, pathId: null, type: 'fallen_tree', note: 'Arbre en travers',
+      hasPhoto: false, lat: 49.35, lon: 2.9, date: '2026-06-01T00:00:00.000Z', status: 'open',
+    }));
+
+    const res = await worker.fetch(authed('DELETE', '/api/auth/account', login.token), env);
+    assert.equal(res.status, 200);
+
+    assert.ok(kv.store.has('report:rep1'), 'the report itself must survive (community-safety value)');
+    const stored = JSON.parse(kv.store.get('report:rep1'));
+    assert.equal(stored.userId, null, 'the link to the deleted account must be severed');
+    assert.equal(stored.lat, 49.35, 'the hazard location must be untouched');
   });
 });
 

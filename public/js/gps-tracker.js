@@ -105,7 +105,16 @@
     return `dans ~${Math.round(minutes / 60)} h`;
   }
 
+  // Silver/Gold perk (same tier as the weather widget) — sends the walk's
+  // start position to Open-Meteo, so gate it like any other weather feature.
+  function canRainWarn() {
+    if (typeof BWR === 'undefined' || typeof getCachedUser !== 'function') return false;
+    const user = getCachedUser();
+    return !!user && BWR.can('weather', user.plan);
+  }
+
   async function warnIfRainSoon() {
+    if (!canRainWarn()) return;
     quickPosition(async (lat, lon) => {
       try {
         const url = 'https://api.open-meteo.com/v1/forecast'
