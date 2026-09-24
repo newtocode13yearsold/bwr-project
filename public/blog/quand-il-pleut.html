@@ -107,8 +107,8 @@
         Privilégiez les <strong>grandes allées stabilisées</strong> (sable compacté, gravier) plutôt que les sentiers de sous-bois en terre. Les grandes allées drainent bien et restent marchables même après plusieurs jours de pluie.
       </div>
 
-      <div id="bwr-map" role="img" aria-label="Carte des départs praticables par temps humide en forêt de Compiègne"></div>
-      <p class="bwr-map-attr">Carte : © OpenStreetMap · SRTM · OpenTopoMap — cliquez un pin pour les détails</p>
+      <div id="bwr-map" role="img" aria-label="Carte des allées stabilisées et du secteur boueux à éviter autour du Carrefour Royal, en forêt de Compiègne"></div>
+      <p class="bwr-map-attr">Carte : © OpenStreetMap · SRTM · OpenTopoMap — en vert les allées stabilisées, en rouge le secteur à éviter par temps humide</p>
 
       <h2>Quels terrains évitent la boue ?</h2>
 
@@ -192,9 +192,12 @@
     <p>© 2026 <a href="/">BWR</a> · Balades en forêt de Compiègne · <a href="mailto:thomaslegros71@gmail.com">Contact</a></p>
   </footer>
 
-<script type="application/json" id="bwr-spots">{"spots":[
-  {"lat":49.40576,"lng":2.84595,"emoji":"🅿️","title":"Carrefour Royal","note":"Grandes allées majoritairement stabilisées : point de départ fiable quand le sol est détrempé.","link":"/routes?lat=49.40576&lng=2.84595&distance=6&mode=loop&type=foot&diff=easy"},
-  {"lat":49.40779,"lng":2.88191,"emoji":"🅿️","title":"Parking du Tréan (Beaux Monts)","note":"Allées empierrées côté hauteur — évitez les fonds de vallon argileux après la pluie."}
+<script type="application/json" id="bwr-spots">{"center":[49.4062,2.84750],"zoom":15,"spots":[
+  {"lat":49.40576,"lng":2.84595,"emoji":"🅿️","title":"Carrefour Royal","label":"Carrefour Royal","note":"Grandes allées rayonnantes majoritairement stabilisées : point de départ fiable quand le sol est détrempé.","link":"/routes?lat=49.40576&lng=2.84595&distance=6&mode=loop&type=foot&diff=easy"}
+],"paths":[
+  {"kind":"good","label":"✓ Allée stabilisée","note":"Piste large et compactée — reste praticable même après plusieurs jours de pluie.","coords":[[49.40592,2.84621],[49.40597,2.8463],[49.40691,2.84782],[49.40695,2.84856],[49.40696,2.84874],[49.40695,2.84878],[49.40679,2.85014],[49.40661,2.85201],[49.40662,2.85228],[49.40683,2.85252]]},
+  {"kind":"good","label":"✓ Piste cyclable stabilisée","note":"Revêtement dur (ancienne voie asphaltée) — sec par tous les temps.","coords":[[49.40567,2.84563],[49.40555,2.84534],[49.40453,2.84281],[49.40324,2.83964],[49.40321,2.83956],[49.40236,2.83731],[49.40219,2.83686]]},
+  {"kind":"avoid","label":"✕ Fond de vallon boueux","note":"Sentier en terre nue, sans drainage — se transforme en bourbier dès qu'il a plu.","coords":[[49.40775,2.84798],[49.40767,2.84795],[49.4076,2.84787],[49.40613,2.84632],[49.40603,2.84619],[49.40598,2.84608]]}
 ]}</script>
 <script src="/lib/leaflet.js"></script>
 <script src="/js/blog-map.js"></script>

@@ -542,6 +542,50 @@
 }
 
 /* ══════════════════════════════════════════════════
+   ARTICLE MAP — always-on labels (public/js/blog-map.js)
+   Leaflet tooltips set permanent:true so the reader sees where a pin
+   or a highlighted trail is without clicking. Custom classNames below
+   override Leaflet's default white tooltip box.
+══════════════════════════════════════════════════ */
+.leaflet-tooltip.bwr-pin-label {
+  background: var(--surface-0, #fff);
+  color: var(--forest-800, #133b18);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid var(--border, #e2e8da);
+  box-shadow: var(--shadow-sm, 0 2px 6px -2px rgba(11,36,16,.15));
+  white-space: nowrap;
+}
+.leaflet-tooltip.bwr-pin-label::before { border-top-color: var(--surface-0, #fff); }
+
+.leaflet-tooltip.bwr-path-label {
+  background: rgba(255, 255, 255, 0.92);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill, 999px);
+  box-shadow: var(--shadow-sm, 0 2px 6px -2px rgba(11,36,16,.15));
+  white-space: nowrap;
+  border: 1.5px solid transparent;
+}
+.leaflet-tooltip.bwr-path-label-good  { color: var(--forest-700, #1e4d14); border-color: var(--forest-600, #2d6b1f); }
+.leaflet-tooltip.bwr-path-label-avoid { color: var(--danger, #dc2626);     border-color: var(--danger, #dc2626); }
+
+[data-theme="dark"] .leaflet-tooltip.bwr-pin-label {
+  background: var(--surface-2);
+  color: var(--text-strong);
+  border-color: var(--border);
+}
+[data-theme="dark"] .leaflet-tooltip.bwr-pin-label::before { border-top-color: var(--surface-2); }
+[data-theme="dark"] .leaflet-tooltip.bwr-path-label { background: rgba(28, 42, 32, 0.92); }
+[data-theme="dark"] .leaflet-tooltip.bwr-path-label-good  { color: var(--lime-400); border-color: var(--forest-500); }
+[data-theme="dark"] .leaflet-tooltip.bwr-path-label-avoid { color: #fca5a5; border-color: var(--danger); }
+
+/* ══════════════════════════════════════════════════
    DARK MODE — blog (index + article)
    Most surfaces already read from tokens.css and theme
    automatically; these rules cover the page shell and the
