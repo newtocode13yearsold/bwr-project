@@ -50,6 +50,18 @@ try {
   }
 } catch {}
 
+/* ── "Dernière vérif. terrain" — auto-set to the current month ─────────── */
+/* Written in JS so the homepage never shows a stale month and looks abandoned.
+   Uses an abbreviated French month + year, e.g. "sept. 2026". */
+(function () {
+  var el = document.getElementById('heroStatCheck');
+  if (!el) return;
+  try {
+    var txt = new Date().toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+    el.textContent = txt.charAt(0).toUpperCase() + txt.slice(1);
+  } catch {}
+})();
+
 /* ── Feature carousel ────────────────────────────────────────────────── */
 (function () {
   var track  = document.getElementById('fcarouselTrack');
