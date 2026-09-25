@@ -74,6 +74,20 @@
     { href: 'admin-panel', label: 'Panneau admin', icon: IC.gear, admin: true, id: 'navDrawerAdminPanel' }
   ];
 
+  /* ── Canonical top-bar links ────────────────────────────────────────────
+   * The compact links shown in the desktop header bar (`.header-nav-links`).
+   * Centralized here so every page shows the SAME set, in the same order —
+   * the per-page markup in each HTML file is a fallback and is overwritten
+   * at load (same pattern as the drawer above). Full navigation lives in the
+   * hamburger drawer; this is just the quick-access strip. To change the top
+   * bar everywhere, edit HEADER_LINKS (nothing else). */
+  var HEADER_LINKS = [
+    { href: 'map',    label: 'Carte' },
+    { href: 'routes', label: 'Planifier' },
+    { href: 'news',   label: 'Actualités' },
+    { href: 'plans',  label: 'Plans' }
+  ];
+
   // Current page slug, e.g. "/map.html" -> "map", "/" -> "".
   function currentSlug() {
     var p = location.pathname.replace(/\/+$/, '').split('/').pop() || '';
@@ -116,6 +130,18 @@
       '<span>' + it.label + '</span></a>';
   }
 
+  // Rebuild the top-bar quick links from HEADER_LINKS, marking the current
+  // page active. No-op on pages without a `.header-nav-links` strip.
+  function buildHeaderNav() {
+    var nav = document.querySelector('.header-nav-links');
+    if (!nav) return;
+    var slug = currentSlug();
+    nav.innerHTML = HEADER_LINKS.map(function (l) {
+      return '<a href="' + l.href + '"' + (l.href === slug ? ' class="active"' : '') +
+        '>' + l.label + '</a>';
+    }).join('');
+  }
+
   // Build (or rebuild) the canonical drawer + overlay + burger. Runs on any
   // page that has (or should have) the hamburger button.
   function buildMenu() {
@@ -155,6 +181,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     buildMenu();
+    buildHeaderNav();
 
     var overlay  = document.getElementById('navDrawerOverlay');
     var drawer   = document.getElementById('navDrawer');
