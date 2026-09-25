@@ -61,13 +61,13 @@
       <!-- Login form -->
       <form id="loginForm" class="auth-form">
         <div class="field">
-          <label>Email</label>
-          <input type="email" id="loginEmail" class="input-field" placeholder="vous@email.com" required />
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" class="input-field" placeholder="vous@email.com" autocomplete="email" required />
         </div>
         <div class="field">
-          <label>Mot de passe</label>
+          <label for="loginPassword">Mot de passe</label>
           <div class="pw-wrap">
-            <input type="password" id="loginPassword" class="input-field" placeholder="••••••••" required />
+            <input type="password" id="loginPassword" class="input-field" placeholder="••••••••" autocomplete="current-password" required />
             <button type="button" class="pw-eye" aria-label="Afficher le mot de passe" data-target="loginPassword">
               <svg class="eye-icon eye-show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-icon eye-hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -87,8 +87,8 @@
       <!-- Forgot-password panel -->
       <div id="forgotPanel" class="hidden" style="margin-top:-.5rem">
         <div class="field">
-          <label>Email de votre compte</label>
-          <input type="email" id="forgotEmail" class="input-field" placeholder="vous@email.com" />
+          <label for="forgotEmail">Email de votre compte</label>
+          <input type="email" id="forgotEmail" class="input-field" placeholder="vous@email.com" autocomplete="email" />
         </div>
         <div id="forgotMsg" class="form-error hidden"></div>
         <button type="button" id="forgotBtn" class="btn-secondary" style="width:100%">Envoyer le lien de réinitialisation</button>
@@ -100,8 +100,8 @@
       <!-- Resend verification panel -->
       <div id="resendPanel" class="hidden" style="margin-top:-.5rem">
         <div class="field">
-          <label>Email du compte en attente</label>
-          <input type="email" id="resendEmail" class="input-field" placeholder="vous@email.com" />
+          <label for="resendEmail">Email du compte en attente</label>
+          <input type="email" id="resendEmail" class="input-field" placeholder="vous@email.com" autocomplete="email" />
         </div>
         <div id="resendMsg" class="form-error hidden"></div>
         <button type="button" id="resendBtn" class="btn-secondary" style="width:100%">Renvoyer l'email de vérification</button>
@@ -113,21 +113,21 @@
       <!-- Signup form -->
       <form id="signupForm" class="auth-form hidden">
         <div class="field">
-          <label>Prénom et nom</label>
-          <input type="text" id="signupName" class="input-field" placeholder="Thomas Legros" required />
+          <label for="signupName">Prénom et nom</label>
+          <input type="text" id="signupName" class="input-field" placeholder="Thomas Legros" autocomplete="name" required />
         </div>
         <div class="field">
-          <label>Nom d'utilisateur</label>
+          <label for="signupUsername">Nom d'utilisateur</label>
           <input type="text" id="signupUsername" class="input-field" placeholder="thomas_l" minlength="3" maxlength="20" pattern="[a-zA-Z0-9_.\-]{3,20}" title="3 à 20 caractères : lettres, chiffres, . _ -" autocomplete="username" required />
         </div>
         <div class="field">
-          <label>Email</label>
-          <input type="email" id="signupEmail" class="input-field" placeholder="vous@email.com" required />
+          <label for="signupEmail">Email</label>
+          <input type="email" id="signupEmail" class="input-field" placeholder="vous@email.com" autocomplete="email" required />
         </div>
         <div class="field">
-          <label>Mot de passe</label>
+          <label for="signupPassword">Mot de passe</label>
           <div class="pw-wrap">
-            <input type="password" id="signupPassword" class="input-field" placeholder="8 caractères minimum" minlength="8" required />
+            <input type="password" id="signupPassword" class="input-field" placeholder="8 caractères min., 1 majuscule, 1 chiffre, 1 caractère spécial" minlength="8" pattern="(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}" title="Au moins 8 caractères, une majuscule, un chiffre et un caractère spécial" autocomplete="new-password" required />
             <button type="button" class="pw-eye" aria-label="Afficher le mot de passe" data-target="signupPassword">
               <svg class="eye-icon eye-show" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-icon eye-hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
