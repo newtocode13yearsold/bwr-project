@@ -1956,6 +1956,9 @@ textarea.cf-input { resize: vertical; min-height: 100px; }
 
 [data-theme="dark"] body { background: #0e1a11; }
 
+/* Section eyebrow labels — forest-700 is unreadable on the dark surface */
+[data-theme="dark"] .section-label { color: var(--lime-500); }
+
 /* Plan comparison strip */
 [data-theme="dark"] .pc-th,
 [data-theme="dark"] .pc-th-gold,

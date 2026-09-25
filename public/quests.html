@@ -64,8 +64,9 @@
     .wrap { max-width: 1080px; margin: 40px auto 80px; padding: 0 20px; }
 
     .tabs { display: flex; flex-wrap: wrap; gap: 6px; background: var(--surface-2, #eef2e6); padding: 6px; border-radius: 16px; margin-bottom: 8px; }
-    .tab { border: none; background: transparent; padding: 10px 18px; border-radius: 12px; font-weight: 600; font-size: 0.92rem; cursor: pointer; color: var(--text-2, #4b5563); }
-    .tab.active { background: var(--surface-1, #fff); color: var(--brand-700, #1e4d14); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .tab { border: none; background: transparent; padding: 10px 18px; border-radius: 12px; font-weight: 600; font-size: 0.92rem; cursor: pointer; color: var(--text-muted, #4b5563); }
+    .tab.active { background: var(--surface-0, #fff); color: var(--forest-700, #1e4d14); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    [data-theme="dark"] .tab.active { background: #334d3b; color: #d4edbc; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
 
     .subtitle { font-size: 0.92rem; color: var(--text-2, #6b7280); margin: 16px 2px 16px; }
 

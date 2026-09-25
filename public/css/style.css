@@ -2424,6 +2424,11 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
 [data-theme="dark"] .login-card          { background: #16201a; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
 [data-theme="dark"] .login-card h2       { color: #d4edbc; }
 [data-theme="dark"] .login-subtitle      { color: #8fa887; }
+[data-theme="dark"] .login-sub           { color: #8fa887; }
+[data-theme="dark"] .field label         { color: #c8dcc0; }
+[data-theme="dark"] .tabs                { background: #233028; }
+[data-theme="dark"] .tab                 { color: #8fa887; }
+[data-theme="dark"] .tab.active          { background: #334d3b; color: #d4edbc; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 
 /* ── Sidebar contact ── */
 [data-theme="dark"] .sidebar-contact     { border-bottom-color: #2a3a30; }
