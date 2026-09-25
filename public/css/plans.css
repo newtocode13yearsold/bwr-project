@@ -1684,3 +1684,51 @@
 @media (max-width: 768px) {
   .plans-body { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 20px); }
 }
+
+/* ── Dark mode ───────────────────────────────────────────────────────────────
+ * tokens.css remaps surfaces + generic text for [data-theme="dark"] but leaves
+ * the --forest-* palette untouched. This page hard-codes --forest-900 /
+ * --forest-700 for its headings, plan names and prices, so on a dark surface
+ * that near-black green becomes invisible. Retarget those to the theme's light
+ * text/accent tokens. The Gold card keeps a light cream background in dark mode,
+ * so its dark-gold text is re-asserted below.
+ * ────────────────────────────────────────────────────────────────────────────── */
+:root[data-theme="dark"] .hero-headline,
+:root[data-theme="dark"] .section-title,
+:root[data-theme="dark"] .pc-name,
+:root[data-theme="dark"] .pc-amount,
+:root[data-theme="dark"] .cs-title,
+:root[data-theme="dark"] .trust-item strong,
+:root[data-theme="dark"] .testimonial blockquote,
+:root[data-theme="dark"] .testimonial figcaption strong,
+:root[data-theme="dark"] .faq-item summary,
+:root[data-theme="dark"] .pf-logo,
+:root[data-theme="dark"] .pf.yes.hl {
+  color: var(--text-strong);
+}
+
+/* Forest-green accents → light green so they stay legible on a dark surface */
+:root[data-theme="dark"] .hero-italic,
+:root[data-theme="dark"] .pc-annual-note,
+:root[data-theme="dark"] .pc-toggle,
+:root[data-theme="dark"] .cs-eyebrow,
+:root[data-theme="dark"] .compare-table .ok,
+:root[data-theme="dark"] .compare-table .ct-section td,
+:root[data-theme="dark"] .cs-chevron,
+:root[data-theme="dark"] .faq-item summary::after,
+:root[data-theme="dark"] .faq-item p a {
+  color: var(--forest-300);
+}
+
+/* "yes" feature check chips: forest-100 bg is a light chip — keep contrast */
+:root[data-theme="dark"] .pf.yes .pf-icon {
+  background: rgba(163, 230, 53, 0.18);
+  color: var(--forest-300);
+}
+
+/* Gold card stays on its light cream gradient in dark mode → keep dark-gold text */
+:root[data-theme="dark"] .plan-gold .pc-name,
+:root[data-theme="dark"] .plan-gold .pc-tag,
+:root[data-theme="dark"] .plan-gold .pf.yes.hl {
+  color: var(--gold-text);
+}
