@@ -266,7 +266,14 @@
 }
 
 @media (max-width: 640px) {
-  .lg-table { font-size: 12px; }
+  /* Tables have 3–4 text columns that can't shrink below the phone width,
+     so let each one scroll on its own instead of stretching the whole page. */
+  .lg-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: 12px;
+  }
   .lg-table th, .lg-table td { padding: 8px; }
 }
 
