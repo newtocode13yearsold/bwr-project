@@ -30,6 +30,17 @@
     return /^(chrome-extension|moz-extension|safari-extension|webkit-masked-url):/i.test(src || '');
   }
 
+  // Transient service-worker registration noise. When the one-time fetch of
+  // /sw.js hiccups (flaky mobile network), Safari rejects its own internal
+  // `navigator.serviceWorker.ready` with "Script …/sw.js load failed" — a
+  // rejection no page `.catch()` can intercept, because the browser emits it,
+  // not our code. Every register() call we make already swallows failures, so
+  // this is unactionable: the SW simply registers on the next load. Don't page
+  // the admin for it.
+  function isSwNoise(msg) {
+    return /sw\.js\b[^]*\bload failed\b/i.test(msg || '');
+  }
+
   function report(fields) {
     try {
       if (sentCount >= MAX_SENDS) return;
@@ -42,6 +53,9 @@
       // A cross-origin "Script error." with no stack/source is opaque noise
       // (browsers hide details of errors from other origins) — skip it.
       if (message === 'Script error.' && !fields.stack && !source) return;
+
+      // Transient SW-script load failures (see isSwNoise) — not our bug.
+      if (isSwNoise(message)) return;
 
       var line = (typeof fields.line === 'number' && isFinite(fields.line)) ? Math.round(fields.line) : null;
       var col  = (typeof fields.col  === 'number' && isFinite(fields.col))  ? Math.round(fields.col)  : null;
