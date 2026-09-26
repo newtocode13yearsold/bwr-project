@@ -54,11 +54,18 @@ try {
 /* Written in JS so the homepage never shows a stale month and looks abandoned.
    Uses an abbreviated French month + year, e.g. "sept. 2026". */
 (function () {
-  var el = document.getElementById('heroStatCheck');
-  if (!el) return;
+  var hero = document.getElementById('heroStatCheck');
+  var faq  = document.getElementById('faqCheckDate');
+  if (!hero && !faq) return;
   try {
     var txt = new Date().toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
-    el.textContent = txt.charAt(0).toUpperCase() + txt.slice(1);
+    var pretty = txt.charAt(0).toUpperCase() + txt.slice(1);
+    if (hero) hero.textContent = pretty;
+    // FAQ uses the long month form for a full sentence, e.g. "septembre 2026".
+    if (faq) {
+      var long = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      faq.textContent = long;
+    }
   } catch {}
 })();
 

@@ -60,7 +60,7 @@ async function renderList() {
     <div class="forum-search">
       <span class="forum-search-icon" aria-hidden="true">🔍</span>
       <input type="search" id="forumSearch" class="forum-search-input"
-             placeholder="Rechercher un sujet…" autocomplete="off"
+             placeholder="Rechercher un sujet…" aria-label="Rechercher un sujet dans le forum" autocomplete="off"
              value="${escAttr(currentQuery)}" />
     </div>
     <div id="topicList"></div>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Carte de la forêt de Compiègne & des forêts de l'Oise | BWR</title>
-  <meta name="description" content="Carte interactive de la forêt de Compiègne et des forêts de l'Oise (Laigue, Halatte, Chantilly, Ermenonville) et de Retz. Planifiez vos balades à pied ou à vélo, consultez l'état des sentiers et signalez les obstacles en temps réel." />
+  <meta name="description" content="Carte interactive des forêts de l'Oise (Compiègne, Laigue, Halatte, Chantilly) : planifiez vos balades à pied ou à vélo et consultez l'état des sentiers." />
   <meta name="keywords" content="carte forêt de Compiègne, carte forêt Compiègne, randonnée forêt de Compiègne, sentiers forêt de Compiègne, carte forêt de Laigue, carte forêt d'Halatte, carte forêt de Chantilly, carte forêt d'Ermenonville, carte forêt de Retz, carte forêt Oise, balades Oise, itinéraires randonnée Oise, vélo forêt Oise, VTT forêt de Compiègne, BWR" />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://bwrmaps.com/" />
@@ -503,7 +503,7 @@
 
         <details class="faq-item">
           <summary class="faq-q">À quelle fréquence les chemins sont-ils mis à jour ?</summary>
-          <div class="faq-a">Les sentiers sont vérifiés manuellement sur le terrain chaque mois. Dernière vérification terrain : <strong>juin 2026</strong>. Si vous repérez une erreur ou un obstacle, signalez-le depuis la carte — votre retour aide à maintenir des données à jour pour tout le monde.</div>
+          <div class="faq-a">Les sentiers sont vérifiés manuellement sur le terrain chaque mois. Dernière vérification terrain : <strong id="faqCheckDate">ce mois-ci</strong>. Si vous repérez une erreur ou un obstacle, signalez-le depuis la carte — votre retour aide à maintenir des données à jour pour tout le monde.</div>
         </details>
 
         <details class="faq-item">
@@ -548,9 +548,9 @@
         Vous avez repéré un chemin manquant, une erreur sur la carte, ou vous souhaitez simplement me contacter — laissez-moi un message ci-dessous.
       </p>
       <form class="contact-form" id="contactForm">
-        <input type="text"  id="cName"  class="cf-input" placeholder="Votre nom" required>
-        <input type="email" id="cEmail" class="cf-input" placeholder="Votre email" required>
-        <textarea id="cMessage" class="cf-input" placeholder="Votre message…" rows="4" required></textarea>
+        <input type="text"  id="cName"  class="cf-input" placeholder="Votre nom" aria-label="Votre nom" autocomplete="name" required>
+        <input type="email" id="cEmail" class="cf-input" placeholder="Votre email" aria-label="Votre email" autocomplete="email" required>
+        <textarea id="cMessage" class="cf-input" placeholder="Votre message…" aria-label="Votre message" rows="4" required></textarea>
         <button type="submit" class="btn-contact-submit" id="cSubmit">Envoyer le message</button>
         <p class="cf-status" id="cStatus"></p>
       </form>

@@ -93,6 +93,8 @@
     </div>
   </header>
 
+  <h1 class="sr-only">Carte interactive des sentiers de la forêt de Compiègne et des forêts de l'Oise</h1>
+
   <!-- Nav drawer -->
   <div class="nav-drawer-overlay hidden" id="navDrawerOverlay"></div>
   <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
@@ -210,7 +212,7 @@
       <div class="map-search-box">
         <span class="map-search-icon">🔍</span>
         <input type="text" id="mapSearchInput" class="map-search-input"
-          placeholder="Chercher un lieu…" autocomplete="off" />
+          placeholder="Chercher un lieu…" aria-label="Chercher un lieu sur la carte" autocomplete="off" />
         <button class="map-search-clear hidden" id="mapSearchClear">✕</button>
       </div>
       <div class="map-search-results hidden" id="mapSearchResults"></div>
@@ -256,9 +258,9 @@
       <h3 id="contactModalLabel">Contactez-moi</h3>
       <p style="font-size:0.85rem;color:#6b7280;margin-bottom:12px">Une question, suggestion ou erreur signalée ? Écrivez-moi :</p>
       <form id="mapContactForm" style="display:flex;flex-direction:column;gap:10px">
-        <input type="text"  id="mcName"  class="input-field" placeholder="Votre nom" required>
-        <input type="email" id="mcEmail" class="input-field" placeholder="Votre email" required>
-        <textarea id="mcMessage" class="input-field" placeholder="Votre message…" rows="4" required></textarea>
+        <input type="text"  id="mcName"  class="input-field" placeholder="Votre nom" aria-label="Votre nom" autocomplete="name" required>
+        <input type="email" id="mcEmail" class="input-field" placeholder="Votre email" aria-label="Votre email" autocomplete="email" required>
+        <textarea id="mcMessage" class="input-field" placeholder="Votre message…" aria-label="Votre message" rows="4" required></textarea>
         <button type="submit" class="btn-primary" id="mcSubmit">Envoyer</button>
         <p id="mcStatus" style="text-align:center;font-size:0.85rem;font-weight:600;min-height:18px"></p>
       </form>

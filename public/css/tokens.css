@@ -187,6 +187,19 @@ h1, h2 {
 
 /* ── Reusable utility classes ─────────────────────────────────────────────── */
 
+/* Visually hidden but readable by screen readers and search engines. Used to
+   give app pages (map, routes, …) a proper <h1> without altering the visual
+   chrome. Standard clip pattern — stays in the accessibility tree. */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .tier-tag {
   display: inline-flex;
   align-items: center;

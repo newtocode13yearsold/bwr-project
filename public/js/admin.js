@@ -1502,17 +1502,6 @@ document.getElementById('btnClearErrors')?.addEventListener('click', async () =>
 // to keep this shared file under the CI bundle-size cap. initDashboard() calls
 // them via the window globals they define.
 
-// load badge count on startup
-(async () => {
-  try {
-    const res = await fetch(`${API_URL}/api/contacts`, { headers: authHeader() });
-    if (!res.ok) return;
-    const msgs = await res.json();
-    const badge = document.getElementById('msgBadge');
-    if (badge && msgs.length > 0) { badge.textContent = msgs.length; badge.style.display = ''; }
-  } catch {}
-})();
-
 document.getElementById('btnMembers')?.addEventListener('click', async () => {
   document.getElementById('pathForm').classList.add('hidden');
   document.getElementById('editForm').classList.add('hidden');
