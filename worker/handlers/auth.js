@@ -429,6 +429,36 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     return json({ success: true, plan: 'silver', planExpiresAt: expiresAt });
   }
 
+  // Self-service subscription cancellation ("résiliation en ligne", exigée par
+  // l'art. L215-1-1 du Code de la consommation pour tout abonnement souscrit en
+  // ligne). C'est ce qui rend honnête le « Annulable en 1 clic » de la page Plans.
+  //   • Si un `planExpiresAt` est encore à venir (période déjà payée) : on garantit
+  //     l'absence de renouvellement (planBase → 'free') et l'accès continue jusqu'à
+  //     cette date, puis /api/auth/me repasse le compte en Gratuit automatiquement.
+  //   • Sinon (plan payant sans date de fin, ex. offert) : retour immédiat au Gratuit.
+  // Les admins (toujours 'gold') et les comptes Gratuit n'ont rien à résilier.
+  if (pathname === '/api/auth/cancel-plan' && request.method === 'POST') {
+    const user = await getUserFromToken(env, request);
+    if (!user) return fail('Non authentifié.', 401);
+    if (user.role === 'admin') return fail("Un compte administrateur n'a pas d'abonnement à résilier.", 400);
+
+    const current = user.plan || 'free';
+    if (current === 'free') return fail("Vous n'avez aucun abonnement payant à résilier.", 400);
+
+    const cancelledAt = new Date().toISOString();
+    const hasFutureExpiry = user.planExpiresAt && new Date(user.planExpiresAt).getTime() > Date.now();
+
+    if (hasFutureExpiry) {
+      // Période payée en cours : pas de renouvellement, accès conservé jusqu'à l'échéance.
+      await putUser(env, { ...user, planBase: 'free', planCancelledAt: cancelledAt });
+      return json({ success: true, plan: current, endsAt: user.planExpiresAt, immediate: false });
+    }
+
+    // Aucune échéance : retour immédiat au Gratuit.
+    await putUser(env, { ...user, plan: 'free', planExpiresAt: null, planBase: null, comped: false, planCancelledAt: cancelledAt });
+    return json({ success: true, plan: 'free', endsAt: null, immediate: true });
+  }
+
   if (pathname === '/api/auth/wheel-prize' && request.method === 'POST') {
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);

@@ -257,6 +257,17 @@ function renderPlanAndProgress(user) {
     }
   }
 
+  // Self-service cancellation — shown only to paying, non-admin accounts.
+  const cancelRow = document.getElementById('planCancelRow');
+  if (cancelRow) {
+    const canCancel = plan !== 'free' && user.role !== 'admin';
+    cancelRow.style.display = canCancel ? '' : 'none';
+    const cancelBtn = document.getElementById('cancelPlanBtn');
+    if (canCancel && cancelBtn) {
+      cancelBtn.addEventListener('click', () => cancelPlan(user), { once: true });
+    }
+  }
+
   // Premium section (Silver + Gold unified)
   if (BWR.can('daily_wheel', plan)) {
     const premiumSection = document.getElementById('premiumSection');
@@ -331,6 +342,50 @@ async function startSilverTrial(e) {
     btn.disabled = false;
     btn.textContent = original;
     alert('Impossible d\'activer l\'essai : ' + err.message);
+  }
+}
+
+// Self-service subscription cancellation (résiliation en ligne, art. L215-1-1).
+// One click + one confirm reverts the account to Gratuit: immediately if the plan
+// has no end date, or at the end of the already-paid period if one is set.
+async function cancelPlan(user) {
+  const btn = document.getElementById('cancelPlanBtn');
+  const hasFutureExpiry = user.planExpiresAt && new Date(user.planExpiresAt) > new Date();
+  const confirmMsg = hasFutureExpiry
+    ? 'Résilier votre abonnement ? Il ne sera pas renouvelé : vous gardez l\'accès jusqu\'à la fin de la période déjà payée, puis votre compte repasse en Gratuit.'
+    : 'Résilier votre abonnement ? Votre compte repasse immédiatement en plan Gratuit.';
+  if (!confirm(confirmMsg)) return;
+
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Résiliation…';
+  try {
+    const res = await fetch(`${API_URL}/api/auth/cancel-plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Résiliation impossible.');
+
+    const cached = getCachedUser();
+    if (cached) {
+      const next = data.immediate
+        ? { ...cached, plan: 'free', planExpiresAt: null, planBase: null }
+        : { ...cached, planBase: 'free' };
+      setSession(localStorage.getItem('bwr_token'), next);
+    }
+
+    if (data.immediate) {
+      alert('Votre abonnement est résilié. Votre compte est repassé en plan Gratuit.');
+    } else {
+      const end = new Date(data.endsAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+      alert(`Votre abonnement est résilié. Vous conservez l'accès jusqu'au ${end}, puis votre compte repassera automatiquement en Gratuit.`);
+    }
+    location.reload();
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = original;
+    alert('Impossible de résilier : ' + err.message);
   }
 }
 

@@ -611,12 +611,71 @@ describe('free Silver trial', () => {
   });
 });
 
+// ── POST /api/auth/cancel-plan ────────────────────────────────────────────────
+
+describe('self-service cancellation', () => {
+  test('unauthenticated → 401', async () => {
+    const { env } = freshEnv();
+    const res = await worker.fetch(r('POST', '/api/auth/cancel-plan'), env);
+    assert.equal(res.status, 401);
+  });
+
+  test('free account has nothing to cancel → 400', async () => {
+    const ctx = freshEnv();
+    ctx.seedUser({ id: 'f', name: 'F', email: 'f@bwr.fr', role: 'free', plan: 'free', passwordHash: 'x', salt: 'y', hashVersion: 2 });
+    ctx.seedSession('tok-f', 'f', new Date(Date.now() + 86400000).toISOString());
+    const res = await worker.fetch(authed('POST', '/api/auth/cancel-plan', 'tok-f'), ctx.env);
+    assert.equal(res.status, 400);
+  });
+
+  test('admin account cannot cancel → 400', async () => {
+    const ctx = freshEnv();
+    ctx.seedUser({ id: 'a', name: 'A', email: 'a@bwr.fr', role: 'admin', plan: 'gold', passwordHash: 'x', salt: 'y', hashVersion: 2 });
+    ctx.seedSession('tok-a', 'a', new Date(Date.now() + 86400000).toISOString());
+    const res = await worker.fetch(authed('POST', '/api/auth/cancel-plan', 'tok-a'), ctx.env);
+    assert.equal(res.status, 400);
+  });
+
+  test('paid plan with a future expiry keeps access until then, no renewal', async () => {
+    const ctx = freshEnv();
+    const endsAt = new Date(Date.now() + 20 * 86400000).toISOString();
+    ctx.seedUser({ id: 's', name: 'S', email: 's@bwr.fr', role: 'free', plan: 'silver', planExpiresAt: endsAt, planBase: 'silver', passwordHash: 'x', salt: 'y', hashVersion: 2 });
+    ctx.seedSession('tok-s', 's', new Date(Date.now() + 86400000).toISOString());
+    const res = await worker.fetch(authed('POST', '/api/auth/cancel-plan', 'tok-s'), ctx.env);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.immediate, false);
+    assert.equal(data.endsAt, endsAt);
+    const stored = ctx.getStoredUser('s');
+    assert.equal(stored.plan, 'silver', 'access preserved until the paid period ends');
+    assert.equal(stored.planExpiresAt, endsAt, 'expiry date is untouched');
+    assert.equal(stored.planBase, 'free', 'reverts to free on expiry (no renewal)');
+    assert.ok(stored.planCancelledAt, 'cancellation is stamped');
+  });
+
+  test('paid plan with no expiry reverts to free immediately', async () => {
+    const ctx = freshEnv();
+    ctx.seedUser({ id: 'g', name: 'G', email: 'g@bwr.fr', role: 'free', plan: 'gold', comped: true, passwordHash: 'x', salt: 'y', hashVersion: 2 });
+    ctx.seedSession('tok-g', 'g', new Date(Date.now() + 86400000).toISOString());
+    const res = await worker.fetch(authed('POST', '/api/auth/cancel-plan', 'tok-g'), ctx.env);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.immediate, true);
+    assert.equal(data.plan, 'free');
+    const stored = ctx.getStoredUser('g');
+    assert.equal(stored.plan, 'free');
+    assert.equal(stored.planExpiresAt, null);
+    assert.equal(stored.comped, false);
+    assert.ok(stored.planCancelledAt, 'cancellation is stamped');
+  });
+});
+
 // ── POST /api/auth/logout ─────────────────────────────────────────────────────
 
 describe('logout', () => {
   test('logout deletes the session from KV', async () => {
     const { env, kv, registerAndLogin } = freshEnv();
-    const { token } = await registerAndLogin('logout@bwr.fr', 'pass1234');
+    const { token } = await registerAndLogin('logout@bwr.fr', 'Pass1234!');
     assert.ok(kv.store.has(`session:${token}`), 'session must exist before logout');
     await worker.fetch(authed('POST', '/api/auth/logout', token), env);
     assert.ok(!kv.store.has(`session:${token}`), 'session must be gone after logout');

@@ -509,6 +509,28 @@
 }
 .plan-upgrade-link:hover { text-decoration: underline; }
 
+/* Self-service cancellation (résiliation en ligne) */
+.plan-cancel-row { margin: -6px 0 18px; }
+.plan-cancel-btn {
+  background: none;
+  border: 1px solid var(--border-soft);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.plan-cancel-btn:hover { color: #dc2626; border-color: #dc2626; }
+.plan-cancel-btn:disabled { opacity: .6; cursor: default; }
+.plan-cancel-note {
+  margin: 6px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+[data-theme="dark"] .plan-cancel-btn:hover { color: #f87171; border-color: #f87171; }
+
 .level-block {
   margin-bottom: 22px;
   padding: 16px;
