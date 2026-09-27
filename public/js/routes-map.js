@@ -5,16 +5,17 @@
 // UX lives in js/routes-planner.js; routing engines in js/routes-engine.js.
 
 // ── Map ───────────────────────────────────────────────────────────────────────
-const LAYER_MAX_ZOOM = { ign: 17, osm: 19, satellite: 20 };
+const LAYER_MAX_ZOOM = { ign: 17, osm: 19, satellite: 20, topo: 17 };
 const TILE_LAYERS = {
+  // DEFAULT. Real IGN "Plan IGN v2" through our edge-cached same-origin proxy
+  // (see js/map.js / worker/handlers/tiles.js for why IGN is the default rather
+  // than the OSM/OpenTopoMap volunteer servers). maxNativeZoom 15 mirrors the map
+  // page so the offline-downloaded forest tiles (cached z10–15) cover this page
+  // too; without the cap, zooming past 15 requests uncached z16/17 tiles and the
+  // route planner goes blank offline.
   ign: () => L.tileLayer(
-    // Edge-cached topo proxy (see js/map.js / worker/handlers/tiles.js). Same-origin,
-    // so no subdomains/crossOrigin. maxNativeZoom 15 mirrors the map page so the
-    // offline-downloaded forest tiles (cached z10–15) cover this page too; without
-    // the cap, zooming past 15 requests uncached z16/17 tiles and the route planner
-    // goes blank offline.
-    '/tiles/topo/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 15, maxZoom: 17 }
+    '/tiles/ign/{z}/{x}/{y}.png',
+    { attribution: '&copy; IGN — Plan IGN v2', maxNativeZoom: 15, maxZoom: 17 }
   ),
   osm: () => L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     { attribution: '© OpenStreetMap', maxNativeZoom: 19, maxZoom: 19, detectRetina: true }
@@ -22,6 +23,10 @@ const TILE_LAYERS = {
   satellite: () => L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
     { attribution: '© IGN', maxNativeZoom: 20, maxZoom: 20, detectRetina: true }
+  ),
+  topo: () => L.tileLayer(
+    '/tiles/topo/{z}/{x}/{y}.png',
+    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 15, maxZoom: 17 }
   ),
 };
 let currentTile = null;
@@ -50,8 +55,10 @@ function makeTilesSelfHealing(layer) {
 }
 
 function initMap() {
-  const plan = currentUser?.plan || 'free';
-  const defaultLayer = BWR.can('ign_topo_tiles', plan) ? 'ign' : 'osm';
+  // IGN is the basemap for EVERY plan, free included — it is the licence-clean
+  // source, so we deliberately do not want free traffic falling back to the OSM
+  // volunteer tile servers. Satellite stays the plan-gated layer (see map-sync.js).
+  const defaultLayer = 'ign';
   map = L.map('map', { zoomControl: true, maxZoom: LAYER_MAX_ZOOM[defaultLayer], preferCanvas: true }).setView(MAP_CENTER, MAP_ZOOM);
   currentTile = makeTilesSelfHealing(TILE_LAYERS[defaultLayer]());
   currentTile.addTo(map);

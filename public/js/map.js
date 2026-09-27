@@ -21,28 +21,42 @@ function loadScript(src) {
 const _loadMapEdit    = () => loadScript('js/map-edit.js');
 const _loadMapOffline = () => loadScript('js/map-offline.js');
 
-const LAYER_MAX_ZOOM = { osm: 19, ign: 17, satellite: 20 };
+const LAYER_MAX_ZOOM = { ign: 17, osm: 19, satellite: 20, topo: 17 };
 const TILE_LAYERS = {
+  // ── DEFAULT BASEMAP ────────────────────────────────────────────────────────
+  // Real IGN ("Plan IGN v2"), served through our own Worker (/tiles/ign/…),
+  // which fetches each tile from data.geopf.fr once and caches it at
+  // Cloudflare's edge for 30 days.
+  //
+  // Why IGN and not OpenStreetMap's own tiles: data.geopf.fr publishes IGN's
+  // maps as open data that may be reused commercially provided IGN is credited,
+  // whereas tile.openstreetmap.org and OpenTopoMap are donation-funded volunteer
+  // servers whose usage policies exclude heavy/commercial use. It also renders
+  // forest tracks, contours and carrefour names better than a generic basemap.
+  // Full rationale in worker/handlers/tiles.js.
+  //
+  // Same-origin, so no subdomains and no crossOrigin needed (the SW caches these
+  // as normal same-origin responses). maxNativeZoom 15: offline downloads only
+  // cache z10–15, so capping the native zoom at 15 means Leaflet never requests
+  // an uncached z16/17 tile — it upscales the cached z15 tile instead, so zooming
+  // in offline stays sharp-enough rather than going blank. maxZoom 17 still lets
+  // the user zoom that far. Keep this in step with public/js/map-offline.js.
+  ign: L.tileLayer(
+    '/tiles/ign/{z}/{x}/{y}.png',
+    { attribution: '&copy; <a href="https://www.ign.fr/">IGN</a> — Plan IGN v2', maxNativeZoom: 15, maxZoom: 17, updateWhenIdle: false, keepBuffer: 4 }
+  ),
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxNativeZoom: 19, maxZoom: 19, detectRetina: true, updateWhenIdle: false, keepBuffer: 4 }
-  ),
-  ign: L.tileLayer(
-    // Served through our own Worker (/tiles/topo/…), which fetches OpenTopoMap
-    // once and caches each tile at Cloudflare's edge for 30 days. This kills the
-    // "grey map" (OpenTopoMap throttles Leaflet's load-time burst with 429/403)
-    // and makes repeat loads instant. Same-origin, so no subdomains and no
-    // crossOrigin needed (the SW caches these as normal same-origin responses).
-    // maxNativeZoom 15: offline downloads only cache z10–15 (z16+ is thousands of
-    // tiles per forest and gets rate-limited by OpenTopoMap). Capping the native
-    // zoom at 15 means Leaflet never requests a z16/17 tile — it upscales the
-    // cached z15 tile instead, so zooming in offline stays sharp-enough rather
-    // than going blank. maxZoom 17 still lets the user zoom that far.
-    '/tiles/topo/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxNativeZoom: 15, maxZoom: 17, updateWhenIdle: false, keepBuffer: 4 }
   ),
   satellite: L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
     { attribution: '&copy; <a href="https://www.geoportail.gouv.fr/">IGN</a>', maxNativeZoom: 20, maxZoom: 20, detectRetina: true, updateWhenIdle: false, keepBuffer: 4 }
+  ),
+  // OpenTopoMap, kept as an optional extra style (it is no longer the default,
+  // so the volunteer servers now take a small fraction of the traffic).
+  topo: L.tileLayer(
+    '/tiles/topo/{z}/{x}/{y}.png',
+    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxNativeZoom: 15, maxZoom: 17, updateWhenIdle: false, keepBuffer: 4 }
   ),
 };
 

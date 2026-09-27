@@ -120,7 +120,7 @@ describe('_rpMercator / _rpBuildTileMap (topo map)', () => {
 
   test('embeds same-origin topo tiles as SVG images + the route + a carrefour', () => {
     const svg = _rpBuildTileMap(coords, hits, [], { color: '#22c55e', isLoop: true });
-    assert.ok(svg.includes('<image href="/tiles/topo/'), 'topo tile images missing');
+    assert.ok(svg.includes('<image href="/tiles/ign/'), 'IGN tile images missing');
     assert.ok(svg.includes('<polyline'), 'route polyline missing');
     assert.ok(svg.includes("Carrefour de l&#39;Étoile"), 'carrefour label missing');
     assert.ok(svg.trim().startsWith('<svg'), 'not an SVG document');
@@ -133,7 +133,7 @@ describe('_rpMercator / _rpBuildTileMap (topo map)', () => {
       hits, contextPaths: [], color: '#22c55e', isLoop: true, useTiles: true,
       title: 'T', typeLabel: 'x', modeLabel: 'Boucle', diffLabel: 'facile',
     });
-    assert.ok(html.includes('/tiles/topo/'), 'tile background not used when useTiles set');
+    assert.ok(html.includes('/tiles/ign/'), 'tile background not used when useTiles set');
   });
 });
 

@@ -255,11 +255,11 @@ function initMap() {
   window.map = map; // expose for the shared GPS tracker (js/gps-tracker.js)
 
   ignLayer = L.tileLayer(
-    // Edge-cached topo proxy (see worker/handlers/tiles.js). Same-origin, so no
+    // Edge-cached IGN proxy (see worker/handlers/tiles.js). Same-origin, so no
     // subdomains. maxNativeZoom 17 (admin needs full-res tiles for drawing) — the
-    // proxy caches z16/17 too, so they no longer get throttled by OpenTopoMap.
-    '/tiles/topo/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 17, maxZoom: 17 }
+    // proxy caches z16/17 too, and IGN serves up to z19, so drawing stays crisp.
+    '/tiles/ign/{z}/{x}/{y}.png',
+    { attribution: '&copy; IGN — Plan IGN v2', maxNativeZoom: 17, maxZoom: 17 }
   );
   ignLayer.addTo(map);
 
@@ -2939,7 +2939,9 @@ function latToTileY(lat, z) {
         for (let y = y0; y <= y1; y++)
           // Same-origin edge-cached proxy — must match the URL the map requests so
           // the downloaded tile shares its cache key (see worker/handlers/tiles.js).
-          tiles.push(`/tiles/topo/${z}/${x}/${y}.png`);
+          // Keep this in step with the basemap URL in initMap() above and with
+          // public/js/map-offline.js, or the offline cache silently misses.
+          tiles.push(`/tiles/ign/${z}/${x}/${y}.png`);
     }
     try {
       const cache = await caches.open('bwr-offline-tiles');

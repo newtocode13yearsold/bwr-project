@@ -360,8 +360,8 @@
 
     if (!replay.map) {
       replay.map = L.map('replayMap', { zoomControl: true });
-      L.tileLayer('/tiles/topo/{z}/{x}/{y}.png', {
-        attribution: 'Map data: © OpenStreetMap contributors, SRTM | © OpenTopoMap',
+      L.tileLayer('/tiles/ign/{z}/{x}/{y}.png', {
+        attribution: '© IGN — Plan IGN v2',
         maxNativeZoom: 15, maxZoom: 17,
       }).addTo(replay.map);
     }

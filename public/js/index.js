@@ -155,13 +155,13 @@ try {
 
   window.addEventListener('load', function () { map.invalidateSize(); });
 
-  const _homeTiles = L.tileLayer('/tiles/topo/{z}/{x}/{y}.png', {
-    // Edge-cached topo proxy (see worker/handlers/tiles.js). Same-origin, so no
+  const _homeTiles = L.tileLayer('/tiles/ign/{z}/{x}/{y}.png', {
+    // Edge-cached IGN proxy (see worker/handlers/tiles.js). Same-origin, so no
     // subdomains/crossOrigin. maxNativeZoom 15 mirrors js/map.js so this homepage
     // map reuses the offline-downloaded forest tiles (cached z10–15).
     maxNativeZoom: 15, maxZoom: 17,
   });
-  // Self-heal grey tiles: re-request any tile OpenTopoMap rate-limits (429/403)
+  // Self-heal grey tiles: re-request any tile the proxy/upstream throttles (429/403)
   // with a growing backoff, since Leaflet otherwise leaves it permanently grey.
   const _homeRetryDelays = [600, 1500, 3000, 5000];
   _homeTiles.on('tileerror', (e) => {

@@ -324,7 +324,7 @@ function _rpBuildMapSvg(coords, hits, contextPaths, opts) {
     + overlay + '</svg>';
 }
 
-// Topographic map — real IGN/OpenTopoMap tiles (same-origin /tiles/topo proxy) as
+// Topographic map — real IGN tiles (same-origin /tiles/ign proxy) as
 // the ground, so contour lines, spot heights and place names come for free, with
 // the vector route + carrefours crisp on top. Tiles are <image> elements INSIDE
 // the SVG so they scale with the viewBox like the overlay and stay aligned.
@@ -365,7 +365,7 @@ function _rpBuildTileMap(coords, hits, contextPaths, opts) {
     for (let ty = ty0; ty <= ty1; ty++) {
       if (tx < 0 || ty < 0 || tx >= nMax || ty >= nMax) continue;
       const left = tx * 256 - originX, top = ty * 256 - originY;
-      tiles.push(`<image href="/tiles/topo/${z}/${tx}/${ty}.png" x="${left.toFixed(1)}" y="${top.toFixed(1)}" width="256" height="256" preserveAspectRatio="none"/>`);
+      tiles.push(`<image href="/tiles/ign/${z}/${tx}/${ty}.png" x="${left.toFixed(1)}" y="${top.toFixed(1)}" width="256" height="256" preserveAspectRatio="none"/>`);
     }
   }
 

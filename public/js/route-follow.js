@@ -202,7 +202,7 @@
     });
     // Same offline-cached topo proxy the planner map uses, so guidance keeps
     // its basemap without a signal.
-    L.tileLayer('/tiles/topo/{z}/{x}/{y}.png', { maxNativeZoom: 15, maxZoom: 18 }).addTo(map);
+    L.tileLayer('/tiles/ign/{z}/{x}/{y}.png', { maxNativeZoom: 15, maxZoom: 18 }).addTo(map);
     routeLine = L.polyline(coords, { color: '#22c55e', weight: 6, opacity: 0.95, lineJoin: 'round', lineCap: 'round' }).addTo(map);
     L.polyline(coords, { color: '#ffffff', weight: 10, opacity: 0.35 }).addTo(map).bringToBack();
     // Start / end pins

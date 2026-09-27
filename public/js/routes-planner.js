@@ -278,11 +278,12 @@ function applyPlanGates() {
     const satBtn = document.querySelector('.layer-btn[data-layer="satellite"]');
     if (satBtn) markBtnLocked(satBtn, BWR.requiredTier('satellite_tiles'));
   }
-  // Lock IGN topo for free users (default tile becomes OSM)
-  if (!BWR.can('ign_topo_tiles', plan)) {
-    const ignBtn = document.querySelector('.layer-btn[data-layer="ign"]');
-    if (ignBtn) markBtnLocked(ignBtn, 'silver');
-  }
+  // NB: the IGN basemap is deliberately NOT locked. It is the default layer for
+  // every plan, free included, because it is the licence-clean source (IGN open
+  // data, commercial reuse allowed with credit) — gating it would push free
+  // traffic back onto the OpenStreetMap Foundation's volunteer tile servers,
+  // whose usage policy excludes commercial use. See worker/handlers/tiles.js.
+  // Satellite remains the plan-gated map perk (locked just above).
 }
 
 function markCardLocked(el, tier, featureLabel) {

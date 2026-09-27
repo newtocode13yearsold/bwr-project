@@ -1,7 +1,7 @@
 // ── Offline tile download — preset zones de l'Oise ─────────────────────────────
 // Lazy-loaded by map.js when the user opens the "Cartes hors-ligne" picker.
 // The whole department is too large to cache at once, so we offer the main
-// forêts as individual downloads (zoom 10–15, OpenTopoMap).
+// forêts as individual downloads (zoom 10–15, IGN Plan IGN v2).
 
 function lonToTileX(lon, z) { return Math.floor((lon + 180) / 360 * Math.pow(2, z)); }
 function latToTileY(lat, z) {
@@ -44,7 +44,10 @@ function _zoneTiles(bbox) {
       for (let y = y0; y <= y1; y++)
         // Same-origin edge-cached proxy — matches the URL the map requests so the
         // downloaded tile shares its cache key (see worker/handlers/tiles.js).
-        tiles.push(`/tiles/topo/${z}/${x}/${y}.png`);
+        // MUST stay identical to the `ign` layer URL in public/js/map.js: if the
+        // two ever drift, the download reports success while the map stays blank
+        // offline, because Leaflet asks for a URL that was never cached.
+        tiles.push(`/tiles/ign/${z}/${x}/${y}.png`);
   }
   return tiles;
 }
@@ -52,15 +55,15 @@ function _zoneTiles(bbox) {
 const _sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // Fetch one tile and store it, with retries. Returns true only if a genuine
-// 200 actually landed in the cache. OpenTopoMap rate-limits bulk fetching
-// (429/403, sometimes with no CORS header so fetch() rejects), so a single
-// failure must NOT be treated as success — otherwise the zone is marked
-// "downloaded" while the cache is empty and the map is blank offline.
+// 200 actually landed in the cache. A bulk download can still be throttled or
+// hit a cold edge (429/5xx), so a single failure must NOT be treated as success
+// — otherwise the zone is marked "downloaded" while the cache is empty and the
+// map is blank offline.
 async function _fetchTileWithRetry(cache, tileUrl, attempts = 4) {
   for (let a = 0; a < attempts; a++) {
     try {
-      // CORS (not no-cors): OpenTopoMap sends Access-Control-Allow-Origin:* plus
-      // a real Date/Content-Length, so we store a normal, accurately-sized,
+      // CORS (not no-cors): the tiles come from our own same-origin proxy, which
+      // returns a real Date/Content-Length, so we store a normal, accurately-sized,
       // dated response. Opaque (no-cors) responses are padded to several MB each
       // by iOS Safari's quota accounting — caching a whole forest of them blows
       // the cache quota and makes iOS evict everything (white-spot gaps). Only
@@ -76,7 +79,7 @@ async function _fetchTileWithRetry(cache, tileUrl, attempts = 4) {
 }
 
 // Returns { total, ok, failed }. Throttled (small concurrency + per-batch
-// pause) to stay within OpenTopoMap's fair-use limits, and reports the REAL
+// pause) to stay within the upstream's fair-use limits, and reports the REAL
 // number of tiles stored so the caller never claims a half-empty zone is ready.
 //
 // Two phases:

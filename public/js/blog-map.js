@@ -25,8 +25,8 @@
 
   var map = L.map('bwr-map', { zoomControl: true, scrollWheelZoom: false, preferCanvas: true });
 
-  L.tileLayer('/tiles/topo/{z}/{x}/{y}.png', {
-    attribution: 'Map data: © OpenStreetMap contributors, SRTM | Style: © OpenTopoMap',
+  L.tileLayer('/tiles/ign/{z}/{x}/{y}.png', {
+    attribution: '© IGN — Plan IGN v2',
     maxNativeZoom: 15,
     maxZoom: 17,
   }).addTo(map);

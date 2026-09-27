@@ -422,7 +422,7 @@ function renderRoute(route, token) {
       </div>
 
       <div id="bwr-map" role="img" aria-label="Carte du trajet ${esc(name)}"></div>
-      <p class="bwr-map-attr">Carte : © OpenStreetMap · SRTM · OpenTopoMap</p>
+      <p class="bwr-map-attr">Carte : © IGN — Plan IGN v2 · Tracés © OpenStreetMap</p>
 
       <p>Ce tracé de <strong>${esc(km)} km</strong> a été partagé depuis BWR, la carte des forêts de l'Oise à pied et à vélo. Ouvrez-le dans le planificateur pour le suivre en direct sur votre téléphone, l'exporter en GPX ou l'adapter à votre point de départ.</p>
 

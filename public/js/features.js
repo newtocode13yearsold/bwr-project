@@ -30,7 +30,12 @@
 
     /* — Map & layers — */
     satellite_tiles:     { free: false, visitor: true,     silver: true,     gold: true     },
-    ign_topo_tiles:      { free: false, visitor: true,     silver: true,     gold: true     },
+    // The IGN basemap is the DEFAULT for every plan, free included. It is the
+    // licence-clean source (open data, commercial reuse allowed with credit),
+    // so gating it would push free traffic back onto the OpenStreetMap
+    // Foundation's volunteer tile servers - exactly what we are moving away
+    // from. Satellite remains the plan-gated map perk.
+    ign_topo_tiles:      { free: true,  visitor: true,     silver: true,     gold: true     },
     carrefours:          { free: true,  visitor: true,     silver: true,     gold: true     },
     // Points of interest: everyone SEES the layer (gated in page code, not here);
     // adding one is a curation action gated to Silver+ like drawing a path. Mirror

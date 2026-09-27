@@ -182,13 +182,16 @@
     <h3>Couche de carte</h3>
     <div class="filter-group">
       <label class="filter-label">
+        <input type="radio" name="tileLayer" value="ign" checked /> Plan IGN
+      </label>
+      <label class="filter-label">
         <input type="radio" name="tileLayer" value="osm" /> Plan OpenStreetMap
       </label>
       <label class="filter-label">
-        <input type="radio" name="tileLayer" value="ign" checked /> IGN topographique
+        <input type="radio" name="tileLayer" value="satellite" /> Satellite IGN
       </label>
       <label class="filter-label">
-        <input type="radio" name="tileLayer" value="satellite" /> Satellite IGN
+        <input type="radio" name="tileLayer" value="topo" /> Topographique
       </label>
     </div>
   </div>
@@ -203,8 +206,8 @@
   <div id="map">
     <!-- Layer switcher -->
     <div class="map-layers" id="mapLayers">
-      <button class="layer-btn" data-layer="osm">OSM</button>
       <button class="layer-btn active" data-layer="ign">IGN</button>
+      <button class="layer-btn" data-layer="osm">OSM</button>
       <button class="layer-btn" data-layer="satellite">Satellite</button>
     </div>
     <!-- Floating search bar -->
