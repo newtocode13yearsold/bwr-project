@@ -528,9 +528,7 @@
           <label style="font-size:0.88rem;font-weight:600;color:#374151">Plan
             <select id="memberPlanSelect" class="input-field" style="margin-top:4px">
               <option value="free">🌿 Gratuit</option>
-              <option value="visitor">🎫 Visiteur (7j)</option>
-              <option value="silver">🥈 Argent</option>
-              <option value="gold">🥇 Or</option>
+              <option value="pro">⭐ Pro</option>
             </select>
           </label>
           <label style="font-size:0.88rem;font-weight:600;color:#374151">Expiration (optionnel)
@@ -539,9 +537,7 @@
           <label style="font-size:0.88rem;font-weight:600;color:#374151">Plan de base (après expiration)
             <select id="memberPlanBase" class="input-field" style="margin-top:4px">
               <option value="free">🌿 Gratuit</option>
-              <option value="visitor">🎫 Visiteur (7j)</option>
-              <option value="silver">🥈 Argent</option>
-              <option value="gold">🥇 Or</option>
+              <option value="pro">⭐ Pro</option>
             </select>
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;font-weight:600;color:#374151;cursor:pointer">
@@ -565,6 +561,9 @@
   <script src="js/errors.js"></script>
   <script src="js/admin-badge.js"></script>
   <script src="js/auth.js"></script>
+  <!-- features.js defines window.BWR (normalisePlan / TIER_LABEL), used by the
+       dashboard half of admin.js and by admin-pro.js - must load before them. -->
+  <script src="js/features.js"></script>
   <script src="js/admin-dashboard-extra.js"></script>
   <script src="js/admin-pro.js"></script>
   <script src="js/admin.js"></script>

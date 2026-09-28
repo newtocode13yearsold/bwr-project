@@ -217,6 +217,12 @@ signupForm.addEventListener('submit', async (e) => {
   const email    = document.getElementById('signupEmail').value.trim();
   const password = document.getElementById('signupPassword').value;
 
+  if (!/^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$/.test(password)) {
+    errorEl.textContent = 'Le mot de passe doit faire au moins 8 caractères et contenir une majuscule, un chiffre et un caractère spécial.';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
   try {
     const res  = await fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',

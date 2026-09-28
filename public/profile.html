@@ -10,6 +10,7 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon-180.png" />
   <title>BWR — Mon profil | Oise</title>
+  <meta name="description" content="Votre profil BWR : statistiques de sorties, badges débloqués, défis quotidiens et progression dans les forêts de l'Oise." />
   <meta name="robots" content="noindex, follow" />
   <!-- Open Graph / réseaux sociaux -->
   <meta property="og:type" content="website" />
@@ -159,7 +160,7 @@
       </div>
     </section>
 
-    <!-- Free-tier weekly quota strip (hidden for Silver/Gold) -->
+    <!-- Free-tier weekly quota strip (hidden for Pro) -->
     <div class="profile-quota-strip" id="quotaStrip" style="display:none"></div>
 
     <!-- Daily-streak banner (all tiers) -->
@@ -207,8 +208,8 @@
           </div>
           <div class="field">
             <label for="inputNewPw">Nouveau mot de passe</label>
-            <input type="password" id="inputNewPw" class="input-field" placeholder="••••••••" minlength="8" required />
-            <span class="field-hint">Au moins 8 caractères</span>
+            <input type="password" id="inputNewPw" class="input-field" placeholder="••••••••" minlength="8" pattern="(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}" title="Au moins 8 caractères, une majuscule, un chiffre et un caractère spécial" required />
+            <span class="field-hint">Au moins 8 caractères, une majuscule, un chiffre et un caractère spécial</span>
           </div>
           <div class="field">
             <label for="inputConfirmPw">Confirmer le nouveau mot de passe</label>
@@ -347,7 +348,7 @@
         </div>
       </div>
 
-      <!-- ── Card: Mes derniers trajets (Silver+) ── -->
+      <!-- ── Card: Mes derniers trajets (Pro) ── -->
       <div class="profile-card card-recent-routes" id="recentRoutesCard" style="display:none">
         <div class="card-header">
           <span class="card-icon">🧭</span>
@@ -357,7 +358,7 @@
         <div class="recent-routes-list" id="recentRoutesList"></div>
       </div>
 
-      <!-- ── Premium features (Silver & Gold unified) ── -->
+      <!-- ── Premium features (Pro) ── -->
       <div class="profile-card card-premium" id="premiumSection" style="display:none">
         <div class="card-header">
           <span class="card-icon" id="premiumIcon">🥈</span>
@@ -378,7 +379,7 @@
           <div class="wheel-prizes-list" id="wheelPrizesList"></div>
         </div>
 
-        <!-- Goals (Gold only) -->
+        <!-- Goals (Pro) -->
         <div class="feature-block" id="goalBlock" style="display:none">
           <h3 class="feature-title">🎯 Objectif personnalisé</h3>
           <div class="level-block">
@@ -394,7 +395,7 @@
           </div>
         </div>
 
-        <!-- Weather (Gold only) -->
+        <!-- Weather (Pro) -->
         <div class="feature-block" id="weatherBlock" style="display:none">
           <h3 class="feature-title">🌦️ Météo forêt en temps réel</h3>
           <div class="weather-card">
@@ -419,7 +420,7 @@
           </div>
         </div>
 
-        <!-- Forest trail health (Gold only) -->
+        <!-- Forest trail health (Pro) -->
         <div class="feature-block" id="trailHealthBlock" style="display:none">
           <h3 class="feature-title">🌲 État des chemins en forêt</h3>
           <div class="th-stats">
@@ -430,7 +431,7 @@
           <div class="th-list" id="thList"></div>
         </div>
 
-        <!-- Push alerts (Silver+) -->
+        <!-- Push alerts (Pro) -->
         <div class="feature-block" id="pushAlertsBlock" style="display:none">
           <h3 class="feature-title">🔔 Alertes obstacles sur mes trajets</h3>
           <p class="feature-desc">Recevez une notification dès qu'un obstacle (arbre tombé, chemin inondé…) est signalé à proximité de l'un de vos trajets sauvegardés.</p>
@@ -446,7 +447,7 @@
           <button class="btn-save" id="btnToggleEmailNotif">Chargement…</button>
         </div>
 
-        <!-- Priority support (Gold only) -->
+        <!-- Priority support (Pro) -->
         <div class="feature-block" id="supportBlock" style="display:none">
           <h3 class="feature-title">⚡ Support prioritaire</h3>
           <p class="feature-desc">Vos messages sont traités en priorité — réponse sous 12h en moyenne.</p>
@@ -487,7 +488,7 @@
           </div>
           <div class="uf-item">
             <span class="uf-check">✓</span>
-            <div><strong>14 badges Argent</strong><span>+ 10 badges Or exclusifs</span></div>
+            <div><strong>24 badges Pro</strong><span>dont un badge animé exclusif</span></div>
           </div>
         </div>
         <div class="upsell-cta-row">
@@ -495,7 +496,7 @@
           <a href="plans" class="upsell-cta upsell-cta-ghost">Voir les plans →</a>
           <span class="upsell-price">À partir de <strong>2,99€</strong>/mois</span>
         </div>
-        <p class="upsell-trial-note" id="trialNote" style="display:none">Argent complet pendant 7 jours, sans carte bancaire. Revient automatiquement en Gratuit à la fin.</p>
+        <p class="upsell-trial-note" id="trialNote" style="display:none">Pro complet pendant 7 jours, sans carte bancaire. Revient automatiquement en Gratuit à la fin.</p>
       </div>
 
       <!-- ── Card: Compte ── -->

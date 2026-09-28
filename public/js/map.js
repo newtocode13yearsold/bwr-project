@@ -121,7 +121,7 @@ async function initUserMenu() {
     return;
   }
 
-  // Show path-edit button in drawer for silver+ users
+  // Show path-edit button in drawer for Pro users
   if (BWR.can('path_difficulty_edit', _userPlan)) {
     document.getElementById('btnEditPaths')?.classList.remove('hidden');
   }

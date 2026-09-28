@@ -254,7 +254,8 @@ document.getElementById('formPassword').addEventListener('submit', async e => {
   const confirmPw = document.getElementById('inputConfirmPw').value;
 
   if (!oldPw || !newPw || !confirmPw) return showMsg('pwMsg', 'Tous les champs sont obligatoires.');
-  if (newPw.length < 8)  return showMsg('pwMsg', 'Le nouveau mot de passe doit faire au moins 8 caractères.');
+  if (!/^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$/.test(newPw))
+    return showMsg('pwMsg', 'Le nouveau mot de passe doit faire au moins 8 caractères et contenir une majuscule, un chiffre et un caractère spécial.');
   if (newPw !== confirmPw) return showMsg('pwMsg', 'Les mots de passe ne correspondent pas.');
 
   const btn = e.target.querySelector('button[type=submit]');

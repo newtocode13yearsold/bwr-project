@@ -1,4 +1,4 @@
-import { listItems, listKeys, putUser, getUser } from '../kv.js';
+import { listItems, listKeys, putUser, getUser, normalisePlan } from '../kv.js';
 import { getUserFromToken, hashPassword } from '../auth-utils.js';
 
 // ── Visitor-tracking helpers ───────────────────────────────────────────────────
@@ -200,13 +200,13 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
       const s = u.stats || {};
       return {
         id: u.id, name: u.name, username: u.username || null, email: u.email, role: u.role,
-        plan: u.plan || 'free',
+        plan: normalisePlan(u.plan),
         planExpiresAt: u.planExpiresAt || null,
-        planBase: u.planBase || null,
+        planBase: u.planBase ? normalisePlan(u.planBase) : null,
         comped: u.comped || false,
         createdAt: u.createdAt || null,
         onboarded: u.onboarded !== false,
-        silverTrialUsed: u.silverTrialUsed || false,
+        proTrialUsed: !!(u.proTrialUsed || u.silverTrialUsed),
         emailNotifications: u.emailNotifications !== false,
         // Contribution stats surfaced for the admin members list + engagement card.
         stats: {
@@ -308,10 +308,10 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
 
     const { visitors = 0, rate = 0, mrr = 0, arr = 0,
             subs = 0, slope = 0, target = 200, prob = 0, history = [],
-            silver = 0, gold = 0, compedSilver = 0, compedGold = 0,
+            pro = 0, compedPro = 0,
             totalUsers = 0, realConv = 0 } = body;
 
-    const compedTotal = Math.round(compedSilver + compedGold);
+    const compedTotal = Math.round(compedPro);
 
     const histStr = history.filter(v => v !== null).length > 0
       ? history.map((v, i) => v !== null ? `M-${4 - i}: ${v} vis.` : null).filter(Boolean).join(', ')
@@ -320,21 +320,21 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     const trendStr = slope > 0 ? `+${Math.round(slope)} vis./mois (croissance)` :
                      slope < 0 ? `${Math.round(slope)} vis./mois (déclin)` : 'Stable';
 
-    const ARPU = 0.65 * 2.99 + 0.35 * 6.99; // ~4.39€
+    const ARPU = 2.99; // Pro is the only paid plan
     const pot1 = Math.round(visitors * 0.01 * ARPU);
     const pot2 = Math.round(visitors * 0.02 * ARPU);
     const pot3 = Math.round(visitors * 0.03 * ARPU);
 
     const prompt = `Tu es un expert en croissance SaaS et monétisation d'applications web françaises.
 
-Analyse ces données de prévision de revenus pour BWR — une application de randonnée dans les forêts de l'Oise (France) avec deux plans payants : Argent (2,99 €/mois) et Or (6,99 €/mois).
+Analyse ces données de prévision de revenus pour BWR — une application de randonnée dans les forêts de l'Oise (France) avec un seul plan payant : Pro (2,99 €/mois).
 
 Données réelles (tirées du tableau de bord admin) :
 - Visiteurs ce mois : ${Math.round(visitors)}
 - Historique trafic : ${histStr}
 - Tendance trafic : ${trendStr}
-- Membres total : ${totalUsers} (dont ${Math.round(totalUsers - silver - gold)} gratuits, ${silver} Argent, ${gold} Or)
-- Abonnements offerts gratuitement : ${compedTotal} (${Math.round(compedSilver)} Argent + ${Math.round(compedGold)} Or) — exclus du chiffre d'affaires mais bien des utilisateurs actifs à fidéliser
+- Membres total : ${totalUsers} (dont ${Math.round(totalUsers - pro)} gratuits, ${pro} Pro)
+- Abonnements offerts gratuitement : ${compedTotal} Pro — exclus du chiffre d'affaires mais bien des utilisateurs actifs à fidéliser
 - Abonnés payants actuels : ${Math.round(subs)} (${Number(realConv > 0 ? realConv : rate).toFixed(2)} % de conversion)
 - MRR réel : ${Number(mrr).toFixed(2)} €/mois
 - ARR annualisé : ${Math.round(arr)} €/an
@@ -431,12 +431,12 @@ Sois concis et actionnable. Pas d'intro comme "Bien sûr" ou "Voici mon analyse"
       ? `${ch.name} — objectif ${num(ch.target)} km${ch.description ? ' · ' + String(ch.description).slice(0, 160) : ''}`
       : 'aucun défi publié ce mois';
 
-    const prompt = `Tu es un consultant produit et croissance pour applications web françaises. Tu analyses le tableau de bord admin complet de BWR — une PWA de randonnée/vélo/course dans les forêts de l'Oise (France), avec deux plans payants : Argent (2,99 €/mois) et Or (6,99 €/mois).
+    const prompt = `Tu es un consultant produit et croissance pour applications web françaises. Tu analyses le tableau de bord admin complet de BWR — une PWA de randonnée/vélo/course dans les forêts de l'Oise (France), avec un seul plan payant : Pro (2,99 €/mois).
 
 Voici l'état RÉEL de toutes les statistiques (données du panneau admin) :
 
 MEMBRES
-- Total : ${num(m.total)} (Gratuit ${num(m.free)}, Argent ${num(m.silver)}, Or ${num(m.gold)})
+- Total : ${num(m.total)} (Gratuit ${num(m.free)}, Pro ${num(m.pro)})
 - Abonnés payants : ${num(m.paying)} · Offerts (hors CA) : ${num(m.comped)}
 - Taux de conversion : ${num(m.conv)} %
 

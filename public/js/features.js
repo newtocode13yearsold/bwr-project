@@ -6,10 +6,10 @@
  *
  *   if (BWR.can('loop_mode', user.plan)) { ... }
  *   const limit = BWR.limitOf('routes_per_week', user.plan);   // numeric quotas
- *   const tag   = BWR.requiredTier('elevation_profile');       // 'silver' | 'gold'
+ *   const tag   = BWR.requiredTier('elevation_profile');       // 'free' | 'pro'
  *
  * Add a row here when you introduce a new gated capability. Never inline
- * a `plan === 'silver'` check in page code — always go through BWR.can().
+ * a `plan === 'pro'` check in page code — always go through BWR.can().
  * ────────────────────────────────────────────────────────────────────────────── */
 
 (function (global) {
@@ -17,77 +17,83 @@
 
   // Truthy values mean "available". For numeric quotas the value IS the limit.
   //
-  // The `visitor` column is the 7-day "passe Visiteur": a time-limited FULL Silver.
-  // It must stay identical to `silver` for every row — the server's effectivePlan()
-  // already resolves an active visitor to 'silver', so any client value below Silver
-  // makes the paid pass behave like Free (locked satellite/weather/goals/…).
+  // There are exactly TWO plans: `free` and `pro`. `pro` is the tier that used to
+  // be called "Argent"/silver; the old `gold` tier and the 7-day `visitor` pass
+  // were retired. normalisePlan() below folds those retired ids onto 'pro', which
+  // mirrors normalisePlan()/effectivePlan() in worker/kv.js — so an account still
+  // stored as silver/gold/visitor keeps full access.
   const FEATURES = {
     /* — Core routing — */
-    routes_per_week:     { free: 10,    visitor: Infinity, silver: Infinity, gold: Infinity },
-    loop_mode:           { free: true,  visitor: true,     silver: true,     gold: true     },
-    loops_per_week:      { free: 3,     visitor: Infinity, silver: Infinity, gold: Infinity },
-    difficulty_hard:     { free: false, visitor: true,     silver: true,     gold: true     },
+    routes_per_week:     { free: 10,    pro: Infinity },
+    loop_mode:           { free: true,  pro: true     },
+    loops_per_week:      { free: 3,     pro: Infinity },
+    difficulty_hard:     { free: false, pro: true     },
 
     /* — Map & layers — */
-    satellite_tiles:     { free: false, visitor: true,     silver: true,     gold: true     },
+    satellite_tiles:     { free: false, pro: true     },
     // The IGN basemap is the DEFAULT for every plan, free included. It is the
     // licence-clean source (open data, commercial reuse allowed with credit),
     // so gating it would push free traffic back onto the OpenStreetMap
     // Foundation's volunteer tile servers - exactly what we are moving away
     // from. Satellite remains the plan-gated map perk.
-    ign_topo_tiles:      { free: true,  visitor: true,     silver: true,     gold: true     },
-    carrefours:          { free: true,  visitor: true,     silver: true,     gold: true     },
+    ign_topo_tiles:      { free: true,  pro: true     },
+    carrefours:          { free: true,  pro: true     },
     // Points of interest: everyone SEES the layer (gated in page code, not here);
-    // adding one is a curation action gated to Silver+ like drawing a path. Mirror
+    // adding one is a curation action gated to Pro like drawing a path. Mirror
     // any change in worker/handlers/poi.js (POST plan check).
-    poi_create:          { free: false, visitor: true,     silver: true,     gold: true     },
+    poi_create:          { free: false, pro: true     },
 
     /* — Trip analysis & export — */
-    elevation_profile:   { free: false, visitor: true,     silver: true,     gold: true     },
-    gpx_export:          { free: false, visitor: true,     silver: true,     gold: true     },
-    // GPX import is deliberately open to everyone (incl. free/visitor) — it's an
+    elevation_profile:   { free: false, pro: true     },
+    gpx_export:          { free: false, pro: true     },
+    // GPX import is deliberately open to everyone (incl. free) — it's an
     // acquisition hook: bring a Strava/Garmin route onto the graded BWR map.
-    gpx_import:          { free: true,  visitor: true,     silver: true,     gold: true     },
-    kml_export:          { free: false, visitor: true,     silver: true,     gold: true     },
-    strava_komoot_push:  { free: false, visitor: true,     silver: true,     gold: true     },
-    offline_cache:       { free: 0,     visitor: 20,       silver: 20,       gold: 20       },
+    gpx_import:          { free: true,  pro: true     },
+    kml_export:          { free: false, pro: true     },
+    strava_komoot_push:  { free: false, pro: true     },
+    offline_cache:       { free: 0,     pro: 20       },
 
     /* — Reports & alerts — */
-    reports_create:      { free: true,  visitor: true,     silver: true,     gold: true     },
-    path_alerts:         { free: false, visitor: true,     silver: true,     gold: true     },
+    reports_create:      { free: true,  pro: true     },
+    path_alerts:         { free: false, pro: true     },
 
     /* — Path editing — */
-    path_difficulty_edit: { free: true,  visitor: true,   silver: true,     gold: true     },
-    path_select:          { free: true,  visitor: true,   silver: true,     gold: true     },
+    path_difficulty_edit: { free: true, pro: true     },
+    path_select:          { free: true, pro: true     },
 
     /* — Personalisation & gamification — */
-    daily_wheel:         { free: false, visitor: true,     silver: true,     gold: true     },
-    custom_goals:        { free: false, visitor: true,     silver: true,     gold: true     },
-    weather:             { free: false, visitor: true,     silver: true,     gold: true     },
-    custom_route_color:  { free: false, visitor: true,     silver: true,     gold: true     },
+    daily_wheel:         { free: false, pro: true     },
+    custom_goals:        { free: false, pro: true     },
+    weather:             { free: false, pro: true     },
+    custom_route_color:  { free: false, pro: true     },
     // "Sur mesure" planner mode: build a route via an ordered list of stops /
     // carrefours the user picks themselves. See public/js/routes-planner.js.
-    custom_route_builder: { free: false, visitor: true,    silver: true,     gold: true     },
+    custom_route_builder: { free: false, pro: true    },
+    // Forest-coverage overlay: which curated paths you have already walked.
+    // Mirror of the /api/walkedpaths gate in worker/handlers/social.js.
+    walked_paths:        { free: false, pro: true     },
 
     /* — Badges & progression — */
-    badges_free:         { free: true,  visitor: true,     silver: true,     gold: true     },
-    badges_silver:       { free: false, visitor: true,     silver: true,     gold: true     },
-    badges_gold:         { free: false, visitor: false,    silver: false,    gold: true     },
+    // Badges come in two tiers now, matching the two plans. The 24 badges that
+    // used to be split across Argent and Or are a single `pro` tier — see
+    // BADGES in public/js/profile-plan.js.
+    badges_free:         { free: true,  pro: true     },
+    badges_pro:          { free: false, pro: true     },
 
     /* — Route history & sharing — */
-    route_history:       { free: false, visitor: true,     silver: true,     gold: true     },
-    route_sharing:       { free: false, visitor: true,     silver: true,     gold: true     },
+    route_history:       { free: false, pro: true     },
+    route_sharing:       { free: false, pro: true     },
 
     /* — Support / perks — */
-    priority_support:    { free: false, visitor: true,     silver: true,     gold: true     },
-    early_access:        { free: false, visitor: true,     silver: true,     gold: true     },
+    priority_support:    { free: false, pro: true     },
+    early_access:        { free: false, pro: true     },
 
     /* — Community forum — */
     // forum_post: create topics + reply. forum_topics_visible: how many topics a
     // free account may read (the rest are locked behind an upsell). Mirror any
     // change in worker/handlers/forum.js (FREE_VISIBLE_TOPICS) + the tests.
-    forum_post:           { free: false, visitor: true,    silver: true,     gold: true     },
-    forum_topics_visible: { free: 5,     visitor: Infinity, silver: Infinity, gold: Infinity },
+    forum_post:           { free: false, pro: true     },
+    forum_topics_visible: { free: 5,     pro: Infinity },
 
   };
 
@@ -103,8 +109,9 @@
    *
    * Levels unlock STATUS + COSMETICS (titles, profile frames) plus ONE light
    * functional perk (bonus weekly routes for free accounts) — the ladder
-   * deliberately does NOT unlock paid Silver/Gold features, so it rewards
-   * contribution without cannibalising the subscription. Keep this in sync with
+   * deliberately does NOT unlock paid Pro features, so it rewards contribution
+   * without cannibalising the subscription. NB: the `frame` values below
+   * ('bronze'/'silver'/'gold') are cosmetic profile-frame names, NOT plan ids. Keep this in sync with
    * the server bonus in worker/handlers/auth.js (consume-route) and the tests.
    * ──────────────────────────────────────────────────────────────────────────── */
   const XP_STEP = 10; // base increment; per-level cost is XP_STEP × level
@@ -180,9 +187,15 @@
     return LEVEL_REWARDS.find(r => r.level > level) || null;
   }
 
+  // Canonical plan id. The retired ids ('silver', 'gold', and the 7-day
+  // 'visitor' pass) all fold onto 'pro' so accounts stored before the rename
+  // keep full access. Mirrors normalisePlan() in worker/kv.js.
+  const LEGACY_PLAN_ALIAS = { silver: 'pro', gold: 'pro', visitor: 'pro' };
+
   function normalisePlan(plan) {
-    if (!plan) return 'free';
-    return plan;
+    const p = plan || 'free';
+    if (LEGACY_PLAN_ALIAS[p]) return LEGACY_PLAN_ALIAS[p];
+    return p === 'pro' ? 'pro' : 'free';
   }
 
   /**
@@ -210,15 +223,13 @@
   function requiredTier(feature) {
     const row = FEATURES[feature];
     if (!row) return null;
-    if (row.free   && row.free   !== 0) return 'free';
-    if (row.silver && row.silver !== 0) return 'silver';
-    if (row.gold   && row.gold   !== 0) return 'gold';
-    return 'gold';
+    if (row.free && row.free !== 0) return 'free';
+    return 'pro';
   }
 
   /** Human-readable tier label for upsell prompts. */
-  const TIER_LABEL = { free: 'Gratuit', visitor: 'Visiteur', silver: 'Argent', gold: 'Or' };
-  const TIER_ICON  = { free: '🌿',      visitor: '🎫',       silver: '🥈',     gold: '🥇' };
+  const TIER_LABEL = { free: 'Gratuit', pro: 'Pro' };
+  const TIER_ICON  = { free: '🌿',      pro: '⭐' };
 
   /* ── Weekly route quota helpers ─────────────────────────────────────────── */
 
@@ -255,7 +266,7 @@
   /**
    * Effective weekly route limit for a plan, including the level bonus.
    * `level` is optional (defaults to 1 → no bonus). The bonus only lifts the
-   * finite free limit; Infinity (Silver/Gold/visitor) stays Infinity.
+   * finite free limit; Infinity (Pro) stays Infinity.
    */
   function routeLimit(plan, level) {
     const base = limitOf('routes_per_week', plan);

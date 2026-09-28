@@ -1,6 +1,6 @@
 // profile-stats.js — the engagement gadgets on the profile page: activity
 // heatmap, streak banner, personal records, monthly challenge, recent saved
-// routes and (Gold) forest trail health.
+// routes and forest trail health.
 // Split out of profile.js. Classic (deferred) script loaded before js/profile.js.
 // Only declarations here; each render function is called from renderPlanAndProgress
 // (profile-plan.js) during the entry boot IIFE. The small helpers it relies on
@@ -151,7 +151,7 @@ async function renderMonthlyChallenge(stats) {
     </div>`;
 }
 
-// ── Recent saved routes (Silver+) ─────────────────────────────────────────────
+// ── Recent saved routes (Pro) ─────────────────────────────────────────────
 const DIFFICULTY_COLORS = { easy: '#22c55e', medium: '#f97316', hard: '#ef4444', impassable: '#9ca3af' };
 
 function fmtDuration(seconds) {
@@ -235,7 +235,7 @@ async function downloadSavedRouteGpx(id, btn) {
   }
 }
 
-// ── Forest trail health (Gold) ────────────────────────────────────────────────
+// ── Forest trail health (Pro) ────────────────────────────────────────────────
 const REPORT_TYPE_LABELS = {
   fallen_tree: ['🪵', 'Arbre tombé'],
   flooded:     ['💧', 'Inondé'],

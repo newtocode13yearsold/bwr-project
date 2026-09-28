@@ -1,5 +1,5 @@
 // map-poi.js — points-of-interest layer for the map page (parking, water,
-// picnic, viewpoint, toilet). Everyone sees the layer; Silver+/admin can add,
+// picnic, viewpoint, toilet). Everyone sees the layer; Pro/admin can add,
 // and the author or an admin can edit/delete. Loaded AFTER js/map.js (needs the
 // shared `map`, `_userPlan`, `_cachedUser`, `showToast`, `API_URL`, auth helpers).
 //
@@ -165,7 +165,7 @@ function openPoiForm(poi, latlng) {
           showToast(editing ? '✅ Point mis à jour.' : '✅ Point ajouté, merci !');
         } else if (res.status === 403) {
           const d = await res.json().catch(() => ({}));
-          showToast(`🔒 ${d.error || 'Abonnement Argent requis pour ajouter un point.'}`);
+          showToast(`🔒 ${d.error || 'Abonnement Pro requis pour ajouter un point.'}`);
         } else if (res.status === 401) {
           showToast('Connectez-vous pour ajouter un point.');
         } else {
@@ -202,7 +202,7 @@ map.on('click', e => {
   exitPoiAddMode();
 });
 
-// ── On-map control (toggle layer + add button for Silver+) ────────────────────
+// ── On-map control (toggle layer + add button for Pro) ────────────────────
 const PoiControl = L.Control.extend({
   options: { position: 'bottomleft' },
   onAdd() {

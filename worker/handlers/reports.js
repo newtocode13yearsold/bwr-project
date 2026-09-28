@@ -131,7 +131,7 @@ export async function handleReports(request, env, { pathname, json, fail, cors, 
       });
     } catch {}
 
-    // Web Push fan-out: alert Silver+ users whose saved route passes near this
+    // Web Push fan-out: alert Pro users whose saved route passes near this
     // hazard. Best-effort, off the response path, and only when push is
     // configured (VAPID secrets present) and the report is geolocated.
     if (report.lat != null && report.lon != null && env.VAPID_PRIVATE_KEY && waitUntil) {

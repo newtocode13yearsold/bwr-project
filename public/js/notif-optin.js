@@ -13,7 +13,7 @@
  *                      web-push subscription (same flow as the profile toggle),
  *                      so obstacle alerts start working immediately.
  *   • Free           → tapping "Activer" only captures the browser permission
- *                      (obstacle alerts are an Argent feature); we set that
+ *                      (obstacle alerts are a Pro feature); we set that
  *                      expectation instead of hitting the Silver-gated
  *                      /api/push/subscribe endpoint and failing.
  *
@@ -44,17 +44,17 @@
   }
   function cachedPlan() {
     var u = cachedUser();
-    if (u.role === 'admin') return 'gold';
+    if (u.role === 'admin') return 'pro';
     return u.plan || 'free';
   }
-  // Silver+ (or admin) unlocks the obstacle-alert push feature. Mirrors the
+  // Pro (or admin) unlocks the obstacle-alert push feature. Mirrors the
   // profile's `BWR.can('path_alerts', plan)` gate, with a safe manual fallback.
   function isSilverPlus() {
     var plan = cachedPlan();
     try {
       if (window.BWR && typeof BWR.can === 'function') return !!BWR.can('path_alerts', plan);
     } catch (e) {}
-    return plan === 'silver' || plan === 'gold';
+    return plan === 'pro';
   }
 
   var PUSH_SUPPORTED = ('serviceWorker' in navigator) &&
@@ -174,8 +174,8 @@
           toast('Autorisation accordée ✓ — gérez vos alertes dans votre profil.');
         }
       } else {
-        // Free tier: permission captured; obstacle alerts unlock with Argent.
-        toast('✅ Autorisation accordée — les alertes obstacles arrivent avec le plan Argent.');
+        // Free tier: permission captured; obstacle alerts unlock with Pro.
+        toast('✅ Autorisation accordée — les alertes obstacles arrivent avec le plan Pro.');
       }
       dismiss();
     }

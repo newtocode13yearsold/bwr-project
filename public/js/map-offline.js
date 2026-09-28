@@ -22,7 +22,7 @@ const OISE_OFFLINE_ZONES = [
 
 const _zoneCacheKey = id => `bwr_zone_cached:${id}`;
 
-// The forest nearest a given point (used by the Silver auto-download to pick the
+// The forest nearest a given point (used by the Pro auto-download to pick the
 // forest the user is actually in / looking at, so this generalises for free if
 // more régions are ever added — no code change, just more zones above).
 function _nearestZone(lat, lon) {
@@ -90,7 +90,7 @@ async function _fetchTileWithRetry(cache, tileUrl, attempts = 4) {
 //      the limit window resets fills the holes instead of leaving a gap.
 // onProgress is called with { phase, pct } so the UI can show both phases.
 // opts.shouldAbort() is polled between batches/sweeps so a long download can be
-// cancelled (used by the Silver auto-download banner). An aborted run leaves the
+// cancelled (used by the Pro auto-download banner). An aborted run leaves the
 // zone UN-flagged so it's retried next time rather than trusted half-empty.
 async function downloadOfflineZone(zone, onProgress, opts = {}) {
   const tiles = _zoneTiles(zone.bbox);
@@ -161,7 +161,7 @@ async function downloadOfflineZone(zone, onProgress, opts = {}) {
 function openOfflineZonePicker() {
   if (typeof BWR !== 'undefined' && typeof _userPlan !== 'undefined'
       && !BWR.can('offline_cache', _userPlan)) {
-    showToast('🔒 Cartes hors-ligne disponibles avec Argent — voir plans');
+    showToast('🔒 Cartes hors-ligne disponibles avec Pro — voir plans');
     return;
   }
 
@@ -234,8 +234,8 @@ function openOfflineZonePicker() {
   });
 }
 
-// ── Silver auto-download ────────────────────────────────────────────────────────
-// When a Silver+ user opens the map, quietly download the forest they're in so
+// ── Pro auto-download ────────────────────────────────────────────────────────
+// When a Pro user opens the map, quietly download the forest they're in so
 // "works offline" is a real promise, not a hope they happened to pan over the
 // right tiles. It downloads exactly the nearest preset forest (a few thousand
 // tiles / tens of MB), NOT the whole department — that would be gigabytes and

@@ -166,8 +166,7 @@
   vertical-align: middle;
   margin-left: 6px;
 }
-.guide-tier.silver { background: var(--silver-grad-soft); color: var(--silver-600); border: 1px solid var(--silver-200); }
-.guide-tier.gold   { background: var(--gold-grad-soft);   color: var(--gold-text);   border: 1px solid var(--gold-200); }
+.guide-tier.pro    { background: var(--gold-grad-soft);   color: var(--gold-text);   border: 1px solid var(--gold-200); }
 
 /* ── FAQ ── */
 .guide-faq details {

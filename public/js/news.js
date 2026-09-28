@@ -94,8 +94,8 @@ function newsCard(item) {
   const date = new Date(item.createdAt).toLocaleDateString('fr-FR', {
     day: 'numeric', month: 'long', year: 'numeric',
   });
-  const plan = currentUser?.role === 'admin' ? 'gold' : (currentUser?.plan || 'free');
-  const canLink = plan === 'silver' || plan === 'gold';
+  const plan = currentUser?.role === 'admin' ? 'pro' : BWR.normalisePlan(currentUser?.plan);
+  const canLink = plan === 'pro';
 
   // Image or placeholder (uploaded data URI takes priority over external URL)
   const imgSrc = item.imageDataUri || item.imageUrl || '';
@@ -123,7 +123,7 @@ function newsCard(item) {
       ? `<a href="${escHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="news-link">
            ${escHtml(item.urlLabel || 'Lire l\'article')} →
          </a>`
-      : `<span class="news-link news-link-locked" title="Réservé aux membres Argent">
+      : `<span class="news-link news-link-locked" title="Réservé aux membres Pro">
            🥈 ${escHtml(item.urlLabel || 'Lire l\'article')} →
          </span>`
     : '';

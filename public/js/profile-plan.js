@@ -1,5 +1,5 @@
 // profile-plan.js — the badge catalogue, "Mon abonnement & progression" panel
-// (plan pill, XP/level, badges, premium sections), the Silver trial, the weekly
+// (plan pill, XP/level, badges, premium sections), the Pro trial, the weekly
 // quota strip, custom goals, weather widget, push alerts and the header stat
 // counters for the profile page.
 // Split out of profile.js. Classic (deferred) script loaded before js/profile.js.
@@ -16,36 +16,35 @@ const BADGES = [
   { id: 'adventurer',   icon: '🗻', label: 'Aventurier',       tier: 'free',   desc: 'Parcours 50 km au total',                test: s => s.km >= 50 },
   { id: 'legend',       icon: '🏆', label: 'Légende',          tier: 'free',   desc: 'Parcours 100 km au total',               test: s => s.km >= 100 },
   { id: 'champion',     icon: '👑', label: 'Champion',         tier: 'free',   desc: 'Parcours 250 km au total',               test: s => s.km >= 250 },
-  // Silver tier badges
-  { id: 'tree_lover',   icon: '🌳', label: 'Amoureux arbres',  tier: 'silver', desc: 'Effectue 50 balades',                    test: s => s.routes >= 50 },
-  { id: 'compass',      icon: '🧭', label: 'Boussole',         tier: 'silver', desc: 'Effectue 75 balades',                    test: s => s.routes >= 75 },
-  { id: 'tent',         icon: '⛺', label: 'Campeur',          tier: 'silver', desc: 'Parcours 150 km au total',               test: s => s.km >= 150 },
-  { id: 'mountain',     icon: '⛰️', label: 'Sommet',           tier: 'silver', desc: 'Parcours 200 km au total',               test: s => s.km >= 200 },
-  { id: 'leaf',         icon: '🍃', label: 'Naturaliste',      tier: 'silver', desc: 'Effectue 100 balades',                   test: s => s.routes >= 100 },
-  { id: 'mushroom',     icon: '🍄', label: 'Cueilleur',        tier: 'silver', desc: 'Effectue 30 balades',                    test: s => s.routes >= 30 },
-  { id: 'fire',         icon: '🔥', label: 'Endurance',        tier: 'silver', desc: 'Parcours 75 km au total',                test: s => s.km >= 75 },
-  { id: 'star',         icon: '⭐', label: 'Étoile montante',  tier: 'silver', desc: 'Effectue 15 balades',                    test: s => s.routes >= 15 },
-  { id: 'compass2',     icon: '🎯', label: 'Précision',        tier: 'silver', desc: 'Effectue 40 balades',                    test: s => s.routes >= 40 },
-  { id: 'sunrise',      icon: '🌅', label: 'Aube',             tier: 'silver', desc: 'Effectue 20 balades',                    test: s => s.routes >= 20 },
-  { id: 'fox',          icon: '🦊', label: 'Rusé renard',      tier: 'silver', desc: 'Parcours 125 km au total',               test: s => s.km >= 125 },
-  { id: 'rabbit',       icon: '🐇', label: 'Rapide',           tier: 'silver', desc: 'Effectue 60 balades',                    test: s => s.routes >= 60 },
-  { id: 'owl',          icon: '🦉', label: 'Sage chouette',    tier: 'silver', desc: 'Parcours 175 km au total',               test: s => s.km >= 175 },
-  // Gold tier badges
-  { id: 'crown',        icon: '👑', label: 'Couronne d\'or',   tier: 'gold',   desc: 'Parcours 500 km au total',               test: s => s.km >= 500 },
-  { id: 'medal',        icon: '🏅', label: 'Médaillé',         tier: 'gold',   desc: 'Effectue 150 balades',                   test: s => s.routes >= 150 },
-  { id: 'rocket',       icon: '🚀', label: 'Fusée',            tier: 'gold',   desc: 'Parcours 300 km au total',               test: s => s.km >= 300 },
-  { id: 'diamond',      icon: '💎', label: 'Diamant',          tier: 'gold',   desc: 'Parcours 1 000 km au total',             test: s => s.km >= 1000 },
-  { id: 'dragon',       icon: '🐉', label: 'Dragon',           tier: 'gold',   desc: 'Effectue 200 balades',                   test: s => s.routes >= 200 },
-  { id: 'phoenix',      icon: '🔥', label: 'Phénix',           tier: 'gold',   desc: 'Parcours 750 km au total',               test: s => s.km >= 750 },
-  { id: 'wolf',         icon: '🐺', label: 'Loup alpha',       tier: 'gold',   desc: 'Effectue 250 balades',                   test: s => s.routes >= 250 },
-  { id: 'eagle',        icon: '🦅', label: 'Aigle royal',      tier: 'gold',   desc: 'Parcours 400 km au total',               test: s => s.km >= 400 },
+  // Pro tier badges (the old Argent + Or badges, now one tier)
+  { id: 'tree_lover',   icon: '🌳', label: 'Amoureux arbres',  tier: 'pro',    desc: 'Effectue 50 balades',                    test: s => s.routes >= 50 },
+  { id: 'compass',      icon: '🧭', label: 'Boussole',         tier: 'pro',    desc: 'Effectue 75 balades',                    test: s => s.routes >= 75 },
+  { id: 'tent',         icon: '⛺', label: 'Campeur',          tier: 'pro',    desc: 'Parcours 150 km au total',               test: s => s.km >= 150 },
+  { id: 'mountain',     icon: '⛰️', label: 'Sommet',           tier: 'pro',    desc: 'Parcours 200 km au total',               test: s => s.km >= 200 },
+  { id: 'leaf',         icon: '🍃', label: 'Naturaliste',      tier: 'pro',    desc: 'Effectue 100 balades',                   test: s => s.routes >= 100 },
+  { id: 'mushroom',     icon: '🍄', label: 'Cueilleur',        tier: 'pro',    desc: 'Effectue 30 balades',                    test: s => s.routes >= 30 },
+  { id: 'fire',         icon: '🔥', label: 'Endurance',        tier: 'pro',    desc: 'Parcours 75 km au total',                test: s => s.km >= 75 },
+  { id: 'star',         icon: '⭐', label: 'Étoile montante',  tier: 'pro',    desc: 'Effectue 15 balades',                    test: s => s.routes >= 15 },
+  { id: 'compass2',     icon: '🎯', label: 'Précision',        tier: 'pro',    desc: 'Effectue 40 balades',                    test: s => s.routes >= 40 },
+  { id: 'sunrise',      icon: '🌅', label: 'Aube',             tier: 'pro',    desc: 'Effectue 20 balades',                    test: s => s.routes >= 20 },
+  { id: 'fox',          icon: '🦊', label: 'Rusé renard',      tier: 'pro',    desc: 'Parcours 125 km au total',               test: s => s.km >= 125 },
+  { id: 'rabbit',       icon: '🐇', label: 'Rapide',           tier: 'pro',    desc: 'Effectue 60 balades',                    test: s => s.routes >= 60 },
+  { id: 'owl',          icon: '🦉', label: 'Sage chouette',    tier: 'pro',    desc: 'Parcours 175 km au total',               test: s => s.km >= 175 },
+  { id: 'crown',        icon: '👑', label: 'Couronne d\'or',   tier: 'pro',    desc: 'Parcours 500 km au total',               test: s => s.km >= 500 },
+  { id: 'medal',        icon: '🏅', label: 'Médaillé',         tier: 'pro',    desc: 'Effectue 150 balades',                   test: s => s.routes >= 150 },
+  { id: 'rocket',       icon: '🚀', label: 'Fusée',            tier: 'pro',    desc: 'Parcours 300 km au total',               test: s => s.km >= 300 },
+  { id: 'diamond',      icon: '💎', label: 'Diamant',          tier: 'pro',    desc: 'Parcours 1 000 km au total',             test: s => s.km >= 1000 },
+  { id: 'dragon',       icon: '🐉', label: 'Dragon',           tier: 'pro',    desc: 'Effectue 200 balades',                   test: s => s.routes >= 200 },
+  { id: 'phoenix',      icon: '🔥', label: 'Phénix',           tier: 'pro',    desc: 'Parcours 750 km au total',               test: s => s.km >= 750 },
+  { id: 'wolf',         icon: '🐺', label: 'Loup alpha',       tier: 'pro',    desc: 'Effectue 250 balades',                   test: s => s.routes >= 250 },
+  { id: 'eagle',        icon: '🦅', label: 'Aigle royal',      tier: 'pro',    desc: 'Parcours 400 km au total',               test: s => s.km >= 400 },
   // Streak badges
   { id: 'streak_3',  icon: '🔥', label: '3 jours de suite',   tier: 'free',   desc: 'Effectue une balade 3 jours consécutifs',   test: s => s.streak >= 3 },
-  { id: 'streak_7',  icon: '⚡', label: '7 jours de suite',   tier: 'silver', desc: 'Effectue une balade 7 jours consécutifs',   test: s => s.streak >= 7 },
-  { id: 'streak_30', icon: '💫', label: '30 jours de suite',  tier: 'gold',   desc: 'Effectue une balade 30 jours consécutifs',  test: s => s.streak >= 30 },
+  { id: 'streak_7',  icon: '⚡', label: '7 jours de suite',   tier: 'pro',    desc: 'Effectue une balade 7 jours consécutifs',   test: s => s.streak >= 7 },
+  { id: 'streak_30', icon: '💫', label: '30 jours de suite',  tier: 'pro',    desc: 'Effectue une balade 30 jours consécutifs',  test: s => s.streak >= 30 },
   // Roue de la chance — badges exclusifs
   { id: 'lucky_badge',    icon: '🍀', label: 'Badge Chanceux',    tier: 'free',   desc: 'Remporté en tournant la roue de la chance',   test: () => localStorage.getItem('bwr_lucky_badge') === '1' },
-  { id: 'exclusive_badge', icon: '✨', label: 'Badge Or Exclusif', tier: 'gold',   desc: 'Badge animé exclusif gagné à la roue de la chance', test: () => localStorage.getItem('bwr_exclusive_badge') === '1' },
+  { id: 'exclusive_badge', icon: '✨', label: 'Badge Exclusif', tier: 'pro',    desc: 'Badge animé exclusif gagné à la roue de la chance', test: () => localStorage.getItem('bwr_exclusive_badge') === '1' },
   // Roue de la chance — collection de badges nature (COLLECTIBLE_BADGES vient de profile-wheel.js, chargé avant)
   ...(typeof COLLECTIBLE_BADGES !== 'undefined' ? COLLECTIBLE_BADGES : []).map(b => ({
     id: b.id, icon: b.icon, label: b.label, tier: 'free',
@@ -75,11 +74,10 @@ function populatePage(user) {
 function renderPlanAndProgress(user) {
   const plan = BWR.normalisePlan(user.plan);
   const planMap = {
-    free:   { label: '🌿 Gratuit',  cls: 'plan-free' },
-    silver: { label: '🥈 Argent',   cls: 'plan-silver' },
-    gold:   { label: '🥇 Or',       cls: 'plan-gold' },
+    free: { label: '🌿 Gratuit', cls: 'plan-free' },
+    pro:  { label: '⭐ Pro',        cls: 'plan-pro' },
   };
-  const p = planMap[plan];
+  const p = planMap[plan] || planMap.free;
   const pill = document.getElementById('planPill');
   pill.textContent = p.label;
   pill.className   = `plan-pill ${p.cls}`;
@@ -148,7 +146,7 @@ function renderPlanAndProgress(user) {
   const streak = user.stats?.streak || 0;
   const stats = { routes, km, streak };
 
-  const tierVisible = { free: ['free'], silver: ['free', 'silver'], gold: ['free', 'silver', 'gold'] };
+  const tierVisible = { free: ['free'], pro: ['free', 'pro'] };
 
   // Detect newly earned badges and notify with a toast
   const accessibleBadges = BADGES.filter(b => tierVisible[plan].includes(b.tier));
@@ -167,9 +165,9 @@ function renderPlanAndProgress(user) {
     const accessible = tierVisible[plan].includes(b.tier);
     if (!accessible) {
       // locked silhouette with tier badge for upsell
-      return `<div class="badge-item tier-${b.tier} badge-tier-locked" title="Disponible avec ${b.tier === 'gold' ? 'Or' : 'Argent'}">
+      return `<div class="badge-item tier-${b.tier} badge-tier-locked" title="Disponible avec Pro">
         <span class="badge-icon">🔒</span>
-        <span class="badge-label">${b.tier === 'gold' ? '👑 Or' : '🥈 Argent'}</span>
+        <span class="badge-label">⭐ Pro</span>
       </div>`;
     }
     const earned = b.test(stats);
@@ -194,7 +192,7 @@ function renderPlanAndProgress(user) {
       const d = b.earnedAt
         ? new Date(b.earnedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
         : null;
-      return `<div class="badge-item earned tier-gold badge-exclusive" title="${b.label}">
+      return `<div class="badge-item earned tier-pro badge-exclusive" title="${b.label}">
         <span class="badge-icon">${b.icon}</span>
         <span class="badge-label">${b.label}</span>
         <span class="badge-desc">Haut fait — récompense de quête</span>
@@ -229,15 +227,9 @@ function renderPlanAndProgress(user) {
   // Locked badges hint
   const lockedHint = document.getElementById('badgesLockedHint');
   if (plan === 'free') {
-    const silverCount = BADGES.filter(b => b.tier === 'silver').length;
-    const goldCount   = BADGES.filter(b => b.tier === 'gold').length;
+    const proCount = BADGES.filter(b => b.tier === 'pro').length;
     lockedHint.innerHTML =
-      `🔒 <strong>${silverCount + goldCount} badges supplémentaires</strong> à débloquer · <a href="plans">Voir les plans →</a>`;
-    lockedHint.style.display = '';
-  } else if (plan === 'silver') {
-    const goldCount = BADGES.filter(b => b.tier === 'gold').length;
-    lockedHint.innerHTML =
-      `🔒 <strong>${goldCount} badges Or exclusifs</strong> (dont un badge animé) · <a href="plans">Passer à Or →</a>`;
+      `🔒 <strong>${proCount} badges supplémentaires</strong> à débloquer · <a href="plans">Voir les plans →</a>`;
     lockedHint.style.display = '';
   } else {
     lockedHint.style.display = 'none';
@@ -268,45 +260,47 @@ function renderPlanAndProgress(user) {
     }
   }
 
-  // Premium section (Silver + Gold unified)
+  // Premium section — the whole Pro block.
   if (BWR.can('daily_wheel', plan)) {
     const premiumSection = document.getElementById('premiumSection');
     premiumSection.style.display = '';
-    const isGold = plan === 'gold';
-    document.getElementById('premiumIcon').textContent = isGold ? '🥇' : '🥈';
-    document.getElementById('premiumTitle').textContent = isGold ? 'Privilèges Or' : 'Fonctionnalités premium';
+    document.getElementById('premiumIcon').textContent = '⭐';
+    document.getElementById('premiumTitle').textContent = 'Privilèges Pro';
 
     renderDailyWheel(plan);
     renderPrizeList(plan);
 
-    // Premium blocks — gated per-feature so Argent unlocks what it's entitled to.
+    // Premium blocks — still gated per-feature so a new Pro-only perk only has
+    // to be added to features.js.
     document.getElementById('goalBlock').style.display  = BWR.can('custom_goals', plan) ? '' : 'none';
     document.getElementById('weatherBlock').style.display = BWR.can('weather', plan) ? '' : 'none';
     document.getElementById('supportBlock').style.display = BWR.can('priority_support', plan) ? '' : 'none';
     document.getElementById('pushAlertsBlock').style.display = BWR.can('path_alerts', plan) ? '' : 'none';
-    document.getElementById('trailHealthBlock').style.display = isGold ? '' : 'none';
+    document.getElementById('trailHealthBlock').style.display = BWR.can('walked_paths', plan) ? '' : 'none';
 
     if (BWR.can('custom_goals', plan)) renderGoals();
     if (BWR.can('weather', plan)) renderWeather();
     if (BWR.can('path_alerts', plan)) renderPushAlerts();
     renderEmailNotif();
-    if (isGold) renderTrailHealth();
+    if (BWR.can('walked_paths', plan)) renderTrailHealth();
   } else {
     document.getElementById('premiumSection').style.display = 'none';
   }
 
-  // Free-user upsell card (only for free users — Silver/Gold hide it)
+  // Free-user upsell card (only for free users — Pro members hide it)
   const upsellCard = document.getElementById('upsellCard');
   if (upsellCard) upsellCard.style.display = (plan === 'free') ? '' : 'none';
 
-  // One-time free 7-day Silver trial — offered to free users who haven't used it yet.
+  // One-time free 7-day Pro trial — offered to free users who haven't used it yet.
+  // `silverTrialUsed` is the pre-rename flag, still read so an account that
+  // burned its trial back then isn't offered a second one.
   const trialBtn  = document.getElementById('startTrialBtn');
   const trialNote = document.getElementById('trialNote');
   if (trialBtn) {
-    const eligible = plan === 'free' && !user.silverTrialUsed;
+    const eligible = plan === 'free' && !user.proTrialUsed && !user.silverTrialUsed;
     trialBtn.style.display  = eligible ? '' : 'none';
     if (trialNote) trialNote.style.display = eligible ? '' : 'none';
-    if (eligible) trialBtn.addEventListener('click', startSilverTrial, { once: true });
+    if (eligible) trialBtn.addEventListener('click', startProTrial, { once: true });
   }
 
   // ── Engagement gadgets (all tiers; recent routes gated inside) ──
@@ -317,9 +311,9 @@ function renderPlanAndProgress(user) {
   renderRecentRoutes(plan);
 }
 
-// Activates the one-time free 7-day Silver trial, then reloads so the page
+// Activates the one-time free 7-day Pro trial, then reloads so the page
 // re-renders with the unlocked premium sections.
-async function startSilverTrial(e) {
+async function startProTrial(e) {
   const btn = e.currentTarget;
   const original = btn.textContent;
   btn.disabled = true;
@@ -334,9 +328,9 @@ async function startSilverTrial(e) {
     const cached = getCachedUser();
     if (cached) {
       setSession(localStorage.getItem('bwr_token'),
-        { ...cached, plan: 'silver', planExpiresAt: data.planExpiresAt, silverTrialUsed: true });
+        { ...cached, plan: 'pro', planExpiresAt: data.planExpiresAt, proTrialUsed: true });
     }
-    alert('🎉 Essai Argent activé ! Vous profitez de toutes les fonctionnalités pendant 7 jours.');
+    alert('🎉 Essai Pro activé ! Vous profitez de toutes les fonctionnalités pendant 7 jours.');
     location.reload();
   } catch (err) {
     btn.disabled = false;
@@ -655,7 +649,7 @@ async function renderEmailNotif() {
 // source (e.g. `s => s.routes >= 25`), so no threshold data has to be duplicated;
 // badges whose test isn't a simple numeric comparison (e.g. wheel badges) are
 // skipped.
-const TIER_VISIBLE = { free: ['free'], silver: ['free', 'silver'], gold: ['free', 'silver', 'gold'] };
+const TIER_VISIBLE = { free: ['free'], pro: ['free', 'pro'] };
 
 function renderNextBadge(stats, plan) {
   const box = document.getElementById('nextBadge');

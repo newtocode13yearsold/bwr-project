@@ -180,17 +180,14 @@ document.querySelectorAll('.layer-btn').forEach(btn => {
     if (!radio) return;
     const v = radio.value;
     if (v === 'satellite' && !BWR.can('satellite_tiles', _userPlan)) {
-      const tier = BWR.requiredTier('satellite_tiles');
       label.classList.add('plan-locked');
-      label.insertAdjacentHTML('beforeend',
-        tier === 'gold' ? ' <span class="tier-tag gold">👑 Or</span>'
-                        : ' <span class="tier-tag silver">🔒 Argent</span>');
+      label.insertAdjacentHTML('beforeend', ' <span class="tier-tag pro">🔒 Pro</span>');
     }
   });
 })();
 
 function showUpgradeToast(featureLabel, tier) {
-  const planLabel = tier === 'gold' ? 'Or' : 'Argent';
+  const planLabel = BWR.TIER_LABEL[tier] || 'Pro';
   showToast(`🔒 ${featureLabel} est disponible avec le plan ${planLabel} — voir plans.html`);
 }
 
@@ -341,7 +338,7 @@ document.getElementById('mapContactForm').addEventListener('submit', async e => 
   if (!btn) return;
   btn.addEventListener('click', async () => {
     if (!BWR.can('offline_cache', _userPlan)) {
-      showToast('🔒 Cartes hors-ligne disponibles avec Argent — voir plans');
+      showToast('🔒 Cartes hors-ligne disponibles avec Pro — voir plans');
       return;
     }
     document.getElementById('navDrawer')?.classList.add('hidden');
@@ -399,7 +396,7 @@ const btnMapSync = document.getElementById('btnMapSync');
 if (btnMapSync) btnMapSync.addEventListener('click', function () { replayMapPatches(); replayMapReports(); });
 
 // ── Silver auto-download of the nearby forest for offline use ───────────────────
-// Silver+ get "works offline" for real: on first map open we quietly cache the
+// Pro members get "works offline" for real: on first map open we quietly cache the
 // forest they're in (js/map-offline.js decides which, skips if already cached or
 // previously cancelled). Deferred until after load + a beat so it never competes
 // with the initial map render, and only when online.

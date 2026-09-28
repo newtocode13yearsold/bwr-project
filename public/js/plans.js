@@ -19,13 +19,8 @@ billingToggles.forEach(btn => {
       el.textContent = currentPeriod === 'annual' ? (el.dataset.annual || '') : '';
     });
 
-    // The Visitor pass is a one-time 7-day (weekly) purchase — it has no annual
-    // price, so hide it on the "Annuel" tab and drop the grid to 3 columns.
-    const annual = currentPeriod === 'annual';
-    const visitorCard = document.querySelector('.plan-visitor');
-    if (visitorCard) visitorCard.hidden = annual;
     const grid = document.querySelector('.plans-grid');
-    if (grid) grid.classList.toggle('annual', annual);
+    if (grid) grid.classList.toggle('annual', currentPeriod === 'annual');
   });
 });
 
@@ -69,22 +64,10 @@ let _activationTrigger = null;
 let _activationTrapRelease = null;
 
 function openActivation(plan, triggerEl) {
-  if (plan === 'gold') return;
-  if (plan === 'visitor') {
-    const u = (typeof getCachedUser === 'function') ? getCachedUser() : null;
-    if (u && (u.visitorPlanCount || 0) >= 2) return;
-  }
-  const META = {
-    visitor: { icon: '🎫', title: 'Passe Visiteur 7 jours' },
-    silver:  { icon: '🥈', title: 'Activation du plan Argent' },
-  };
-  const m = META[plan] || META.silver;
-  activationIcon.textContent  = m.icon;
-  activationTitle.textContent = m.title;
-  afPlan.value = plan;
-  // Visitor is a one-time 7-day pass — hide the monthly/annual period selector.
-  const periodRow = document.getElementById('afPeriodRow');
-  if (periodRow) periodRow.style.display = plan === 'visitor' ? 'none' : '';
+  // Pro is the only paid plan, so the modal always activates Pro.
+  activationIcon.textContent  = '⭐';
+  activationTitle.textContent = 'Activation du plan Pro';
+  afPlan.value = 'pro';
   afPeriod.value = currentPeriod;
   activationModal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -125,8 +108,8 @@ document.getElementById('activationForm').addEventListener('submit', async e => 
   btn.textContent = 'Envoi…';
   btn.disabled = true;
 
-  const planLabel   = plan === 'visitor' ? 'Visiteur (0,99€ / 7 jours)' : plan === 'gold' ? 'Or (6,99€/mois)' : 'Argent (2,99€/mois)';
-  const periodLabel = plan === 'visitor' ? 'paiement unique' : period === 'annual' ? 'annuel (-25 %)' : 'mensuel';
+  const planLabel   = 'Pro (2,99€/mois)';
+  const periodLabel = period === 'annual' ? 'annuel (-25 %)' : 'mensuel';
   const formatted = `=== Demande d'activation BWR ===
 Plan : ${planLabel}
 Période : ${periodLabel}
@@ -141,7 +124,7 @@ Message : ${message || '(aucun)'}
     const res = await fetch(`${API_URL}/api/contact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, message: formatted, subject: `[ACTIVATION ${plan === 'visitor' ? 'VISITEUR 7J' : plan.toUpperCase()}]` }),
+      body: JSON.stringify({ name, email, message: formatted, subject: '[ACTIVATION PRO]' }),
     });
     if (!res.ok) throw new Error();
     document.getElementById('activationForm').reset();
@@ -157,38 +140,12 @@ Message : ${message || '(aucun)'}
   }
 });
 
-/* ── Visitor plan limit gate ─────────────────────────────────────────── */
-// Once the user data is available, disable the visitor CTA if they've used
-// the pass twice (max lifetime limit).
-(function applyVisitorLimit() {
-  const btn = document.querySelector('.cta-visitor');
-  if (!btn) return;
-
-  function check() {
-    const u = (typeof getCachedUser === 'function') ? getCachedUser() : null;
-    if (!u) return;
-    if ((u.visitorPlanCount || 0) >= 2) {
-      btn.disabled = true;
-      btn.textContent = 'Limite atteinte (2/2)';
-      btn.style.opacity = '0.5';
-      btn.style.cursor  = 'not-allowed';
-      const footnote = btn.nextElementSibling;
-      if (footnote) footnote.textContent = 'Vous avez déjà utilisé ce passe 2 fois. Passez à Argent pour continuer.';
-    }
-  }
-
-  // getCachedUser may not be populated yet — retry briefly after page load.
-  check();
-  window.addEventListener('bwr:auth-ready', check);
-  setTimeout(check, 1500);
-})();
-
-/* ── Free 7-day Silver trial CTA ─────────────────────────────────────── */
-// Self-service trial on the Silver card. Logged-out visitors are sent to login;
+/* ── Free 7-day Pro trial CTA ─────────────────────────────────────── */
+// Self-service trial on the Pro card. Logged-out visitors are sent to login;
 // logged-in free users (who haven't used it) activate it instantly. Anyone who
-// already used the trial, or is already Silver/Gold, doesn't see the button.
-(function applySilverTrial() {
-  const btn = document.getElementById('silverTrialCta');
+// already used the trial, or is already Pro, doesn't see the button.
+(function applyProTrial() {
+  const btn = document.getElementById('proTrialCta');
   if (!btn) return;
 
   function loggedIn() { return typeof getToken === 'function' && !!getToken(); }
@@ -197,7 +154,9 @@ Message : ${message || '(aucun)'}
     if (!loggedIn()) { btn.style.display = ''; return; } // invite visitors to sign up
     const u = (typeof getCachedUser === 'function') ? getCachedUser() : null;
     if (!u) return; // wait for auth-ready
-    const eligible = (u.plan || 'free') === 'free' && !u.silverTrialUsed;
+    // `silverTrialUsed` is the pre-rename flag — still read so a trial spent
+    // under the old name isn't offered a second time.
+    const eligible = BWR.normalisePlan(u.plan) === 'free' && !u.proTrialUsed && !u.silverTrialUsed;
     btn.style.display = eligible ? '' : 'none';
   }
 
@@ -214,8 +173,8 @@ Message : ${message || '(aucun)'}
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Activation impossible.');
       const cached = getCachedUser();
-      if (cached) setSession(getToken(), { ...cached, plan: 'silver', planExpiresAt: data.planExpiresAt, silverTrialUsed: true });
-      alert('🎉 Essai Argent activé ! Vous profitez de toutes les fonctionnalités pendant 7 jours.');
+      if (cached) setSession(getToken(), { ...cached, plan: 'pro', planExpiresAt: data.planExpiresAt, proTrialUsed: true });
+      alert('🎉 Essai Pro activé ! Vous profitez de toutes les fonctionnalités pendant 7 jours.');
       location.href = 'profile';
     } catch (err) {
       btn.disabled = false;
@@ -292,8 +251,8 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     const QUALITY_CONV   = [0, 0.12, 0.25, 0.45, 0.72, 1.10, 1.62, 2.25, 2.95, 3.60, 4.25];
     const QUALITY_LABELS = ['', 'Très basique', 'Basique', 'Moyen-', 'Moyen', 'Acceptable', 'Bon', 'Très bon', 'Excellent', 'Exceptionnel', 'Parfait'];
 
-    /* ARPU: 65 % Silver (2.99 €) + 35 % Gold (6.99 €) */
-    const ARPU = 0.65 * 2.99 + 0.35 * 6.99;
+    /* ARPU: Pro (2,99 €) is the only paid plan */
+    const ARPU = 2.99;
 
     function lerp(a, b, t) { return a + (b - a) * t; }
 
@@ -563,7 +522,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
         return (T[lo]||0)*(1-t)+(T[hi]||0)*t;
       })(quality);
 
-      const ARPU = 0.65*2.99+0.35*6.99;
+      const ARPU = 2.99; // Pro (2,99 €) is the only paid plan
       // Prefer real figures when loaded; fall back to the slider model otherwise.
       const rate = realData ? realData.realConv    : modelRate;
       const subs = realData ? realData.payingUsers : visitors*(modelRate/100);
@@ -572,8 +531,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
       const prob = Math.max(1,Math.min(99,Math.round(100/(1+Math.exp(-7*(mrr/target-0.85))))));
       const history = realData ? realData.history : histRaw;
       const realFields = realData ? {
-        silver: realData.silver, gold: realData.gold,
-        compedSilver: realData.compedSilver, compedGold: realData.compedGold,
+        pro: realData.pro, compedPro: realData.compedPro,
         totalUsers: realData.totalUsers, realConv: realData.realConv,
       } : {};
 
@@ -653,22 +611,22 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
         const visitsCurrent = slots[4].count;
 
         // Real subscriber counts from the user list (comped = offered, excluded from MRR).
-        const counts = { free: 0, silver: 0, gold: 0 };
-        const comped = { silver: 0, gold: 0 };
+        const counts = { free: 0, pro: 0 };
+        let compedPro = 0;
         users.forEach(u => {
           if (u.role === 'admin') return;
-          counts[u.plan || 'free'] = (counts[u.plan || 'free'] || 0) + 1;
-          if (u.comped && (u.plan === 'silver' || u.plan === 'gold')) comped[u.plan]++;
+          const plan = BWR.normalisePlan(u.plan);
+          counts[plan] = (counts[plan] || 0) + 1;
+          if (u.comped && plan === 'pro') compedPro++;
         });
-        const totalUsers  = counts.free + counts.silver + counts.gold;
-        const payingUsers = (counts.silver - comped.silver) + (counts.gold - comped.gold);
-        const realMRR     = (counts.silver - comped.silver) * 2.99 + (counts.gold - comped.gold) * 6.99;
+        const totalUsers  = counts.free + counts.pro;
+        const payingUsers = counts.pro - compedPro;
+        const realMRR     = payingUsers * 2.99;
         const realConv    = totalUsers > 0 ? (payingUsers / totalUsers * 100) : 0;
 
         realData = {
           visitors: visitsCurrent, history,
-          silver: counts.silver, gold: counts.gold,
-          compedSilver: comped.silver, compedGold: comped.gold,
+          pro: counts.pro, compedPro,
           totalUsers, payingUsers, realMRR, realConv,
         };
 

@@ -27,10 +27,14 @@ const { can, limitOf, requiredTier, normalisePlan, readWeekly, bumpWeekly, check
 describe('normalisePlan', () => {
   test('null → free',      () => assert.equal(normalisePlan(null),      'free'));
   test('undefined → free', () => assert.equal(normalisePlan(undefined), 'free'));
-  test('unknown value passthrough', () => assert.equal(normalisePlan('unknown'), 'unknown'));
+  test('unknown value → free', () => assert.equal(normalisePlan('unknown'), 'free'));
   test('free passthrough', () => assert.equal(normalisePlan('free'),    'free'));
-  test('silver passthrough', () => assert.equal(normalisePlan('silver'), 'silver'));
-  test('gold passthrough',   () => assert.equal(normalisePlan('gold'),   'gold'));
+  test('pro passthrough',  () => assert.equal(normalisePlan('pro'),     'pro'));
+  // Retired ids kept by accounts created before the rename must still resolve
+  // to the paid tier — mirrors normalisePlan() in worker/kv.js.
+  test('legacy silver → pro',  () => assert.equal(normalisePlan('silver'),  'pro'));
+  test('legacy gold → pro',    () => assert.equal(normalisePlan('gold'),    'pro'));
+  test('legacy visitor → pro', () => assert.equal(normalisePlan('visitor'), 'pro'));
 });
 
 // ── can ───────────────────────────────────────────────────────────────────────
@@ -38,103 +42,91 @@ describe('normalisePlan', () => {
 describe('can', () => {
   // Loop mode: all tiers (free capped at 10/week via routes_per_week quota)
   test('loop_mode: free → true',    () => assert.equal(can('loop_mode', 'free'),   true));
-  test('loop_mode: silver → true',  () => assert.equal(can('loop_mode', 'silver'), true));
-  test('loop_mode: gold → true',    () => assert.equal(can('loop_mode', 'gold'),   true));
+  test('loop_mode: pro → true',     () => assert.equal(can('loop_mode', 'pro'), true));
 
-  // Satellite tiles: silver+
-  test('satellite_tiles: free → false',   () => assert.equal(can('satellite_tiles', 'free'),   false));
-  test('satellite_tiles: silver → true',  () => assert.equal(can('satellite_tiles', 'silver'), true));
-  test('satellite_tiles: gold → true',    () => assert.equal(can('satellite_tiles', 'gold'),   true));
+  // Satellite tiles: pro only
+  test('satellite_tiles: free → false', () => assert.equal(can('satellite_tiles', 'free'), false));
+  test('satellite_tiles: pro → true',   () => assert.equal(can('satellite_tiles', 'pro'),  true));
 
   // Carrefours: all tiers
-  test('carrefours: free → truthy',   () => assert.ok(can('carrefours', 'free')));
-  test('carrefours: silver → truthy', () => assert.ok(can('carrefours', 'silver')));
-  test('carrefours: gold → truthy',   () => assert.ok(can('carrefours', 'gold')));
+  test('carrefours: free → truthy', () => assert.ok(can('carrefours', 'free')));
+  test('carrefours: pro → truthy',  () => assert.ok(can('carrefours', 'pro')));
 
-  // Admins always receive plan:'gold' from the server — test gold directly
-  test('satellite_tiles: gold → true (admin receives gold)', () => assert.equal(can('satellite_tiles', 'gold'), true));
-  test('kml_export: gold → true (admin receives gold)',      () => assert.equal(can('kml_export', 'gold'), true));
+  // Admins always receive plan:'pro' from the server — test pro directly
+  test('kml_export: pro → true (admin receives pro)', () => assert.equal(can('kml_export', 'pro'), true));
 
   // Unknown feature → false
-  test('unknown feature → false', () => assert.equal(can('nonexistent_feature', 'gold'), false));
+  test('unknown feature → false', () => assert.equal(can('nonexistent_feature', 'pro'), false));
 
-  // Elevation profile: silver+
+  // Elevation profile: pro only
   test('elevation_profile: free → false',  () => assert.equal(can('elevation_profile', 'free'),   false));
-  test('elevation_profile: silver → true', () => assert.equal(can('elevation_profile', 'silver'), true));
+  test('elevation_profile: pro → true', () => assert.equal(can('elevation_profile', 'pro'), true));
 
-  // Difficulty hard: silver+
+  // Difficulty hard: pro only
   test('difficulty_hard: free → false',   () => assert.equal(can('difficulty_hard', 'free'),   false));
-  test('difficulty_hard: silver → true',  () => assert.equal(can('difficulty_hard', 'silver'), true));
+  test('difficulty_hard: pro → true',  () => assert.equal(can('difficulty_hard', 'pro'), true));
 
-  // GPX export: silver+
+  // GPX export: pro only
   test('gpx_export: free → false',   () => assert.equal(can('gpx_export', 'free'),   false));
-  test('gpx_export: silver → true',  () => assert.equal(can('gpx_export', 'silver'), true));
+  test('gpx_export: pro → true',  () => assert.equal(can('gpx_export', 'pro'), true));
 
   // GPX import: open to everyone (acquisition hook)
   test('gpx_import: free → true',    () => assert.equal(can('gpx_import', 'free'),    true));
-  test('gpx_import: visitor → true', () => assert.equal(can('gpx_import', 'visitor'), true));
-  test('gpx_import: silver → true',  () => assert.equal(can('gpx_import', 'silver'),  true));
-  test('gpx_import: gold → true',    () => assert.equal(can('gpx_import', 'gold'),    true));
+  test('gpx_import: pro → true',    () => assert.equal(can('gpx_import', 'pro'), true));
 
-  // KML export: silver+
+  // KML export: pro only
   test('kml_export: free → false',   () => assert.equal(can('kml_export', 'free'),   false));
-  test('kml_export: silver → true',  () => assert.equal(can('kml_export', 'silver'), true));
-  test('kml_export: gold → true',    () => assert.equal(can('kml_export', 'gold'),   true));
+  test('kml_export: pro → true',    () => assert.equal(can('kml_export', 'pro'), true));
 
-  // Weather: silver+
+  // Weather: pro only
   test('weather: free → false',   () => assert.equal(can('weather', 'free'),   false));
-  test('weather: silver → true',  () => assert.equal(can('weather', 'silver'), true));
-  test('weather: gold → true',    () => assert.equal(can('weather', 'gold'),   true));
+  test('weather: pro → true',    () => assert.equal(can('weather', 'pro'), true));
 
-  // Custom route builder ("Sur mesure"): silver+ (visitor pass = full Silver)
+  // Custom route builder ("Sur mesure"): pro only
   test('custom_route_builder: free → false',    () => assert.equal(can('custom_route_builder', 'free'),    false));
-  test('custom_route_builder: visitor → true',  () => assert.equal(can('custom_route_builder', 'visitor'), true));
-  test('custom_route_builder: silver → true',   () => assert.equal(can('custom_route_builder', 'silver'),  true));
-  test('custom_route_builder: gold → true',     () => assert.equal(can('custom_route_builder', 'gold'),    true));
+  test('custom_route_builder: pro → true',     () => assert.equal(can('custom_route_builder', 'pro'), true));
 
-  // The 7-day Visitor pass is a time-limited full Silver (server effectivePlan()
-  // already resolves an active visitor to 'silver'). Every gated capability the
-  // client checks must therefore match Silver exactly — otherwise the pass
-  // "passes like a free plan" for satellite/weather/goals/colours/etc.
-  const VISITOR_EQ_SILVER = [
+  // Accounts stored under a retired id ('silver', 'gold', the 7-day 'visitor'
+  // pass) must behave EXACTLY like 'pro' for every gated capability — otherwise
+  // a paying legacy member silently drops to free-tier access.
+  const LEGACY_EQ_PRO = [
     'satellite_tiles', 'ign_topo_tiles', 'elevation_profile', 'gpx_export',
     'kml_export', 'strava_komoot_push', 'path_alerts', 'daily_wheel',
     'custom_goals', 'weather', 'custom_route_color', 'custom_route_builder',
     'route_history', 'route_sharing', 'priority_support', 'early_access',
-    'forum_post', 'badges_silver', 'difficulty_hard',
+    'forum_post', 'badges_pro', 'difficulty_hard', 'walked_paths', 'poi_create',
   ];
-  VISITOR_EQ_SILVER.forEach(f => {
-    test(`${f}: visitor mirrors silver`, () => assert.equal(can(f, 'visitor'), can(f, 'silver')));
+  ['silver', 'gold', 'visitor'].forEach(legacy => {
+    LEGACY_EQ_PRO.forEach(f => {
+      test(`${f}: ${legacy} mirrors pro`, () => assert.equal(can(f, legacy), can(f, 'pro')));
+    });
+    test(`offline_cache: ${legacy} mirrors pro`, () => assert.equal(limitOf('offline_cache', legacy), limitOf('offline_cache', 'pro')));
+    test(`routes_per_week: ${legacy} mirrors pro`, () => assert.equal(limitOf('routes_per_week', legacy), limitOf('routes_per_week', 'pro')));
   });
-  test('offline_cache: visitor mirrors silver', () => assert.equal(limitOf('offline_cache', 'visitor'), limitOf('offline_cache', 'silver')));
-  test('routes_per_week: visitor mirrors silver', () => assert.equal(limitOf('routes_per_week', 'visitor'), limitOf('routes_per_week', 'silver')));
 
-  // Gold badges remain gold-only
-  test('badges_gold: silver → false', () => assert.equal(can('badges_gold', 'silver'), false));
-  test('badges_gold: gold → true',    () => assert.equal(can('badges_gold', 'gold'),   true));
+  // Pro badges are the paid tier's badges
+  test('badges_pro: free → false', () => assert.equal(can('badges_pro', 'free'), false));
+  test('badges_pro: pro → true',   () => assert.equal(can('badges_pro', 'pro'),  true));
 });
 
 // ── limitOf ───────────────────────────────────────────────────────────────────
 
 describe('limitOf', () => {
   test('routes_per_week: free = 10',         () => assert.equal(limitOf('routes_per_week', 'free'),   10));
-  test('routes_per_week: silver = Infinity', () => assert.equal(limitOf('routes_per_week', 'silver'), Infinity));
-  test('routes_per_week: gold = Infinity',   () => assert.equal(limitOf('routes_per_week', 'gold'),   Infinity));
+  test('routes_per_week: pro = Infinity',    () => assert.equal(limitOf('routes_per_week', 'pro'), Infinity));
 
   test('loops_per_week: free = 3',           () => assert.equal(limitOf('loops_per_week', 'free'),   3));
-  test('loops_per_week: silver = Infinity',  () => assert.equal(limitOf('loops_per_week', 'silver'), Infinity));
-  test('loops_per_week: gold = Infinity',    () => assert.equal(limitOf('loops_per_week', 'gold'),   Infinity));
+  test('loops_per_week: pro = Infinity',     () => assert.equal(limitOf('loops_per_week', 'pro'), Infinity));
 
   test('offline_cache: free = 0',   () => assert.equal(limitOf('offline_cache', 'free'),   0));
-  test('offline_cache: silver = 20', () => assert.equal(limitOf('offline_cache', 'silver'), 20));
-  test('offline_cache: gold = 20',  () => assert.equal(limitOf('offline_cache', 'gold'),   20));
+  test('offline_cache: pro = 20',   () => assert.equal(limitOf('offline_cache', 'pro'), 20));
 
   // Boolean features → Infinity when true
   test('loop_mode: free → Infinity', () => assert.equal(limitOf('loop_mode', 'free'),   Infinity));
-  test('loop_mode: silver → Infinity', () => assert.equal(limitOf('loop_mode', 'silver'), Infinity));
+  test('loop_mode: pro → Infinity', () => assert.equal(limitOf('loop_mode', 'pro'), Infinity));
 
   test('kml_export: free → 0',   () => assert.equal(limitOf('kml_export', 'free'),   0));
-  test('kml_export: gold → Infinity', () => assert.equal(limitOf('kml_export', 'gold'), Infinity));
+  test('kml_export: pro → Infinity', () => assert.equal(limitOf('kml_export', 'pro'), Infinity));
 });
 
 // ── requiredTier ──────────────────────────────────────────────────────────────
@@ -143,15 +135,15 @@ describe('requiredTier', () => {
   test('carrefours → free (available to all)', () => assert.equal(requiredTier('carrefours'), 'free'));
   test('routes_per_week → free (quota is 10, but truthy)', () => assert.equal(requiredTier('routes_per_week'), 'free'));
   test('loop_mode → free',           () => assert.equal(requiredTier('loop_mode'),         'free'));
-  test('elevation_profile → silver', () => assert.equal(requiredTier('elevation_profile'), 'silver'));
-  test('gpx_export → silver',        () => assert.equal(requiredTier('gpx_export'),        'silver'));
-  test('gpx_import → free',          () => assert.equal(requiredTier('gpx_import'),        'free'));
-  test('satellite_tiles → silver',   () => assert.equal(requiredTier('satellite_tiles'),   'silver'));
-  test('kml_export → silver',        () => assert.equal(requiredTier('kml_export'),        'silver'));
-  test('weather → silver',           () => assert.equal(requiredTier('weather'),           'silver'));
-  test('custom_route_color → silver',() => assert.equal(requiredTier('custom_route_color'), 'silver'));
-  test('custom_route_builder → silver',() => assert.equal(requiredTier('custom_route_builder'), 'silver'));
-  test('badges_gold → gold',         () => assert.equal(requiredTier('badges_gold'),       'gold'));
+  test('elevation_profile → pro', () => assert.equal(requiredTier('elevation_profile'), 'pro'));
+  test('gpx_export → pro',        () => assert.equal(requiredTier('gpx_export'),        'pro'));
+  test('gpx_import → free',       () => assert.equal(requiredTier('gpx_import'),        'free'));
+  test('satellite_tiles → pro',   () => assert.equal(requiredTier('satellite_tiles'),   'pro'));
+  test('kml_export → pro',        () => assert.equal(requiredTier('kml_export'),        'pro'));
+  test('weather → pro',           () => assert.equal(requiredTier('weather'),           'pro'));
+  test('custom_route_color → pro',() => assert.equal(requiredTier('custom_route_color'), 'pro'));
+  test('custom_route_builder → pro',() => assert.equal(requiredTier('custom_route_builder'), 'pro'));
+  test('badges_pro → pro',        () => assert.equal(requiredTier('badges_pro'),        'pro'));
   test('unknown feature → null',     () => assert.equal(requiredTier('nonexistent'), null));
 });
 
@@ -228,17 +220,17 @@ describe('checkRouteQuota', () => {
     assert.equal(checkRouteQuota('free').ok, false);
   });
 
-  test('silver at 100 routes → always ok (Infinity limit)', () => {
+  test('pro at 100 routes → always ok (Infinity limit)', () => {
     for (let i = 0; i < 100; i++) bumpWeekly();
-    assert.ok(checkRouteQuota('silver').ok);
+    assert.ok(checkRouteQuota('pro').ok);
   });
 
-  test('gold at 100 routes → always ok', () => {
+  test('legacy gold at 100 routes → always ok', () => {
     for (let i = 0; i < 100; i++) bumpWeekly();
     assert.ok(checkRouteQuota('gold').ok);
   });
 
-  test('gold plan → always ok (admins receive gold)', () => {
+  test('pro plan → always ok (admins receive pro)', () => {
     for (let i = 0; i < 10; i++) bumpWeekly();
     assert.ok(checkRouteQuota('gold').ok);
   });
@@ -269,9 +261,9 @@ describe('checkRouteQuota', () => {
     assert.equal(routeLimit('free', levelFromXp(405)), 12);
   });
 
-  test('silver at high level stays Infinity (bonus never applies)', () => {
+  test('pro at high level stays Infinity (bonus never applies)', () => {
     for (let i = 0; i < 100; i++) bumpWeekly();
-    assert.ok(checkRouteQuota('silver', 10).ok);
+    assert.ok(checkRouteQuota('pro', 10).ok);
   });
 });
 
@@ -339,7 +331,7 @@ describe('routeBonus + routeLimit', () => {
     assert.equal(routeLimit('free', 4), 11);
     assert.equal(routeLimit('free', 7), 12);
   });
-  test('routeLimit: silver stays Infinity', () => assert.equal(routeLimit('silver', 10), Infinity));
+  test('routeLimit: pro stays Infinity', () => assert.equal(routeLimit('pro', 10), Infinity));
   test('routeLimit: defaults level 1 when omitted', () => assert.equal(routeLimit('free'), 10));
 });
 

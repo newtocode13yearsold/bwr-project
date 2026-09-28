@@ -479,7 +479,7 @@ describe('GET /api/users', () => {
     kv.store.set(`user:${id}`, JSON.stringify({
       id, name: 'Contributor', username: 'contrib', email: `${id}@bwr.fr`,
       role: 'silver', plan: 'silver', passwordHash: 'secret', salt: 'secret',
-      onboarded: true, silverTrialUsed: true,
+      onboarded: true, proTrialUsed: true,
       stats: { km: 12.5, routes: 3, reports: 2, pathGrades: 4, walkedPathsCount: 1 },
     }));
     const res = await worker.fetch(authed('GET', '/api/users', token), env);
@@ -489,7 +489,7 @@ describe('GET /api/users', () => {
     assert.ok(m, 'seeded member present in list');
     assert.equal(m.username, 'contrib');
     assert.equal(m.onboarded, true);
-    assert.equal(m.silverTrialUsed, true);
+    assert.equal(m.proTrialUsed, true);
     assert.equal(m.stats.km, 12.5);
     assert.equal(m.stats.pathGrades, 4);
     assert.equal(m.passwordHash, undefined, 'passwordHash must not be exposed');
@@ -511,10 +511,22 @@ describe('PUT /api/auth/plan/:userId', () => {
     const { env, seedAdmin, seedFree, getStoredUser } = freshEnv();
     const { token } = seedAdmin('admin-plan');
     const { user } = seedFree('target-plan');
-    const res = await worker.fetch(authed('PUT', `/api/auth/plan/${user.id}`, token, { plan: 'silver' }), env);
+    const res = await worker.fetch(authed('PUT', `/api/auth/plan/${user.id}`, token, { plan: 'pro' }), env);
     assert.equal(res.status, 200);
     const updated = getStoredUser(user.id);
-    assert.equal(updated.plan, 'silver');
+    assert.equal(updated.plan, 'pro');
+  });
+
+  // An old admin tab may still send a retired id; it must be folded onto 'pro'
+  // rather than 400ing or being stored verbatim.
+  test('retired plan id is normalised to pro', async () => {
+    const { env, seedAdmin, seedFree, getStoredUser } = freshEnv();
+    const { token } = seedAdmin('admin-plan-legacy');
+    const { user } = seedFree('target-plan-legacy');
+    const res = await worker.fetch(authed('PUT', `/api/auth/plan/${user.id}`, token, { plan: 'gold' }), env);
+    assert.equal(res.status, 200);
+    assert.equal((await res.json()).plan, 'pro');
+    assert.equal(getStoredUser(user.id).plan, 'pro');
   });
 });
 

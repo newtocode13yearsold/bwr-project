@@ -1,25 +1,22 @@
-import { putUser, getUserByEmail, getUser, effectivePlan, recordAuthEvent, listKeys, listItems, putReport } from '../kv.js';
+import { putUser, getUserByEmail, getUser, effectivePlan, normalisePlan, recordAuthEvent, listKeys, listItems, putReport } from '../kv.js';
 import {
   hashPasswordLegacy, hashPassword, getUserFromToken,
   isoMonday, checkRateLimit,
   getLoginAttempts, recordFailedLogin,
   PENDING_TTL, RESEND_COOLDOWN, RESET_TTL, RESET_COOLDOWN,
   sendVerificationEmail, sendPasswordResetEmail, sendEmailChangeVerification,
+  PASSWORD_REGEX, PASSWORD_REQUIREMENTS_MSG,
 } from '../auth-utils.js';
 
 const REGISTER_RATE_LIMIT = { max: 5, window: 3600 };
 const FORGOT_RATE_LIMIT = { max: 5, window: 3600 };
 
-// Server-side source of truth for the daily-wheel plan prizes (mirrors the
-// `type:'plan'` entries in public/js/profile-wheel.js). The browser sends a
-// prize `id`; the server reads the granted plan + duration from THIS table so a
-// tampered client can't award itself an arbitrary plan or duration.
-const WHEEL_PRIZES = {
-  silver_week:  { plan: 'silver', days: 7  },
-  silver_month: { plan: 'silver', days: 30 },
-  gold_week:    { plan: 'gold',   days: 7  },
-  gold_month:   { plan: 'gold',   days: 30 },
-};
+// The daily wheel no longer hands out plan upgrades. It is itself a Pro perk,
+// and Pro is the only paid tier, so there is no longer a tier above the wheel's
+// own gate to win - spinners win badges, collectibles and trail tips instead
+// (see WHEEL_PRIZES in public/js/profile-wheel.js). The endpoint below still
+// accepts a `prizeType:'plan'` payload and simply no-ops, so a stale cached
+// client left over from the Or/Argent era can't error out on a spin.
 
 /**
  * Auth endpoints: register, verify, login, logout, me, profile, password,
@@ -39,7 +36,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const { name, email, password, username } = body;
 
     if (!name || !email || !password || !username) return fail('Tous les champs sont obligatoires.');
-    if (password.length < 8) return fail('Le mot de passe doit faire au moins 8 caractères.');
+    if (!PASSWORD_REGEX.test(password)) return fail(PASSWORD_REQUIREMENTS_MSG);
 
     const trimmedUsername = String(username).trim();
     if (!/^[a-zA-Z0-9_.-]{3,20}$/.test(trimmedUsername))
@@ -224,7 +221,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
   if (pathname === '/api/auth/reset-password' && request.method === 'POST') {
     const { token, password } = await request.json();
     if (!token || !password) return fail('Champs obligatoires.');
-    if (password.length < 8) return fail('Le mot de passe doit faire au moins 8 caractères.');
+    if (!PASSWORD_REGEX.test(password)) return fail(PASSWORD_REQUIREMENTS_MSG);
 
     const raw = await env.BWR_KV.get(`reset:${token}`);
     if (!raw) return fail('Lien invalide ou expiré.', 400);
@@ -316,7 +313,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
 
     return json({
       token,
-      user: { id: user.id, name: user.name, username: user.username || null, email: user.email, role: user.role, plan: user.plan || 'free', onboarded: user.onboarded !== false, stats: user.stats || { routes: 0, km: 0 } },
+      user: { id: user.id, name: user.name, username: user.username || null, email: user.email, role: user.role, plan: normalisePlan(user.plan), onboarded: user.onboarded !== false, stats: user.stats || { routes: 0, km: 0 } },
     });
   }
 
@@ -328,13 +325,25 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     let updated = { ...user };
 
     if (updated.planExpiresAt && new Date(updated.planExpiresAt) < new Date()) {
-      const revertTo = updated.planBase || 'free';
+      const revertTo = normalisePlan(updated.planBase || 'free');
       updated = { ...updated, plan: revertTo, planExpiresAt: null, planBase: null };
       dirty = true;
     }
 
-    if (updated.role === 'admin' && updated.plan !== 'gold') {
-      updated = { ...updated, plan: 'gold' };
+    // Lazy migration off the retired ids: an account still stored as 'silver',
+    // 'gold' or 'visitor' is rewritten as the 'pro' it already resolves to, so
+    // the KV copy stops drifting from what every feature gate sees.
+    if (normalisePlan(updated.plan) !== (updated.plan || 'free')) {
+      updated = { ...updated, plan: normalisePlan(updated.plan) };
+      dirty = true;
+    }
+    if (updated.planBase && normalisePlan(updated.planBase) !== updated.planBase) {
+      updated = { ...updated, planBase: normalisePlan(updated.planBase) };
+      dirty = true;
+    }
+
+    if (updated.role === 'admin' && updated.plan !== 'pro') {
+      updated = { ...updated, plan: 'pro' };
       dirty = true;
     }
 
@@ -345,8 +354,9 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       plan: updated.plan || 'free',
       planExpiresAt: updated.planExpiresAt || null,
       planBase: updated.planBase || null,
-      visitorPlanCount: updated.visitorPlanCount || 0,
-      silverTrialUsed: !!updated.silverTrialUsed,
+      // `silverTrialUsed` is the pre-rename field name, still read so an account
+      // that burned its trial back then can't take a second one.
+      proTrialUsed: !!(updated.proTrialUsed || updated.silverTrialUsed),
       emailNotifications: updated.emailNotifications !== false, // default on
       onboarded: updated.onboarded !== false, // legacy accounts (no field) = already onboarded
       questClaims: updated.questClaims || {},
@@ -381,37 +391,38 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
 
     const targetId = pathname.split('/')[4];
     const { plan, planExpiresAt, planBase, comped } = await request.json();
-    if (!['free', 'silver', 'gold', 'visitor'].includes(plan)) return fail('Plan invalide.');
+    // Only two plans exist. The retired ids are still accepted so an old admin
+    // tab (or a script) can't 400 on us - they are folded onto 'pro'.
+    if (!['free', 'pro', 'silver', 'gold', 'visitor'].includes(plan)) return fail('Plan invalide.');
+    const newPlan = normalisePlan(plan);
 
     const target = await getUser(env, targetId);
     if (!target) return fail('Utilisateur introuvable.', 404);
 
-    if (plan === 'visitor') {
-      const usedCount = target.visitorPlanCount || 0;
-      if (usedCount >= 2) return fail('Cet utilisateur a déjà utilisé le passe Visiteur 2 fois (limite atteinte).', 400);
-    }
-
-    const updated = { ...target, plan };
-    if (plan === 'visitor') updated.visitorPlanCount = (target.visitorPlanCount || 0) + 1;
+    const updated = { ...target, plan: newPlan };
     if (planExpiresAt !== undefined) updated.planExpiresAt = planExpiresAt || null;
-    if (planBase !== undefined) updated.planBase = planBase || null;
+    if (planBase !== undefined) updated.planBase = planBase ? normalisePlan(planBase) : null;
     // `comped` = abonnement offert gratuitement : exclu du CA, mais visible dans l'analyse IA.
-    // Un plan gratuit/visiteur ne peut pas être « offert » (rien à compter).
-    if (comped !== undefined) updated.comped = (plan === 'silver' || plan === 'gold') ? !!comped : false;
+    // Un plan gratuit ne peut pas être « offert » (rien à compter).
+    if (comped !== undefined) updated.comped = newPlan === 'pro' ? !!comped : false;
     await putUser(env, updated);
 
-    return json({ success: true, plan, planExpiresAt: updated.planExpiresAt || null, visitorPlanCount: updated.visitorPlanCount });
+    return json({ success: true, plan: newPlan, planExpiresAt: updated.planExpiresAt || null });
   }
 
-  // Self-service free 7-day Silver trial. One per account, free accounts only.
+  // Self-service free 7-day Pro trial. One per account, free accounts only.
   // Reuses the planExpiresAt/planBase expiry mechanism (see /api/auth/me): when
   // the 7 days elapse the plan reverts to 'free' automatically on the next read.
   if (pathname === '/api/auth/start-trial' && request.method === 'POST') {
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
 
-    if (user.silverTrialUsed) return fail('Vous avez déjà utilisé votre essai gratuit Argent.', 409);
-    if (user.role === 'admin' || (user.plan || 'free') !== 'free') {
+    // `silverTrialUsed` is the pre-rename flag - an account that already spent
+    // its trial under the old name must not get a second one.
+    if (user.proTrialUsed || user.silverTrialUsed) {
+      return fail('Vous avez déjà utilisé votre essai gratuit Pro.', 409);
+    }
+    if (user.role === 'admin' || normalisePlan(user.plan) !== 'free') {
       return fail("L'essai gratuit est réservé aux comptes Gratuit.", 400);
     }
 
@@ -419,14 +430,14 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const expiresAt = new Date(Date.now() + TRIAL_DAYS * 86400000).toISOString();
     await putUser(env, {
       ...user,
-      plan: 'silver',
+      plan: 'pro',
       planExpiresAt: expiresAt,
       planBase: 'free',
-      silverTrialUsed: true,
-      silverTrialStartedAt: new Date().toISOString(),
+      proTrialUsed: true,
+      proTrialStartedAt: new Date().toISOString(),
     });
 
-    return json({ success: true, plan: 'silver', planExpiresAt: expiresAt });
+    return json({ success: true, plan: 'pro', planExpiresAt: expiresAt });
   }
 
   // Self-service subscription cancellation ("résiliation en ligne", exigée par
@@ -436,13 +447,13 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
   //     l'absence de renouvellement (planBase → 'free') et l'accès continue jusqu'à
   //     cette date, puis /api/auth/me repasse le compte en Gratuit automatiquement.
   //   • Sinon (plan payant sans date de fin, ex. offert) : retour immédiat au Gratuit.
-  // Les admins (toujours 'gold') et les comptes Gratuit n'ont rien à résilier.
+  // Les admins (toujours 'pro') et les comptes Gratuit n'ont rien à résilier.
   if (pathname === '/api/auth/cancel-plan' && request.method === 'POST') {
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
     if (user.role === 'admin') return fail("Un compte administrateur n'a pas d'abonnement à résilier.", 400);
 
-    const current = user.plan || 'free';
+    const current = normalisePlan(user.plan);
     if (current === 'free') return fail("Vous n'avez aucun abonnement payant à résilier.", 400);
 
     const cancelledAt = new Date().toISOString();
@@ -463,36 +474,14 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
 
-    if (effectivePlan(user) === 'free') return fail('La roue est disponible avec le plan Argent.', 403);
+    if (effectivePlan(user) === 'free') return fail('La roue est disponible avec le plan Pro.', 403);
 
-    const { prizeType, prizeId } = await request.json();
-    if (prizeType !== 'plan') return json({ success: true });
-
-    const prize = WHEEL_PRIZES[prizeId];
-    if (!prize) return fail('Lot inconnu.', 400);
-    const { plan: prizePlan, days } = prize;
-
-    const validUpgrades = { free: ['silver'], silver: ['gold'] };
-    const currentPlan = user.plan || 'free';
-    if (!validUpgrades[currentPlan]?.includes(prizePlan)) {
-      return fail('Mise à niveau invalide pour ton abonnement actuel.', 400);
-    }
-
-    if (user.lastWheelPrizeClaim) {
-      const daysSince = (Date.now() - new Date(user.lastWheelPrizeClaim).getTime()) / 86400000;
-      if (daysSince < 30) return fail('Tu as déjà gagné un abonnement récemment — réessaie dans quelques semaines !', 429);
-    }
-
-    const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
-    await putUser(env, {
-      ...user,
-      plan: prizePlan,
-      planExpiresAt: expiresAt,
-      planBase: currentPlan,
-      lastWheelPrizeClaim: new Date().toISOString(),
-    });
-
-    return json({ success: true, plan: prizePlan, expiresAt });
+    // Plan prizes are retired (see the note by the old WHEEL_PRIZES table): the
+    // wheel is a Pro perk and Pro is the top tier, so there is nothing left to
+    // win here. Badges, collectibles and tips are applied client-side, so every
+    // spin - including one from a stale cached client still sending a
+    // 'gold_month'-style id - is simply acknowledged.
+    return json({ success: true, plan: null });
   }
 
   if (pathname === '/api/auth/logout' && request.method === 'POST') {
@@ -680,8 +669,9 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
 
-    const plan = user.plan || 'free';
-    if (plan !== 'free') return json({ ok: true, unlimited: true });
+    // effectivePlan (not the raw field) so an elapsed plan and the retired
+    // silver/gold/visitor ids both resolve correctly before the quota is applied.
+    if (effectivePlan(user) !== 'free') return json({ ok: true, unlimited: true });
 
     const body = await request.json().catch(() => ({}));
     const isLoop = body.mode === 'loop';
@@ -723,7 +713,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
 
     const { oldPassword, newPassword } = await request.json();
     if (!oldPassword || !newPassword) return fail('Champs obligatoires.');
-    if (newPassword.length < 8) return fail('Le nouveau mot de passe doit faire au moins 8 caractères.');
+    if (!PASSWORD_REGEX.test(newPassword)) return fail(PASSWORD_REQUIREMENTS_MSG);
 
     const verifyHash = user.hashVersion === 2
       ? await hashPassword(oldPassword, user.salt)

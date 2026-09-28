@@ -230,31 +230,28 @@ function _animateWheelSpin(prizeIndex, onDone) {
 }
 
 // Prizes by tier.
+//
+// The wheel is itself a Pro perk and Pro is the only paid plan, so there is no
+// longer a tier above the wheel's own gate to win: plan upgrades were retired
+// with the Or tier and the wheel now hands out badges, collectibles and trail
+// tips. The `free` list is a defensive fallback - a free account never reaches
+// the wheel (FEATURES.daily_wheel is false for it).
+//
 // Total weight pool = 840 (LCM of 120 and 70) so that:
-//   1 month  → weight 7  → probability 7/840 = 1/120
-//   1 week   → weight 12 → probability 12/840 = 1/70
+//   1 in 120 -> weight 7 ; 1 in 70 -> weight 12
 const WHEEL_PRIZES = {
   free: [
-    { id: 'silver_month', icon: '🥈', label: '1 mois Argent !',    desc: 'Abonnement Argent offert pendant 30 jours',  type: 'plan',        plan: 'silver', days: 30, weight: 7   },
-    { id: 'silver_week',  icon: '🥈', label: '7 jours Argent',      desc: 'Accès Argent pendant 7 jours',              type: 'plan',        plan: 'silver', days: 7,  weight: 12  },
     { id: 'bonus_route',  icon: '🎫', label: '+1 trajet bonus',      desc: 'Un trajet supplémentaire cette semaine',    type: 'bonus_route',                           weight: 228 },
-    { id: 'lucky_badge',  icon: '🍀', label: 'Badge Chanceux',       desc: 'Badge exclusif de la roue de la chance',   type: 'badge',                                weight: 182 },
-    { id: 'collectible',  icon: '🎖️', label: 'Badge Nature',        desc: 'Un badge de collection de la forêt',       type: 'collectible',                          weight: 183 },
+    { id: 'lucky_badge',  icon: '🍀', label: 'Badge Chanceux',       desc: 'Badge exclusif de la roue de la chance',   type: 'badge',                                weight: 189 },
+    { id: 'collectible',  icon: '🎖️', label: 'Badge Nature',        desc: 'Un badge de collection de la forêt',       type: 'collectible',                          weight: 195 },
     { id: 'trail_tip',    icon: '🌲', label: 'Conseil sentier',       desc: 'Une suggestion pour votre prochaine sortie',  type: 'tip',                                  weight: 228 },
   ],
-  silver: [
-    { id: 'gold_month',   icon: '🥇', label: '1 mois Or !',          desc: 'Abonnement Or offert pendant 30 jours',    type: 'plan',        plan: 'gold',   days: 30, weight: 7   },
-    { id: 'gold_week',    icon: '🥇', label: '7 jours Or',            desc: 'Accès Or pendant 7 jours',                type: 'plan',        plan: 'gold',   days: 7,  weight: 12  },
-    { id: 'lucky_badge',  icon: '🍀', label: 'Badge Chanceux',        desc: 'Badge exclusif de la roue de la chance',  type: 'badge',                                weight: 137 },
+  pro: [
+    { id: 'exclusive_badge', icon: '✨', label: 'Badge exclusif',      desc: 'Badge animé réservé aux membres Pro',     type: 'badge',                                weight: 12  },
+    { id: 'lucky_badge',  icon: '🍀', label: 'Badge Chanceux',        desc: 'Badge exclusif de la roue de la chance',  type: 'badge',                                weight: 144 },
     { id: 'collectible',  icon: '🎖️', label: 'Badge Nature',         desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 182 },
     { id: 'collectible2', icon: '🏅', label: 'Badge Forêt',          desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 228 },
     { id: 'trail_tip',    icon: '🌲', label: 'Conseil sentier',        desc: 'Une suggestion pour votre prochaine sortie', type: 'tip',                                  weight: 274 },
-  ],
-  gold: [
-    { id: 'exclusive_badge', icon: '✨', label: 'Badge Or exclusif', desc: 'Badge animé réservé aux membres Or',       type: 'badge',                                weight: 10 },
-    { id: 'collectible',     icon: '🎖️', label: 'Badge Nature',     desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 15 },
-    { id: 'collectible2',    icon: '🏅', label: 'Badge Forêt',      desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 25 },
-    { id: 'trail_tip',       icon: '🌲', label: 'Conseil sentier VIP', desc: 'Suggestion exclusive pour membres Or',   type: 'tip',                                  weight: 50 },
   ],
 };
 
@@ -320,40 +317,10 @@ async function spinWheel(plan) {
   // Save the final rotation so we can restore it on page reload
   localStorage.setItem('bwr_wheel_rot', String(_wheelRotation));
 
-  // ── 2. Apply prize effects ───────────────────────────────────────────────────
-  if (prize.type === 'plan') {
-    try {
-      const res  = await fetch(`${API_URL}/api/auth/wheel-prize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader() },
-        body: JSON.stringify({ prizeType: 'plan', prizeId: prize.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        // Server rejected (cooldown) — downgrade to a trail tip
-        let fallback = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
-        try {
-          const tipRes = await fetch(`${API_URL}/api/ai-tip`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeader() },
-          });
-          if (tipRes.ok) fallback = (await tipRes.json()).tip;
-        } catch {}
-        wheelText.textContent = `🌲 ${fallback}`;
-        localStorage.setItem('bwr_wheel_last', today);
-        localStorage.setItem('bwr_wheel_result', JSON.stringify({ icon: '🌲', label: 'Conseil sentier', desc: fallback }));
-        wheelBtn.textContent = '✓ Effectué';
-        return;
-      }
-      const cached = getCachedUser();
-      if (cached) setSession(localStorage.getItem('bwr_token'), { ...cached, plan: prize.plan, planExpiresAt: data.expiresAt });
-    } catch {
-      wheelText.textContent = '❌ Erreur réseau — réessayez.';
-      wheelBtn.disabled    = false;
-      wheelBtn.textContent = 'Lancer le tirage';
-      return;
-    }
-  } else if (prize.type === 'bonus_route') {
+  // ── 2. Apply prize effects ────────────────────────────────────────────
+  // NB: there is no `type: 'plan'` prize any more - Pro is the top tier, so the
+  // wheel can't upgrade the very members who are allowed to spin it.
+  if (prize.type === 'bonus_route') {
     const w = BWR.readWeekly();
     w.count = Math.max(0, w.count - 1);
     localStorage.setItem('bwr_routes_week', JSON.stringify(w));
@@ -397,10 +364,6 @@ async function spinWheel(plan) {
   localStorage.setItem('bwr_wheel_last', today);
   localStorage.setItem('bwr_wheel_result', JSON.stringify({ icon: prize.icon, label: prize.label, desc: prize.desc }));
   wheelBtn.textContent = '✓ Effectué';
-
-  if (prize.type === 'plan') {
-    setTimeout(() => window.location.reload(), 1800);
-  }
 }
 
 function renderPrizeList(plan) {

@@ -44,8 +44,7 @@
   line-height: 1.4;
   white-space: nowrap;
 }
-.lock-badge.tier-silver { background: var(--silver-grad-deep); color: white; }
-.lock-badge.tier-gold   { background: var(--gold-grad-deep);   color: white; }
+.lock-badge.tier-pro    { background: var(--gold-grad-deep);   color: white; }
 
 /* Locked tile-layer option in map filter panel */
 .filter-option.plan-locked {
@@ -173,8 +172,8 @@
 .qm-tier strong { font-size: 0.92rem; color: var(--forest-900); }
 .qm-tier span { font-size: 0.78rem; color: var(--text-muted); }
 .qm-free   { background: var(--forest-100); }
-.qm-silver { background: var(--silver-grad-soft); }
-.qm-silver strong { color: var(--silver-600); }
+.qm-pro { background: var(--gold-grad-soft); }
+.qm-pro strong { color: var(--gold-text); }
 .qm-arrow {
   font-size: 1.4rem;
   color: var(--forest-500);

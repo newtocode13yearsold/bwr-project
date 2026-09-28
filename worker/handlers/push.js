@@ -23,9 +23,9 @@ async function endpointHash(endpoint) {
 }
 
 /**
- * Web Push subscription endpoints (Silver+ feature).
+ * Web Push subscription endpoints (Pro feature).
  *   GET  /api/push/vapid-public-key  → { key }              (public)
- *   POST /api/push/subscribe         { subscription }       (Silver+)
+ *   POST /api/push/subscribe         { subscription }       (Pro)
  *   POST /api/push/unsubscribe       { endpoint? }          (auth)
  * Subscriptions are stored per device as pushsub:{userId}:{endpointHash}. The
  * presence of any subscription is mirrored on the user as `alertsEnabled` so the
@@ -44,8 +44,8 @@ export async function handlePush(request, env, { pathname, json, fail }) {
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
     const plan = effectivePlan(user);
-    if (plan !== 'gold' && plan !== 'silver') {
-      return fail('Les alertes push sont disponibles avec le plan Argent.', 403);
+    if (plan !== 'pro') {
+      return fail('Les alertes push sont disponibles avec le plan Pro.', 403);
     }
 
     const body = await request.json().catch(() => ({}));
@@ -89,7 +89,7 @@ export async function handlePush(request, env, { pathname, json, fail }) {
 }
 
 /**
- * Fan-out: notify every Silver+ subscriber whose saved route passes within
+ * Fan-out: notify every Pro subscriber whose saved route passes within
  * HAZARD_RADIUS_M of a freshly-created report. Best-effort — meant to run inside
  * ctx.waitUntil so it never blocks or breaks the report POST. Dead subscriptions
  * (404/410) are pruned. `sendFn` is injectable so tests can assert without
@@ -119,9 +119,9 @@ export async function notifyHazard(env, report, sendFn = sendPush) {
     const user = await getUser(env, userId);
     if (!user) continue;
     const plan = effectivePlan(user);
-    if (plan !== 'silver' && plan !== 'gold') continue;
+    if (plan !== 'pro') continue;
 
-    // Email is a separate channel from push — send it to matched Silver+ owners
+    // Email is a separate channel from push — send it to matched Pro owners
     // whether or not they have a push subscription (respects the opt-out inside).
     await notifyRouteHazardEmail(env, user, routeName, report);
 

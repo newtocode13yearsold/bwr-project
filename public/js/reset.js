@@ -31,8 +31,8 @@
     errorEl.classList.add('hidden');
 
     const password = document.getElementById('resetPassword').value;
-    if (password.length < 8) {
-      errorEl.textContent = 'Le mot de passe doit faire au moins 8 caractères.';
+    if (!/^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$/.test(password)) {
+      errorEl.textContent = 'Le mot de passe doit faire au moins 8 caractères et contenir une majuscule, un chiffre et un caractère spécial.';
       errorEl.classList.remove('hidden');
       return;
     }

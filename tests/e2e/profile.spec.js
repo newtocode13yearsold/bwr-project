@@ -1,7 +1,7 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
 
-async function mockAuthMe(page, plan = 'silver') {
+async function mockAuthMe(page, plan = 'pro') {
   await page.route('**/api/auth/me', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -17,7 +17,7 @@ async function mockAuthMe(page, plan = 'silver') {
   }));
 }
 
-async function injectSession(page, plan = 'silver') {
+async function injectSession(page, plan = 'pro') {
   await page.goto('/login.html');
   await page.evaluate((plan) => {
     localStorage.setItem('bwr_token', 'e2e-mock-token');
@@ -33,11 +33,11 @@ async function injectSession(page, plan = 'silver') {
 
 // ── Roue de la chance ─────────────────────────────────────────────────────────
 
-test.describe('Roue de la chance (profile.html — Silver)', () => {
+test.describe('Roue de la chance (profile.html — Pro)', () => {
 
-  test('affiche le canvas de la roue pour un utilisateur Silver', async ({ page }) => {
-    await mockAuthMe(page, 'silver');
-    await injectSession(page, 'silver');
+  test('affiche le canvas de la roue pour un utilisateur Pro', async ({ page }) => {
+    await mockAuthMe(page, 'pro');
+    await injectSession(page, 'pro');
     await page.goto('/profile.html');
 
     await expect(page.locator('#premiumSection')).toBeVisible({ timeout: 10_000 });
@@ -45,8 +45,8 @@ test.describe('Roue de la chance (profile.html — Silver)', () => {
   });
 
   test('le bouton Tourner la roue est activé si pas encore tourné aujourd\'hui', async ({ page }) => {
-    await mockAuthMe(page, 'silver');
-    await injectSession(page, 'silver');
+    await mockAuthMe(page, 'pro');
+    await injectSession(page, 'pro');
     // Ensure no spin recorded today
     await page.goto('/profile.html');
     await page.evaluate(() => localStorage.removeItem('bwr_wheel_last'));
@@ -58,8 +58,8 @@ test.describe('Roue de la chance (profile.html — Silver)', () => {
   });
 
   test('le bouton est désactivé si la roue a déjà été tournée aujourd\'hui', async ({ page }) => {
-    await mockAuthMe(page, 'silver');
-    await injectSession(page, 'silver');
+    await mockAuthMe(page, 'pro');
+    await injectSession(page, 'pro');
     const today = new Date().toISOString().slice(0, 10);
     await page.goto('/profile.html');
     await page.evaluate((today) => {
@@ -75,8 +75,8 @@ test.describe('Roue de la chance (profile.html — Silver)', () => {
   });
 
   test('restaure le résultat du dernier tirage au rechargement', async ({ page }) => {
-    await mockAuthMe(page, 'silver');
-    await injectSession(page, 'silver');
+    await mockAuthMe(page, 'pro');
+    await injectSession(page, 'pro');
     const today = new Date().toISOString().slice(0, 10);
     const prize = { icon: '🍀', label: 'Badge Chanceux', desc: 'Badge exclusif de la roue de la chance' };
     await page.goto('/profile.html');
@@ -90,7 +90,7 @@ test.describe('Roue de la chance (profile.html — Silver)', () => {
     await expect(wheelText).toContainText('Badge Chanceux', { timeout: 10_000 });
   });
 
-  test('déclenche un spin et affiche un résultat (Silver — sans appel réseau plan)', async ({ page }) => {
+  test('déclenche un spin et affiche un résultat (Pro — sans appel réseau plan)', async ({ page }) => {
     // Stub any plan/wheel-prize API call to avoid network dependency
     await page.route('**/api/auth/wheel-prize', route => route.fulfill({
       status: 200,
@@ -103,8 +103,8 @@ test.describe('Roue de la chance (profile.html — Silver)', () => {
       body: JSON.stringify({ tip: 'Conseil sentier test.' }),
     }));
 
-    await mockAuthMe(page, 'silver');
-    await injectSession(page, 'silver');
+    await mockAuthMe(page, 'pro');
+    await injectSession(page, 'pro');
     await page.goto('/profile.html');
     await page.evaluate(() => localStorage.removeItem('bwr_wheel_last'));
     await page.goto('/profile.html');
@@ -124,9 +124,9 @@ test.describe('Roue de la chance (profile.html — Silver)', () => {
   });
 });
 
-// ── Météo (Gold uniquement) ───────────────────────────────────────────────────
+// ── Météo (Pro uniquement) ───────────────────────────────────────────────────
 
-test.describe('Widget météo (profile.html — Gold)', () => {
+test.describe('Widget météo (profile.html — Pro)', () => {
 
   const MOCK_WEATHER = {
     current: {
@@ -146,14 +146,14 @@ test.describe('Widget météo (profile.html — Gold)', () => {
     },
   };
 
-  test('weatherBlock est visible pour Gold', async ({ page }) => {
+  test('weatherBlock est visible pour Pro', async ({ page }) => {
     await page.route('**open-meteo.com/**', route => route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(MOCK_WEATHER),
     }));
-    await mockAuthMe(page, 'gold');
-    await injectSession(page, 'gold');
+    await mockAuthMe(page, 'pro');
+    await injectSession(page, 'pro');
     await page.goto('/profile.html');
 
     await expect(page.locator('#weatherBlock')).toBeVisible({ timeout: 10_000 });
@@ -165,8 +165,8 @@ test.describe('Widget météo (profile.html — Gold)', () => {
       contentType: 'application/json',
       body: JSON.stringify(MOCK_WEATHER),
     }));
-    await mockAuthMe(page, 'gold');
-    await injectSession(page, 'gold');
+    await mockAuthMe(page, 'pro');
+    await injectSession(page, 'pro');
     await page.goto('/profile.html');
 
     await expect(page.locator('#weatherTemp')).toContainText('18', { timeout: 10_000 });
@@ -180,8 +180,8 @@ test.describe('Widget météo (profile.html — Gold)', () => {
       contentType: 'application/json',
       body: JSON.stringify(MOCK_WEATHER),
     }));
-    await mockAuthMe(page, 'gold');
-    await injectSession(page, 'gold');
+    await mockAuthMe(page, 'pro');
+    await injectSession(page, 'pro');
     await page.goto('/profile.html');
 
     await expect(page.locator('#weatherDetails')).toBeVisible({ timeout: 10_000 });
@@ -196,8 +196,8 @@ test.describe('Widget météo (profile.html — Gold)', () => {
       contentType: 'application/json',
       body: JSON.stringify(MOCK_WEATHER),
     }));
-    await mockAuthMe(page, 'gold');
-    await injectSession(page, 'gold');
+    await mockAuthMe(page, 'pro');
+    await injectSession(page, 'pro');
     await page.goto('/profile.html');
 
     const forecast = page.locator('#weatherForecast .weather-day');
@@ -206,18 +206,18 @@ test.describe('Widget météo (profile.html — Gold)', () => {
 
   test('affiche une erreur si l\'API météo échoue', async ({ page }) => {
     await page.route('**open-meteo.com/**', route => route.abort());
-    await mockAuthMe(page, 'gold');
-    await injectSession(page, 'gold');
+    await mockAuthMe(page, 'pro');
+    await injectSession(page, 'pro');
     await page.goto('/profile.html');
 
     await expect(page.locator('#weatherBlock')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#weatherIcon')).toContainText('❌', { timeout: 8_000 });
   });
 
-  test('weatherBlock est visible pour Silver', async ({ page }) => {
-    // La météo est une fonctionnalité Silver+ (voir features.js : weather.silver = true).
-    await mockAuthMe(page, 'silver');
-    await injectSession(page, 'silver');
+  test('weatherBlock est visible pour Pro (bis)', async ({ page }) => {
+    // La météo est une fonctionnalité Pro (voir features.js : weather.pro = true).
+    await mockAuthMe(page, 'pro');
+    await injectSession(page, 'pro');
     await page.goto('/profile.html');
 
     await expect(page.locator('#premiumSection')).toBeVisible({ timeout: 10_000 });

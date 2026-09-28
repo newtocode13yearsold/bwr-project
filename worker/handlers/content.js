@@ -153,7 +153,7 @@ export async function handleContent(request, env, { pathname, url, json, fail })
       const { profile, coordinates, round_trip } = await request.json();
 
       if (round_trip && effectivePlan(user) === 'free') {
-        return fail('Le mode boucle est disponible avec le plan Argent.', 403);
+        return fail('Le mode boucle est disponible avec le plan Pro.', 403);
       }
 
       const orsBody = { coordinates };

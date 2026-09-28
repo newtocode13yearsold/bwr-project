@@ -270,7 +270,7 @@ function applyPlanGates() {
   // Lock Hard difficulty
   if (!BWR.can('difficulty_hard', plan)) {
     const hardBtn = document.querySelector('.diff-btn[data-diff="hard"]');
-    if (hardBtn) markBtnLocked(hardBtn, 'silver');
+    if (hardBtn) markBtnLocked(hardBtn, BWR.requiredTier('difficulty_hard'));
   }
 
   // Lock satellite tile button
@@ -294,7 +294,7 @@ function markCardLocked(el, tier, featureLabel) {
   if (!el.querySelector('.lock-badge')) {
     const badge = document.createElement('span');
     badge.className = `lock-badge tier-${tier}`;
-    badge.textContent = tier === 'gold' ? '👑 Or' : '🔒 Argent';
+    badge.textContent = `🔒 ${BWR.TIER_LABEL[tier] || 'Pro'}`;
     el.appendChild(badge);
   }
   el.dataset.featureLabel = featureLabel;
@@ -306,7 +306,7 @@ function markBtnLocked(el, tier) {
   if (!el.querySelector('.lock-badge')) {
     const badge = document.createElement('span');
     badge.className = `lock-badge tier-${tier}`;
-    badge.textContent = tier === 'gold' ? '👑' : '🔒';
+    badge.textContent = '🔒';
     el.appendChild(badge);
   }
 }
@@ -314,14 +314,14 @@ function interceptLocked(e) {
   if (!e.currentTarget.classList.contains('locked-feature')) return;
   e.preventDefault();
   e.stopPropagation();
-  const tier  = e.currentTarget.getAttribute('data-tier') || 'silver';
+  const tier  = e.currentTarget.getAttribute('data-tier') || 'pro';
   const label = e.currentTarget.dataset.featureLabel || 'Cette fonctionnalité';
   showUpgradeModal(tier, label);
 }
 
 function showUpgradeModal(tier, featureLabel) {
-  const planLabel = tier === 'gold' ? 'Or' : 'Argent';
-  const icon      = tier === 'gold' ? '🥇' : '🥈';
+  const planLabel = BWR.TIER_LABEL[tier] || 'Pro';
+  const icon      = BWR.TIER_ICON[tier]  || '⭐';
   const existing = document.getElementById('upgradeModal');
   if (existing) existing.remove();
   const m = document.createElement('div');
@@ -378,7 +378,7 @@ function updateQuotaStrip() {
     <div class="qs-bar"><div class="qs-fill" style="width:${pct}%"></div></div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
       <span class="qs-count">${count} / ${limit}</span>
-      <a href="plans" class="qs-cta">Illimité avec Argent →</a>
+      <a href="plans" class="qs-cta">Illimité avec Pro →</a>
     </div>
   `;
 }
@@ -1044,7 +1044,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
       `${m.toLocaleString('fr-FR')} mètres`;
   }
 
-  // Duration — flat-pace estimate now; refined for dénivelé once elevation loads (Silver+).
+  // Duration — flat-pace estimate now; refined for dénivelé once elevation loads (Pro).
   const durText = renderDuration(seconds, false);
 
   // Badges
@@ -1125,7 +1125,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   document.getElementById('elevationWrap').classList.add('hidden');
   document.getElementById('breakdownWrap')?.classList.add('hidden');
 
-  // Loop "reshape" panel: only for boucles. Silver+ get the carrefour picker;
+  // Loop "reshape" panel: only for boucles. Pro members get the carrefour picker;
   // free users get a locked upsell card.
   const lpPanel = document.getElementById('loopPersonalize');
   if (lpPanel) {
@@ -1157,13 +1157,13 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
         (lastRoute && lastRoute.elevations) ? { elevations: lastRoute.elevations } : {});
     } else {
       btnGPX.classList.add('locked-feature');
-      btnGPX.setAttribute('data-tier', 'silver');
+      btnGPX.setAttribute('data-tier', 'pro');
       btnGPX.dataset.featureLabel = 'L\'export GPX';
       if (!btnGPX.querySelector('.lock-badge')) {
-        const b = document.createElement('span'); b.className = 'lock-badge tier-silver'; b.textContent = '🔒 Argent';
+        const b = document.createElement('span'); b.className = 'lock-badge tier-pro'; b.textContent = '🔒 Pro';
         btnGPX.appendChild(b);
       }
-      btnGPX.onclick = (e) => { e.preventDefault(); showUpgradeModal('silver', 'L\'export GPX'); };
+      btnGPX.onclick = (e) => { e.preventDefault(); showUpgradeModal('pro', 'L\'export GPX'); };
     }
   }
   const btnKML = document.getElementById('btnKML');
@@ -1180,7 +1180,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
       if (!btnKML.querySelector('.lock-badge')) {
         const b = document.createElement('span');
         b.className = `lock-badge tier-${kmlTier}`;
-        b.textContent = kmlTier === 'gold' ? '👑 Or' : '🔒 Argent';
+        b.textContent = `🔒 ${BWR.TIER_LABEL[kmlTier] || 'Pro'}`;
         btnKML.appendChild(b);
       }
       btnKML.onclick = (e) => { e.preventDefault(); showUpgradeModal(kmlTier, 'L\'export KML'); };
@@ -1202,7 +1202,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
     .then(() => renderRouteBreakdown(coords))
     .catch(() => document.getElementById('breakdownWrap')?.classList.add('hidden'));
 
-  // Elevation profile — only for Silver+ (lazy-loaded)
+  // Elevation profile — Pro only (lazy-loaded)
   if (BWR.can('elevation_profile', plan)) {
     _loadElevation()
       .then(() => fetchElevation(coords))
@@ -1228,8 +1228,8 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
         <div class="elevation-locked">
           <span class="el-icon">⛰️</span>
           <strong>Profil altimétrique</strong>
-          <p>Voyez le dénivelé, l'altitude min/max et la pente — disponibles à partir du plan Argent.</p>
-          <a href="plans" class="el-cta">Débloquer avec Argent →</a>
+          <p>Voyez le dénivelé, l'altitude min/max et la pente — disponibles à partir du plan Pro.</p>
+          <a href="plans" class="el-cta">Débloquer avec Pro →</a>
         </div>
       `;
     }
@@ -1256,13 +1256,13 @@ function showQuotaExceededModal(quota) {
           <span>10 trajets / semaine</span>
         </div>
         <div class="qm-arrow">→</div>
-        <div class="qm-tier qm-silver">
-          <strong>🥈 Argent</strong>
+        <div class="qm-tier qm-pro">
+          <strong>⭐ Pro</strong>
           <span>Illimité · 2,99€/mois</span>
         </div>
       </div>
       <p class="qm-perks">+ Boucles illimitées, profil altimétrique, export GPX, cartes hors-ligne…</p>
-      <a href="plans" class="um-cta">Passer à Argent</a>
+      <a href="plans" class="um-cta">Passer à Pro</a>
       <button class="um-secondary">Revenir lundi</button>
     </div>
   `;
@@ -1295,13 +1295,13 @@ function showLoopQuotaModal(quota) {
           <span>${quota.limit} boucles / semaine</span>
         </div>
         <div class="qm-arrow">→</div>
-        <div class="qm-tier qm-silver">
-          <strong>🥈 Argent</strong>
+        <div class="qm-tier qm-pro">
+          <strong>⭐ Pro</strong>
           <span>Boucles illimitées · 2,99€/mois</span>
         </div>
       </div>
       <p class="qm-perks">Les trajets A → B restent disponibles. + profil altimétrique, export GPX, cartes hors-ligne…</p>
-      <a href="plans" class="um-cta">Passer à Argent</a>
+      <a href="plans" class="um-cta">Passer à Pro</a>
       <button class="um-secondary">Revenir lundi</button>
     </div>
   `;

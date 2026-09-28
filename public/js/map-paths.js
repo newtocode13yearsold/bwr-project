@@ -48,7 +48,7 @@ async function loadPaths() {
       renderPaths();
       try { localStorage.setItem('bwr_cached_paths', fresh); } catch {}
     }
-    if (_userPlan === 'gold') loadWalkedOverlay();
+    if (BWR.can('walked_paths', _userPlan)) loadWalkedOverlay();
   } catch (e) {
     console.error('loadPaths:', e);
   }
@@ -117,7 +117,7 @@ function trackWalkedPaths(lat, lng) {
       body: JSON.stringify({ pathIds: [..._walkConfirmed] }),
     })
       .then(r => r.json())
-      .then(() => { if (_userPlan === 'gold') loadWalkedOverlay(); })
+      .then(() => { if (BWR.can('walked_paths', _userPlan)) loadWalkedOverlay(); })
       .catch(() => {});
   }, 4000);
 }
@@ -260,7 +260,7 @@ function openPathPopup(path, latlng) {
     : '';
 
   // Only free users have a grading cap, and it only applies to "remote" gradings
-  // (path they aren't standing near). Silver+ is unlimited, so no hint for them.
+  // (path they aren't standing near). Pro is unlimited, so no hint for them.
   const freeGradesLeft = (canEdit && _userPlan === 'free')
     ? Math.max(0, 5 - (_cachedUser?.stats?.unwalkedGrades || 0))
     : 5;
@@ -292,7 +292,7 @@ function openPathPopup(path, latlng) {
         ${gradeHint}
       </div>`
     : `<div class="popup-difficulty-locked">
-        <span class="lock-tag">🔒 Argent</span>
+        <span class="lock-tag">🔒 Pro</span>
         <span class="lock-hint">Modifier la difficulté</span>
       </div>`;
 
@@ -387,7 +387,7 @@ function openPathPopup(path, latlng) {
     const guardReport = async (type) => {
       if (!BWR.can('reports_create', _userPlan)) {
         map.closePopup();
-        showToast('🔒 Le signalement est disponible avec Argent — voir plans');
+        showToast('🔒 Le signalement est disponible avec Pro — voir plans');
         return;
       }
       await _loadMapEdit();

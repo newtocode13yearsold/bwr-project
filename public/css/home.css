@@ -878,48 +878,6 @@ body {
   box-shadow: 0 8px 32px rgba(30,77,20,0.12);
 }
 
-.pricing-gold {
-  border-color: var(--warning);
-  box-shadow: 0 8px 32px rgba(245,158,11,0.1);
-}
-
-.pricing-coming-soon {
-  filter: grayscale(0.5);
-  opacity: 0.8;
-}
-.pricing-coming-soon:hover {
-  transform: none;
-}
-
-.pricing-cs-overlay {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 5;
-  pointer-events: none;
-}
-.pricing-cs-icon { font-size: 2.2rem; filter: grayscale(1); }
-.pricing-cs-text {
-  font-size: 1.25rem;
-  font-weight: 900;
-  color: #374151;
-  letter-spacing: -0.02em;
-  text-align: center;
-}
-.pricing-cs-sub {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  text-align: center;
-}
-
 .pricing-badge {
   position: absolute;
   top: -13px;
@@ -934,8 +892,6 @@ body {
   white-space: nowrap;
   letter-spacing: 0.3px;
 }
-.gold-badge { background: linear-gradient(135deg, var(--gold-600), var(--warning)); }
-
 .pricing-icon { font-size: 1.8rem; }
 
 .pricing-name {
@@ -1015,33 +971,15 @@ body {
 }
 .cta-free:hover { background: #dcfce7; border-color: var(--green); }
 
-.cta-silver {
+.cta-pro {
   background: var(--green);
   color: white;
   box-shadow: 0 4px 16px rgba(30,77,20,0.25);
 }
-.cta-silver:hover {
+.cta-pro:hover {
   background: var(--green-mid);
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(30,77,20,0.3);
-}
-
-.cta-gold {
-  background: linear-gradient(135deg, var(--gold-600), var(--warning));
-  color: white;
-  box-shadow: 0 4px 16px rgba(245,158,11,0.3);
-}
-.cta-gold:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(245,158,11,0.4);
-}
-
-/* Gold "coming soon" — plan shown but not yet purchasable */
-.cta-soon {
-  background: linear-gradient(135deg, var(--gold-50), var(--gold-200));
-  color: #4a2c00;
-  border: 1.5px solid var(--gold-400);
-  cursor: not-allowed;
 }
 
 .pricing-footnote {
@@ -1972,7 +1910,6 @@ textarea.cf-input { resize: vertical; min-height: 100px; }
 [data-theme="dark"] .pf-item.no::before { background: var(--surface-3); color: var(--text-faint); }
 [data-theme="dark"] .cta-free { border-color: var(--border-strong); }
 [data-theme="dark"] .cta-free:hover { background: var(--surface-3); border-color: var(--lime-500); }
-[data-theme="dark"] .pricing-cs-text { color: var(--text-strong); }
 
 /* Features */
 [data-theme="dark"] .feat-row:hover { background: var(--surface-2); }

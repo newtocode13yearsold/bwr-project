@@ -66,18 +66,18 @@ describe('POST /api/quests/claim', () => {
     assert.equal(inboxKeys(kv).length, 0);
   });
 
-  test('achieved plan reward: grants Gold + sends inbox message + records claim', async () => {
+  test('achieved plan reward: grants Pro + sends inbox message + records claim', async () => {
     const kv = makeMockKV();
     seedUser(kv, { id: 'u1', token: 't1', plan: 'free', stats: { pathGrades: 200 } });
     const res = await worker.fetch(authed('POST', '/api/quests/claim', 't1', { questId: 'o1' }), { BWR_KV: kv });
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.ok, true);
-    assert.equal(body.plan, 'gold');
+    assert.equal(body.plan, 'pro');
     assert.ok(body.planExpiresAt);
 
     const u = readUser(kv, 'u1');
-    assert.equal(u.plan, 'gold');
+    assert.equal(u.plan, 'pro');
     assert.equal(u.planBase, 'free');
     assert.ok(u.questClaims.o1);
     // ~30 days out
@@ -104,7 +104,7 @@ describe('POST /api/quests/claim', () => {
 
   test('badge reward: appends an exclusive badge to the user', async () => {
     const kv = makeMockKV();
-    seedUser(kv, { id: 'u1', token: 't1', plan: 'silver', stats: { km: 500 } });
+    seedUser(kv, { id: 'u1', token: 't1', plan: 'pro', stats: { km: 500 } });
     const res = await worker.fetch(authed('POST', '/api/quests/claim', 't1', { questId: 'o3' }), { BWR_KV: kv });
     assert.equal(res.status, 200);
     const u = readUser(kv, 'u1');
@@ -113,7 +113,9 @@ describe('POST /api/quests/claim', () => {
     assert.ok(u.questClaims.o3);
   });
 
-  test('no downgrade: a Gold user claiming a Silver reward keeps Gold', async () => {
+  // A legacy 'gold' account normalises to 'pro', which is the reward's own tier —
+  // the grant must not restart their plan as a 7-day temp one.
+  test('no downgrade: an existing Pro member keeps their permanent plan', async () => {
     const kv = makeMockKV();
     seedUser(kv, { id: 'u1', token: 't1', plan: 'gold', stats: { reports: 100 } });
     const res = await worker.fetch(authed('POST', '/api/quests/claim', 't1', { questId: 'o2' }), { BWR_KV: kv });

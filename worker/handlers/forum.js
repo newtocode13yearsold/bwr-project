@@ -3,7 +3,7 @@ import { getUserFromToken, checkRateLimit } from '../auth-utils.js';
 import { notifyForumReply } from '../notify.js';
 
 // Free accounts may read only the most recent N discussion topics; the rest are
-// locked behind an upsell. Silver/Gold (and admins) see everything and can post.
+// locked behind an upsell. Pro members (and admins) see everything and can post.
 const FREE_VISIBLE_TOPICS = 5;
 
 const TITLE_MAX = 140;
@@ -39,7 +39,7 @@ function isUnlockedForFree(index) {
  * Community forum: discussion topics + replies.
  * - Reading is public, but free accounts only see the {@link FREE_VISIBLE_TOPICS}
  *   most recent topics; older ones are returned locked (no body, no replies).
- * - Creating topics and posting replies requires Silver or Gold (or admin).
+ * - Creating topics and posting replies requires the Pro plan (or admin).
  * - A topic/reply can be deleted by its author or by an admin.
  *
  * @param {Request} request
@@ -54,7 +54,7 @@ export async function handleForum(request, env, { pathname, url, json, fail, wai
   if (pathname === '/api/forum/topics' && request.method === 'GET') {
     const user = await getUserFromToken(env, request);
     const plan = user ? effectivePlan(user) : 'free';
-    const canSeeAll = plan === 'silver' || plan === 'gold';
+    const canSeeAll = plan === 'pro';
 
     const topics = await loadTopicsSorted(env);
 
@@ -101,7 +101,7 @@ export async function handleForum(request, env, { pathname, url, json, fail, wai
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
     if (effectivePlan(user) === 'free')
-      return fail('La création de sujets est réservée aux membres Argent et Or.', 403);
+      return fail('La création de sujets est réservée aux membres Pro.', 403);
 
     if (!await checkRateLimit(env, 'forumtopic', user.id, 10, 3600))
       return fail('Trop de sujets créés. Réessaie dans une heure.', 429);
@@ -139,13 +139,13 @@ export async function handleForum(request, env, { pathname, url, json, fail, wai
 
     const user = await getUserFromToken(env, request);
     const plan = user ? effectivePlan(user) : 'free';
-    const canSeeAll = plan === 'silver' || plan === 'gold';
+    const canSeeAll = plan === 'pro';
 
     if (!canSeeAll) {
       const topics = await loadTopicsSorted(env);
       const index = topics.findIndex(t => t.id === id);
       if (index < 0 || !isUnlockedForFree(index))
-        return fail('Ce sujet est réservé aux membres Argent et Or.', 403);
+        return fail('Ce sujet est réservé aux membres Pro.', 403);
     }
 
     const replies = await listItems(env, `forum:reply:${id}:`);
@@ -212,7 +212,7 @@ export async function handleForum(request, env, { pathname, url, json, fail, wai
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
     if (effectivePlan(user) === 'free')
-      return fail('Répondre est réservé aux membres Argent et Or.', 403);
+      return fail('Répondre est réservé aux membres Pro.', 403);
 
     if (!await checkRateLimit(env, 'forumreply', user.id, 30, 3600))
       return fail('Trop de réponses. Réessaie dans un moment.', 429);

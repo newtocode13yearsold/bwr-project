@@ -132,7 +132,7 @@ async function loadEngagement() {
       totalReports += s.reports || 0;
       totalGrades  += s.pathGrades || 0;
       if (u.onboarded) onboarded++;
-      if (u.silverTrialUsed) trialUsed++;
+      if (u.proTrialUsed) trialUsed++;
       if ((s.reports || 0) + (s.pathGrades || 0) > 0) contributors++;
     });
     const n = members.length || 1;
@@ -153,7 +153,7 @@ async function loadEngagement() {
         { label: 'Inscrits (total)', value: signups, color: '#0284c7' },
         { label: 'Membres actuels', value: members.length, color: '#16a34a' },
         { label: 'Tour d\'accueil vu', value: onboarded, color: '#15803d' },
-        { label: 'Essai Argent utilisé', value: trialUsed, color: '#f59e0b' },
+        { label: 'Essai Pro utilisé', value: trialUsed, color: '#f59e0b' },
         { label: 'Ont contribué', value: contributors, color: '#9333ea' },
       ];
       const max = Math.max(1, ...rows.map(r => r.value));

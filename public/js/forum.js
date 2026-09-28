@@ -1,10 +1,10 @@
 /* Community forum — topic list + thread detail, with tier gating.
- * Free accounts can read the 5 most recent topics; Silver/Gold post & reply.
+ * Free accounts can read the 5 most recent topics; Pro members post & reply.
  * Single-page: the list and a topic detail are swapped into #forumRoot,
  * routed by the URL hash (#t/<topicId>). */
 
 let currentUser = null;
-let canPost = false;          // server's verdict for the current user (silver/gold/admin)
+let canPost = false;          // server's verdict for the current user (pro/admin)
 let editingTopicId = null;    // set while the modal is reused to edit an existing topic
 let currentQuery = '';        // active forum search term (persists across list ↔ detail)
 let searchToken = 0;          // guards against out-of-order search responses
@@ -53,7 +53,7 @@ async function renderList() {
 
   const newBtn = canPost
     ? `<button class="btn-new" id="btnNewTopic">＋ Nouveau sujet</button>`
-    : `<button class="btn-new" disabled title="Réservé aux membres Argent et Or">＋ Nouveau sujet</button>`;
+    : `<button class="btn-new" disabled title="Réservé aux membres Pro">＋ Nouveau sujet</button>`;
 
   root().innerHTML = `
     <div class="forum-toolbar"><h2>Discussions</h2>${newBtn}</div>
@@ -125,7 +125,7 @@ function fillTopicList(data, q) {
   html += topics.map(topicCard).join('');
   if (lockedCount > 0) {
     html += `<div class="upsell-banner">
-      <p>🔒 ${lockedCount} autre${lockedCount > 1 ? 's' : ''} sujet${lockedCount > 1 ? 's' : ''} ${lockedCount > 1 ? 'sont réservés' : 'est réservé'} aux membres Argent et Or.<br>
+      <p>🔒 ${lockedCount} autre${lockedCount > 1 ? 's' : ''} sujet${lockedCount > 1 ? 's' : ''} ${lockedCount > 1 ? 'sont réservés' : 'est réservé'} aux membres Pro.<br>
       Passe à un abonnement pour lire tout le forum et participer aux discussions.</p>
       <a href="plans">Voir les abonnements →</a>
     </div>`;
@@ -158,7 +158,7 @@ function emptyState(canPost) {
   return `<div class="forum-empty-state">
     ${illustration}
     <h3>Aucune discussion pour l'instant</h3>
-    <p>Le forum se remplit bientôt. Passez à un abonnement Argent ou Or pour lancer la première discussion.</p>
+    <p>Le forum se remplit bientôt. Passez au plan Pro pour lancer la première discussion.</p>
     <a class="btn-new" href="plans">Voir les abonnements →</a>
   </div>`;
 }
@@ -167,7 +167,7 @@ function topicCard(t) {
   if (t.locked) {
     return `<div class="topic-card locked">
       <div class="topic-card-title">🔒 ${escHtml(t.title)}</div>
-      <a class="lock-pill" href="plans">🥈 Débloquer avec Argent</a>
+      <a class="lock-pill" href="plans">⭐ Débloquer avec Pro</a>
     </div>`;
   }
   const replies = t.replyCount || 0;
@@ -192,7 +192,7 @@ async function renderDetail(id) {
     const locked = err.status === 403;
     root().innerHTML = `<button class="detail-back">← Retour</button>
       <div class="forum-empty">${locked
-        ? '🔒 Ce sujet est réservé aux membres Argent et Or.<br><br><a class="lock-pill" href="plans">Voir les abonnements →</a>'
+        ? '🔒 Ce sujet est réservé aux membres Pro.<br><br><a class="lock-pill" href="plans">Voir les abonnements →</a>'
         : 'Sujet introuvable.'}</div>`;
     return;
   }
@@ -215,7 +215,7 @@ async function renderDetail(id) {
          <div class="composer-actions"><button class="btn-save" id="btnReply">Répondre</button></div>
        </div>`
     : `<div class="composer"><div class="composer-locked">
-         Réponse réservée aux membres Argent et Or. <a href="plans">Voir les abonnements →</a>
+         Réponse réservée aux membres Pro. <a href="plans">Voir les abonnements →</a>
        </div></div>`;
 
   root().innerHTML = `

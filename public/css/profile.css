@@ -498,8 +498,7 @@
   border-radius: 999px;
 }
 .plan-pill.plan-free   { background: #ecfdf5; color: #166534; }
-.plan-pill.plan-silver { background: #e5e7eb; color: #374151; }
-.plan-pill.plan-gold   { background: #fef3c7; color: #92400e; }
+.plan-pill.plan-pro    { background: #fef3c7; color: #92400e; }
 
 .plan-upgrade-link {
   color: var(--forest-700);
@@ -852,12 +851,7 @@
 }
 
 /* ── Animated avatar rings by plan ── */
-.avatar-ring.ring-silver {
-  position: relative;
-  border-width: 4px !important;
-  box-shadow: 0 0 0 2px #c0c0c0, 0 0 20px rgba(192,192,192,0.5);
-}
-.avatar-ring.ring-gold {
+.avatar-ring.ring-pro {
   position: relative;
   border-width: 4px !important;
   background: linear-gradient(135deg, #fef3c7, var(--gold-200), var(--warning));
@@ -870,8 +864,7 @@
 }
 
 /* ── Locked badges by tier ── */
-.badge-item.tier-silver.earned { background: linear-gradient(135deg, #f3f4f6, #d1d5db); border-color: var(--text-muted); }
-.badge-item.tier-gold.earned   { background: linear-gradient(135deg, #fef3c7, var(--gold-200)); border-color: var(--warning); box-shadow: 0 4px 12px rgba(245,158,11,0.25); animation: badge-gold-glow 2.5s ease-in-out infinite; }
+.badge-item.tier-pro.earned    { background: linear-gradient(135deg, #fef3c7, var(--gold-200)); border-color: var(--warning); box-shadow: 0 4px 12px rgba(245,158,11,0.25); animation: badge-gold-glow 2.5s ease-in-out infinite; }
 
 @keyframes badge-gold-glow {
   0%, 100% { box-shadow: 0 4px 12px rgba(245,158,11,0.25); }
@@ -1232,7 +1225,7 @@
 [data-theme="dark"] .badges-toggle:hover         { background: #1c2a20; border-color: #4a6852; }
 [data-theme="dark"] .badge-item                  { background: #1c2a20; border-color: #2a3a30; }
 [data-theme="dark"] .badge-item.earned           { background: linear-gradient(135deg, #3a2600, #512f00); }
-[data-theme="dark"] .badge-item.tier-silver.earned { background: linear-gradient(135deg, #1e2a24, #2d3f38); border-color: #475569; }
+[data-theme="dark"] .badge-item.tier-pro.earned { background: linear-gradient(135deg, #3d2a00, #2a1f00); border-color: #b45309; }
 [data-theme="dark"] .badge-label                 { color: #c8dcc0; }
 [data-theme="dark"] .badge-desc                  { color: #8fa887; }
 [data-theme="dark"] .badge-date                  { color: var(--text-faint); }
@@ -1247,8 +1240,7 @@
 [data-theme="dark"] .nb-desc                     { color: #8fa887; }
 
 [data-theme="dark"] .plan-pill.plan-free         { background: #1c3020; color: #a3e635; }
-[data-theme="dark"] .plan-pill.plan-silver       { background: #2a3a30; color: #c8dcc0; }
-[data-theme="dark"] .plan-pill.plan-gold         { background: #3d2a00; color: #fcd34d; }
+[data-theme="dark"] .plan-pill.plan-pro          { background: #3d2a00; color: #fcd34d; }
 [data-theme="dark"] .plan-upgrade-link           { color: #a3e635; }
 
 [data-theme="dark"] .card-silvergold             { background: linear-gradient(135deg, #16201a, #1c2a20); border-color: #2a3a30; }

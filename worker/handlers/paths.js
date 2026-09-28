@@ -4,7 +4,7 @@ import { distanceToPolylineMeters } from '../geo.js';
 
 // Free users get a limited number of "remote" gradings (a path they haven't
 // walked and aren't standing near). Grading a path within this range of the
-// user's live GPS position, or one they've walked, is unlimited. Silver+ is
+// user's live GPS position, or one they've walked, is unlimited. Pro is
 // always unlimited. Keep FREE_REMOTE_GRADES in sync with the client hint in
 // public/js/map-paths.js and tests/worker-paths.test.mjs.
 const NEAR_GRADE_RANGE_M = 2000;
@@ -44,7 +44,7 @@ async function notifyStatusChange(channel, pathName, oldStatus, newStatus) {
 }
 
 /**
- * Path CRUD endpoints for admin/silver+ users.
+ * Path CRUD endpoints for admin/Pro users.
  * @param {Request} request
  * @param {import('../kv.js').Env} env
  * @param {{ pathname: string, json: Function, fail: Function }} ctx
@@ -102,7 +102,7 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Connexion requise.', 401);
     const plan = effectivePlan(user);
-    if (plan !== 'gold' && plan !== 'silver') return fail('Abonnement Argent requis.', 403);
+    if (plan !== 'pro') return fail('Abonnement Pro requis.', 403);
 
     const body = await request.json();
     const VALID_STATUSES = new Set(['easy', 'medium', 'hard', 'not_passable', 'no_bike']);
@@ -191,7 +191,7 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
     }
 
     if (body.status === 'hard' && plan === 'free') {
-      return fail('Abonnement Argent requis pour marquer Difficile.', 403);
+      return fail('Abonnement Pro requis pour marquer Difficile.', 403);
     }
 
     const oldStatus = existing.status;
@@ -212,13 +212,13 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
       }
     }
 
-    // Silver+ grade without limit. Free users grade without limit when they are
+    // Pro members grade without limit. Free users grade without limit when they are
     // physically near the path (live GPS within 2 km) or have walked it recently;
     // otherwise they get FREE_REMOTE_GRADES "remote" gradings.
     // The polyline scan only runs when its result can matter: a re-grade or a
     // recently-walked path never consults GPS (walkedWhenGraded is already true
     // via walkedRecently in the latter case).
-    const isSilverPlus = plan === 'silver' || plan === 'gold';
+    const isPro = plan === 'pro';
     let nearby = false;
     if (!alreadyGraded && !walkedRecently &&
         typeof body.userLat === 'number' && isFinite(body.userLat) &&
@@ -232,7 +232,7 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
     let gradeInfo;
     let gradedUser = null;
     if (!alreadyGraded) {
-      const countsToward = !isSilverPlus && !walkedRecently && !nearby;
+      const countsToward = !isPro && !walkedRecently && !nearby;
       if (countsToward && (user.stats?.unwalkedGrades || 0) >= FREE_REMOTE_GRADES) {
         return fail(`Avec le plan gratuit, vous ne pouvez pas noter plus de ${FREE_REMOTE_GRADES} chemins à distance. Activez votre localisation (à moins de 2 km du chemin) — ou parcourez-le pour le noter plus tard sans limite.`, 403);
       }

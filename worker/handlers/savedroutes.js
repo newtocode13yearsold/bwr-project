@@ -2,7 +2,7 @@ import { listItems, effectivePlan } from '../kv.js';
 import { getUserFromToken } from '../auth-utils.js';
 
 /**
- * Saved routes endpoints (Silver+ feature): save, list, get, delete, share.
+ * Saved routes endpoints (Pro feature): save, list, get, delete, share.
  * @param {Request} request
  * @param {import('../kv.js').Env} env
  * @param {{ pathname: string, json: Function, fail: Function }} ctx
@@ -12,7 +12,7 @@ export async function handleSavedRoutes(request, env, { pathname, json, fail }) 
   if (pathname === '/api/savedroutes' && request.method === 'POST') {
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
-    if (effectivePlan(user) === 'free') return fail('Abonnement Argent requis pour sauvegarder des trajets.', 403);
+    if (effectivePlan(user) === 'free') return fail('Abonnement Pro requis pour sauvegarder des trajets.', 403);
 
     const body = await request.json();
     if (!Array.isArray(body.coords) || body.coords.length < 2) return fail('Coordonnées invalides.');
@@ -52,7 +52,7 @@ export async function handleSavedRoutes(request, env, { pathname, json, fail }) 
   if (pathname === '/api/savedroutes' && request.method === 'GET') {
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
-    if (effectivePlan(user) === 'free') return fail('Abonnement Argent requis.', 403);
+    if (effectivePlan(user) === 'free') return fail('Abonnement Pro requis.', 403);
 
     const routes = await listItems(env, `savedroute:${user.id}:`);
     routes.sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));

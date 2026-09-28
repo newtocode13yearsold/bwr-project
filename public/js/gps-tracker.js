@@ -105,7 +105,7 @@
     return `dans ~${Math.round(minutes / 60)} h`;
   }
 
-  // Silver/Gold perk (same tier as the weather widget) — sends the walk's
+  // Pro perk (same tier as the weather widget) — sends the walk's
   // start position to Open-Meteo, so gate it like any other weather feature.
   function canRainWarn() {
     if (typeof BWR === 'undefined' || typeof getCachedUser !== 'function') return false;

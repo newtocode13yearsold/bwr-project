@@ -212,8 +212,7 @@ h1, h2 {
   text-transform: uppercase;
   line-height: 1.6;
 }
-.tier-tag.silver { background: var(--silver-grad-soft); color: var(--silver-600); border: 1px solid var(--silver-200); }
-.tier-tag.gold   { background: var(--gold-grad-soft);   color: var(--gold-text);   border: 1px solid var(--gold-200); box-shadow: 0 0 0 0 transparent; }
+.tier-tag.pro    { background: var(--gold-grad-soft);   color: var(--gold-text);   border: 1px solid var(--gold-200); box-shadow: 0 0 0 0 transparent; }
 .tier-tag.free   { background: var(--forest-100);       color: var(--forest-700); border: 1px solid var(--forest-100); }
 
 .lock-overlay {

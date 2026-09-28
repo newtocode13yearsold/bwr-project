@@ -1,5 +1,9 @@
 import { getUser } from './kv.js';
 
+// CNIL-recommended complexity: 8+ chars, at least one uppercase, one digit, one special char.
+export const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$/;
+export const PASSWORD_REQUIREMENTS_MSG = 'Le mot de passe doit faire au moins 8 caractères et contenir une majuscule, un chiffre et un caractère spécial.';
+
 /** SHA-256 hash used by pre-PBKDF2 accounts. Only called during login migration. */
 export async function hashPasswordLegacy(password, salt) {
   const encoder = new TextEncoder();

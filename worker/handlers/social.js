@@ -53,7 +53,7 @@ export async function handleSocial(request, env, { pathname, url, json, fail }) 
     const totalPaths = pathKeyPage.keys.length;
     const coverage = totalPaths > 0 ? Math.round(walkedPathsCount / totalPaths * 100) : 0;
 
-    if (plan !== 'gold') {
+    if (plan !== 'pro') {
       return json({ walkedPathIds: [], coverage, total: totalPaths });
     }
 
@@ -145,7 +145,7 @@ export async function handleSocial(request, env, { pathname, url, json, fail }) 
     const month = new Date().getMonth();
     const season = month <= 1 || month === 11 ? 'hiver' : month <= 4 ? 'printemps' : month <= 7 ? 'été' : 'automne';
     const plan = effectivePlan(user);
-    const level = plan === 'gold' ? 'expert' : plan === 'silver' ? 'intermédiaire' : 'débutant';
+    const level = plan === 'pro' ? 'expérimenté' : 'débutant';
 
     const prompt = `Tu es un guide de randonnée expert des forêts de l'Oise en France.
 Génère UN conseil de randonnée personnalisé et motivant en français (1-2 phrases, 20-35 mots max).
@@ -193,13 +193,13 @@ Réponds uniquement avec le texte du conseil, sans guillemets ni explication.`;
 
     if (!env.AI && !env.ANTHROPIC_API_KEY) return fail('Le planificateur IA est momentanément indisponible.', 503);
 
-    // Quota: free → 2 / week, Silver & Gold → 20 / day (cost guard, effectively unlimited).
+    // Quota: free → 2 / week, Pro → 20 / day (cost guard, effectively unlimited).
     const plan = effectivePlan(user);
     const [limit, window] = plan === 'free' ? [2, 604800] : [20, 86400];
     const allowed = await checkRateLimit(env, 'aiplan', user.id, limit, window);
     if (!allowed) {
       return fail(plan === 'free'
-        ? 'Tu as utilisé tes 2 demandes IA gratuites. Passe à Argent ou Or pour des balades IA illimitées.'
+        ? 'Tu as utilisé tes 2 demandes IA gratuites. Passe à Pro pour des balades IA illimitées.'
         : 'Limite de demandes IA atteinte pour aujourd\'hui. Réessaie demain.', 429);
     }
 

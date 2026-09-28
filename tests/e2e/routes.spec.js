@@ -1,7 +1,7 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
 
-async function mockAuthMe(page, plan = 'silver') {
+async function mockAuthMe(page, plan = 'pro') {
   await page.route('**/api/auth/me', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -17,7 +17,7 @@ async function mockAuthMe(page, plan = 'silver') {
   }));
 }
 
-async function injectSession(page, plan = 'silver') {
+async function injectSession(page, plan = 'pro') {
   await page.goto('/login.html');
   await page.evaluate((plan) => {
     localStorage.setItem('bwr_token', 'e2e-mock-token');

@@ -187,30 +187,26 @@
 }
 
 /* ── Plans grid ──────────────────────────────────────────────────────────── */
+/* Two plans: Gratuit + Pro. Capped so the pair stays centred on wide screens
+   instead of stretching into two billboards. */
 .plans-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
   align-items: stretch;
   margin-bottom: 64px;
-}
-
-/* Annual tab hides the one-time Visitor pass — balance the grid on 3 cards.
-   Only on the wide (4-col) layout; the responsive 2-/1-col breakpoints below
-   already handle 3 cards fine, so don't let this override them. */
-@media (min-width: 1201px) {
-  .plans-grid.annual { grid-template-columns: repeat(3, 1fr); }
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* A [hidden] card must stay hidden even though .plan-card sets display:flex. */
 .plan-card[hidden] { display: none; }
 
 @media (max-width: 1200px) {
-  .plans-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
-  .plan-silver.popular,
-  .plan-gold.featured { transform: none; }
-  .plan-silver.popular:hover,
-  .plan-gold.featured:hover { transform: translateY(-6px); }
+  .plans-grid { gap: 18px; }
+  .plan-pro.popular { transform: none; }
+  .plan-pro.popular:hover { transform: translateY(-6px); }
 }
 @media (max-width: 640px) {
   .plans-grid { grid-template-columns: 1fr; max-width: 480px; margin-left: auto; margin-right: auto; gap: 14px; }
@@ -237,64 +233,15 @@
 /* Free card stays neutral */
 .plan-free { background: var(--surface-0); }
 
-/* Visitor: 7-day pass — teal accent */
-.plan-visitor {
-  background: var(--surface-0);
-  border: 2px solid #99f6e4;
-  box-shadow: 0 0 0 0 transparent;
-}
-.plan-visitor:hover { box-shadow: 0 8px 32px rgba(13,148,136,0.18); }
-.visitor-flag {
-  position: absolute;
-  top: -14px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(135deg, #0d9488, #0f766e);
-  color: white;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 4px 14px;
-  border-radius: 999px;
-  white-space: nowrap;
-  text-transform: uppercase;
-  box-shadow: 0 4px 12px rgba(13,148,136,0.35);
-}
-.plan-visitor .pc-name { color: #0f766e; }
-.plan-visitor .pc-tag  { color: #5eead4; }
-.pc-icon.icon-visitor {
-  background: linear-gradient(135deg, rgba(153,246,228,0.4), rgba(13,148,136,0.15));
-  border: 1px solid #99f6e4;
-}
-.cta-visitor {
-  background: linear-gradient(135deg, #0d9488, #0f766e);
-  color: #fff;
-  border: none;
-}
-.cta-visitor:hover { background: linear-gradient(135deg, #0f766e, #115e59); }
-
-/* Silver: subtle gradient border via mask */
-.plan-silver {
-  border: none;
-  background:
-    linear-gradient(var(--surface-0), var(--surface-0)) padding-box,
-    var(--silver-grad) border-box;
-  border: 2px solid transparent;
-}
-.plan-silver.popular {
-  transform: scale(1.02);
-  box-shadow: var(--shadow-md), var(--silver-glow);
-}
-.plan-silver.popular:hover { transform: scale(1.02) translateY(-6px); }
-
-/* Gold: full gradient background, dark text */
-.plan-gold {
+/* Pro: the only paid plan — premium gradient card with a warm glow.
+   (Replaces the old Argent gradient-border card + Or featured card.) */
+.plan-pro {
   background: var(--gold-grad-soft);
   border: 1px solid var(--gold-200);
   color: var(--gold-text);
   position: relative;
 }
-.plan-gold::before {
+.plan-pro::before {
   content: "";
   position: absolute;
   inset: -2px;
@@ -305,14 +252,14 @@
   filter: blur(20px);
   pointer-events: none;
 }
-.plan-gold.featured {
+.plan-pro.popular {
   transform: scale(1.02);
   box-shadow: var(--shadow-lg), 0 0 0 2.5px var(--gold-400), var(--gold-glow);
 }
-.plan-gold.featured:hover { transform: scale(1.02) translateY(-6px); }
+.plan-pro.popular:hover { transform: scale(1.02) translateY(-6px); }
 
 /* Flags */
-.popular-flag, .featured-flag {
+.popular-flag {
   position: absolute;
   top: -14px;
   left: 50%;
@@ -325,12 +272,8 @@
   white-space: nowrap;
   text-transform: uppercase;
 }
+.popular-flag.pf-ribbon,
 .popular-flag {
-  background: var(--silver-grad-deep);
-  color: white;
-  box-shadow: 0 4px 12px rgba(71, 85, 105, 0.35);
-}
-.featured-flag {
   background: var(--gold-grad-deep);
   color: white;
   box-shadow: 0 4px 12px rgba(180, 83, 9, 0.4);
@@ -349,8 +292,7 @@
   background: var(--forest-100);
   border-radius: var(--radius-lg);
 }
-.pc-icon.icon-silver { background: var(--silver-grad-soft); }
-.pc-icon.icon-gold   { background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3)); border: 1px solid var(--gold-200); }
+.pc-icon.icon-pro    { background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3)); border: 1px solid var(--gold-200); }
 .pc-name {
   font-size: var(--fs-xl);
   font-weight: 800;
@@ -358,13 +300,13 @@
   letter-spacing: -0.01em;
   color: var(--forest-900);
 }
-.plan-gold .pc-name { color: var(--gold-text); }
+.plan-pro .pc-name { color: var(--gold-text); }
 .pc-tag {
   margin: 0;
   font-size: var(--fs-sm);
   color: var(--text-muted);
 }
-.plan-gold .pc-tag { color: rgba(74, 44, 0, 0.7); }
+.plan-pro .pc-tag { color: rgba(74, 44, 0, 0.7); }
 
 /* Price */
 .pc-price {
@@ -376,7 +318,7 @@
   padding: 6px 0 12px;
   border-bottom: 1px solid var(--border-soft);
 }
-.plan-gold .pc-price { border-bottom-color: rgba(180, 83, 9, 0.15); }
+.plan-pro .pc-price { border-bottom-color: rgba(180, 83, 9, 0.15); }
 .pc-amount {
   font-family: var(--font-display);
   font-weight: 700;
@@ -385,7 +327,7 @@
   color: var(--forest-900);
   line-height: 1;
 }
-.plan-gold .pc-amount {
+.plan-pro .pc-amount {
   background: var(--gold-grad-deep);
   -webkit-background-clip: text;
   background-clip: text;
@@ -397,7 +339,7 @@
   color: var(--text-muted);
   font-weight: 500;
 }
-.plan-gold .pc-period { color: rgba(74, 44, 0, 0.65); }
+.plan-pro .pc-period { color: rgba(74, 44, 0, 0.65); }
 .pc-annual-note {
   text-align: center;
   font-size: var(--fs-sm);
@@ -407,7 +349,7 @@
   min-height: 1.2em;
 }
 .pc-annual-note:empty { margin: 0; min-height: 0; }
-.plan-gold .pc-annual-note { color: var(--gold-700, var(--gold-600)); }
+.plan-pro .pc-annual-note { color: var(--gold-700, var(--gold-600)); }
 
 /* Features wrapper — holds the core list, the collapsible extras and the
    "Tout voir" toggle. Grows to push the CTA to the bottom of the card. */
@@ -448,7 +390,7 @@
   transition: color var(--dur-fast) var(--ease-out);
 }
 .pc-toggle:hover { color: var(--forest-900); text-decoration: underline; }
-.plan-gold .pc-toggle { color: var(--gold-700, var(--gold-600)); }
+.plan-pro .pc-toggle { color: var(--gold-700, var(--gold-600)); }
 .pc-toggle-chev {
   font-size: 0.8rem;
   transition: transform var(--dur) var(--ease-out);
@@ -475,11 +417,11 @@
 }
 .pf.yes .pf-icon { background: var(--forest-100); color: var(--forest-700); }
 .pf.no  .pf-icon { background: var(--surface-3); color: var(--text-faint); }
-.plan-gold .pf.yes .pf-icon { background: rgba(255,255,255,0.6); color: var(--gold-600); }
+.plan-pro .pf.yes .pf-icon { background: rgba(255,255,255,0.6); color: var(--gold-600); }
 .pf.yes { color: var(--text); }
 .pf.no  { color: var(--text-faint); text-decoration: line-through; }
 .pf.yes.hl { color: var(--forest-900); }
-.plan-gold .pf.yes.hl { color: var(--gold-text); }
+.plan-pro .pf.yes.hl { color: var(--gold-text); }
 
 /* CTA buttons */
 .pc-cta {
@@ -504,20 +446,14 @@
   border: 1px solid var(--border);
 }
 .cta-ghost:hover { background: var(--surface-3); }
-.cta-silver {
-  background: var(--silver-grad-deep);
-  color: white;
-  box-shadow: 0 6px 20px -8px rgba(71, 85, 105, 0.5);
-}
-.cta-silver:hover { box-shadow: 0 10px 28px -8px rgba(71, 85, 105, 0.6); }
-.cta-gold {
+.cta-pro {
   background: var(--gold-grad-deep);
   color: white;
   box-shadow: 0 8px 24px -8px rgba(180, 83, 9, 0.55);
   position: relative;
   overflow: hidden;
 }
-.cta-gold::after {
+.cta-pro::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -525,79 +461,26 @@
   transform: translateX(-100%);
   animation: shimmer 3.5s ease-in-out infinite;
 }
-.cta-gold:hover { box-shadow: 0 14px 36px -10px rgba(180, 83, 9, 0.65); }
+.cta-pro:hover { box-shadow: 0 14px 36px -10px rgba(180, 83, 9, 0.65); }
 @keyframes shimmer {
   0%, 60% { transform: translateX(-100%); }
   100%    { transform: translateX(100%); }
 }
 
-/* ── Gold "coming soon" — whole card greyed out with centre overlay ── */
-.plan-card.is-coming-soon {
-  filter: grayscale(1);
-  opacity: 0.65;
-  pointer-events: none;         /* no hover lift, no click */
-}
-.plan-card.is-coming-soon:hover {
-  transform: scale(1.02);       /* freeze at resting scale, no lift */
-  box-shadow: var(--shadow-lg), 0 0 0 2.5px #bbb, 0 0 28px rgba(0,0,0,0.12);
-}
-
-/* Centre overlay */
-.cs-overlay {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  z-index: 5;
-}
-.cs-overlay-icon {
-  font-size: 2.6rem;
-  filter: grayscale(1);
-}
-.cs-overlay-text {
-  font-family: var(--font-display, 'Fraunces', Georgia, serif);
-  font-size: 1.45rem;
-  font-weight: 900;
-  color: #374151;
-  letter-spacing: -0.02em;
-  text-align: center;
-}
-.cs-overlay-sub {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-/* Keep the disabled CTA style for semantic completeness */
-.cta-gold-soon {
-  background: #e5e7eb;
-  color: #9ca3af;
-  border: 1px solid #d1d5db;
-  box-shadow: none;
-  cursor: not-allowed;
-}
-.cta-gold-soon:hover { transform: none; box-shadow: none; }
 .btn-cta-secondary:disabled {
   cursor: not-allowed;
   opacity: 0.7;
 }
 .btn-cta-secondary:disabled:hover { transform: none; }
 
-/* Secondary "free trial" CTA under the Silver button — outlined, lighter weight
+/* Secondary "free trial" CTA under the Pro button — outlined, lighter weight
    than the primary CTA so it reads as a complementary offer. */
 .pc-trial-cta {
   display: block;
   width: 100%;
   margin-top: 10px;
   padding: 12px 14px;
-  border: 1.5px solid var(--silver, #64748b);
+  border: 1.5px solid var(--gold-600, #b45309);
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--text);
@@ -617,7 +500,7 @@
   font-size: 0.78rem;
   color: var(--text-faint);
 }
-.plan-gold .pc-footnote { color: rgba(74, 44, 0, 0.55); }
+.plan-pro .pc-footnote { color: rgba(74, 44, 0, 0.55); }
 
 /* ── Trust strip ─────────────────────────────────────────────────────────── */
 .trust-strip {
@@ -778,8 +661,7 @@
   letter-spacing: 0.02em;
 }
 .compare-table th.ct-feature { text-align: left; }
-.compare-table th.ct-silver { background: var(--silver-grad-deep); }
-.compare-table th.ct-gold   { background: var(--gold-grad-deep); }
+.compare-table th.ct-pro    { background: var(--gold-grad-deep); }
 .ct-rec-badge {
   display: inline-block;
   margin-left: 6px;
@@ -1603,20 +1485,14 @@
     gap: 14px;
     border-radius: 20px;
   }
-  /* Popular/featured cards lose the scale so they don't clip */
-  .plan-silver.popular,
-  .plan-silver.popular:hover,
-  .plan-gold.featured,
-  .plan-gold.featured:hover {
+  /* The Pro card loses its scale so it doesn't clip */
+  .plan-pro.popular,
+  .plan-pro.popular:hover {
     transform: none;
-    box-shadow: var(--shadow-md), var(--silver-glow);
-  }
-  .plan-gold.featured {
     box-shadow: var(--shadow-lg), 0 0 0 2px var(--gold-400), var(--gold-glow);
   }
   /* Add top margin so the flag doesn't get clipped */
-  .plan-silver.popular,
-  .plan-gold.featured { margin-top: 10px; }
+  .plan-pro.popular { margin-top: 10px; }
 
   /* Card header compact */
   .pc-icon { width: 54px; height: 54px; font-size: 2rem; margin-bottom: 10px; }
@@ -1726,9 +1602,9 @@
   color: var(--forest-300);
 }
 
-/* Gold card stays on its light cream gradient in dark mode → keep dark-gold text */
-:root[data-theme="dark"] .plan-gold .pc-name,
-:root[data-theme="dark"] .plan-gold .pc-tag,
-:root[data-theme="dark"] .plan-gold .pf.yes.hl {
+/* Pro card stays on its light cream gradient in dark mode → keep dark-gold text */
+:root[data-theme="dark"] .plan-pro .pc-name,
+:root[data-theme="dark"] .plan-pro .pc-tag,
+:root[data-theme="dark"] .plan-pro .pf.yes.hl {
   color: var(--gold-text);
 }

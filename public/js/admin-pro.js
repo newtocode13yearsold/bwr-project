@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const PRICE = { free: 0, silver: 2.99, gold: 6.99 };
+  const PRICE = { free: 0, pro: 2.99 };
   const VIEW_KEY = 'bwr_admin_view';
 
   function esc(s) {
@@ -72,18 +72,17 @@
       const topics    = Array.isArray(topicsD) ? topicsD : (topicsD.topics || []);
 
       // Plan split + revenue (comped subscriptions excluded from revenue)
-      const counts = { free: 0, silver: 0, gold: 0 };
-      const comped = { silver: 0, gold: 0 };
+      const counts = { free: 0, pro: 0 };
+      let compedPro = 0;
       memberArr.forEach(u => {
-        const plan = u.plan || 'free';
+        const plan = BWR.normalisePlan(u.plan);
         counts[plan] = (counts[plan] || 0) + 1;
-        if (u.comped && (plan === 'silver' || plan === 'gold')) comped[plan]++;
+        if (u.comped && plan === 'pro') compedPro++;
       });
-      const paySilver = counts.silver - comped.silver;
-      const payGold   = counts.gold   - comped.gold;
-      const paying    = paySilver + payGold;
-      const total     = memberArr.length;
-      const mrr       = paySilver * PRICE.silver + payGold * PRICE.gold;
+      const payPro = counts.pro - compedPro;
+      const paying = payPro;
+      const total  = memberArr.length;
+      const mrr    = payPro * PRICE.pro;
       const conv      = total ? Math.round(paying / total * 100) : 0;
 
       // Contributions
@@ -115,15 +114,14 @@
       ].join('');
 
       // ── Plan distribution bars ─────────────────────────────────────────────
-      // Comped (offered) Silver/Gold don't count as paying subscribers — they are
-      // shown on their own "Offerts" row, excluded from the Argent/Or tally.
-      const compedTot = comped.silver + comped.gold;
+      // Comped (offered) Pro accounts don't count as paying subscribers — they are
+      // shown on their own "Offerts" row, excluded from the Pro tally.
+      const compedTot = compedPro;
       const barBox = document.getElementById('proPlanBars');
       if (barBox) {
         const rows = [
           { label: 'Gratuit',  n: counts.free, color: '#9ca3af' },
-          { label: 'Argent 🥈', n: paySilver,   color: '#64748b' },
-          { label: 'Or 🥇',     n: payGold,     color: '#d97706' },
+          { label: 'Pro ⭐',     n: payPro,      color: '#22c55e' },
         ];
         if (compedTot) rows.push({ label: '🎁 Offerts', n: compedTot, color: '#c4b5fd', note: 'hors décompte' });
         const max = Math.max(1, total);

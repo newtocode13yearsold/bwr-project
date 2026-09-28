@@ -4,7 +4,7 @@ import { getUserFromToken } from '../auth-utils.js';
 // Points of interest: the practical map furniture hikers ask for most — parking,
 // water points, picnic spots, viewpoints, toilets. Reading is public (the layer
 // loads for everyone, signed-in or not). Adding a POI is a curation action, so
-// it's gated to Silver+/admin, exactly like drawing a path; editing/deleting is
+// it's gated to Pro/admin, exactly like drawing a path; editing/deleting is
 // author-or-admin.
 //
 // KV keys:
@@ -74,12 +74,12 @@ export async function handlePoi(request, env, { pathname, json, fail, cors, wait
     });
   }
 
-  // ── Create (Silver+/admin) ──
+  // ── Create (Pro/admin) ──
   if (pathname === '/api/pois' && request.method === 'POST') {
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Connexion requise.', 401);
     const plan = effectivePlan(user);
-    if (plan !== 'gold' && plan !== 'silver') return fail('Abonnement Argent requis.', 403);
+    if (plan !== 'pro') return fail('Abonnement Pro requis.', 403);
 
     const body = await request.json().catch(() => ({}));
     if (!POI_TYPES.has(body.type)) return fail('Type de point invalide.', 400);

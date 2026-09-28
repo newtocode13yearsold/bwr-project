@@ -1,4 +1,4 @@
-import { putUser, listKeys } from '../kv.js';
+import { putUser, listKeys, normalisePlan } from '../kv.js';
 import { getUserFromToken } from '../auth-utils.js';
 import { sendPush } from '../webpush.js';
 
@@ -19,17 +19,19 @@ import { sendPush } from '../webpush.js';
 //   inboxmsg:{ts}:{id} → the win notification, delivered to the user's inbox
 
 const ONE_TIME_QUESTS = {
-  o1: { metric: 'pathGrades', target: 200, title: 'Grand cartographe',    label: '1 mois de Gold offert 🥇',        plan: 'gold',   days: 30 },
-  o2: { metric: 'reports',    target: 100, title: 'Gardien de la forêt',  label: '1 semaine de Silver + badge 🥈',  plan: 'silver', days: 7,
+  o1: { metric: 'pathGrades', target: 200, title: 'Grand cartographe',    label: '1 mois de Pro offert ⭐',           plan: 'pro', days: 30 },
+  o2: { metric: 'reports',    target: 100, title: 'Gardien de la forêt',  label: '1 semaine de Pro + badge ⭐',       plan: 'pro', days: 7,
         badge: { id: 'quest_guardian', icon: '🚧', label: 'Gardien de la forêt' } },
   o3: { metric: 'km',         target: 500, title: 'Marcheur infatigable', label: 'Badge exclusif 🏅',
         badge: { id: 'quest_walker',    icon: '🏅', label: 'Marcheur infatigable' } },
   o4: { metric: 'routes',     target: 100, title: 'Explorateur assidu',   label: 'Badge Explorateur 🗺️',
         badge: { id: 'quest_explorer',  icon: '🗺️', label: 'Explorateur assidu' } },
-  o5: { metric: 'bestStreak', target: 30,  title: 'Assidu légendaire',    label: '2 semaines de Gold offertes 🥇',  plan: 'gold',   days: 14 },
+  o5: { metric: 'bestStreak', target: 30,  title: 'Assidu légendaire',    label: '2 semaines de Pro offertes ⭐',     plan: 'pro', days: 14 },
 };
 
-const RANK = { free: 0, visitor: 1, silver: 2, gold: 3 };
+// Plan tiers, low → high. Keys are CANONICAL ids (see normalisePlan in kv.js),
+// so a legacy 'silver'/'gold'/'visitor' account is ranked as the 'pro' it now is.
+const RANK = { free: 0, pro: 1 };
 
 /**
  * Works out how to apply a temporary plan reward without ever DOWNGRADING the
@@ -41,7 +43,7 @@ const RANK = { free: 0, visitor: 1, silver: 2, gold: 3 };
 function grantPlanReward(user, plan, days) {
   if (user.role === 'admin') return null;
   const now = Date.now();
-  const curPlan = user.plan || 'free';
+  const curPlan = normalisePlan(user.plan);
   const curExp = user.planExpiresAt ? new Date(user.planExpiresAt).getTime() : 0;
   const hasActiveTemp = curExp > now;
 
@@ -64,8 +66,7 @@ async function sendQuestInbox(env, user, def, planApplied) {
   let body = `Félicitations ! Tu as débloqué le haut fait « ${def.title} » et remporté : ${def.label}.`;
   if (planApplied) {
     const until = new Date(planApplied.planExpiresAt).toLocaleDateString('fr-FR');
-    const planName = planApplied.plan === 'gold' ? 'Gold' : 'Argent';
-    body += ` Ton abonnement ${planName} est actif jusqu'au ${until}.`;
+    body += ` Ton abonnement Pro est actif jusqu'au ${until}.`;
   }
   if (def.badge) body += ` Le badge « ${def.badge.icon} ${def.badge.label} » a été ajouté à ton profil.`;
   const message = {

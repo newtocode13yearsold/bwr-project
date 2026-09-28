@@ -1,5 +1,5 @@
 // Saved routes handler integration tests.
-// Covers: save (silver+ only), list, get by id, share link, delete.
+// Covers: save (Pro only), list, get by id, share link, delete.
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,7 +21,7 @@ function makeMockKV() {
   };
 }
 
-function freshEnv(plan = 'silver') {
+function freshEnv(plan = 'pro') {
   const kv  = makeMockKV();
   const env = { BWR_KV: kv };
   const userId = 'user-sr-test';
@@ -63,7 +63,7 @@ describe('POST /api/savedroutes', () => {
     const res = await worker.fetch(authed('POST', '/api/savedroutes', token, { coords: sampleCoords, meters: 1000 }), env);
     assert.equal(res.status, 403);
     const data = await res.json();
-    assert.ok(data.error.includes('Argent'));
+    assert.ok(data.error.includes('Pro'));
   });
 
   test('rejects body with fewer than 2 coords', async () => {
@@ -72,8 +72,8 @@ describe('POST /api/savedroutes', () => {
     assert.equal(res.status, 400);
   });
 
-  test('saves route and returns id + shareToken for silver user', async () => {
-    const { env, token, kv } = freshEnv('silver');
+  test('saves route and returns id + shareToken for pro user', async () => {
+    const { env, token, kv } = freshEnv('pro');
     const res = await worker.fetch(authed('POST', '/api/savedroutes', token, {
       name: 'Boucle test',
       coords: sampleCoords,
@@ -110,9 +110,9 @@ describe('POST /api/savedroutes', () => {
 });
 
 // ── Timed-plan expiry (effectivePlan) ────────────────────────────────────────
-// A silver/gold plan carrying a `planExpiresAt` in the past must stop granting
+// A pro plan carrying a `planExpiresAt` in the past must stop granting
 // access on every gated endpoint immediately — not only after /api/auth/me is
-// hit. Saved-routes POST (silver+ only) is a convenient probe for that gate.
+// hit. Saved-routes POST (Pro only) is a convenient probe for that gate.
 
 describe('timed plan expiry', () => {
   function setPlan(kv, userId, patch) {
@@ -120,28 +120,28 @@ describe('timed plan expiry', () => {
     kv.store.set(`user:${userId}`, JSON.stringify({ ...u, ...patch }));
   }
 
-  test('expired silver temp plan is treated as its planBase (free) → 403', async () => {
-    const { env, token, kv, userId } = freshEnv('silver');
+  test('expired pro temp plan is treated as its planBase (free) → 403', async () => {
+    const { env, token, kv, userId } = freshEnv('pro');
     setPlan(kv, userId, { planExpiresAt: new Date(Date.now() - 60000).toISOString(), planBase: 'free' });
     const res = await worker.fetch(authed('POST', '/api/savedroutes', token, { coords: sampleCoords, meters: 1000 }), env);
     assert.equal(res.status, 403);
   });
 
-  test('not-yet-expired silver temp plan still grants access → 201', async () => {
-    const { env, token, kv, userId } = freshEnv('silver');
+  test('not-yet-expired pro temp plan still grants access → 201', async () => {
+    const { env, token, kv, userId } = freshEnv('pro');
     setPlan(kv, userId, { planExpiresAt: new Date(Date.now() + 86400000).toISOString(), planBase: 'free' });
     const res = await worker.fetch(authed('POST', '/api/savedroutes', token, { coords: sampleCoords, meters: 1000 }), env);
     assert.equal(res.status, 201);
   });
 
-  test('expired gold temp plan reverts to planBase silver (still granted) → 201', async () => {
+  test('legacy gold temp plan reverting to planBase silver still maps to pro → 201', async () => {
     const { env, token, kv, userId } = freshEnv('gold');
     setPlan(kv, userId, { planExpiresAt: new Date(Date.now() - 60000).toISOString(), planBase: 'silver' });
     const res = await worker.fetch(authed('POST', '/api/savedroutes', token, { coords: sampleCoords, meters: 1000 }), env);
     assert.equal(res.status, 201);
   });
 
-  test('expired visitor alias reverts to free → 403', async () => {
+  test('expired legacy visitor pass reverts to free → 403', async () => {
     const { env, token, kv, userId } = freshEnv('visitor');
     setPlan(kv, userId, { planExpiresAt: new Date(Date.now() - 60000).toISOString() });
     const res = await worker.fetch(authed('POST', '/api/savedroutes', token, { coords: sampleCoords, meters: 1000 }), env);

@@ -201,24 +201,35 @@ export async function addPeriodXp(env, user, delta) {
   }
 }
 
+// ── Plan ladder ───────────────────────────────────────────────────────────────
+// There are exactly TWO plans: 'free' and 'pro'. 'pro' is the tier that used to
+// be called "Argent"/silver. The old 'gold' tier and the 7-day 'visitor' pass
+// were retired — but accounts created before that still carry those ids in KV,
+// so they are ALIASED onto 'pro' here instead of being migrated. That keeps
+// every paying legacy account working with zero data migration. Mirrors
+// `normalisePlan` in public/js/features.js.
+const LEGACY_PLAN_ALIAS = { silver: 'pro', gold: 'pro', visitor: 'pro' };
+
+/** Canonical plan id: maps retired ids onto 'pro', anything unknown onto 'free'. */
+export function normalisePlan(plan) {
+  const p = plan || 'free';
+  if (LEGACY_PLAN_ALIAS[p]) return LEGACY_PLAN_ALIAS[p];
+  return p === 'pro' ? 'pro' : 'free';
+}
+
 /**
- * Returns the user's active plan.
- * - Admin accounts always resolve to 'gold'.
- * - Any plan with a `planExpiresAt` in the past has elapsed and reverts:
- *   'visitor' (a time-limited Silver alias) reverts to 'free'; a temp
- *   silver/gold plan (self-service trial, quest grant) reverts to its
- *   `planBase` (the plan the user held before the upgrade), or 'free'.
- *   This is the single source of truth every feature gate reads, so a
- *   plan stops granting access the moment its date passes — independent
- *   of whether the user has hit /api/auth/me to persist the revert.
- * - A live 'visitor' resolves to 'silver'.
+ * Returns the user's active plan — always 'free' or 'pro'.
+ * - Admin accounts always resolve to 'pro'.
+ * - Any plan with a `planExpiresAt` in the past has elapsed and reverts to its
+ *   `planBase` (the plan the user held before the upgrade), or 'free'. This is
+ *   the single source of truth every feature gate reads, so a plan stops
+ *   granting access the moment its date passes — independent of whether the
+ *   user has hit /api/auth/me to persist the revert.
  */
 export function effectivePlan(user) {
-  if (user.role === 'admin') return 'gold';
-  const plan = user.plan || 'free';
+  if (user.role === 'admin') return 'pro';
   if (user.planExpiresAt && new Date(user.planExpiresAt) < new Date()) {
-    return plan === 'visitor' ? 'free' : (user.planBase || 'free');
+    return normalisePlan(user.planBase || 'free');
   }
-  if (plan === 'visitor') return 'silver';
-  return plan;
+  return normalisePlan(user.plan);
 }
