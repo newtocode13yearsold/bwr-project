@@ -85,7 +85,7 @@
     { href: 'map',    label: 'Carte' },
     { href: 'routes', label: 'Planifier' },
     { href: 'news',   label: 'Actualités' },
-    { href: 'plans',  label: 'Plans' }
+    { href: 'plans',  label: 'Plan' }
   ];
 
   // Current page slug, e.g. "/map.html" -> "map", "/" -> "".

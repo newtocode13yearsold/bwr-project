@@ -161,7 +161,7 @@ async function downloadOfflineZone(zone, onProgress, opts = {}) {
 function openOfflineZonePicker() {
   if (typeof BWR !== 'undefined' && typeof _userPlan !== 'undefined'
       && !BWR.can('offline_cache', _userPlan)) {
-    showToast('🔒 Cartes hors-ligne disponibles avec Pro — voir plans');
+    showToast('🔒 Cartes hors-ligne disponibles avec Pro — voir la page Plan');
     return;
   }
 

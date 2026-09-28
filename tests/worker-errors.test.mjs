@@ -63,6 +63,14 @@ function freshEnv() {
 
 const errKeys = kv => [...kv.store.keys()].filter(k => k.startsWith('errlog:'));
 
+// Rewrites a stored error group's `lastSeen` so ordering assertions don't depend
+// on two beacons landing in different milliseconds.
+function backdate(kv, key, iso) {
+  const rec = JSON.parse(kv.store.get(key));
+  rec.lastSeen = iso;
+  kv.store.set(key, JSON.stringify(rec));
+}
+
 // A client error beacon. Sends a real UA (a missing UA is treated as a bot).
 function postError(body, ua = CHROME_UA) {
   return new Request('https://bwr.test/api/track/error', {
@@ -215,9 +223,13 @@ describe('GET /api/errors (admin only)', () => {
   });
 
   test('admin gets the list with distinct + total counts, newest first', async () => {
-    const { env } = freshEnv();
+    const { env, kv } = freshEnv();
     await worker.fetch(postError(sampleError), env);
     await worker.fetch(postError(sampleError), env);
+    // `lastSeen` has millisecond resolution, so beacons sent inside the same tick
+    // would tie and leave the "newest first" sort arbitrary. Back-date the first
+    // group so the ordering assertion below actually tests the sort.
+    backdate(kv, errKeys(kv)[0], '2026-01-01T00:00:00.000Z');
     await worker.fetch(postError({ ...sampleError, message: 'ReferenceError: y', page: '/routes.html' }), env);
     const res = await worker.fetch(authed('GET', '/api/errors', 'tok-admin'), env);
     assert.equal(res.status, 200);

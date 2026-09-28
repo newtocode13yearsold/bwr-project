@@ -387,7 +387,7 @@ function openPathPopup(path, latlng) {
     const guardReport = async (type) => {
       if (!BWR.can('reports_create', _userPlan)) {
         map.closePopup();
-        showToast('🔒 Le signalement est disponible avec Pro — voir plans');
+        showToast('🔒 Le signalement est disponible avec Pro — voir la page Plan');
         return;
       }
       await _loadMapEdit();

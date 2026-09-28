@@ -229,7 +229,7 @@ function renderPlanAndProgress(user) {
   if (plan === 'free') {
     const proCount = BADGES.filter(b => b.tier === 'pro').length;
     lockedHint.innerHTML =
-      `🔒 <strong>${proCount} badges supplémentaires</strong> à débloquer · <a href="plans">Voir les plans →</a>`;
+      `🔒 <strong>${proCount} badges supplémentaires</strong> à débloquer · <a href="plans">Voir le plan Pro →</a>`;
     lockedHint.style.display = '';
   } else {
     lockedHint.style.display = 'none';

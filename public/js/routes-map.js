@@ -283,7 +283,7 @@ function initRouteHistory() {
     body.innerHTML = `
       <div class="history-empty">
         <p>🔒 Sauvegardez vos trajets avec le plan Pro.</p>
-        <a href="plans" style="color:#6d28d9;font-weight:700">Voir les plans →</a>
+        <a href="plans" style="color:#6d28d9;font-weight:700">Voir le plan Pro →</a>
       </div>`;
     document.getElementById('historyToggle').addEventListener('click', lazyToggle);
     return;

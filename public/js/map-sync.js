@@ -188,7 +188,7 @@ document.querySelectorAll('.layer-btn').forEach(btn => {
 
 function showUpgradeToast(featureLabel, tier) {
   const planLabel = BWR.TIER_LABEL[tier] || 'Pro';
-  showToast(`🔒 ${featureLabel} est disponible avec le plan ${planLabel} — voir plans.html`);
+  showToast(`🔒 ${featureLabel} est disponible avec le plan ${planLabel} — voir la page Plan`);
 }
 
 document.getElementById('toggleFilters').addEventListener('click', () => {
@@ -338,7 +338,7 @@ document.getElementById('mapContactForm').addEventListener('submit', async e => 
   if (!btn) return;
   btn.addEventListener('click', async () => {
     if (!BWR.can('offline_cache', _userPlan)) {
-      showToast('🔒 Cartes hors-ligne disponibles avec Pro — voir plans');
+      showToast('🔒 Cartes hors-ligne disponibles avec Pro — voir la page Plan');
       return;
     }
     document.getElementById('navDrawer')?.classList.add('hidden');

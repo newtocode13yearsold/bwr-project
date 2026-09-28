@@ -1,5 +1,5 @@
 // Forum handler integration tests.
-// Covers: topic create (silver+ only), free-tier read limit (5 visible),
+// Covers: topic create (Pro only), free-tier read limit (5 visible),
 // reply create + gating, locked detail, author/admin deletion.
 
 import { test, describe } from 'node:test';
@@ -48,8 +48,24 @@ const r = (method, path, body, headers = {}) => new Request(
 );
 const authed = (method, path, token, body) => r(method, path, body, { Authorization: `Bearer ${token}` });
 
+// The handler stamps `createdAt` with millisecond resolution, so several topics
+// created inside the same tick end up with identical timestamps and the
+// newest-first sort in `loadTopicsSorted` becomes arbitrary — which topic is
+// "locked" for a free user would then be luck of the draw. Rewrite each created
+// topic with a monotonic, well-spaced timestamp so that in every test below
+// call order == oldest-to-newest.
+let topicSeq = 0;
+const STAMP_EPOCH = Date.UTC(2026, 0, 1);
+
 async function createTopic(env, token, title, body = 'Contenu du message.') {
   const res = await worker.fetch(authed('POST', '/api/forum/topics', token, { title, body }), env);
+  if (res.status === 201) {
+    const topic = await res.clone().json();
+    const stamp = new Date(STAMP_EPOCH + (++topicSeq) * 60000).toISOString();
+    topic.createdAt = stamp;
+    topic.lastActivityAt = stamp;
+    await env.BWR_KV.put(`forum:topic:${topic.id}`, JSON.stringify(topic));
+  }
   return res;
 }
 
@@ -67,7 +83,7 @@ describe('POST /api/forum/topics', () => {
     const res = await createTopic(env, 'tok-free', 'Mon sujet');
     assert.equal(res.status, 403);
     const data = await res.json();
-    assert.match(data.error, /Argent/);
+    assert.match(data.error, /Pro/);
   });
 
   test('rejects too-short title', async () => {
