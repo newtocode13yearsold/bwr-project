@@ -123,6 +123,88 @@ export async function recordFailedLogin(env, email) {
   return attempts;
 }
 
+// ── Admin account hardening ───────────────────────────────────────────────────
+// The session token IS the admin panel: anything that can read it (a borrowed
+// laptop, a stale localStorage on a shared machine, an XSS one day) owns the
+// site for as long as the token lives. A normal member's 30-day session is a
+// convenience trade-off; for the admin it is an unacceptable blast radius, so
+// admin sessions expire in hours and every admin sign-in is announced.
+export const ADMIN_SESSION_SECONDS = 3 * 60 * 60;         // 3 hours
+export const DEFAULT_SESSION_SECONDS = 30 * 24 * 60 * 60; // 30 days
+
+/** Session lifetime for a user, in seconds. Admins get a deliberately short one. */
+export function sessionSecondsFor(user) {
+  return user && user.role === 'admin' ? ADMIN_SESSION_SECONDS : DEFAULT_SESSION_SECONDS;
+}
+
+// Admin second password ("deuxième mot de passe"). This is a second *knowledge*
+// factor, not a true second factor: it does not protect against someone watching
+// you type. What it does buy is that a leaked, guessed or reused main password —
+// by far the most common way accounts fall — is no longer enough on its own, and
+// unlike an authenticator app it cannot be lost with a broken phone.
+//
+// It is enforced ONLY once one has been set (see the login route), so enabling
+// this feature can never lock the owner out of a site that does not have one yet.
+export const SECOND_LOGIN_TTL = 300; // 5 min to answer the second prompt
+export const SECOND_MAX_TRIES = 3;   // wrong answers before the attempt is burned
+
+// Per-IP login limit. The existing lockout is keyed by *email*, so it does
+// nothing against someone spraying one password across many accounts, and it
+// lets anyone who knows the admin address lock that address out on purpose.
+// This second limit is keyed by IP and caps the whole attack from one source.
+export const LOGIN_IP_MAX_ATTEMPTS = 20;
+export const LOGIN_IP_WINDOW = 900; // 15 minutes
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/**
+ * Best-effort security alert when someone signs in — or fails to — on an admin
+ * account: ntfy push plus an email to ADMIN_EMAIL. Detection, not prevention:
+ * it can't stop a thief with the right password, but it means you find out in
+ * seconds instead of when the damage shows up.
+ *
+ * Failure alerts are throttled per IP so a brute-force run can't flood the
+ * phone. Never throws — alerting must never break the login flow.
+ */
+export async function alertAdminLogin(env, { ok, email, ip, device, place, at }) {
+  try {
+    if (!ok && !await checkRateLimit(env, 'adminloginalert', ip || 'unknown', 3, 3600)) return;
+
+    // ntfy Title travels as an HTTP header, so keep it ASCII-only.
+    const title = ok ? 'BWR - connexion admin' : 'BWR - ECHEC connexion admin';
+    const lines = [
+      `Compte : ${email}`,
+      `Quand : ${at}`,
+      `IP : ${ip || 'inconnue'}`,
+      device ? `Appareil : ${device}` : null,
+      place ? `Lieu : ${place}` : null,
+      ok
+        ? "Si ce n'est pas vous : changez le mot de passe admin immediatement."
+        : "Quelqu'un tente de deviner le mot de passe admin.",
+    ].filter(Boolean);
+
+    await Promise.allSettled([
+      fetch('https://ntfy.sh/bwr-ciril8596', {
+        method: 'POST',
+        headers: { Title: title, Priority: ok ? 'default' : 'high', Tags: 'lock' },
+        body: lines.join('\n'),
+      }),
+      env.ADMIN_EMAIL
+        ? sendEmail(env, {
+            to: env.ADMIN_EMAIL,
+            subject: ok ? 'Connexion à votre compte admin BWR' : 'Échec de connexion admin BWR',
+            html: `<p>${lines.map(escapeHtml).join('<br>')}</p>`,
+          })
+        : Promise.resolve(),
+    ]);
+  } catch {
+    /* alerting must never break auth */
+  }
+}
+
 export const PENDING_TTL = 86400; // 24 hours
 export const RESEND_COOLDOWN = 300; // 5 minutes between resend requests
 export const RESET_TTL = 3600; // 1 hour — password-reset link lifetime

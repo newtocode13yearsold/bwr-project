@@ -74,6 +74,13 @@
             </button>
           </div>
         </div>
+        <!-- Second admin password. Hidden until the server asks for it, so
+             ordinary members never see it and nothing hints at who is admin. -->
+        <div class="field hidden" id="secondPwField">
+          <label for="loginPassword2">Deuxième mot de passe</label>
+          <input type="password" id="loginPassword2" class="input-field" placeholder="••••••••" autocomplete="off" />
+          <span class="field-hint">Ce compte est protégé par un second mot de passe.</span>
+        </div>
         <div id="loginError" class="form-error hidden"></div>
         <button type="submit" class="btn-primary">Se connecter</button>
         <p style="margin-top:.75rem;text-align:center;font-size:13px;color:#6b7280">

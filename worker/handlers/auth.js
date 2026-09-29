@@ -6,7 +6,10 @@ import {
   PENDING_TTL, RESEND_COOLDOWN, RESET_TTL, RESET_COOLDOWN,
   sendVerificationEmail, sendPasswordResetEmail, sendEmailChangeVerification,
   PASSWORD_REGEX, PASSWORD_REQUIREMENTS_MSG,
+  sessionSecondsFor, alertAdminLogin, LOGIN_IP_MAX_ATTEMPTS, LOGIN_IP_WINDOW,
+  SECOND_LOGIN_TTL, SECOND_MAX_TRIES,
 } from '../auth-utils.js';
+import { describeDevice } from './admin.js';
 
 const REGISTER_RATE_LIMIT = { max: 5, window: 3600 };
 const FORGOT_RATE_LIMIT = { max: 5, window: 3600 };
@@ -19,6 +22,95 @@ const FORGOT_RATE_LIMIT = { max: 5, window: 3600 };
 // client left over from the Or/Argent era can't error out on a spin.
 
 /**
+ * Gathers the non-identifying request context (coarse Cloudflare geo + a friendly
+ * device label, never the raw User-Agent) and fires the admin sign-in alert.
+ */
+function adminLoginAlert(env, request, user, ok) {
+  const cf = request.cf || {};
+  const place = [cf.city, cf.country].filter(Boolean).join(', ');
+  return alertAdminLogin(env, {
+    ok,
+    email: user.email,
+    ip: request.headers.get('CF-Connecting-IP') || 'unknown',
+    device: describeDevice(request.headers.get('User-Agent') || ''),
+    place,
+    at: new Date().toISOString(),
+  });
+}
+
+/** Creates the KV session for a freshly authenticated user and returns its token. */
+async function issueSession(env, user) {
+  const token = crypto.randomUUID();
+  const issuedAt = new Date().toISOString();
+  // Admin sessions are short-lived (see sessionSecondsFor) — a stolen admin
+  // token must not stay usable for a month.
+  const ttl = sessionSecondsFor(user);
+  const expiresAt = new Date(Date.now() + ttl * 1000).toISOString();
+  await env.BWR_KV.put(`session:${token}`, JSON.stringify({ userId: user.id, issuedAt, expiresAt }),
+    { expirationTtl: ttl });
+  return token;
+}
+
+/** The user object returned to the client on a successful login. Never includes hashes. */
+function loginPayload(user) {
+  return {
+    id: user.id, name: user.name, username: user.username || null, email: user.email,
+    role: user.role, plan: normalisePlan(user.plan), onboarded: user.onboarded !== false,
+    stats: user.stats || { routes: 0, km: 0 },
+    ...(user.role === 'admin' ? { secondPasswordSet: !!user.adminPasswordHash } : {}),
+  };
+}
+
+/**
+ * Step 2 of the admin two-password login: the caller proved the main password in
+ * step 1 and got a short-lived `challenge`; here they must also prove the second
+ * one. A wrong answer burns a try, and the whole challenge dies after
+ * SECOND_MAX_TRIES so the second password can't be brute-forced without
+ * re-entering the first. Every failure alerts the owner.
+ */
+async function finishSecondPassword(request, env, body, { json, fail, waitUntil }) {
+  const key = `login2:${body.challenge}`;
+  const expired = () => fail('Connexion expirée. Recommencez depuis le début.', 401);
+
+  const raw = await env.BWR_KV.get(key);
+  if (!raw) return expired();
+  const ch = JSON.parse(raw);
+  if (new Date(ch.expiresAt) < new Date()) {
+    await env.BWR_KV.delete(key);
+    return expired();
+  }
+
+  const user = await getUser(env, ch.userId);
+  // Re-check the role and that a second password is still set: both may have
+  // changed between step 1 and step 2.
+  if (!user || user.role !== 'admin' || !user.adminPasswordHash) {
+    await env.BWR_KV.delete(key);
+    return expired();
+  }
+
+  const ok = (await hashPassword(String(body.password2 || ''), user.adminSalt)) === user.adminPasswordHash;
+  if (!ok) {
+    const tries = (ch.tries || 0) + 1;
+    const burned = tries >= SECOND_MAX_TRIES;
+    if (burned) await env.BWR_KV.delete(key);
+    else await env.BWR_KV.put(key, JSON.stringify({ ...ch, tries }), { expirationTtl: SECOND_LOGIN_TTL });
+    waitUntil(adminLoginAlert(env, request, user, false));
+    return json({
+      error: burned
+        ? 'Deuxième mot de passe incorrect. Recommencez depuis le début.'
+        : 'Deuxième mot de passe incorrect.',
+      secondPassword: !burned,
+      remaining: Math.max(0, SECOND_MAX_TRIES - tries),
+    }, 401);
+  }
+
+  await env.BWR_KV.delete(key);
+  await recordAuthEvent(env, 'login', user);
+  waitUntil(adminLoginAlert(env, request, user, true));
+  return json({ token: await issueSession(env, user), user: loginPayload(user) });
+}
+
+/**
  * Auth endpoints: register, verify, login, logout, me, profile, password,
  * account deletion, plan management, stats, weekly quota, wheel prize.
  * @param {Request} request
@@ -26,7 +118,10 @@ const FORGOT_RATE_LIMIT = { max: 5, window: 3600 };
  * @param {{ pathname: string, url: URL, json: Function, fail: Function }} ctx
  * @returns {Promise<Response|null>}
  */
-export async function handleAuth(request, env, { pathname, url, json, fail, cors }) {
+export async function handleAuth(request, env, {
+  pathname, url, json, fail, cors,
+  waitUntil = p => { Promise.resolve(p).catch(() => {}); },
+}) {
   if (pathname === '/api/auth/register' && request.method === 'POST') {
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
     if (!await checkRateLimit(env, 'register', ip, REGISTER_RATE_LIMIT.max, REGISTER_RATE_LIMIT.window))
@@ -259,8 +354,19 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
 
   if (pathname === '/api/auth/login' && request.method === 'POST') {
     const body = await request.json();
-    const { email, password } = body;
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
 
+    // Per-IP cap, on top of the per-email lockout below: one source can't spray
+    // passwords across many accounts, and nobody can lock the admin address out
+    // on purpose by burning its 10 attempts from elsewhere. Checked before both
+    // login steps so the second password is rate-limited too.
+    if (!await checkRateLimit(env, 'login', ip, LOGIN_IP_MAX_ATTEMPTS, LOGIN_IP_WINDOW))
+      return json({ error: 'Trop de tentatives de connexion. Réessayez dans quelques minutes.' }, 429);
+
+    // Step 2 of the admin two-password login.
+    if (body.challenge) return finishSecondPassword(request, env, body, { json, fail, waitUntil });
+
+    const { email, password } = body;
     if (!email || !password) return fail('Email et mot de passe requis.');
 
     const emailKey = email.toLowerCase();
@@ -292,6 +398,7 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
 
     if (!passwordOk) {
       await recordFailedLogin(env, emailKey);
+      if (user.role === 'admin') waitUntil(adminLoginAlert(env, request, user, false));
       return fail('Email ou mot de passe incorrect.', 401);
     }
 
@@ -303,18 +410,60 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
 
     await env.BWR_KV.delete(`loginattempts:${emailKey}`);
 
-    const token = crypto.randomUUID();
-    const issuedAt = new Date().toISOString();
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    await env.BWR_KV.put(`session:${token}`, JSON.stringify({ userId: user.id, issuedAt, expiresAt }), { expirationTtl: 2592000 });
+    // The main password is right — but an admin who has set a second password
+    // is not signed in yet. Hand back a short-lived challenge instead of a
+    // session and ask for the second one. Enforced only when one exists, so a
+    // site without a second password keeps working exactly as before.
+    if (user.role === 'admin' && user.adminPasswordHash) {
+      const challenge = crypto.randomUUID();
+      await env.BWR_KV.put(`login2:${challenge}`, JSON.stringify({
+        userId: user.id,
+        tries: 0,
+        expiresAt: new Date(Date.now() + SECOND_LOGIN_TTL * 1000).toISOString(),
+      }), { expirationTtl: SECOND_LOGIN_TTL });
+      return json({ secondPassword: true, challenge });
+    }
 
     // Count this login in the admin activity panel (admins are skipped inside the helper).
     await recordAuthEvent(env, 'login', user);
 
-    return json({
-      token,
-      user: { id: user.id, name: user.name, username: user.username || null, email: user.email, role: user.role, plan: normalisePlan(user.plan), onboarded: user.onboarded !== false, stats: user.stats || { routes: 0, km: 0 } },
-    });
+    // Tell the owner, out of band, every time their admin account is used.
+    if (user.role === 'admin') waitUntil(adminLoginAlert(env, request, user, true));
+
+    return json({ token: await issueSession(env, user), user: loginPayload(user) });
+  }
+
+  // ── Admin second password: set / change / remove ────────────────────────────
+  // Always re-checks the MAIN password, so a hijacked admin session alone can
+  // neither read nor strip the second factor. Removing it is the deliberate
+  // escape hatch: you must already be signed in (i.e. you already passed both).
+  if (pathname === '/api/auth/second-password' && (request.method === 'PUT' || request.method === 'DELETE')) {
+    const user = await getUserFromToken(env, request);
+    if (!user) return fail('Non authentifié.', 401);
+    if (user.role !== 'admin') return fail("Réservé à l'administrateur.", 403);
+
+    const body = await request.json().catch(() => ({}));
+    const current = String(body.currentPassword || '');
+    const mainOk = user.hashVersion === 2
+      ? (await hashPassword(current, user.salt)) === user.passwordHash
+      : (await hashPasswordLegacy(current, user.salt)) === user.passwordHash;
+    if (!mainOk) return fail('Mot de passe actuel incorrect.', 403);
+
+    if (request.method === 'DELETE') {
+      const { adminPasswordHash: _h, adminSalt: _s, ...rest } = user;
+      await putUser(env, rest);
+      return json({ success: true, secondPasswordSet: false });
+    }
+
+    const second = String(body.secondPassword || '');
+    if (!PASSWORD_REGEX.test(second)) return fail(PASSWORD_REQUIREMENTS_MSG);
+    // Two identical passwords would be one password typed twice — no added protection.
+    if (second === current) return fail('Le deuxième mot de passe doit être différent du premier.');
+
+    const adminSalt = crypto.randomUUID();
+    const adminPasswordHash = await hashPassword(second, adminSalt);
+    await putUser(env, { ...user, adminPasswordHash, adminSalt });
+    return json({ success: true, secondPasswordSet: true });
   }
 
   if (pathname === '/api/auth/me' && request.method === 'GET') {
@@ -359,6 +508,9 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
       proTrialUsed: !!(updated.proTrialUsed || updated.silverTrialUsed),
       emailNotifications: updated.emailNotifications !== false, // default on
       onboarded: updated.onboarded !== false, // legacy accounts (no field) = already onboarded
+      // Whether the admin has a second login password set (never the hash itself),
+      // so the UI can prompt an admin who has not set one yet.
+      ...(updated.role === 'admin' ? { secondPasswordSet: !!updated.adminPasswordHash } : {}),
       questClaims: updated.questClaims || {},
       questBadges: updated.questBadges || [],
       stats: updated.stats || { routes: 0, km: 0, weeklyRoutes: 0, weekStart: isoMonday() },
@@ -740,7 +892,13 @@ export async function handleAuth(request, env, { pathname, url, json, fail, cors
     const user = await getUserFromToken(env, request);
     if (!user) return fail('Non authentifié.', 401);
 
-    const { passwordHash: _ph, salt: _s, hashVersion: _hv, ...profile } = user;
+    // Strip every credential hash — including the admin second password, which
+    // must never ride along in a downloadable file.
+    const {
+      passwordHash: _ph, salt: _s, hashVersion: _hv,
+      adminPasswordHash: _ah, adminSalt: _as,
+      ...profile
+    } = user;
 
     const savedRoutes = await listItems(env, `savedroute:${user.id}:`);
     const activities = await listItems(env, `activity:${user.id}:`);

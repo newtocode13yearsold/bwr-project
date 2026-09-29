@@ -43,6 +43,34 @@ if (/[?&]signup=1/.test(location.search) || location.hash === '#signup') {
   tabSignup.click();
 }
 
+// Two-step admin login state. Holds the short-lived challenge the server issues
+// once the first password checks out; null means we're on the normal first step.
+let pendingChallenge = null;
+
+function showSecondPasswordStep() {
+  document.getElementById('secondPwField').classList.remove('hidden');
+  document.getElementById('loginEmail').readOnly = true;
+  document.getElementById('loginPassword').readOnly = true;
+  document.getElementById('loginError').classList.add('hidden');
+  const pw2 = document.getElementById('loginPassword2');
+  pw2.required = true;
+  pw2.value = '';
+  pw2.focus();
+}
+
+function resetSecondPasswordStep() {
+  pendingChallenge = null;
+  const pw2 = document.getElementById('loginPassword2');
+  pw2.required = false;
+  pw2.value = '';
+  document.getElementById('secondPwField').classList.add('hidden');
+  document.getElementById('loginEmail').readOnly = false;
+  const pw = document.getElementById('loginPassword');
+  pw.readOnly = false;
+  pw.value = '';
+  pw.focus();
+}
+
 // Login
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -51,18 +79,44 @@ loginForm.addEventListener('submit', async (e) => {
 
   const email    = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
+  const pw2El    = document.getElementById('loginPassword2');
+
+  // Two-step admin login: once the server has handed us a challenge, this submit
+  // answers it with the second password instead of re-sending the first.
+  const body = pendingChallenge
+    ? { challenge: pendingChallenge, password2: pw2El.value }
+    : { email, password };
 
   try {
     const res  = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
+
+    // The main password was right, but this admin account needs a second one.
+    if (res.ok && data.secondPassword && data.challenge) {
+      pendingChallenge = data.challenge;
+      showSecondPasswordStep();
+      return;
+    }
 
     if (!res.ok) {
       errorEl.textContent = data.error || 'Erreur de connexion.';
       errorEl.classList.remove('hidden');
+
+      // A wrong second password: stay on the second step while tries remain,
+      // otherwise the challenge is burned and we start over from the email.
+      if (pendingChallenge) {
+        if (data.secondPassword) {
+          pw2El.value = '';
+          pw2El.focus();
+        } else {
+          resetSecondPasswordStep();
+        }
+        return;
+      }
 
       if (data.unverified) {
         const resendBtn = document.createElement('button');

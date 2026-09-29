@@ -14,7 +14,7 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
-Run all automated tests (571 tests, ~7 s):
+Run all automated tests (640 tests, ~7 s):
   npm test
 
 Run tests in watch mode (re-runs on file save):
@@ -75,8 +75,9 @@ Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - report:{id} — JSON report object
 - photo:{reportId} — data-URI string, 90-day TTL
 - contact:{id} — JSON contact message
-- session:{token} — session metadata (userId, expiresAt), 30-day TTL
+- session:{token} — session metadata (userId, issuedAt, expiresAt). TTL depends on the role: **3 hours for an admin, 30 days for everyone else** (`sessionSecondsFor` in `worker/auth-utils.js`). The admin token is the whole key to the site, so a stolen one must not stay usable for a month.
 - reset:{token} — JSON {userId, expiresAt}, 1-hour TTL; single-use password-reset link, deleted on use
+- login2:{challenge} — JSON {userId, tries, expiresAt}, 5-min TTL; step-1-passed marker for the admin two-password login, deleted on success or after 3 wrong second passwords
 - emailchange:{token} — JSON {userId, oldEmail, newEmail, expiresAt}, 24-hour TTL; pending account-email change. Created by PUT /api/auth/profile when the email changes (after a password re-check); the link is emailed to the NEW address and the swap only happens on GET /api/auth/verify-email-change (moves the `uemail:` index, deletes the token). Until then the old address stays live.
 - osm:{bbox} — cached OpenStreetMap query results, 7-day TTL
 - analytics:visits:{YYYY-MM} — integer count of unique anonymous visitors that month (dwell-gated ≥ 10 s), ~13-month TTL
@@ -230,7 +231,7 @@ Leaderboard (`GET /api/leaderboard?period=week|month|all`, default `all`):
 
 1. Password Storage: PBKDF2-SHA-256 (100 000 iterations) with a per-user UUID salt — see `worker/auth-utils.js`. Minimum 8 characters (enforced in `worker/handlers/auth.js` for register and password change). Stored as `passwordHash` + `salt` + `hashVersion: 2`. Legacy SHA-256 accounts (`hashVersion` absent/1) migrate automatically on next successful login.
 
-2. Token Format: Random UUID, no JWT. Sessions stored in KV as session:{token} → {userId, expiresAt}. Bearer header required for auth.
+2. Token Format: Random UUID, no JWT. Sessions stored in KV as session:{token} → {userId, issuedAt, expiresAt}. Bearer header required for auth. Lifetime is role-dependent — see `sessionSecondsFor` (admin 3 h / member 30 d).
 
 3. Elevation Profile: Async fetch to Open-Elevation API after route displays. Samples evenly-spaced 100-point max to avoid rate limits. Draws SVG sparkline with ascent/descent totals. **Grade-adjusted duration:** the router's own time estimate uses a flat speed (`graphToResult` in `graph-router.js`, 1.11 m/s walk / 4.17 m/s bike). Once the elevation profile loads (Pro only), `gradeAdjustedSeconds(elevations, meters, mode)` in `public/js/elevation.js` recomputes the duration from the per-segment slope — Tobler's hiking function (normalised so flat ground == the flat baseline, so nothing regresses on a flat route) for foot, a steeper cycling factor for bike — and `displayRoute` re-renders the "Durée estimée" stat + résumé via `renderDuration()` (caption gains "· dénivelé inclus"), also updating `lastRoute.seconds` so saved/shared routes carry the graded time. Free users (no elevation) keep the flat estimate. Pure helpers unit-tested in `tests/elevation.test.js`.
 
@@ -272,7 +273,7 @@ Cloudflare Config (wrangler.jsonc):
 
 ## Testing Notes
 
-Automated test suite: **571 tests, ~7 s** (`npm test`). Test files:
+Automated test suite: **640 tests, ~7 s** (`npm test`). Test files:
 
 | File | What it covers | Style |
 |------|---------------|-------|
@@ -318,6 +319,14 @@ Manual testing still needed for:
 4. CORS Allowlisted: `worker.js` reflects the request Origin only if it matches the allowlist (`bwrmaps.com`, `www.bwrmaps.com`, the legacy `bwr-worker.ciril8596.workers.dev`, `localhost:8787`, or any `*.pages.dev` preview); otherwise it falls back to the canonical prod origin `https://bwrmaps.com`. Responses also set `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, and `Permissions-Policy`. Add new allowed origins to `ALLOWED_ORIGINS` / `isAllowedOrigin`.
 
 5. Password Hashing: PBKDF2-SHA-256 with 100 000 iterations. Legacy SHA-256 accounts migrate automatically on next login (hashVersion field tracks which scheme).
+
+5b. Admin account hardening (`worker/auth-utils.js` + the login route in `worker/handlers/auth.js`): three independent layers, all covered by the "admin account hardening" block in `tests/worker-auth.test.mjs`.
+   - **Short admin sessions** — `sessionSecondsFor(user)` returns 3 h for `role === 'admin'`, 30 d otherwise; the value drives both `expiresAt` and the KV `expirationTtl`.
+   - **Per-IP login cap** — `checkRateLimit(env, 'login', ip, LOGIN_IP_MAX_ATTEMPTS=20, LOGIN_IP_WINDOW=900)` runs *before* the per-email lockout. The per-email lockout alone can't stop password-spraying across many accounts, and it lets anyone who knows the admin address lock it out on purpose; the IP cap closes both.
+   - **Sign-in alerts** — `alertAdminLogin()` pushes ntfy (`bwr-ciril8596`, Tag `lock`) and emails `env.ADMIN_EMAIL` on every admin login, success or failure. Failures are throttled to 3/h per IP so a brute-force run can't flood the phone. Fired via `waitUntil` and fully wrapped in try/catch — alerting must never break login. It reports coarse `request.cf` geo and a `describeDevice` label, never the IP-less raw UA.
+   - **Second admin password** — a second *knowledge* factor, so a leaked/guessed main password is no longer enough. Login becomes two steps: `POST /api/auth/login {email,password}` returns `{secondPassword:true, challenge}` (a `login2:{challenge}` KV key, 5-min TTL) instead of a token; `POST /api/auth/login {challenge, password2}` then issues the session. 3 wrong answers burn the challenge (restart from the email), and every wrong answer fires `alertAdminLogin`. Managed at `PUT/DELETE /api/auth/second-password` (admin only, **always re-checks the main password** so a hijacked session can't set or strip it); stored as `adminPasswordHash` + `adminSalt`, same PBKDF2 as the main one. `secondPasswordSet` (never the hash) is surfaced in login + `/api/auth/me`; the hash is stripped from the GDPR export and absent from `/api/users`' allowlist.
+     **Enforced only once one is set**, so rolling this out can never lock out an admin who hasn't configured it. **Lockout recovery:** if the second password is forgotten, delete the `adminPasswordHash`/`adminSalt` fields from the `user:{id}` record with `wrangler kv key put` — there is deliberately no email-based reset, because that would make email alone sufficient again. Frontend: `public/login.html` + `js/login.js` (field hidden until the server asks) and the admin-only "Deuxième mot de passe" card in `public/profile.html` + `js/profile.js`.
+   - **Not yet done: no possession factor.** Both admin passwords are things you *know*, so neither survives someone watching you type or a keylogger. TOTP remains the gap.
 
 6. One-Time Setup: /api/setup checks for any user: prefix key. If any exist, rejects with 403. Manual KV cleanup (delete all user:* and uemail:* keys) required to re-run.
 

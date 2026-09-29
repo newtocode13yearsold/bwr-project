@@ -14,6 +14,14 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../worker.js';
 
+// An admin sign-in fires a best-effort ntfy push (see alertAdminLogin). Capture
+// it so the suite never touches the network, and so tests can assert on it.
+const sentAlerts = [];
+globalThis.fetch = async (url, opts = {}) => {
+  sentAlerts.push({ url: String(url), title: opts.headers?.Title, body: opts.body });
+  return new Response('ok');
+};
+
 // ── Mock KV store ─────────────────────────────────────────────────────────────
 // Mirrors the Cloudflare KV API used by worker.js: get / put / delete / list.
 // expirationTtl option is accepted but ignored (tests don't need TTL expiry).
@@ -1421,5 +1429,222 @@ describe('onboarding flag (one-time post-signup tour)', () => {
     h.seedSession('legacytok', 'legacy1', new Date(Date.now() + 8.64e7).toISOString());
     const me = await (await worker.fetch(authed('GET', '/api/auth/me', 'legacytok'), h.env)).json();
     assert.equal(me.onboarded, true, 'legacy users must never see the first-run tour');
+  });
+});
+
+// ── Admin account hardening ───────────────────────────────────────────────────
+// The admin token is the whole key to the site, so it must be short-lived, its
+// use must be announced, and brute-force must be capped per IP as well as per
+// email (the per-email lockout alone lets anyone lock the admin address out).
+describe('admin account hardening', () => {
+  // Register + verify a normal account, then promote it to admin in KV so we
+  // can log in with a real password.
+  async function makeAdmin(h, email = 'boss@bwr.fr', password = 'Secret123!') {
+    await h.registerAndVerify(email, password, 'Boss');
+    const id = h.kv.store.get(`uemail:${email}`);
+    const user = h.getStoredUser(id);
+    h.kv.store.set(`user:${id}`, JSON.stringify({ ...user, role: 'admin' }));
+    return { id, email, password };
+  }
+
+  const fromIp = (ip, body) => r('POST', '/api/auth/login', body, { 'CF-Connecting-IP': ip });
+
+  test('admin session expires in 3 hours, a member session in 30 days', async () => {
+    const h = freshEnv();
+    const { email, password } = await makeAdmin(h);
+    const { token } = await (await worker.fetch(r('POST', '/api/auth/login', { email, password }), h.env)).json();
+    const adminHours = (new Date(JSON.parse(h.kv.store.get(`session:${token}`)).expiresAt) - Date.now()) / 3.6e6;
+    assert.ok(adminHours > 2.5 && adminHours < 3.5, `admin session should last ~3h, got ${adminHours}h`);
+
+    const member = await h.registerAndLogin('member@bwr.fr');
+    const memberHours = (new Date(JSON.parse(h.kv.store.get(`session:${member.token}`)).expiresAt) - Date.now()) / 3.6e6;
+    assert.ok(memberHours > 700, `member session should stay ~30 days, got ${memberHours}h`);
+  });
+
+  test('a successful admin login pushes an alert; a member login does not', async () => {
+    const h = freshEnv();
+    const { email, password } = await makeAdmin(h);
+
+    sentAlerts.length = 0;
+    await h.registerAndLogin('quiet@bwr.fr');
+    assert.equal(sentAlerts.length, 0, 'ordinary logins must not alert');
+
+    await worker.fetch(r('POST', '/api/auth/login', { email, password }), h.env);
+    await new Promise(r => setTimeout(r, 10)); // alert is fired detached via waitUntil
+    const alert = sentAlerts.find(a => a.url.includes('ntfy.sh'));
+    assert.ok(alert, 'admin login must push an ntfy alert');
+    assert.match(alert.title, /connexion admin/i);
+    assert.match(alert.body, /boss@bwr\.fr/);
+  });
+
+  test('a failed admin login pushes a high-priority alert', async () => {
+    const h = freshEnv();
+    const { email } = await makeAdmin(h);
+
+    sentAlerts.length = 0;
+    const res = await worker.fetch(r('POST', '/api/auth/login', { email, password: 'WrongPass1!' }), h.env);
+    assert.equal(res.status, 401);
+    await new Promise(r => setTimeout(r, 10));
+    const alert = sentAlerts.find(a => a.url.includes('ntfy.sh'));
+    assert.ok(alert, 'a failed admin login must alert the owner');
+    assert.match(alert.title, /ECHEC/);
+  });
+
+  test('login is rate-limited per IP, independently of the email tried', async () => {
+    const h = freshEnv();
+    // Spray across different (non-existent) addresses from one source: the
+    // per-email lockout never trips, so only the per-IP cap can stop this.
+    let blocked = null;
+    for (let i = 0; i < 25 && !blocked; i++) {
+      const res = await worker.fetch(fromIp('9.9.9.9', { email: `victim${i}@bwr.fr`, password: 'Guess123!' }), h.env);
+      if (res.status === 429) blocked = i;
+    }
+    assert.ok(blocked !== null && blocked <= 20, `IP should be blocked by the 20th try, got ${blocked}`);
+
+    // A different IP is unaffected.
+    const other = await worker.fetch(fromIp('1.1.1.1', { email: 'someone@bwr.fr', password: 'Guess123!' }), h.env);
+    assert.notEqual(other.status, 429, 'the cap must be per-IP, not global');
+  });
+});
+
+// ── Admin second password ─────────────────────────────────────────────────────
+// A second knowledge factor on the admin login: the main password alone stops
+// being enough. Enforced only once one is set, so it can never lock out an
+// owner who hasn't configured it.
+describe('admin second password', () => {
+  const PW = 'Secret123!';
+  const PW2 = 'Deuxieme9#';
+
+  async function adminWithSecond(h, { withSecond = true } = {}) {
+    const email = 'boss@bwr.fr';
+    await h.registerAndVerify(email, PW, 'Boss');
+    const id = h.kv.store.get(`uemail:${email}`);
+    h.kv.store.set(`user:${id}`, JSON.stringify({ ...h.getStoredUser(id), role: 'admin' }));
+    const login = await (await worker.fetch(r('POST', '/api/auth/login', { email, password: PW }), h.env)).json();
+    if (!withSecond) return { id, email, token: login.token };
+    const res = await worker.fetch(authed('PUT', '/api/auth/second-password', login.token, {
+      currentPassword: PW, secondPassword: PW2,
+    }), h.env);
+    assert.equal(res.status, 200, 'admin should be able to set a second password');
+    return { id, email, token: login.token };
+  }
+
+  test('an admin with no second password logs in normally (no lockout on rollout)', async () => {
+    const h = freshEnv();
+    const { email } = await adminWithSecond(h, { withSecond: false });
+    const res = await worker.fetch(r('POST', '/api/auth/login', { email, password: PW }), h.env);
+    const data = await res.json();
+    assert.ok(data.token, 'login must still work before a second password is configured');
+    assert.equal(data.user.secondPasswordSet, false, 'UI needs to know it is not set yet');
+  });
+
+  test('the right main password alone no longer signs the admin in', async () => {
+    const h = freshEnv();
+    const { email } = await adminWithSecond(h);
+    const data = await (await worker.fetch(r('POST', '/api/auth/login', { email, password: PW }), h.env)).json();
+    assert.equal(data.token, undefined, 'no session may be issued after only one password');
+    assert.equal(data.secondPassword, true);
+    assert.ok(data.challenge, 'server must hand back a challenge for step 2');
+  });
+
+  test('both passwords together sign the admin in', async () => {
+    const h = freshEnv();
+    const { email } = await adminWithSecond(h);
+    const step1 = await (await worker.fetch(r('POST', '/api/auth/login', { email, password: PW }), h.env)).json();
+    const step2 = await (await worker.fetch(r('POST', '/api/auth/login', { challenge: step1.challenge, password2: PW2 }), h.env)).json();
+    assert.ok(step2.token, 'two correct passwords must produce a session');
+    assert.equal(step2.user.role, 'admin');
+    assert.equal(step2.user.secondPasswordSet, true);
+    const me = await worker.fetch(authed('GET', '/api/auth/me', step2.token), h.env);
+    assert.equal(me.status, 200, 'the issued token must actually work');
+  });
+
+  test('a wrong second password is rejected and burns the attempt after 3 tries', async () => {
+    const h = freshEnv();
+    const { email } = await adminWithSecond(h);
+    const { challenge } = await (await worker.fetch(r('POST', '/api/auth/login', { email, password: PW }), h.env)).json();
+
+    for (let i = 1; i <= 2; i++) {
+      const res = await worker.fetch(r('POST', '/api/auth/login', { challenge, password2: 'Wrong123!' }), h.env);
+      const body = await res.json();
+      assert.equal(res.status, 401);
+      assert.equal(body.secondPassword, true, 'still on step 2 while tries remain');
+    }
+    const third = await worker.fetch(r('POST', '/api/auth/login', { challenge, password2: 'Wrong123!' }), h.env);
+    assert.equal((await third.json()).secondPassword, false, 'challenge is burned on the 3rd miss');
+
+    // Even the CORRECT second password cannot revive a burned challenge.
+    const after = await worker.fetch(r('POST', '/api/auth/login', { challenge, password2: PW2 }), h.env);
+    assert.equal(after.status, 401, 'a burned challenge must be dead for good');
+  });
+
+  test('an empty second password does not slip through', async () => {
+    const h = freshEnv();
+    const { email } = await adminWithSecond(h);
+    const { challenge } = await (await worker.fetch(r('POST', '/api/auth/login', { email, password: PW }), h.env)).json();
+    const res = await worker.fetch(r('POST', '/api/auth/login', { challenge, password2: '' }), h.env);
+    assert.equal(res.status, 401);
+  });
+
+  test('a wrong second password alerts the owner', async () => {
+    const h = freshEnv();
+    const { email } = await adminWithSecond(h);
+    const { challenge } = await (await worker.fetch(r('POST', '/api/auth/login', { email, password: PW }), h.env)).json();
+    sentAlerts.length = 0;
+    await worker.fetch(r('POST', '/api/auth/login', { challenge, password2: 'Wrong123!' }), h.env);
+    await new Promise(res => setTimeout(res, 10));
+    assert.ok(sentAlerts.some(a => a.url.includes('ntfy.sh')), 'someone guessing the second password must alert');
+  });
+
+  test('setting or removing it requires the main password, and is admin-only', async () => {
+    const h = freshEnv();
+    const { token } = await adminWithSecond(h, { withSecond: false });
+
+    const wrongPw = await worker.fetch(authed('PUT', '/api/auth/second-password', token, {
+      currentPassword: 'NotIt123!', secondPassword: PW2,
+    }), h.env);
+    assert.equal(wrongPw.status, 403, 'a hijacked session alone must not set a second password');
+
+    const same = await worker.fetch(authed('PUT', '/api/auth/second-password', token, {
+      currentPassword: PW, secondPassword: PW,
+    }), h.env);
+    assert.equal(same.status, 400, 'the two passwords must differ');
+
+    const weak = await worker.fetch(authed('PUT', '/api/auth/second-password', token, {
+      currentPassword: PW, secondPassword: 'abc',
+    }), h.env);
+    assert.equal(weak.status, 400, 'the second password must meet the same strength rules');
+
+    const member = await h.registerAndLogin('member@bwr.fr', PW);
+    const notAdmin = await worker.fetch(authed('PUT', '/api/auth/second-password', member.token, {
+      currentPassword: PW, secondPassword: PW2,
+    }), h.env);
+    assert.equal(notAdmin.status, 403, 'members have no second password');
+  });
+
+  test('removing it restores the one-password login', async () => {
+    const h = freshEnv();
+    const { email } = await adminWithSecond(h);
+    const s1 = await (await worker.fetch(r('POST', '/api/auth/login', { email, password: PW }), h.env)).json();
+    const s2 = await (await worker.fetch(r('POST', '/api/auth/login', { challenge: s1.challenge, password2: PW2 }), h.env)).json();
+
+    const del = await worker.fetch(authed('DELETE', '/api/auth/second-password', s2.token, { currentPassword: PW }), h.env);
+    assert.equal(del.status, 200);
+
+    const plain = await (await worker.fetch(r('POST', '/api/auth/login', { email, password: PW }), h.env)).json();
+    assert.ok(plain.token, 'one password is enough again once it is removed');
+  });
+
+  test('the second-password hash never leaves the server', async () => {
+    const h = freshEnv();
+    const { email } = await adminWithSecond(h);
+    const s1 = await (await worker.fetch(r('POST', '/api/auth/login', { email, password: PW }), h.env)).json();
+    const s2 = await (await worker.fetch(r('POST', '/api/auth/login', { challenge: s1.challenge, password2: PW2 }), h.env)).json();
+
+    for (const path of ['/api/auth/me', '/api/auth/export', '/api/users']) {
+      const raw = await (await worker.fetch(authed('GET', path, s2.token), h.env)).text();
+      assert.ok(!raw.includes('adminPasswordHash'), `${path} must not leak the second-password hash`);
+      assert.ok(!raw.includes('adminSalt'), `${path} must not leak the second-password salt`);
+    }
   });
 });

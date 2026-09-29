@@ -134,7 +134,85 @@ function showMsg(id, text, type = 'error') {
   buildColorSwatches(currentUser);
   renderAvatar(currentUser, getAvatarColor(currentUser.id));
   renderActivityStats();
+  renderSecondPassword(currentUser);
 })();
+
+// ── Admin second password ─────────────────────────────────────────────────────
+// A second knowledge factor on the admin login. The card is admin-only and the
+// server is the real gate; hiding it here is just UI tidiness.
+function renderSecondPassword(user) {
+  if (!user || user.role !== 'admin') return;
+  const card = document.getElementById('cardSecondPw');
+  if (!card) return;
+  card.classList.remove('hidden');
+  paintSecondPwState(!!user.secondPasswordSet);
+}
+
+function paintSecondPwState(isSet) {
+  const state = document.getElementById('secondPwState');
+  const removeBtn = document.getElementById('btnRemoveSecondPw');
+  if (state) {
+    state.textContent = isSet
+      ? '✅ Actif — la connexion admin demande deux mots de passe.'
+      : "⚠️ Inactif — votre compte admin n'est protégé que par un seul mot de passe.";
+    state.style.color = isSet ? '#15803d' : '#b45309';
+  }
+  if (removeBtn) removeBtn.classList.toggle('hidden', !isSet);
+}
+
+document.getElementById('formSecondPw')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const current = document.getElementById('inputSecondCurrent').value;
+  const next    = document.getElementById('inputSecondNew').value;
+  const confirm = document.getElementById('inputSecondConfirm').value;
+
+  if (!current || !next || !confirm) return showMsg('secondPwMsg', 'Tous les champs sont obligatoires.');
+  if (!/^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$/.test(next))
+    return showMsg('secondPwMsg', 'Le deuxième mot de passe doit faire au moins 8 caractères et contenir une majuscule, un chiffre et un caractère spécial.');
+  if (next !== confirm) return showMsg('secondPwMsg', 'Les deux saisies ne correspondent pas.');
+  if (next === current) return showMsg('secondPwMsg', 'Le deuxième mot de passe doit être différent du principal.');
+
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.textContent = 'Enregistrement…';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_URL}/api/auth/second-password`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ currentPassword: current, secondPassword: next }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+    e.target.reset();
+    paintSecondPwState(true);
+    showMsg('secondPwMsg', 'Deuxième mot de passe activé. Notez-le en lieu sûr !', 'success');
+  } catch (err) {
+    showMsg('secondPwMsg', err.message);
+  } finally {
+    btn.textContent = 'Enregistrer le deuxième mot de passe';
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('btnRemoveSecondPw')?.addEventListener('click', async () => {
+  const current = document.getElementById('inputSecondCurrent').value;
+  if (!current) return showMsg('secondPwMsg', 'Saisissez votre mot de passe principal pour désactiver.');
+  if (!window.confirm("Désactiver le deuxième mot de passe ? La connexion admin ne demandera plus qu'un seul mot de passe.")) return;
+  try {
+    const res = await fetch(`${API_URL}/api/auth/second-password`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ currentPassword: current }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+    document.getElementById('formSecondPw').reset();
+    paintSecondPwState(false);
+    showMsg('secondPwMsg', 'Deuxième mot de passe désactivé.', 'success');
+  } catch (err) {
+    showMsg('secondPwMsg', err.message);
+  }
+});
 
 function initUserMenu() {
   const menuEl = document.getElementById('userMenu');

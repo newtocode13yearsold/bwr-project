@@ -220,6 +220,42 @@
         </form>
       </div>
 
+      <!-- ── Card: Deuxième mot de passe (admin) ── -->
+      <!-- Hidden for everyone but the admin; revealed by profile.js. -->
+      <div class="profile-card hidden" id="cardSecondPw">
+        <div class="card-header">
+          <span class="card-icon">🛡️</span>
+          <h2 class="card-title">Deuxième mot de passe</h2>
+        </div>
+
+        <p class="field-hint" style="margin-bottom:.75rem">
+          Protection supplémentaire du compte administrateur : une fois activé, la
+          connexion demande ce mot de passe en plus du premier. Choisissez-en un
+          <strong>différent</strong> du mot de passe principal, et notez-le quelque part
+          de sûr : sans lui, la connexion admin est impossible.
+        </p>
+        <p id="secondPwState" class="field-hint" style="margin-bottom:.75rem"></p>
+
+        <form class="profile-form" id="formSecondPw" novalidate>
+          <div class="field">
+            <label for="inputSecondCurrent">Mot de passe principal</label>
+            <input type="password" id="inputSecondCurrent" class="input-field" placeholder="••••••••" autocomplete="current-password" required />
+          </div>
+          <div class="field">
+            <label for="inputSecondNew">Deuxième mot de passe</label>
+            <input type="password" id="inputSecondNew" class="input-field" placeholder="••••••••" minlength="8" autocomplete="new-password" required />
+            <span class="field-hint">Au moins 8 caractères, une majuscule, un chiffre et un caractère spécial</span>
+          </div>
+          <div class="field">
+            <label for="inputSecondConfirm">Confirmer le deuxième mot de passe</label>
+            <input type="password" id="inputSecondConfirm" class="input-field" placeholder="••••••••" required />
+          </div>
+          <div id="secondPwMsg"></div>
+          <button type="submit" class="btn-save">Enregistrer le deuxième mot de passe</button>
+          <button type="button" class="btn-secondary hidden" id="btnRemoveSecondPw" style="margin-top:.5rem">Désactiver le deuxième mot de passe</button>
+        </form>
+      </div>
+
       <!-- ── Card: Statistiques ── -->
       <div class="profile-card card-stats">
         <div class="card-header">
