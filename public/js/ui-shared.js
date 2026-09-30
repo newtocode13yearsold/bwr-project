@@ -107,8 +107,8 @@
       return '<div class="' + scls + '">' + it.label + '</div>';
     }
     if (it.type === 'theme') {
-      // Global dark/light toggle. Lives in the menu so the header toolbar can
-      // drop it on mobile (see #btnThemeToggle in the max-width:640px block).
+      // Global dark/light toggle. The menu is the ONLY place it lives — the
+      // old header "Thème" button was removed from every page.
       // Icon reflects the theme already applied by theme.js in <head>; clicks
       // are handled by theme.js's delegated listener (matches .js-theme-toggle).
       var dark = document.documentElement.getAttribute('data-theme') === 'dark';

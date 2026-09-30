@@ -207,12 +207,4 @@
     .catch(function () {
       grid.innerHTML = '<p style="color:var(--text-2)">Impossible de charger les quêtes (data/quests.json).</p>';
     });
-
-  var tt = document.getElementById('btnThemeToggle');
-  if (tt) tt.addEventListener('click', function () {
-    var root = document.documentElement;
-    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    root.setAttribute('data-theme', next);
-    try { localStorage.setItem('bwr-theme', next); } catch (e) {}
-  });
 })();
