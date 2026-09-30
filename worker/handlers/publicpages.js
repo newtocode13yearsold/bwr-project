@@ -94,6 +94,8 @@ function layout({ title, description, canonical, image, jsonLd, headExtra = '', 
   <link rel="stylesheet" href="/css/tokens.css" />
   <link rel="stylesheet" href="/css/blog.css" />
   ${headExtra}
+  <link rel="stylesheet" href="/css/dark.css" />
+  <script src="/js/theme.js"></script>
   <script type="application/ld+json">${jsonForScript(jsonLd)}</script>
 </head>
 <body style="background:var(--surface-1,#fafbf7);margin:0">

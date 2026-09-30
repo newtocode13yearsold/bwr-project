@@ -172,7 +172,7 @@
 }
 .lb-showmore-btn {
   border: 1px solid var(--border, #e5e7eb);
-  background: var(--surface, #fff);
+  background: var(--surface-0, #fff);
   color: var(--text, #374151);
   font-size: 0.9rem;
   font-weight: 600;
@@ -182,7 +182,7 @@
   transition: background 0.15s, border-color 0.15s;
 }
 .lb-showmore-btn:hover {
-  background: var(--surface-hover, #f3f4f6);
+  background: var(--surface-2, #f3f4f6);
   border-color: var(--text-muted, #9ca3af);
 }
 

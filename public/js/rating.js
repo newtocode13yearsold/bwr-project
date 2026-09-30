@@ -47,7 +47,7 @@
       + '.bwr-rating-modal h3{font-size:1.3rem;margin:0 0 4px;color:var(--text-strong,#0b2410)}'
       + '.bwr-rating-modal p{margin:0 0 18px;color:var(--text-muted,#6b7280);font-size:.9rem}'
       + '.bwr-rating-picker{display:inline-flex;gap:6px;margin-bottom:18px;font-size:2.3rem;line-height:1;cursor:pointer}'
-      + '.bwr-rating-picker span{color:rgba(120,120,120,.3);transition:color .1s,transform .1s}'
+      + '.bwr-rating-picker span{color:var(--border-strong,#c8d0bf);transition:color .1s,transform .1s}'
       + '.bwr-rating-picker span.on{color:#f59e0b}'
       + '.bwr-rating-picker span:hover{transform:scale(1.12)}'
       + '.bwr-rating-modal textarea{width:100%;box-sizing:border-box;min-height:80px;border:1px solid var(--border,#e2e8da);'
@@ -61,7 +61,7 @@
       + '.bwr-rating-note{font-size:.82rem;color:var(--text-muted,#6b7280);margin-top:12px;min-height:1em}'
       // Floating "rate us" prompt (bottom-right; bottom-center is taken by the offline banner)
       + '.bwr-rating-fab{position:fixed;right:18px;bottom:18px;z-index:4500;max-width:min(320px,92vw);'
-      + 'display:flex;align-items:center;gap:12px;background:var(--card,#fff);color:var(--text,#1f2937);'
+      + 'display:flex;align-items:center;gap:12px;background:var(--surface-0,#fff);color:var(--text,#1f2937);'
       + 'border:1px solid var(--border,#e2e8da);border-radius:14px;padding:12px 14px;'
       + 'box-shadow:0 12px 32px -12px rgba(11,36,16,.35);font-size:.88rem;line-height:1.35;'
       + 'transform:translateY(140%);opacity:0;transition:transform .28s ease,opacity .28s ease}'

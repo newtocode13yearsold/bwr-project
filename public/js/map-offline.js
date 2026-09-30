@@ -260,7 +260,7 @@ function _autoBanner(zone) {
   el.style.cssText =
     'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:4000;' +
     'display:flex;align-items:center;gap:12px;max-width:92vw;' +
-    'background:var(--card,#fff);color:var(--text,#111);border:1px solid var(--border,#e5e7eb);' +
+    'background:var(--surface-0,#fff);color:var(--text,#111);border:1px solid var(--border,#e5e7eb);' +
     'box-shadow:0 6px 24px rgba(0,0,0,.18);border-radius:12px;padding:10px 14px;font-size:0.85rem';
   el.innerHTML =
     `<span id="bwrAutoOfflineTxt">📥 Téléchargement de ${zone.name} pour la carte hors-ligne… 0%</span>` +

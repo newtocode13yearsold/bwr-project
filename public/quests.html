@@ -68,7 +68,7 @@
     .tab.active { background: var(--surface-0, #fff); color: var(--forest-700, #1e4d14); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     [data-theme="dark"] .tab.active { background: #334d3b; color: #d4edbc; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
 
-    .subtitle { font-size: 0.92rem; color: var(--text-2, #6b7280); margin: 16px 2px 16px; }
+    .subtitle { font-size: 0.92rem; color: var(--text-muted, #6b7280); margin: 16px 2px 16px; }
 
     .quest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
     .quest {
@@ -87,15 +87,15 @@
     .quest.collected .q-check { background: #22c55e; border-color: #22c55e; }
     .q-emoji { font-size: 1.5rem; line-height: 1; flex-shrink: 0; }
     .q-body { flex: 1; min-width: 0; }
-    .q-title { font-weight: 700; font-size: 0.98rem; color: var(--text-1, #111827); }
-    .q-desc { font-size: 0.85rem; color: var(--text-2, #6b7280); margin-top: 3px; }
+    .q-title { font-weight: 700; font-size: 0.98rem; color: var(--text-strong, #111827); }
+    .q-desc { font-size: 0.85rem; color: var(--text-muted, #6b7280); margin-top: 3px; }
 
     .q-progress { margin-top: 10px; display: flex; align-items: center; gap: 9px; }
     .q-bar { flex: 1; height: 7px; border-radius: 999px; background: var(--surface-2, #e5e7eb); overflow: hidden; }
     .q-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #22c55e, #a3e635); transition: width .4s ease; }
     .quest.collected .q-fill { background: #22c55e; }
-    .q-prog-txt { font-size: 0.78rem; font-weight: 700; color: var(--text-2, #6b7280); white-space: nowrap; }
-    .q-locked { font-size: 0.8rem; color: var(--text-2, #9ca3af); }
+    .q-prog-txt { font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #6b7280); white-space: nowrap; }
+    .q-locked { font-size: 0.8rem; color: var(--text-muted, #9ca3af); }
 
     .q-reward {
       display: inline-block; margin-top: 9px; font-size: 0.8rem; font-weight: 700;
@@ -107,7 +107,7 @@
     .hall-hint {
       background: linear-gradient(135deg, rgba(30,77,20,0.06), rgba(163,230,53,0.10));
       border: 1px solid var(--border, #e5e7eb); border-radius: 14px;
-      padding: 14px 16px; font-size: 0.9rem; color: var(--text-2, #4b5563); margin-bottom: 18px;
+      padding: 14px 16px; font-size: 0.9rem; color: var(--text-muted, #4b5563); margin-bottom: 18px;
     }
 
     .reward-toast {
@@ -123,6 +123,7 @@
 
     @media (max-width: 560px) { .tab { flex: 1 1 auto; text-align: center; } }
   </style>
+  <link rel="stylesheet" href="css/dark.css" />
 </head>
 <body>
 
