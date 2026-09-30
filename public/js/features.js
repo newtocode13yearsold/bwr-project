@@ -290,8 +290,31 @@
     return { ok: true, used: count, limit };
   }
 
+  /* ── "Pro uniquement" label ─────────────────────────────────────────────────
+   * Every Pro-gated element a free user can see carries this same tag, so the
+   * wording is identical on every page. Styled by .pro-only-tag in tokens.css. */
+  const PRO_ONLY_LABEL = '🔒 Pro uniquement';
+
+  function proOnlyTag() {
+    return `<span class="pro-only-tag">${PRO_ONLY_LABEL}</span>`;
+  }
+
+  /** Append the tag to an element (once). */
+  function addProOnlyTag(el) {
+    if (!el || el.querySelector('.pro-only-tag')) return;
+    el.insertAdjacentHTML('beforeend', proOnlyTag());
+  }
+
+  function removeProOnlyTag(el) {
+    el?.querySelector('.pro-only-tag')?.remove();
+  }
+
   global.BWR = {
     FEATURES,
+    PRO_ONLY_LABEL,
+    proOnlyTag,
+    addProOnlyTag,
+    removeProOnlyTag,
     can,
     limitOf,
     requiredTier,
