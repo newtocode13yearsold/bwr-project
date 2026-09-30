@@ -1767,6 +1767,13 @@
 .profile-hero .hero-info { flex: 1; align-items: flex-start; width: auto; min-width: 0; gap: 4px; }
 .profile-hero .hero-name { font-size: 1.5rem; }
 .hero-level { position: relative; margin: 0; }
+/* The generic .level-block is a light card (white in light mode) — on the dark
+   green hero it must be a translucent panel instead, or the white text vanishes. */
+.profile-hero .hero-level {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
 .hero-level .level-num { color: #fff; }
 .hero-level .level-xp { color: rgba(255,255,255,0.7); }
 .hero-level .xp-bar { background: rgba(255,255,255,0.16); height: 8px; }
