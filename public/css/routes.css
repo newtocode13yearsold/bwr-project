@@ -478,6 +478,8 @@
 .btn-generate:hover:not(:disabled) { background: var(--forest-600); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(30,77,20,0.35); }
 .btn-generate:disabled { background: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; }
 .btn-generate.loading { background: #4b7a3c; }
+/* Route already calculated for these exact settings — calm "done" state, not an error grey. */
+.btn-generate.up-to-date:disabled { background: #dcebd5; color: var(--forest-700, #1e4d14); font-size: 0.9em; }
 
 /* ── Results ── */
 .route-result {
@@ -1400,3 +1402,53 @@
   }
   .bwr-embed .planner-sidebar .embed-bar { position: static; }
 }
+
+/* ── Simplified planner layout (AI bar → mode switch → where → options → CTA) ── */
+.ai-planner { padding: 14px 16px; }
+.ai-input-row { align-items: center; }
+.ai-planner .ai-chips { display: none; }
+.ai-planner.ai-open .ai-chips { display: flex; }
+.plan-or { display: flex; align-items: center; gap: 8px; padding: 10px 16px 0; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
+.plan-or::before, .plan-or::after { content: ''; flex: 1; border-top: 1px solid var(--border); }
+.step { padding: 14px 16px; }
+.step-mode { border-bottom: none; padding-bottom: 4px; }
+.step-mode .mode-cards { flex-direction: row; gap: 0; background: var(--surface-2, #eef2ea); border-radius: 12px; padding: 4px; }
+.step-mode .mode-card { flex: 1; justify-content: center; gap: 6px; padding: 9px 4px; border: none; border-radius: 9px; background: transparent; box-shadow: none; position: relative; }
+.step-mode .mode-card strong { font-size: 0.82rem; display: inline; }
+.step-mode .mode-icon { font-size: 1rem; }
+.step-mode .mode-card.active { background: var(--surface-0, #fff); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+.step-mode .mode-card .lock-badge { position: absolute; top: -8px; right: 2px; font-size: 0.6rem; }
+.field-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; }
+.step-where .step-hint { margin: 6px 0 8px; font-size: 0.78rem; }
+.distance-group { margin-top: 12px; }
+.step-where .qs-distance-chips { display: flex; gap: 6px; align-items: center; margin: 0; }
+.step-where .qs-chip { flex: 1; padding: 7px 0; border: 1.5px solid var(--border); background: var(--surface-0, #fff); color: var(--text); }
+.step-where .qs-chip.active { background: var(--forest-700); border-color: var(--forest-700); color: #fff; }
+.distance-custom { display: flex; align-items: center; gap: 4px; }
+.step-where .distance-input { width: 58px; font-size: 0.9rem; padding: 6px 4px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--surface-0, #fff); color: var(--text); }
+.step-options .step-header { margin-bottom: 0; gap: 8px; }
+.step-options:not(.collapsed) .step-header { margin-bottom: 12px; }
+.opt-summary { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; text-align: right; }
+.step-options .pathtype-grid { grid-template-columns: repeat(4, 1fr); }
+.step-options .pathtype-btn { padding: 6px 2px; font-size: 1rem; }
+.step-options .option-group { margin-bottom: 12px; }
+#step4.locked { opacity: 1; pointer-events: auto; }
+.step-cta { position: sticky; bottom: 0; z-index: 2; }
+.btn-generate.hidden { display: none; }
+.btn-generate.btn-quick-loop { background: var(--lime-500); color: #1a2e12; }
+.result-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.result-title { font-weight: 800; font-size: 0.95rem; }
+.result-head .btn-reset { width: auto; padding: 6px 12px; font-size: 0.8rem; }
+.result-more { margin-top: 10px; border: 1px solid var(--border); border-radius: 10px; padding: 0 12px; background: var(--surface-0, #fff); }
+.result-more > summary { cursor: pointer; padding: 10px 0; font-weight: 700; font-size: 0.85rem; list-style: none; }
+.result-more > summary::after { content: '▾'; float: right; color: var(--text-muted); }
+.result-more[open] > summary::after { content: '▴'; }
+.result-more[open] { padding-bottom: 12px; }
+.result-more.hidden { display: none; }
+.planner-tools { padding: 14px 16px 20px; border-top: 1px solid var(--border); }
+.tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tools-grid > .hidden { display: none; }
+.planner-tools .gps-tracker-card, .planner-tools .import-gpx-card { padding: 0; margin: 0; border: none; background: none; box-shadow: none; }
+.tool-btn { width: 100%; padding: 10px 6px; font-size: 0.8rem; }
+.planner-tools .gps-tracker-live { margin-top: 8px; }
+.planner-tools .route-history { margin: 10px 0 0; }

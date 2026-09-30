@@ -167,7 +167,7 @@ function renderPlanAndProgress(user) {
       // locked silhouette with tier badge for upsell
       return `<div class="badge-item tier-${b.tier} badge-tier-locked" title="Disponible avec Pro">
         <span class="badge-icon">🔒</span>
-        <span class="badge-label">⭐ Pro</span>
+        ${BWR.proOnlyTag()}
       </div>`;
     }
     const earned = b.test(stats);

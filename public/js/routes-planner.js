@@ -42,14 +42,34 @@ function initQuickStart() {
       c.classList.toggle('active', c.dataset.km === String(parseFloat(distInput.value))));
   });
 
-  // "Personnaliser" reveals the advanced preferences panel and scrolls to it.
-  document.getElementById('qsCustomize')?.addEventListener('click', () => {
-    openStep2();
-    document.getElementById('step1')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-
   // The one-tap button: ensure loop mode, geolocate, drop the start point, generate.
   document.getElementById('btnQuickLoop')?.addEventListener('click', quickLoopFromLocation);
+}
+
+// One smart CTA: a loop with no start yet shows "📍 Boucle depuis ma position"
+// (locate + generate in one tap); as soon as a start exists it becomes the
+// regular "Calculer le trajet". Called whenever mode or points change.
+function syncCta() {
+  const quick = document.getElementById('btnQuickLoop');
+  const gen = document.getElementById('btnGenerate');
+  if (!quick || !gen) return;
+  const showQuick = mode === 'loop' && !startMarker;
+  quick.classList.toggle('hidden', !showQuick);
+  gen.classList.toggle('hidden', showQuick);
+}
+
+// One-line recap of the folded "Options" panel, e.g. "Forestier · Facile · À pied".
+function updateOptSummary() {
+  const el = document.getElementById('optSummary');
+  if (!el) return;
+  const type = { foot: 'Forestier', bike: 'Cyclable', champs: 'Champs', mix: 'Mix' }[pathType];
+  const diff = { easy: 'Facile', medium: 'Moyen', hard: 'Difficile' }[difficulty];
+  const move = transportMode === 'bike' ? 'Vélo' : 'À pied';
+  const parts = [type, diff, move];
+  if (mode === 'atob' && routingPriority === 'shortest') parts.push('Plus court');
+  if (surfaceFilter === 'natural') parts.push('Terre');
+  else if (surfaceFilter === 'paved') parts.push('Asphalte');
+  el.textContent = parts.filter(Boolean).join(' · ');
 }
 
 function quickLoopFromLocation() {
@@ -95,6 +115,11 @@ function initAiPlanner() {
 
   const run = () => runAiPlan(input.value.trim());
   submit.addEventListener('click', run);
+  // Example chips only while the field is focused. The blur is delayed so a
+  // tap on a chip (which steals focus first on some browsers) still lands.
+  const box = document.getElementById('aiPlanner');
+  input.addEventListener('focus', () => box?.classList.add('ai-open'));
+  input.addEventListener('blur', () => setTimeout(() => box?.classList.remove('ai-open'), 200));
   input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); run(); } });
   document.querySelectorAll('#aiChips .ai-chip').forEach(chip =>
     chip.addEventListener('click', () => { input.value = chip.dataset.q; run(); }));
@@ -410,6 +435,7 @@ document.querySelectorAll('.mode-card').forEach(card => {
     resetPoints();
     pickingPoint = mode === 'custom' ? 'waypoint' : 'start';
     map.getContainer().style.cursor = 'crosshair';
+    updateOptSummary();
   });
 });
 
@@ -500,6 +526,7 @@ function onMapClick(e) {
       pickingPoint = 'end';
     }
     updatePointStatus();
+    syncCta();
   } else if (pickingPoint === 'end') {
     if (endMarker) map.removeLayer(endMarker);
     endMarker = L.marker([lat, lng], { icon: pinIcon('B', '#dc2626') }).addTo(map);
@@ -585,8 +612,7 @@ function renderWaypoints() {
   document.getElementById('cbEmpty')?.classList.toggle('hidden', waypoints.length > 0);
 
   if (waypoints.length >= 1) unlock('step4');
-  const gen = document.getElementById('btnGenerate');
-  if (gen) gen.disabled = waypoints.length < 2;
+  refreshGenerateState();
 }
 
 // Searchable carrefour picker — appends a named forest junction as the next stop.
@@ -774,12 +800,70 @@ function resetPoints() {
   document.getElementById('loopPersonalize')?.classList.add('hidden');
   document.getElementById('pointStatus').innerHTML = '';
   document.getElementById('routeResult').classList.add('hidden');
-  document.getElementById('btnGenerate').disabled = true;
+  // The drawn route is gone, so placing the same points again must be allowed
+  // to recalculate.
+  lastGenSig = null;
+  refreshGenerateState();
+  syncCta();
 }
 
 function enableGenerate() {
-  document.getElementById('btnGenerate').disabled = false;
+  refreshGenerateState();
 }
+
+// ── "Nothing changed → no recalculation" lock ─────────────────────────────────
+// Once a route is calculated, the Generate button stays disabled until the user
+// changes something that would affect the result (mode, points, distance,
+// preferences, via-points…). Recalculating identical inputs would just burn a
+// weekly quota slot for the same route.
+let lastGenSig = null;   // settings snapshot of the last successfully drawn route
+let genBusy = false;     // true while a calculation (or its error message) is showing
+const GEN_LABEL = 'Calculer le trajet';
+const GEN_UPTODATE_LABEL = '✓ Trajet à jour — modifiez un réglage';
+
+function pointsReady() {
+  if (mode === 'custom') return waypoints.length >= 2;
+  if (mode === 'loop')   return !!startMarker;
+  if (mode === 'atob')   return !!(startMarker && endMarker);
+  return false;
+}
+
+// A string snapshot of every input that changes the calculated route.
+function routeInputSignature() {
+  const pt = m => { if (!m) return null; const p = m.getLatLng(); return [+p.lat.toFixed(6), +p.lng.toFixed(6)]; };
+  const pts = arr => arr.map(p => [+p.lat.toFixed(6), +p.lng.toFixed(6)]);
+  return JSON.stringify({
+    mode, pathType, difficulty, transportMode, routingPriority, surfaceFilter,
+    start: pt(startMarker),
+    end: mode === 'atob' ? pt(endMarker) : null,
+    km: mode === 'loop' ? parseFloat(document.getElementById('distanceInput')?.value) || 10 : null,
+    vias: mode === 'loop' ? pts(loopVias) : null,
+    stops: mode === 'custom' ? pts(waypoints) : null,
+    returnStart: mode === 'custom' ? !!document.getElementById('cbReturnStart')?.checked : null,
+  });
+}
+
+function routeUnchanged() {
+  return lastGenSig !== null && routeInputSignature() === lastGenSig;
+}
+
+function refreshGenerateState() {
+  const btn = document.getElementById('btnGenerate');
+  if (!btn || genBusy) return;
+  const unchanged = pointsReady() && routeUnchanged();
+  btn.disabled = !pointsReady() || unchanged;
+  btn.textContent = unchanged ? GEN_UPTODATE_LABEL : GEN_LABEL;
+  btn.classList.toggle('up-to-date', unchanged);
+  btn.title = unchanged ? 'Ce trajet est déjà calculé. Changez un réglage ou un point pour en calculer un nouveau.' : '';
+}
+
+// Every planner control updates its state variable in its own listener; re-check
+// once those have run (next tick). Map clicks bubble up as DOM clicks too.
+['click', 'input', 'change', 'mousedown'].forEach(evt =>
+  document.addEventListener(evt, () => setTimeout(refreshGenerateState, 0)));
+
+// Same trick keeps the folded "Options" recap line in sync with every preference button.
+document.addEventListener('click', () => setTimeout(updateOptSummary, 0));
 
 // ── Step 4: Generate ──────────────────────────────────────────────────────────
 document.getElementById('btnGenerate').addEventListener('click', generateRoute);
@@ -802,6 +886,11 @@ function stopCalcCycle() { clearInterval(_calcTimer); _calcTimer = null; }
 
 async function generateRoute() {
   const btn = document.getElementById('btnGenerate');
+  // Same inputs as the route already on screen → nothing to recalculate.
+  if (genBusy || routeUnchanged()) { refreshGenerateState(); return; }
+  genBusy = true;
+  // Snapshot now: a setting changed mid-calculation must still count as a change.
+  const genSig = routeInputSignature();
 
   // Kick the OSM fetch off NOW so it runs concurrently with the quota check below
   // (and reuses any prefetch already in flight). By the time routing runs, the
@@ -841,9 +930,9 @@ async function generateRoute() {
 
     if (!qData) {
       showToast('Impossible de vérifier votre quota hebdomadaire. Vérifiez votre connexion et réessayez.');
-      btn.textContent = 'Calculer le trajet';
+      genBusy = false;
       btn.classList.remove('loading');
-      btn.disabled = false;
+      refreshGenerateState();
       return;
     }
     if (!qData.ok) {
@@ -852,9 +941,9 @@ async function generateRoute() {
       } else {
         showQuotaExceededModal({ used: qData.used ?? 10, limit: qData.limit ?? 10 });
       }
-      btn.textContent = 'Calculer le trajet';
+      genBusy = false;
       btn.classList.remove('loading');
-      btn.disabled = false;
+      refreshGenerateState();
       return;
     }
     // Reflect the server's authoritative count locally so the strip is accurate
@@ -913,7 +1002,7 @@ async function generateRoute() {
     stopCalcCycle();
     btn.textContent = 'Erreur: ' + msg;
     btn.classList.remove('loading');
-    setTimeout(() => { btn.textContent = 'Calculer le trajet'; btn.disabled = false; }, 5000);
+    setTimeout(() => { genBusy = false; refreshGenerateState(); }, 5000);
     return;
   }
 
@@ -937,9 +1026,12 @@ async function generateRoute() {
   }
 
   stopCalcCycle();
-  btn.textContent = 'Calculer le trajet';
   btn.classList.remove('loading');
-  btn.disabled = false;
+  genBusy = false;
+  // Remember what this route was calculated from: the button stays locked until
+  // one of these inputs changes.
+  lastGenSig = genSig;
+  refreshGenerateState();
 }
 
 // ── Display route ─────────────────────────────────────────────────────────────

@@ -51,9 +51,9 @@
   <link rel="stylesheet" href="css/notif-optin.css" />
   <link rel="stylesheet" href="css/mobile.css" />
   <script src="js/theme.js"></script>
+  <link rel="stylesheet" href="css/dark.css" />
 </head>
 <body class="routes-body">
-  <link rel="stylesheet" href="css/dark.css" />
 
   <div id="offline-pill">📶 Hors-ligne — données en cache</div>
 
@@ -62,8 +62,6 @@
       <a href="/" class="logo" style="text-decoration:none">BWR</a>
       <nav class="header-nav-links">
         <a href="map">Carte</a>
-        <a href="map?plan=1" class="active">Planifier</a>
-        <a href="news">Actualités</a>
         <a href="plans">Plan</a>
       </nav>
     </div>
@@ -153,19 +151,15 @@
 
       <!-- ✨ AI planner — describe your walk in one sentence -->
       <div class="ai-planner" id="aiPlanner">
-        <div class="ai-planner-head">
-          <span class="ai-planner-spark">✨</span>
-          <div>
-            <strong class="ai-planner-title">Planifiez avec l'IA</strong>
-            <p class="ai-planner-sub">Décrivez votre balade, je m'occupe du reste.</p>
-          </div>
-        </div>
         <div class="ai-input-row">
+          <span class="ai-planner-spark" aria-hidden="true">✨</span>
           <input type="text" id="aiInput" class="ai-input"
-            placeholder="Ex : une boucle de 23 km par les étangs Saint-Pierre"
+            placeholder="Décrivez votre balade…"
+            aria-label="Décrivez votre balade à l'IA"
             autocomplete="off" />
-          <button type="button" id="aiSubmit" class="ai-submit" title="Générer">→</button>
+          <button type="button" id="aiSubmit" class="ai-submit" title="Générer avec l'IA">→</button>
         </div>
+        <!-- Example prompts: revealed only while the AI field is focused -->
         <div class="ai-chips" id="aiChips">
           <button type="button" class="ai-chip" data-q="Une boucle facile de 10 km en forêt">🌲 Boucle 10 km</button>
           <button type="button" class="ai-chip" data-q="Une sortie vélo de 25 km">🚴 Vélo 25 km</button>
@@ -174,117 +168,26 @@
         <div class="ai-feedback hidden" id="aiFeedback"></div>
       </div>
 
-      <!-- ⚡ Quick start — one-tap loop from current location -->
-      <div class="quick-start" id="quickStart">
-        <div class="qs-title">⚡ Trajet rapide</div>
-        <div class="qs-distance-chips" id="qsChips">
-          <button type="button" class="qs-chip" data-km="5">5 km</button>
-          <button type="button" class="qs-chip active" data-km="8">8 km</button>
-          <button type="button" class="qs-chip" data-km="12">12 km</button>
-          <button type="button" class="qs-chip" data-km="20">20 km</button>
-        </div>
-        <button type="button" class="btn-quick-loop" id="btnQuickLoop">📍 Boucle depuis ma position</button>
-        <button type="button" class="qs-customize" id="qsCustomize">Personnaliser le trajet ↓</button>
-      </div>
+      <div class="plan-or"><span>ou réglez vous-même</span></div>
 
-      <!-- Step 1: Mode -->
-      <div class="step" id="step1">
-        <div class="step-header">
-          <span class="step-number">1</span>
-          <span class="step-title">Type de trajet</span>
-        </div>
-        <div class="mode-cards">
-          <button class="mode-card" data-mode="loop">
-            <span class="mode-icon">🔄</span>
-            <strong>Boucle</strong>
-            <small>Revenir au point de départ</small>
+      <!-- Mode — one segmented switch -->
+      <div class="step step-mode" id="step1">
+        <div class="mode-cards" role="group" aria-label="Type de trajet">
+          <button class="mode-card" data-mode="loop" title="Revenir au point de départ">
+            <span class="mode-icon">🔄</span><strong>Boucle</strong>
           </button>
-          <button class="mode-card" data-mode="atob">
-            <span class="mode-icon">➡️</span>
-            <strong>Point A → B</strong>
-            <small>D'un endroit à un autre</small>
+          <button class="mode-card" data-mode="atob" title="D'un endroit à un autre">
+            <span class="mode-icon">➡️</span><strong>A → B</strong>
           </button>
-          <button class="mode-card" data-mode="custom">
-            <span class="mode-icon">🧭</span>
-            <strong>Sur mesure</strong>
-            <small>Choisissez vos carrefours, étape par étape</small>
+          <button class="mode-card" data-mode="custom" title="Choisissez vos carrefours, étape par étape">
+            <span class="mode-icon">🧭</span><strong>Sur mesure</strong>
           </button>
         </div>
       </div>
 
-      <!-- Step 2: Options -->
-      <div class="step locked collapsible collapsed" id="step2">
-        <div class="step-header" id="step2Header" role="button" tabindex="0" aria-expanded="false">
-          <span class="step-number">2</span>
-          <span class="step-title">Préférences</span>
-          <span class="step-collapse-chevron" id="step2Chevron">▾</span>
-        </div>
-
-        <div class="step2-body" id="step2Body">
-        <div class="option-group">
-          <label class="option-label">Type de chemin</label>
-          <div class="pathtype-grid">
-            <button class="pathtype-btn active" data-type="foot">🌲<span>Forestier</span></button>
-            <button class="pathtype-btn" data-type="bike">🚴<span>Cyclable</span></button>
-            <button class="pathtype-btn" data-type="champs">🌾<span>Champs</span></button>
-            <button class="pathtype-btn" data-type="mix"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>️<span>Mix</span></button>
-          </div>
-        </div>
-
-        <div class="option-group">
-          <label class="option-label">Difficulté</label>
-          <div class="difficulty-group">
-            <button class="diff-btn active" data-diff="easy"><span class="diff-dot easy"></span> Facile</button>
-            <button class="diff-btn" data-diff="medium"><span class="diff-dot medium"></span> Moyen</button>
-            <button class="diff-btn" data-diff="hard"><span class="diff-dot hard"></span> Difficile</button>
-          </div>
-        </div>
-
-        <div class="option-group">
-          <label class="option-label">Mode de déplacement</label>
-          <div class="difficulty-group">
-            <button class="diff-btn active" data-transport="foot">🚶 À pied</button>
-            <button class="diff-btn" data-transport="bike">🚴 Vélo</button>
-          </div>
-        </div>
-
-        <hr class="option-sep">
-
-        <div class="option-group" id="priorityGroup">
-          <label class="option-label">Priorité</label>
-          <div class="difficulty-group">
-            <button class="diff-btn active" data-priority="forest">🌲 Forestier</button>
-            <button class="diff-btn" data-priority="shortest">📏 Plus court</button>
-          </div>
-        </div>
-
-        <div class="option-group" id="surfaceGroup">
-          <label class="option-label">Revêtement</label>
-          <div class="difficulty-group">
-            <button class="diff-btn active" data-surface="any"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>️ Tous</button>
-            <button class="diff-btn" data-surface="natural">🌱 Terre / Herbe</button>
-            <button class="diff-btn" data-surface="paved">🏗️ Asphalte</button>
-          </div>
-        </div>
-
-        <div class="option-group" id="distanceGroup" style="display:none">
-          <label class="option-label">Distance souhaitée</label>
-          <div class="distance-input-row">
-            <input type="number" id="distanceInput" class="input-field distance-input"
-              min="1" max="100" step="0.5" value="10" />
-            <span class="distance-unit">km</span>
-          </div>
-          <p class="distance-hint">Entre 1 et 100 km</p>
-        </div>
-        </div><!-- /step2-body -->
-      </div>
-
-      <!-- Step 3: Points -->
-      <div class="step locked" id="step3">
-        <div class="step-header">
-          <span class="step-number">3</span>
-          <span class="step-title" id="step3Title">Choisir le départ</span>
-        </div>
+      <!-- Where (+ how far, for a loop) -->
+      <div class="step step-where locked" id="step3">
+        <div class="field-label" id="step3Title">Point de départ</div>
 
         <!-- Address search + my location -->
         <div class="search-row">
@@ -313,54 +216,95 @@
             <span>↩ Revenir au départ (boucle)</span>
           </label>
         </div>
+
+        <!-- Loop distance: preset chips + a free field, all in one row -->
+        <div class="distance-group" id="distanceGroup" style="display:none">
+          <div class="field-label">Distance</div>
+          <div class="qs-distance-chips" id="qsChips">
+            <button type="button" class="qs-chip" data-km="5">5</button>
+            <button type="button" class="qs-chip active" data-km="8">8</button>
+            <button type="button" class="qs-chip" data-km="12">12</button>
+            <button type="button" class="qs-chip" data-km="20">20</button>
+            <label class="distance-custom" title="Distance libre, entre 1 et 100 km">
+              <input type="number" id="distanceInput" class="distance-input"
+                min="1" max="100" step="0.5" value="10" aria-label="Distance souhaitée en km" />
+              <span class="distance-unit">km</span>
+            </label>
+          </div>
+        </div>
       </div>
 
-      <!-- Step 4: Generate -->
-      <div class="step step-cta locked" id="step4">
-        <div class="step-header">
-          <span class="step-number">4</span>
-          <span class="step-title">Générer</span>
+      <!-- Options — every preference folded behind one line -->
+      <div class="step step-options locked collapsible collapsed" id="step2">
+        <div class="step-header" id="step2Header" role="button" tabindex="0" aria-expanded="false">
+          <span class="step-title">⚙️ Options</span>
+          <span class="opt-summary" id="optSummary">Forestier · Facile · À pied</span>
+          <span class="step-collapse-chevron" id="step2Chevron">▾</span>
         </div>
+
+        <div class="step2-body" id="step2Body">
+        <div class="option-group">
+          <label class="option-label">Chemins</label>
+          <div class="pathtype-grid">
+            <button class="pathtype-btn active" data-type="foot">🌲<span>Forestier</span></button>
+            <button class="pathtype-btn" data-type="bike">🚴<span>Cyclable</span></button>
+            <button class="pathtype-btn" data-type="champs">🌾<span>Champs</span></button>
+            <button class="pathtype-btn" data-type="mix">🗺️<span>Mix</span></button>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <label class="option-label">Difficulté</label>
+          <div class="difficulty-group">
+            <button class="diff-btn active" data-diff="easy"><span class="diff-dot easy"></span> Facile</button>
+            <button class="diff-btn" data-diff="medium"><span class="diff-dot medium"></span> Moyen</button>
+            <button class="diff-btn" data-diff="hard"><span class="diff-dot hard"></span> Difficile</button>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <label class="option-label">Déplacement</label>
+          <div class="difficulty-group">
+            <button class="diff-btn active" data-transport="foot">🚶 À pied</button>
+            <button class="diff-btn" data-transport="bike">🚴 Vélo</button>
+          </div>
+        </div>
+
+        <div class="option-group" id="priorityGroup">
+          <label class="option-label">Priorité</label>
+          <div class="difficulty-group">
+            <button class="diff-btn active" data-priority="forest">🌲 Forestier</button>
+            <button class="diff-btn" data-priority="shortest">📏 Plus court</button>
+          </div>
+        </div>
+
+        <div class="option-group" id="surfaceGroup">
+          <label class="option-label">Revêtement</label>
+          <div class="difficulty-group">
+            <button class="diff-btn active" data-surface="any">Tous</button>
+            <button class="diff-btn" data-surface="natural">🌱 Terre</button>
+            <button class="diff-btn" data-surface="paved">🛣️ Asphalte</button>
+          </div>
+        </div>
+        </div><!-- /step2-body -->
+      </div>
+
+      <!-- Generate — one smart button (sticky) -->
+      <div class="step step-cta locked" id="step4">
         <!-- Free-tier weekly quota strip (hidden for Pro) -->
         <div class="quota-strip hidden" id="quotaStrip"></div>
+        <!-- Loop with no start yet → one tap: locate me + generate -->
+        <button type="button" class="btn-generate btn-quick-loop hidden" id="btnQuickLoop">📍 Boucle depuis ma position</button>
         <button class="btn-generate" id="btnGenerate" disabled>Calculer le trajet</button>
-      </div>
-
-      <!-- GPS Tracker -->
-      <div class="gps-tracker-card" id="gpsTrackerCard">
-        <div class="gps-tracker-header">
-          <span class="gps-tracker-icon">🏃</span>
-          <div>
-            <strong>Suivi GPS</strong>
-            <p class="gps-tracker-sub">Mesurez votre vraie distance parcourue</p>
-          </div>
-        </div>
-        <div class="gps-tracker-live hidden" id="gpsTrackerLive">
-          <div class="gps-live-row">
-            <span class="gps-live-dot"></span>
-            <span>En cours</span>
-            <strong id="trackerKm">0,00 km</strong>
-          </div>
-          <div class="gps-live-accuracy" id="trackerAccuracy"></div>
-        </div>
-        <button class="btn-gps-track" id="btnTracker">▶ Démarrer ma balade</button>
-      </div>
-
-      <!-- Import GPX (Strava / Garmin / Komoot) -->
-      <div class="gps-tracker-card import-gpx-card" id="importGpxCard">
-        <div class="gps-tracker-header">
-          <span class="gps-tracker-icon">📥</span>
-          <div>
-            <strong>Importer un GPX</strong>
-            <p class="gps-tracker-sub">Votre tracé Strava / Garmin sur la carte BWR</p>
-          </div>
-        </div>
-        <input type="file" id="gpxFileInput" accept=".gpx,application/gpx+xml,application/xml,text/xml" hidden />
-        <button class="btn-gps-track btn-import-gpx" id="btnImportGpx">📥 Choisir un fichier GPX</button>
       </div>
 
       <!-- Results -->
       <div class="route-result hidden" id="routeResult">
+        <div class="result-head">
+          <span class="result-title">Votre trajet</span>
+          <button class="btn-reset" id="btnReset" title="Effacer et recommencer">↺ Nouveau</button>
+        </div>
+
         <div class="result-stats">
           <div class="stat">
             <span class="stat-icon">📏</span>
@@ -376,20 +320,39 @@
           </div>
         </div>
 
+        <div class="result-badges" id="resultBadges"></div>
+        <div id="distanceWarning" class="distance-warning hidden"></div>
+
         <div class="elevation-chart-wrap hidden" id="elevationWrap">
           <div class="elevation-label">Profil altimétrique</div>
           <div id="elevationChart"></div>
         </div>
 
-        <div class="route-breakdown hidden" id="breakdownWrap"></div>
+        <!-- Live GPS guidance — track the walk against the planned route -->
+        <button class="btn-follow-route hidden" id="btnFollowRoute">🧭 Suivre l'itinéraire (guidage GPS)</button>
 
-        <div class="result-badges" id="resultBadges"></div>
-        <div class="route-resume" id="routeResume"></div>
-        <div id="distanceWarning" class="distance-warning hidden"></div>
+        <div class="result-save-row">
+          <button class="btn-save-route" id="btnSaveRoute">💾 Sauvegarder</button>
+          <button class="btn-share-route" id="btnShareRoute">🔗 Partager</button>
+        </div>
+
+        <!-- Secondary actions, folded away until needed -->
+        <details class="result-more">
+          <summary>⬇ Exporter &amp; imprimer</summary>
+          <div class="result-actions">
+            <button class="btn-gpx" id="btnGPX">⬇ GPX</button>
+            <button class="btn-gpx btn-kml" id="btnKML">⬇ KML</button>
+            <button class="btn-gpx btn-strava" id="btnStrava">↗ Strava</button>
+            <button class="btn-gpx btn-print" id="btnPrint">🖨 Imprimer / PDF</button>
+            <label class="print-topo-opt" id="printTopoOpt">
+              <input type="checkbox" id="printTopo"> Carte topo (courbes de niveau)
+            </label>
+          </div>
+        </details>
 
         <!-- Loop "reshape": add carrefours the boucle must pass through (Pro) -->
-        <div class="loop-personalize hidden" id="loopPersonalize">
-          <div class="lp-head">🧭 Personnaliser cette boucle</div>
+        <details class="result-more loop-personalize hidden" id="loopPersonalize">
+          <summary>🧭 Passer par des carrefours</summary>
           <div id="lpPicker">
             <p class="lp-hint">Ajoutez des carrefours que votre boucle doit traverser, puis regénérez-la.</p>
             <div class="cb-carrefour-wrap">
@@ -407,36 +370,45 @@
             <p>🔒 Personnalisez votre boucle — choisissez les carrefours qu'elle doit traverser — avec le plan Pro.</p>
             <a href="plans" class="lp-cta">Débloquer avec Pro →</a>
           </div>
-        </div>
+        </details>
 
-        <!-- Live GPS guidance — track the walk against the planned route -->
-        <button class="btn-follow-route hidden" id="btnFollowRoute">🧭 Suivre l'itinéraire (guidage GPS)</button>
-
-        <div class="result-actions">
-          <button class="btn-gpx" id="btnGPX">⬇ GPX</button>
-          <button class="btn-gpx btn-kml" id="btnKML">⬇ KML</button>
-          <button class="btn-gpx btn-strava" id="btnStrava">↗ Strava</button>
-          <button class="btn-gpx btn-print" id="btnPrint">🖨 Imprimer / PDF</button>
-          <label class="print-topo-opt" id="printTopoOpt">
-            <input type="checkbox" id="printTopo"> Carte topo (courbes de niveau)
-          </label>
-          <button class="btn-reset" id="btnReset">← Nouveau trajet</button>
-        </div>
-        <div class="result-save-row">
-          <button class="btn-save-route" id="btnSaveRoute">💾 Sauvegarder</button>
-          <button class="btn-share-route" id="btnShareRoute">🔗 Partager</button>
-        </div>
+        <details class="result-more">
+          <summary>📋 Détails du trajet</summary>
+          <div class="route-resume" id="routeResume"></div>
+          <div class="route-breakdown hidden" id="breakdownWrap"></div>
+        </details>
       </div>
 
-      <!-- Route history (Pro) -->
-      <div class="route-history hidden" id="routeHistory">
-        <div class="history-header" id="historyToggle">
-          <span>📚 Mes trajets sauvegardés</span>
-          <span class="history-chevron" id="historyChevron">▾</span>
+      <!-- Tools — GPS tracking, GPX import, saved routes -->
+      <div class="planner-tools">
+        <div class="tools-grid">
+          <div class="gps-tracker-card" id="gpsTrackerCard">
+            <button class="tool-btn btn-gps-track" id="btnTracker" title="Mesurez votre vraie distance parcourue">▶ Démarrer ma balade</button>
+          </div>
+          <div class="import-gpx-card" id="importGpxCard">
+            <input type="file" id="gpxFileInput" accept=".gpx,application/gpx+xml,application/xml,text/xml" hidden />
+            <button class="tool-btn btn-import-gpx" id="btnImportGpx" title="Votre tracé Strava / Garmin sur la carte BWR">📥 Importer un GPX</button>
+          </div>
         </div>
-        <div class="history-body" id="historyBody">
-          <div class="history-loading" id="historyLoading">Chargement…</div>
-          <div class="history-list" id="historyList"></div>
+        <div class="gps-tracker-live hidden" id="gpsTrackerLive">
+          <div class="gps-live-row">
+            <span class="gps-live-dot"></span>
+            <span>En cours</span>
+            <strong id="trackerKm">0,00 km</strong>
+          </div>
+          <div class="gps-live-accuracy" id="trackerAccuracy"></div>
+        </div>
+
+        <!-- Route history (Pro) -->
+        <div class="route-history hidden" id="routeHistory">
+          <div class="history-header" id="historyToggle">
+            <span>📚 Mes trajets sauvegardés</span>
+            <span class="history-chevron" id="historyChevron">▾</span>
+          </div>
+          <div class="history-body" id="historyBody">
+            <div class="history-loading" id="historyLoading">Chargement…</div>
+            <div class="history-list" id="historyList"></div>
+          </div>
         </div>
       </div>
 

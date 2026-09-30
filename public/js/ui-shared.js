@@ -82,8 +82,6 @@
    * bar everywhere, edit HEADER_LINKS (nothing else). */
   var HEADER_LINKS = [
     { href: 'map',    label: 'Carte' },
-    { href: 'map?plan=1', label: 'Planifier' },
-    { href: 'news',   label: 'Actualités' },
     { href: 'plans',  label: 'Plan' }
   ];
 
@@ -141,6 +139,72 @@
     }).join('');
   }
 
+  function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // Make the right side of the top bar identical on every page:
+  //   ☰ Menu · (page tools, if any) · 🔔 bell · user menu.
+  // - The "Installer" button lives in the drawer only (the header copy duplicated its id).
+  // - The bell is added (and js/notif.js loaded) on pages that lacked it.
+  // - The user menu is filled on pages whose own script never renders it.
+  function buildHeaderRight() {
+    var right = document.querySelector('.header .header-right');
+    if (!right) return;
+
+    var hdrInstall = right.querySelector('#btnInstallApp');
+    if (hdrInstall) hdrInstall.remove();
+
+    var menu = right.querySelector('#userMenu');
+    if (!document.getElementById('notifBell')) {
+      var bell = document.createElement('div');
+      bell.id = 'notifBell';
+      bell.className = 'notif-bell-wrap';
+      right.insertBefore(bell, menu || null);
+      if (!document.querySelector('script[src$="js/notif.js"]')) {
+        var s = document.createElement('script');
+        s.src = 'js/notif.js';
+        document.body.appendChild(s);
+      }
+    }
+
+    if (menu && !menu.children.length) renderUserMenu(menu);
+  }
+
+  function renderUserMenu(menuEl) {
+    var user = null;
+    try { user = JSON.parse(localStorage.getItem('bwr_user') || 'null'); } catch (e) {}
+    if (!user || !user.name) {
+      menuEl.innerHTML = '<a href="login" class="btn-icon" style="text-decoration:none">Connexion</a>';
+      return;
+    }
+    var initials = user.name.split(' ').map(function (w) { return w[0]; }).join('').toUpperCase().slice(0, 2);
+    menuEl.innerHTML =
+      '<button class="user-btn" id="userBtn">' +
+        '<div class="user-avatar">' + escHtml(initials) + '</div>' +
+        '<span class="btn-label">' + escHtml(user.name.split(' ')[0]) + '</span>' +
+      '</button>' +
+      '<div class="user-dropdown hidden" id="userDropdown">' +
+        '<span class="dropdown-name">' + escHtml(user.name) + '</span>' +
+        '<a href="/">🏠 Accueil</a>' +
+        '<a href="map">🗺 Voir la carte</a>' +
+        '<a href="map?plan=1">🧭 Planifier un trajet</a>' +
+        '<a href="profile">👤 Mon profil</a>' +
+        (user.role === 'admin' ? '<a href="admin">🗺 Carte admin</a><a href="admin-panel">⚙️ Panneau admin</a>' : '') +
+        '<button class="dropdown-logout" id="btnLogout">Se déconnecter</button>' +
+      '</div>';
+    var dd = menuEl.querySelector('#userDropdown');
+    menuEl.querySelector('#userBtn').addEventListener('click', function () { dd.classList.toggle('hidden'); });
+    menuEl.querySelector('#btnLogout').addEventListener('click', function () {
+      if (typeof logout === 'function') logout();
+    });
+    document.addEventListener('click', function (e) {
+      if (!menuEl.contains(e.target)) dd.classList.add('hidden');
+    });
+  }
+
   // Build (or rebuild) the canonical drawer + overlay + burger. Runs on any
   // page that has (or should have) the hamburger button.
   function buildMenu() {
@@ -181,6 +245,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     buildMenu();
     buildHeaderNav();
+    buildHeaderRight();
 
     var overlay  = document.getElementById('navDrawerOverlay');
     var drawer   = document.getElementById('navDrawer');
