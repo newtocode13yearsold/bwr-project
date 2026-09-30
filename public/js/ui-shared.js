@@ -57,7 +57,6 @@
     { type: 'section', label: 'Communauté' },
     { href: 'forum',       label: 'Forum',                 icon: IC.forum },
     { href: 'friends',     label: 'Communauté',            icon: IC.friends },
-    { href: 'inbox',       label: 'Messagerie',            icon: IC.inbox },
 
     { type: 'section', label: 'À propos & aide' },
     { href: 'news',        label: 'Actualités',            icon: IC.news },
