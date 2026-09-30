@@ -237,8 +237,11 @@
     const day = (d.getDay() + 6) % 7; // 0 = Monday
     const monday = new Date(d);
     monday.setDate(d.getDate() - day);
-    monday.setHours(0, 0, 0, 0);
-    return monday.toISOString().slice(0, 10);
+    // Format from LOCAL date parts — toISOString() converts to UTC, which in
+    // France (UTC+1/+2) turns local Monday 00:00 into Sunday's date and never
+    // matches the server's weekStart (the Worker runs in UTC).
+    const pad = n => String(n).padStart(2, '0');
+    return `${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}`;
   }
 
   function readWeekly() {

@@ -124,7 +124,7 @@ function newsCard(item) {
            ${escHtml(item.urlLabel || 'Lire l\'article')} →
          </a>`
       : `<span class="news-link news-link-locked" title="Réservé aux membres Pro">
-           🥈 ${escHtml(item.urlLabel || 'Lire l\'article')} →
+           ⭐ ${escHtml(item.urlLabel || 'Lire l\'article')} →
          </span>`
     : '';
   const adminControls = currentUser?.role === 'admin'

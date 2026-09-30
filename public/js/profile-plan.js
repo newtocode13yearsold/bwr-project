@@ -129,7 +129,7 @@ function renderPlanAndProgress(user) {
   const level = prog.level;
 
   // ── Weekly route quota strip (free users only) — includes the level bonus ──
-  renderQuotaStrip(plan, level);
+  renderQuotaStrip(plan, level, user.stats);
 
   // XP bar shows *cumulative* progress toward the next level (not the per-level
   // slice), so the numbers match the "total XP" framing of the reward ladder.
@@ -384,12 +384,18 @@ async function cancelPlan(user) {
 }
 
 // ── Weekly route quota strip ─────────────────────────────────────────────────
-function renderQuotaStrip(plan, level) {
+function renderQuotaStrip(plan, level, stats) {
   const strip = document.getElementById('quotaStrip');
   if (!strip) return;
   const limit = BWR.routeLimit(plan, level || 1);
   if (limit === Infinity) { strip.style.display = 'none'; return; }
-  const { count } = BWR.readWeekly();
+  // The server (consume-route) is the source of truth for this week's usage;
+  // localStorage is only a fallback cache.
+  const weekly = BWR.readWeekly();
+  const serverWeek = !!stats && stats.weekStart === weekly.weekStart;
+  const count = Math.max(weekly.count, serverWeek ? (stats.weeklyRoutes || 0) : 0);
+  const loopLimit = BWR.limitOf('loops_per_week', plan);
+  const loops = serverWeek ? (stats.weeklyLoops || 0) : 0;
   const remaining = Math.max(0, limit - count);
   const pct = Math.min(100, (count / limit) * 100);
   const overLimit = count >= limit;
@@ -401,6 +407,7 @@ function renderQuotaStrip(plan, level) {
       <div class="pqs-text">
         <strong>${count} / ${limit}</strong> trajets cette semaine
         <span>${overLimit ? 'Limite atteinte · réinitialisation lundi' : `${remaining} restant${remaining > 1 ? 's' : ''}`}</span>
+        ${isFinite(loopLimit) ? `<span>🔁 ${Math.min(loops, loopLimit)} / ${loopLimit} boucles cette semaine</span>` : ''}
       </div>
       <a href="plans" class="pqs-cta">Passer à illimité →</a>
     </div>
