@@ -130,11 +130,43 @@ try {
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'ArrowRight') next();
-    if (e.key === 'ArrowLeft')  prev();
+    if (e.key === 'ArrowRight') { next(); start(); }
+    if (e.key === 'ArrowLeft')  { prev(); start(); }
   });
 
+  /* Autoplay: advance every few seconds, but only while the carousel is on
+     screen, the tab is visible and the visitor isn't hovering/focusing it.
+     Any manual move restarts the countdown so it never jumps right after a click. */
+  var AUTOPLAY_MS = 4500;
+  var timer = null, hovering = false, onScreen = false;
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var root = document.getElementById('fcarousel') || track;
+
+  function stop() { if (timer) { clearInterval(timer); timer = null; } }
+  function start() {
+    stop();
+    if (reduceMotion || hovering || !onScreen || document.hidden) return;
+    timer = setInterval(next, AUTOPLAY_MS);
+  }
+
+  root.addEventListener('mouseenter', function () { hovering = true;  stop(); });
+  root.addEventListener('mouseleave', function () { hovering = false; start(); });
+  root.addEventListener('focusin',  function () { hovering = true;  stop(); });
+  root.addEventListener('focusout', function () { hovering = false; start(); });
+  track.addEventListener('touchend', start, { passive: true });
+  dots.forEach(function (d) { d.addEventListener('click', start); });
+  document.addEventListener('visibilitychange', start);
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) {
+      onScreen = entries[0].isIntersecting;
+      start();
+    }, { threshold: 0.3 }).observe(root);
+  } else {
+    onScreen = true;
+  }
+
   render();
+  start();
 })();
 
 /* ── Hero live map + live stats ──────────────────────────────────────── */
@@ -148,10 +180,11 @@ try {
     zoomControl: false,
     scrollWheelZoom: false,
     dragging: true,
-    attributionControl: false,
+    attributionControl: true,
     touchZoom: false,
     doubleClickZoom: false,
   });
+  map.attributionControl.setPrefix(false);
 
   window.addEventListener('load', function () { map.invalidateSize(); });
 
@@ -160,7 +193,24 @@ try {
     // subdomains/crossOrigin. maxNativeZoom 15 mirrors js/map.js so this homepage
     // map reuses the offline-downloaded forest tiles (cached z10–15).
     maxNativeZoom: 15, maxZoom: 17,
+    attribution: '© IGN',
   });
+  // If the same-origin proxy isn't there at all (static preview, proxy outage),
+  // switch once to IGN's public WMTS directly so the hero never stays blank.
+  let _homeDirect = false;
+  function useDirectIgn() {
+    if (_homeDirect) return;
+    _homeDirect = true;
+    map.removeLayer(_homeTiles);
+    L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0' +
+      '&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png' +
+      '&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}', {
+      maxZoom: 17, attribution: '© IGN',
+    }).addTo(map);
+  }
+  fetch('/tiles/ign/13/4162/2801.png')
+    .then(r => { if (!r.ok || !(r.headers.get('content-type') || '').startsWith('image/')) useDirectIgn(); })
+    .catch(useDirectIgn);
   // Self-heal grey tiles: re-request any tile the proxy/upstream throttles (429/403)
   // with a growing backoff, since Leaflet otherwise leaves it permanently grey.
   const _homeRetryDelays = [600, 1500, 3000, 5000];
@@ -194,22 +244,63 @@ try {
     }, stepMs);
   }
 
+  // Fallback when the API is unreachable or empty (e.g. a local preview with an
+  // empty KV): draw the pre-baked OSM forest network around the map centre so
+  // the hero still shows the real forest trails.
+  function drawForestFallback() {
+    fetch('data/forest-paths.json')
+      .then(r => { if (!r.ok) throw new Error('forest ' + r.status); return r.json(); })
+      .then(list => {
+        const view = L.latLngBounds([MAP_CENTER[0] - 0.035, MAP_CENTER[1] - 0.06], [MAP_CENTER[0] + 0.035, MAP_CENTER[1] + 0.06]);
+        const lines = [];
+        (Array.isArray(list) ? list : []).forEach(p => {
+          const c = p && p.coordinates;
+          if (!c || c.length < 2 || !view.contains(c[0])) return;
+          lines.push(L.polyline(c, { color: '#22c55e', weight: 2, opacity: 0.85, lineJoin: 'round', interactive: false }));
+        });
+        if (!lines.length) return;
+        L.featureGroup(lines).addTo(map);
+        map.fitBounds(view);
+      })
+      .catch(() => {});
+  }
+
   fetch(API_URL + '/api/paths')
     .then(r => { if (!r.ok) throw new Error('paths ' + r.status); return r.json(); })
     .then(paths => {
-      if (!Array.isArray(paths)) return;
+      if (!Array.isArray(paths)) { drawForestFallback(); return; }
 
       // Draw map paths
+      const drawn = [];
       paths.forEach(path => {
         if (!path.coordinates || path.coordinates.length < 2) return;
         const color = (typeof colorForPath === 'function') ? colorForPath(path) : ((STATUS_COLORS && STATUS_COLORS[path.status]) || '#22c55e');
-        L.polyline(path.coordinates, {
+        drawn.push(L.polyline(path.coordinates, {
           color,
-          weight: 3,
-          opacity: 0.85,
+          weight: 1.75,
+          opacity: 0.95,
           lineJoin: 'round',
-        }).addTo(map);
+        }).addTo(map));
       });
+      // Frame the curated paths inside the Compiègne forest so the mini-map shows
+      // them up close — a single stray path elsewhere must not zoom out to a region view.
+      const fb = L.latLngBounds([FOREST_BOUNDS.minLat, FOREST_BOUNDS.minLng], [FOREST_BOUNDS.maxLat, FOREST_BOUNDS.maxLng]);
+      const inForest = drawn.filter(l => fb.contains(l.getBounds().getCenter()));
+      if (inForest.length) {
+        // Zoom in close and centre on the densest cluster of trails: the path
+        // midpoint with the most other midpoints within ~2 km. (A plain average
+        // lands in the empty gap between two clusters.)
+        const mids = inForest.map(l => l.getBounds().getCenter());
+        let best = mids[0], bestN = -1;
+        mids.forEach(a => {
+          let n = 0;
+          mids.forEach(b => { if (Math.abs(a.lat - b.lat) < 0.018 && Math.abs(a.lng - b.lng) < 0.027) n++; });
+          if (n > bestN) { bestN = n; best = a; }
+        });
+        map.setView(best, 13, { animate: false });
+      } else if (!drawn.length) {
+        drawForestFallback();
+      }
 
       // Count every graded path with valid geometry
       let totalKm = 0;
@@ -230,7 +321,7 @@ try {
       if (kmEl) countUp(kmEl, Math.round(totalKm), 1200);
       if (pathsEl) countUp(pathsEl, uniqueCount, 1200);
     })
-    .catch(() => {});
+    .catch(drawForestFallback);
 })();
 
 /* ── PWA install prompt ──────────────────────────────────────────────── */
