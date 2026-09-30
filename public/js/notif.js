@@ -14,6 +14,9 @@
   const lastSeen = localStorage.getItem('bwr_notif_seen') || '';
   let   hasUnread = !!(challenge && setAt && setAt > lastSeen);
 
+  // Only show the bell when there's something new to read.
+  if (!hasUnread) { wrap.hidden = true; return; }
+
   const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   wrap.innerHTML = `
@@ -50,5 +53,10 @@
     }
   });
 
-  document.addEventListener('click', () => dropdown.classList.remove('is-open'));
+  // Once the notification has been read and the dropdown closes, the bell goes away.
+  document.addEventListener('click', e => {
+    if (wrap.contains(e.target)) return;
+    dropdown.classList.remove('is-open');
+    if (!hasUnread) wrap.hidden = true;
+  });
 })();
