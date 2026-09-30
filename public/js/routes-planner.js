@@ -1098,7 +1098,7 @@ function renderDuration(seconds, graded = false) {
   if (dur) dur.textContent = text;
   const small = document.querySelector('#statDuration + small');
   if (small) small.textContent =
-    (transportMode === 'bike' ? 'Durée estimée (vélo)' : 'Durée estimée (à pied)')
+    (transportMode === 'bike' ? 'À vélo' : 'À pied')
     + (graded ? ' · dénivelé inclus' : '');
   const resumeDur = document.getElementById('resumeDuration');
   if (resumeDur) resumeDur.textContent = text;
@@ -1220,6 +1220,9 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
       const canReshape = BWR.can('custom_route_builder', plan);
       document.getElementById('lpPicker')?.classList.toggle('hidden', !canReshape);
       document.getElementById('lpLocked')?.classList.toggle('hidden', canReshape);
+      // Folded row: show the Pro tag on its title so free users see it's locked.
+      const lpSummary = lpPanel.querySelector('summary');
+      if (canReshape) BWR.removeProOnlyTag(lpSummary); else BWR.addProOnlyTag(lpSummary);
       lpPanel.classList.remove('hidden');
     } else {
       lpPanel.classList.add('hidden');
@@ -1278,6 +1281,14 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
     }
   }
 
+  // "Exporter & imprimer" is folded: tag its title when the file exports are Pro-only
+  // (printing stays free, so the row itself stays open to everyone).
+  const exportSummary = document.querySelector('#exportMore > summary');
+  if (exportSummary) {
+    if (BWR.can('gpx_export', plan)) BWR.removeProOnlyTag(exportSummary);
+    else BWR.addProOnlyTag(exportSummary);
+  }
+
   // Way-types & surfaces breakdown — lazy-loaded, available to everyone.
   _loadBreakdown()
     .then(() => renderRouteBreakdown(coords))
@@ -1314,7 +1325,8 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
         </div>
       `;
     }
-    document.getElementById('statAscent').innerHTML = BWR.proOnlyTag();
+    // Short form: the full "Pro uniquement" pill doesn't fit the narrow stat cell.
+    document.getElementById('statAscent').innerHTML = '<span class="pro-only-tag">🔒 Pro</span>';
   }
 }
 

@@ -1417,7 +1417,14 @@
 .step-mode .mode-card strong { font-size: 0.82rem; display: inline; }
 .step-mode .mode-icon { font-size: 1rem; }
 .step-mode .mode-card.active { background: var(--surface-0, #fff); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
-.step-mode .mode-card .lock-badge { position: absolute; top: -8px; right: 2px; font-size: 0.6rem; }
+/* Locked mode: a tiny 🔒 in the corner instead of the full "Pro uniquement" pill,
+   which overflowed the switch. The button's upsell modal still explains it. */
+.step-mode .mode-card .lock-badge {
+  position: absolute; top: 3px; right: 4px;
+  padding: 0; background: none; box-shadow: none; border: none;
+  font-size: 0; line-height: 1;
+}
+.step-mode .mode-card .lock-badge::before { content: '🔒'; font-size: 0.68rem; }
 .field-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; }
 .step-where .step-hint { margin: 6px 0 8px; font-size: 0.78rem; }
 .distance-group { margin-top: 12px; }
@@ -1452,3 +1459,121 @@
 .tool-btn { width: 100%; padding: 10px 6px; font-size: 0.8rem; }
 .planner-tools .gps-tracker-live { margin-top: 8px; }
 .planner-tools .route-history { margin: 10px 0 0; }
+
+/* ══ Planner look — flat panel, underline mode tabs, one-line rows, full-width CTA bar ══ */
+.planner-sidebar { background: var(--surface-0, #fff); }
+.ai-planner { background: none; color: var(--text); padding: 12px 16px; }
+.ai-input { background: var(--surface-2, #f1f5ee); border-color: transparent; color: var(--text); border-radius: 999px; }
+.ai-input::placeholder { color: var(--text-muted); }
+.ai-submit { border-radius: 50%; }
+.ai-chip { background: var(--surface-2, #f1f5ee); color: var(--text); border-color: var(--border); }
+.ai-feedback { color: var(--text); }
+.plan-or { display: none; }
+.step-mode { padding: 0; }
+.step-mode .mode-cards { background: none; border-radius: 0; padding: 0; border-bottom: 1px solid var(--border); }
+.step-mode .mode-card { border-radius: 0; padding: 12px 4px 10px; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.step-mode .mode-card.active { background: none; box-shadow: none; border-bottom-color: var(--forest-700); }
+[data-theme="dark"] .step-mode .mode-card.active { border-bottom-color: var(--lime-500); }
+.field-label { text-transform: none; letter-spacing: 0; font-size: 0.85rem; color: var(--text); }
+.distance-group { display: flex; align-items: center; gap: 10px; }
+.distance-group .field-label { margin: 0; flex-shrink: 0; }
+.distance-group .qs-distance-chips { flex: 1; min-width: 0; }
+.step-where .qs-chip { border-radius: 8px; padding: 6px 0; }
+.step-options .step-title { font-weight: 600; font-size: 0.88rem; }
+.step-cta { padding: 0; border-top: 1px solid var(--border); box-shadow: none; }
+.step-cta .quota-strip { border-radius: 0; margin: 0; border: none; border-bottom: 1px solid var(--border); background: none; padding: 10px 16px; }
+.btn-generate { border-radius: 0; padding: 17px; }
+.tool-btn { border-radius: 8px; }
+
+
+/* Mode tabs: bolder active tab; dark mode keeps them flat on the panel. */
+.step-mode .mode-card strong { font-weight: 600; color: var(--text-muted); }
+.step-mode .mode-card.active strong { font-weight: 800; color: var(--forest-700); }
+[data-theme="dark"] .step-mode .mode-card,
+[data-theme="dark"] .step-mode .mode-card:hover,
+[data-theme="dark"] .step-mode .mode-card.active { background: none; }
+[data-theme="dark"] .step-mode .mode-card.active strong { color: var(--lime-400); }
+.step-mode .mode-card:hover:not(.active) { background: var(--surface-2, #f1f5ee); }
+/* Locked "Sur mesure" tab: a compact gold "🔒 Pro" pill in the corner. */
+.step-mode .mode-card .lock-badge::before { content: '🔒 Pro'; font-size: 0.58rem; font-weight: 800; }
+.step-mode .mode-card .lock-badge {
+  top: 2px; right: 2px; padding: 1px 5px; border-radius: 999px;
+  background: var(--gold-grad-soft); color: var(--gold-text); border: 1px solid var(--gold-200);
+}
+
+/* Options row: the whole line is the button. */
+.step-options { padding: 0; }
+.step-options .step-header { padding: 13px 16px; }
+.step-options .step-header:hover { background: var(--surface-2, #f1f5ee); }
+.step-options .step2-body { padding: 0 16px 6px; }
+
+/* Quota: a slim one-glance strip above the CTA. */
+.step-cta .quota-strip { gap: 6px; font-size: 0.8rem; }
+.step-cta .quota-strip .qs-bar { height: 4px; }
+.step-cta .quota-strip .qs-count { font-size: 0.85rem; }
+
+/* Results: flat sections separated by hairlines instead of boxes. */
+.route-result { padding: 16px; gap: 12px; border-top: 1px solid var(--border); }
+.result-stats { gap: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.result-stats .stat { flex-direction: column; align-items: flex-start; gap: 2px; border: none; border-radius: 0; padding: 10px 12px; background: none; }
+.result-stats .stat + .stat { border-left: 1px solid var(--border); }
+.result-stats .stat-icon { font-size: 1rem; }
+[data-theme="dark"] .result-stats .stat { background: none; }
+.result-save-row { margin-top: 0; }
+.result-more { border: none; border-top: 1px solid var(--border); border-radius: 0; padding: 0; margin: 0; background: none; }
+.result-more:last-child { border-bottom: 1px solid var(--border); }
+.result-more > summary { padding: 12px 0; }
+.result-more[open] { padding-bottom: 12px; }
+.result-more > summary .pro-only-tag { margin-left: 6px; vertical-align: middle; }
+.btn-follow-route { margin: 0; border-radius: 12px; font-size: 0.95rem; padding: 13px; }
+
+/* Tools: two quiet outline buttons + a flat "Mes trajets" row. */
+.planner-tools { padding: 14px 16px 18px; }
+.tool-btn,
+.tool-btn.btn-import-gpx {
+  background: var(--surface-0, #fff); color: var(--text); border: 1.5px solid var(--border);
+  font-weight: 700;
+}
+.tool-btn:hover,
+.tool-btn.btn-import-gpx:hover { background: var(--surface-2, #f1f5ee); border-color: var(--forest-700); }
+.tool-btn.btn-gps-track.tracking { background: var(--danger); border-color: var(--danger); color: #fff; }
+.planner-tools .route-history { border: none; border-top: 1px solid var(--border); border-radius: 0; margin-top: 14px; }
+.planner-tools .history-header { padding: 12px 0; background: none; }
+.planner-tools .history-header:hover { background: none; color: var(--forest-700); }
+
+/* Distance row must fit the 320px sidebar: chips shrink, the free field stays whole. */
+.planner-sidebar { overflow-x: hidden; }
+.step-where .qs-chip { min-width: 0; }
+.distance-custom { flex-shrink: 0; }
+.step-where .distance-input { width: 50px; }
+/* AI row: the field shrinks so the → button always fits. */
+.ai-input-row .ai-input { flex: 1; min-width: 0; }
+.ai-input-row .ai-submit { flex-shrink: 0; }
+.planner-tools .history-header { color: var(--text); border-bottom: none; }
+
+/* Result stats: three even, compact cells. */
+.result-head .btn-reset { flex: none; }
+.result-stats .stat { flex: 1 1 0; min-width: 0; }
+.result-stats .stat strong { font-size: 1.05rem; white-space: nowrap; }
+.result-stats .stat small { font-size: 0.7rem; line-height: 1.3; }
+#statDistanceSub { display: none; }
+.result-stats .stat .pro-only-tag { margin: 2px 0 0; font-size: 0.55rem; padding: 0 5px; white-space: nowrap; }
+/* Locked elevation teaser: one light card, no double frame. */
+.elevation-chart-wrap:has(.elevation-locked) { border: none; padding: 0; background: none; }
+.route-result .elevation-locked { padding: 14px; gap: 6px; }
+.route-result .elevation-locked p { margin: 0; font-size: 0.8rem; }
+/* route-follow.css loads after this file — win on specificity, keep it one line. */
+.route-result .btn-follow-route { margin: 0; border-radius: 12px; font-size: 0.95rem; padding: 13px; }
+.route-result .elevation-chart-wrap:has(.elevation-locked) { border: none; padding: 0; background: none; box-shadow: none; }
+/* Save / share: Pro tag sits under the label so both buttons fit side by side. */
+.result-save-row .btn-save-route,
+.result-save-row .btn-share-route {
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.result-save-row .pro-only-tag { margin: 0; }
+.result-actions .btn-gpx { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+.result-actions .pro-only-tag { margin: 0; font-size: 0.55rem; padding: 0 5px; max-width: 100%; white-space: normal; text-align: center; line-height: 1.3; }
+/* Narrow export buttons: short "🔒 Pro" form of the tag (the row title already says "Pro uniquement"). */
+.result-actions .pro-only-tag { font-size: 0; white-space: nowrap; }
+.result-actions .pro-only-tag::before { content: '🔒 Pro'; font-size: 0.58rem; }
