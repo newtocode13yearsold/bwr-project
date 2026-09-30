@@ -1,6 +1,6 @@
 // profile-plan.js — the badge catalogue, "Mon abonnement & progression" panel
 // (plan pill, XP/level, badges, premium sections), the Pro trial, the weekly
-// quota strip, custom goals, weather widget, push alerts and the header stat
+// quota strip, custom goals, push alerts and the header stat
 // counters for the profile page.
 // Split out of profile.js. Classic (deferred) script loaded before js/profile.js.
 // Only declarations here; every function is invoked later from the entry boot IIFE
@@ -260,29 +260,22 @@ function renderPlanAndProgress(user) {
     }
   }
 
-  // Premium section — the whole Pro block.
+  // Pro perks — the daily draw card (Récompenses tab) plus the Pro rows of the
+  // Compte tab. Still gated per-feature so a new Pro-only perk only has to be
+  // added to features.js.
   if (BWR.can('daily_wheel', plan)) {
-    const premiumSection = document.getElementById('premiumSection');
-    premiumSection.style.display = '';
-    document.getElementById('premiumIcon').textContent = '⭐';
-    document.getElementById('premiumTitle').textContent = 'Privilèges Pro';
-
+    document.getElementById('premiumSection').style.display = '';
     renderDailyWheel(plan);
     renderPrizeList(plan);
 
-    // Premium blocks — still gated per-feature so a new Pro-only perk only has
-    // to be added to features.js.
     document.getElementById('goalBlock').style.display  = BWR.can('custom_goals', plan) ? '' : 'none';
-    document.getElementById('weatherBlock').style.display = BWR.can('weather', plan) ? '' : 'none';
     document.getElementById('supportBlock').style.display = BWR.can('priority_support', plan) ? '' : 'none';
     document.getElementById('pushAlertsBlock').style.display = BWR.can('path_alerts', plan) ? '' : 'none';
-    document.getElementById('trailHealthBlock').style.display = BWR.can('walked_paths', plan) ? '' : 'none';
+    document.getElementById('notifGroup').style.display = '';
 
     if (BWR.can('custom_goals', plan)) renderGoals();
-    if (BWR.can('weather', plan)) renderWeather();
     if (BWR.can('path_alerts', plan)) renderPushAlerts();
     renderEmailNotif();
-    if (BWR.can('walked_paths', plan)) renderTrailHealth();
   } else {
     document.getElementById('premiumSection').style.display = 'none';
   }
@@ -487,76 +480,6 @@ function renderGoals() {
       renderGoals();
     }
   };
-}
-
-// ── Weather (Open-Meteo, free, no key) ────────────────────────────────────────
-const WEATHER_CODE_MAP = {
-  0:['☀️','Ensoleillé'], 1:['🌤','Peu nuageux'], 2:['⛅','Nuageux'], 3:['☁️','Couvert'],
-  45:['🌫','Brouillard'], 48:['🌫','Brouillard givrant'],
-  51:['🌦','Bruine légère'], 53:['🌦','Bruine'], 55:['🌧','Bruine forte'],
-  61:['🌧','Pluie légère'], 63:['🌧','Pluie'], 65:['🌧','Forte pluie'],
-  71:['🌨','Neige'], 73:['🌨','Neige modérée'], 75:['❄️','Forte neige'],
-  80:['🌦','Averses'], 81:['🌧','Averses'], 82:['⛈','Violentes averses'],
-  95:['⛈','Orage'], 96:['⛈','Orage + grêle'], 99:['⛈','Orage violent'],
-};
-
-function weatherHikingSuitability(code, wind, precipProb) {
-  if (code >= 95) return ['weather-suit--bad', '⛈ Pas de sortie'];
-  if (code >= 61 && code <= 82) return ['weather-suit--bad', '🌧 Sortie déconseillée'];
-  if (wind > 40) return ['weather-suit--bad', '💨 Vent dangereux'];
-  if ((precipProb ?? 0) > 60 || wind > 25) return ['weather-suit--ok', '🌂 Sortie possible'];
-  if (code >= 45 && code <= 48) return ['weather-suit--ok', '🌫 Brouillard'];
-  return ['weather-suit--great', '✅ Idéal pour randonner'];
-}
-
-async function renderWeather() {
-  try {
-    const url = 'https://api.open-meteo.com/v1/forecast'
-      + '?latitude=49.35&longitude=2.90'
-      + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m,precipitation_probability'
-      + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
-      + '&timezone=Europe%2FParis&forecast_days=4';
-    const data = await (await fetch(url)).json();
-    const c = data.current;
-    const d = data.daily;
-
-    const [icon, label] = WEATHER_CODE_MAP[c.weather_code] || ['🌤', 'Variable'];
-    document.getElementById('weatherIcon').textContent = icon;
-    document.getElementById('weatherTemp').textContent = `${Math.round(c.temperature_2m)}°C`;
-    document.getElementById('weatherLabel').textContent = label;
-    document.getElementById('weatherFeels').textContent = `Ressenti ${Math.round(c.apparent_temperature)}°C`;
-
-    // Suitability badge
-    const precipProb = c.precipitation_probability ?? (d.precipitation_probability_max?.[0] ?? 0);
-    const [suitClass, suitText] = weatherHikingSuitability(c.weather_code, c.wind_speed_10m, precipProb);
-    const suitEl = document.getElementById('weatherSuitability');
-    suitEl.textContent = suitText;
-    suitEl.className = `weather-suit ${suitClass}`;
-
-    // Detail chips
-    document.getElementById('wdWind').textContent = `💨 ${Math.round(c.wind_speed_10m)} km/h`;
-    document.getElementById('wdHumidity').textContent = `💧 ${Math.round(c.relative_humidity_2m)} %`;
-    document.getElementById('wdPrecip').textContent = `🌧 ${precipProb} %`;
-    document.getElementById('weatherDetails').style.display = 'flex';
-
-    // 4-day forecast strip
-    const days = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-    const forecastEl = document.getElementById('weatherForecast');
-    forecastEl.innerHTML = d.time.map((iso, i) => {
-      const name = i === 0 ? "Auj." : days[new Date(iso).getDay()];
-      const [fi, fl] = WEATHER_CODE_MAP[d.weather_code[i]] || ['🌤', ''];
-      const rain = d.precipitation_probability_max[i] ?? 0;
-      return `<div class="weather-day">
-        <span class="weather-day-name">${name}</span>
-        <span class="weather-day-icon">${fi}</span>
-        <span class="weather-day-temps"><b>${Math.round(d.temperature_2m_max[i])}°</b> / ${Math.round(d.temperature_2m_min[i])}°</span>
-        ${rain > 10 ? `<span class="weather-day-rain">🌧 ${rain}%</span>` : ''}
-      </div>`;
-    }).join('');
-  } catch {
-    document.getElementById('weatherIcon').textContent = '❌';
-    document.getElementById('weatherLabel').textContent = 'Météo indisponible';
-  }
 }
 
 // ── Web Push alerts (native browser notifications) ────────────────────────────

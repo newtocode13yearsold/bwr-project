@@ -1,6 +1,6 @@
 // profile-stats.js — the engagement gadgets on the profile page: activity
 // heatmap, streak banner, personal records, monthly challenge, recent saved
-// routes and forest trail health.
+// routes.
 // Split out of profile.js. Classic (deferred) script loaded before js/profile.js.
 // Only declarations here; each render function is called from renderPlanAndProgress
 // (profile-plan.js) during the entry boot IIFE. The small helpers it relies on
@@ -232,53 +232,5 @@ async function downloadSavedRouteGpx(id, btn) {
   } finally {
     btn.disabled = false;
     setTimeout(() => { btn.textContent = orig; }, 1600);
-  }
-}
-
-// ── Forest trail health (Pro) ────────────────────────────────────────────────
-const REPORT_TYPE_LABELS = {
-  fallen_tree: ['🪵', 'Arbre tombé'],
-  flooded:     ['💧', 'Inondé'],
-  muddy:       ['🟤', 'Boueux'],
-  rutted:      ['🛞', 'Ornières'],
-  broken_sign: ['🪧', 'Panneau cassé'],
-  closed:      ['🚫', 'Fermé'],
-  danger:      ['⚠️', 'Danger'],
-  other:       ['📝', 'Autre'],
-};
-
-async function renderTrailHealth() {
-  const list = document.getElementById('thList');
-  if (!list) return;
-  list.innerHTML = '<p class="th-empty">Chargement…</p>';
-
-  try {
-    const [paths, reports] = await Promise.all([
-      fetch(`${API_URL}/api/paths`).then(r => r.ok ? r.json() : []),
-      fetch(`${API_URL}/api/reports`).then(r => r.ok ? r.json() : []),
-    ]);
-
-    document.getElementById('thPaths').textContent = paths.length;
-    document.getElementById('thOpen').textContent  = reports.length;
-
-    const weekAgo = Date.now() - 7 * 86400000;
-    const recent  = reports.filter(r => r.date && new Date(r.date).getTime() >= weekAgo).length;
-    document.getElementById('thWeek').textContent = recent;
-
-    if (!reports.length) {
-      list.innerHTML = `<p class="th-ok">✅ Aucun problème signalé — la forêt est en pleine forme !</p>`;
-      return;
-    }
-
-    const counts = {};
-    for (const r of reports) counts[r.type] = (counts[r.type] || 0) + 1;
-    list.innerHTML = Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([type, n]) => {
-        const [icon, label] = REPORT_TYPE_LABELS[type] || ['❓', type];
-        return `<span class="th-chip"><span class="th-chip-ico">${icon}</span>${label} <strong>${n}</strong></span>`;
-      }).join('');
-  } catch {
-    list.innerHTML = `<p class="th-empty">État des chemins indisponible.</p>`;
   }
 }

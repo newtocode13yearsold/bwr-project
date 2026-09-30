@@ -38,7 +38,7 @@ test.describe('Roue de la chance (profile.html — Pro)', () => {
   test('affiche le canvas de la roue pour un utilisateur Pro', async ({ page }) => {
     await mockAuthMe(page, 'pro');
     await injectSession(page, 'pro');
-    await page.goto('/profile.html');
+    await page.goto('/profile.html#recompenses');
 
     await expect(page.locator('#premiumSection')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#wheelCanvas')).toBeVisible({ timeout: 5_000 });
@@ -48,9 +48,9 @@ test.describe('Roue de la chance (profile.html — Pro)', () => {
     await mockAuthMe(page, 'pro');
     await injectSession(page, 'pro');
     // Ensure no spin recorded today
-    await page.goto('/profile.html');
+    await page.goto('/profile.html#recompenses');
     await page.evaluate(() => localStorage.removeItem('bwr_wheel_last'));
-    await page.goto('/profile.html');
+    await page.goto('/profile.html#recompenses');
 
     await expect(page.locator('#wheelSpinBtn')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#wheelSpinBtn')).toBeEnabled({ timeout: 5_000 });
@@ -61,14 +61,14 @@ test.describe('Roue de la chance (profile.html — Pro)', () => {
     await mockAuthMe(page, 'pro');
     await injectSession(page, 'pro');
     const today = new Date().toISOString().slice(0, 10);
-    await page.goto('/profile.html');
+    await page.goto('/profile.html#recompenses');
     await page.evaluate((today) => {
       localStorage.setItem('bwr_wheel_last', today);
       localStorage.setItem('bwr_wheel_result', JSON.stringify({
         icon: '🌲', label: 'Conseil sentier', desc: 'Profitez du sentier des Étangs.',
       }));
     }, today);
-    await page.goto('/profile.html');
+    await page.goto('/profile.html#recompenses');
 
     await expect(page.locator('#wheelSpinBtn')).toBeDisabled({ timeout: 10_000 });
     await expect(page.locator('#wheelSpinBtn')).toContainText('Tournée');
@@ -79,12 +79,12 @@ test.describe('Roue de la chance (profile.html — Pro)', () => {
     await injectSession(page, 'pro');
     const today = new Date().toISOString().slice(0, 10);
     const prize = { icon: '🍀', label: 'Badge Chanceux', desc: 'Badge exclusif de la roue de la chance' };
-    await page.goto('/profile.html');
+    await page.goto('/profile.html#recompenses');
     await page.evaluate(({ today, prize }) => {
       localStorage.setItem('bwr_wheel_last', today);
       localStorage.setItem('bwr_wheel_result', JSON.stringify(prize));
     }, { today, prize });
-    await page.goto('/profile.html');
+    await page.goto('/profile.html#recompenses');
 
     const wheelText = page.locator('#wheelText');
     await expect(wheelText).toContainText('Badge Chanceux', { timeout: 10_000 });
@@ -105,9 +105,9 @@ test.describe('Roue de la chance (profile.html — Pro)', () => {
 
     await mockAuthMe(page, 'pro');
     await injectSession(page, 'pro');
-    await page.goto('/profile.html');
+    await page.goto('/profile.html#recompenses');
     await page.evaluate(() => localStorage.removeItem('bwr_wheel_last'));
-    await page.goto('/profile.html');
+    await page.goto('/profile.html#recompenses');
 
     const spinBtn = page.locator('#wheelSpinBtn');
     await expect(spinBtn).toBeEnabled({ timeout: 10_000 });
@@ -121,106 +121,5 @@ test.describe('Roue de la chance (profile.html — Pro)', () => {
     const stored = await page.evaluate(() => localStorage.getItem('bwr_wheel_last'));
     const today = new Date().toISOString().slice(0, 10);
     expect(stored).toBe(today);
-  });
-});
-
-// ── Météo (Pro uniquement) ───────────────────────────────────────────────────
-
-test.describe('Widget météo (profile.html — Pro)', () => {
-
-  const MOCK_WEATHER = {
-    current: {
-      temperature_2m: 18,
-      apparent_temperature: 16,
-      weather_code: 1,
-      wind_speed_10m: 12,
-      relative_humidity_2m: 65,
-      precipitation_probability: 10,
-    },
-    daily: {
-      time: ['2026-05-30', '2026-05-31', '2026-06-01', '2026-06-02'],
-      weather_code: [1, 2, 3, 61],
-      temperature_2m_max: [20, 22, 19, 15],
-      temperature_2m_min: [12, 13, 11, 10],
-      precipitation_probability_max: [5, 15, 30, 80],
-    },
-  };
-
-  test('weatherBlock est visible pour Pro', async ({ page }) => {
-    await page.route('**open-meteo.com/**', route => route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(MOCK_WEATHER),
-    }));
-    await mockAuthMe(page, 'pro');
-    await injectSession(page, 'pro');
-    await page.goto('/profile.html');
-
-    await expect(page.locator('#weatherBlock')).toBeVisible({ timeout: 10_000 });
-  });
-
-  test('affiche la température et l\'icône météo', async ({ page }) => {
-    await page.route('**open-meteo.com/**', route => route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(MOCK_WEATHER),
-    }));
-    await mockAuthMe(page, 'pro');
-    await injectSession(page, 'pro');
-    await page.goto('/profile.html');
-
-    await expect(page.locator('#weatherTemp')).toContainText('18', { timeout: 10_000 });
-    await expect(page.locator('#weatherIcon')).not.toBeEmpty({ timeout: 5_000 });
-    await expect(page.locator('#weatherIcon')).not.toContainText('⏳');
-  });
-
-  test('affiche les détails météo (vent, humidité, précipitations)', async ({ page }) => {
-    await page.route('**open-meteo.com/**', route => route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(MOCK_WEATHER),
-    }));
-    await mockAuthMe(page, 'pro');
-    await injectSession(page, 'pro');
-    await page.goto('/profile.html');
-
-    await expect(page.locator('#weatherDetails')).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('#wdWind')).toContainText('km/h');
-    await expect(page.locator('#wdHumidity')).toContainText('%');
-    await expect(page.locator('#wdPrecip')).toContainText('%');
-  });
-
-  test('affiche le bandeau prévisions 4 jours', async ({ page }) => {
-    await page.route('**open-meteo.com/**', route => route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(MOCK_WEATHER),
-    }));
-    await mockAuthMe(page, 'pro');
-    await injectSession(page, 'pro');
-    await page.goto('/profile.html');
-
-    const forecast = page.locator('#weatherForecast .weather-day');
-    await expect(forecast).toHaveCount(4, { timeout: 10_000 });
-  });
-
-  test('affiche une erreur si l\'API météo échoue', async ({ page }) => {
-    await page.route('**open-meteo.com/**', route => route.abort());
-    await mockAuthMe(page, 'pro');
-    await injectSession(page, 'pro');
-    await page.goto('/profile.html');
-
-    await expect(page.locator('#weatherBlock')).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('#weatherIcon')).toContainText('❌', { timeout: 8_000 });
-  });
-
-  test('weatherBlock est visible pour Pro (bis)', async ({ page }) => {
-    // La météo est une fonctionnalité Pro (voir features.js : weather.pro = true).
-    await mockAuthMe(page, 'pro');
-    await injectSession(page, 'pro');
-    await page.goto('/profile.html');
-
-    await expect(page.locator('#premiumSection')).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('#weatherBlock')).toBeVisible({ timeout: 5_000 });
   });
 });

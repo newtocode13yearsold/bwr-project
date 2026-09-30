@@ -1741,3 +1741,165 @@
 [data-theme="dark"] .th-chip strong { color: #fdba74; }
 [data-theme="dark"] .th-ok          { color: #4ade80; }
 [data-theme="dark"] .th-empty       { color: #8fa887; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Tabbed profile layout (Activité / Récompenses / Compte)
+   A compact hero, then one panel at a time — switched by js/profile-tabs.js.
+   Appended last so it wins over the older one-long-page rules above.
+   ══════════════════════════════════════════════════════════════════════════ */
+.profile-main { max-width: 760px; gap: 16px; }
+/* The hero is overflow:hidden (no automatic min size), so a flex column would
+   crush it to a strip — never let the stacked sections shrink. */
+.profile-main > * { flex-shrink: 0; }
+
+/* ── Compact hero ── */
+.profile-hero {
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  gap: 18px;
+  padding: 24px 22px;
+  min-height: 0;
+}
+.hero-top { display: flex; align-items: center; gap: 16px; position: relative; min-width: 0; }
+.profile-hero .avatar-ring { width: 78px; height: 78px; border-width: 3px; padding: 3px; }
+.profile-hero .avatar-big { font-size: 1.5rem; }
+.profile-hero .hero-info { flex: 1; align-items: flex-start; width: auto; min-width: 0; gap: 4px; }
+.profile-hero .hero-name { font-size: 1.5rem; }
+.hero-level { position: relative; margin: 0; }
+.hero-level .level-num { color: #fff; }
+.hero-level .level-xp { color: rgba(255,255,255,0.7); }
+.hero-level .xp-bar { background: rgba(255,255,255,0.16); height: 8px; }
+.hero-level .xp-fill { background: var(--lime-500); }
+.hero-level .level-next { color: rgba(255,255,255,0.72); margin-top: 8px; }
+.hero-level .level-next strong { color: var(--lime-400); }
+
+/* ── Tabs ── */
+.profile-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 5px;
+  background: var(--surface-2);
+  border-radius: 14px;
+}
+.profile-tab {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+  padding: 11px 6px;
+  font: 600 0.92rem var(--font-sans);
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--dur) var(--ease-out), color var(--dur) var(--ease-out);
+}
+.profile-tab:hover { color: var(--text-strong); }
+.profile-tab.active {
+  background: var(--surface-0);
+  color: var(--forest-700);
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="dark"] .profile-tab.active { color: var(--lime-400); }
+@media (max-width: 400px) { .profile-tab { font-size: 0.82rem; padding: 10px 2px; } }
+
+.profile-panel { display: flex; flex-direction: column; gap: 16px; min-width: 0; animation: profile-panel-in .2s var(--ease-out); }
+.profile-panel[hidden] { display: none; }
+@keyframes profile-panel-in { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .profile-panel { animation: none; } }
+.profile-panel .profile-card { grid-column: auto; }
+
+.panel-subtitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: 4px 0 -8px;
+}
+
+/* ── Rewards ladder folded away ── */
+.rewards-fold > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; margin: 0; }
+.rewards-fold > summary::-webkit-details-marker { display: none; }
+.rewards-fold > summary::after { content: '›'; font-size: 1.4rem; color: var(--text-faint); transition: transform var(--dur) var(--ease-out); }
+.rewards-fold[open] > summary::after { transform: rotate(90deg); }
+.rewards-fold:not([open]) { gap: 0; }
+
+/* ── Compte: settings list ── */
+.set-group {
+  background: var(--surface-0);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.set-label {
+  margin: 0;
+  padding: 14px 18px 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.set-row { border-top: 1px solid var(--border-soft); }
+.set-row > summary,
+.set-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.95rem;
+  color: var(--text-strong);
+}
+.set-row > summary::-webkit-details-marker { display: none; }
+.set-row > summary::after {
+  content: '›';
+  font-size: 1.35rem;
+  line-height: 1;
+  color: var(--text-faint);
+  transition: transform var(--dur) var(--ease-out);
+}
+.set-row[open] > summary::after { transform: rotate(90deg); }
+.set-row > summary:hover,
+.set-btn:hover { background: var(--surface-1); }
+.set-ico {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--forest-100);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+[data-theme="dark"] .set-ico { background: var(--surface-2); }
+.set-title { flex: 1; min-width: 0; font-weight: 600; }
+.set-row > summary .plan-pill { flex-shrink: 0; }
+.set-body { padding: 4px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
+.set-btn {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--border-soft);
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+}
+.set-danger, .set-danger .set-title { color: var(--danger); }
+.set-danger .set-ico { background: #fee2e2; }
+[data-theme="dark"] .set-danger .set-ico { background: rgba(220, 38, 38, 0.15); }
+
+/* Avatar colour picker now lives inside "Informations personnelles" */
+.set-body .color-picker-row { align-items: flex-start; margin: 0; width: 100%; }
+.set-body .color-label { color: var(--text-muted); }
+.set-body .color-swatches { max-width: none; }
+.set-body .swatch.active { border-color: var(--forest-700); }
+[data-theme="dark"] .set-body .swatch.active { border-color: var(--lime-400); }
+
+.profile-panel .account-gdpr-note { margin: 0 4px; }
+.set-body .color-swatches { justify-content: flex-start; }
+/* `.field` sets display:flex, which would otherwise override the hidden attribute
+   (the "confirm password" field must only appear once the e-mail is edited). */
+.field[hidden] { display: none; }
+.profile-panel .challenge-block { margin: 0; }
