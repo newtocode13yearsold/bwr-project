@@ -1,6 +1,8 @@
 // ── Communauté — social / friends layer ──────────────────────────────────────
-// Three tabs: the feed (shared walks from people I follow), a discover directory
-// to find & follow other randonneurs, and "mon réseau" (following / followers).
+// Four tabs: the feed (shared walks from people I follow), a discover directory
+// to find & follow other randonneurs, "mon réseau" (following / followers), and
+// the community forum (rendered by js/forum.js into #forumRoot, routed by the
+// #forum / #t/<topicId> hash so a topic link or a reload lands back on it).
 // Kudos (applause) + an inline Leaflet replay of any shared walk.
 // External file: the site CSP is `script-src 'self'`.
 (function () {
@@ -63,9 +65,21 @@
   const tabs = document.querySelectorAll('.fr-tab');
   tabs.forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
 
+  const forumRoot = document.getElementById('forumRoot');
+  const isForumHash = () => /^#(forum$|t\/)/.test(location.hash);
+
   function switchTab(tab) {
     currentTab = tab;
     tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    const forum = tab === 'forum';
+    content.hidden = forum;
+    if (forumRoot) forumRoot.hidden = !forum;
+    if (forum) {
+      if (!isForumHash()) history.replaceState(null, '', '#forum');
+      if (typeof route === 'function') route();   // js/forum.js
+      return;
+    }
+    if (isForumHash()) history.replaceState(null, '', location.pathname + location.search);
     if (tab === 'feed') loadFeed();
     else if (tab === 'discover') loadDiscover();
     else loadNetwork();
@@ -420,6 +434,8 @@
   (async function boot() {
     const user = await requireAuth();
     if (!user) return;
-    loadFeed();
+    // Header "Forum" link / a shared topic link → open straight on the forum tab.
+    window.addEventListener('hashchange', () => { if (isForumHash() && currentTab !== 'forum') switchTab('forum'); });
+    switchTab(isForumHash() ? 'forum' : 'feed');
   })();
 })();

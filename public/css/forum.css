@@ -1,0 +1,199 @@
+/* Forum styles — shared by forum.html (public page) and the Forum tab of friends.html. */
+.forum-section { max-width: 800px; margin: 0 auto; padding: 40px 24px 96px; }
+
+.forum-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+}
+.forum-toolbar h2 {
+  font-family: var(--font-display); font-size: 1.4rem; font-weight: 700;
+  color: var(--text-strong, #0b2410);
+}
+.btn-new {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--forest-700, #1e4d14); color: #a3e635;
+  border: none; border-radius: 10px; padding: 10px 18px;
+  font-size: 0.92rem; font-weight: 700; cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn-new:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-new[disabled] { background: var(--surface-2,#eef0ea); color: var(--text-muted,#6b7280); cursor: not-allowed; }
+
+/* ── Search ── */
+.forum-search { position: relative; margin-bottom: 20px; }
+.forum-search-icon {
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+  font-size: 0.95rem; opacity: 0.55; pointer-events: none;
+}
+.forum-search-input {
+  width: 100%; box-sizing: border-box;
+  border: 1.5px solid var(--border, #e2e8da); border-radius: 12px;
+  padding: 12px 16px 12px 42px; font-size: 0.96rem; font-family: var(--font-sans);
+  color: var(--text, #1f2937); background: #fff; outline: none; transition: border-color 0.15s;
+}
+.forum-search-input:focus { border-color: var(--forest-600, #2d6b1f); }
+.forum-search-input::placeholder { color: var(--text-muted, #9aa3af); }
+.forum-results-count {
+  font-size: 0.85rem; color: var(--text-muted, #6b7280); margin-bottom: 14px;
+}
+
+/* ── Topic list ── */
+.topic-card {
+  background: #fff; border: 1px solid var(--border-soft, #ebeee5);
+  border-radius: 14px; padding: 20px 22px; margin-bottom: 14px;
+  cursor: pointer; transition: box-shadow 0.18s, transform 0.1s, border-color 0.18s;
+}
+.topic-card:hover { box-shadow: 0 8px 24px -10px rgba(11,36,16,0.16); transform: translateY(-1px); }
+.topic-card-title {
+  font-family: var(--font-display); font-size: 1.12rem; font-weight: 700;
+  color: var(--text-strong, #0b2410); line-height: 1.3; margin-bottom: 6px;
+}
+.topic-card-preview { font-size: 0.92rem; color: var(--text, #4b5563); line-height: 1.55; margin-bottom: 12px; }
+.topic-card-meta {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  font-size: 0.8rem; color: var(--text-muted, #6b7280);
+}
+.topic-card-author { font-weight: 600; color: var(--forest-600, #2d6b1f); }
+.topic-card-replies { display: inline-flex; align-items: center; gap: 5px; }
+
+/* ── Locked card ── */
+.topic-card.locked { cursor: default; background: var(--surface-2, #f5f6f2); border-style: dashed; }
+.topic-card.locked:hover { box-shadow: none; transform: none; }
+.topic-card.locked .topic-card-title { color: var(--text-muted, #6b7280); }
+.lock-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--silver-grad-soft, linear-gradient(135deg,#f1f5f9,#e2e8f0));
+  color: var(--silver-700, #334155); border: 1px solid var(--silver-200, #e2e8f0);
+  border-radius: 999px; padding: 5px 14px; font-size: 0.82rem; font-weight: 600;
+  text-decoration: none; margin-top: 8px;
+}
+.lock-pill:hover { filter: brightness(0.97); }
+
+.upsell-banner {
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  border: 1px solid #fde68a; border-radius: 14px;
+  padding: 20px 22px; margin: 8px 0 24px; text-align: center;
+}
+.upsell-banner p { color: #92400e; font-size: 0.95rem; margin-bottom: 12px; line-height: 1.5; }
+.upsell-banner a {
+  display: inline-block; background: var(--forest-700, #1e4d14); color: #a3e635;
+  border-radius: 10px; padding: 9px 20px; font-weight: 700; font-size: 0.9rem; text-decoration: none;
+}
+
+/* ── Topic detail ── */
+.detail-back {
+  display: inline-flex; align-items: center; gap: 6px; background: none; border: none;
+  color: var(--forest-600, #2d6b1f); font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  padding: 0; margin-bottom: 18px;
+}
+.detail-back:hover { text-decoration: underline; }
+.detail-head { margin-bottom: 8px; }
+.detail-title {
+  font-family: var(--font-display); font-size: clamp(1.4rem, 4vw, 2rem); font-weight: 700;
+  color: var(--text-strong, #0b2410); line-height: 1.2; letter-spacing: -0.02em;
+}
+.post {
+  background: #fff; border: 1px solid var(--border-soft, #ebeee5); border-radius: 14px;
+  padding: 22px; margin-bottom: 16px;
+}
+.post.op { border-color: var(--forest-300, #b9d8a4); }
+.post-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.post-author { display: flex; align-items: center; gap: 10px; }
+.post-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, #1e4d14, #2d6b1f); color: #a3e635;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;
+}
+.post-author-name { font-weight: 700; color: var(--text-strong, #0b2410); font-size: 0.92rem; }
+.post-date { font-size: 0.78rem; color: var(--text-muted, #6b7280); }
+.post-body { font-size: 0.97rem; color: var(--text, #1f2937); line-height: 1.7; white-space: pre-line; word-break: break-word; }
+.post-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.post-delete {
+  background: #fee2e2; color: #b91c1c; border: none; border-radius: 8px;
+  padding: 5px 12px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+}
+.post-delete:hover { opacity: 0.75; }
+.post-edit {
+  background: var(--surface-2, #f3f4f0); color: var(--text, #1f2937); border: none; border-radius: 8px;
+  padding: 5px 12px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+}
+.post-edit:hover { opacity: 0.75; }
+
+/* ── Inline reply editor ── */
+.edit-textarea {
+  width: 100%; border: 1.5px solid var(--border, #e2e8da); border-radius: 10px;
+  padding: 12px 14px; font-size: 0.96rem; font-family: var(--font-sans); color: var(--text, #1f2937);
+  background: #fff; outline: none; resize: vertical; min-height: 90px; line-height: 1.6;
+}
+.edit-textarea:focus { border-color: var(--forest-600, #2d6b1f); }
+.edit-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
+
+.replies-title {
+  font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-muted, #6b7280); margin: 28px 0 14px;
+}
+
+/* ── Reply composer ── */
+.composer { background: #fff; border: 1px solid var(--border-soft, #ebeee5); border-radius: 14px; padding: 18px; margin-top: 12px; }
+.composer textarea {
+  width: 100%; border: 1.5px solid var(--border, #e2e8da); border-radius: 10px;
+  padding: 12px 14px; font-size: 0.96rem; font-family: var(--font-sans); color: var(--text, #1f2937);
+  background: #fff; outline: none; resize: vertical; min-height: 90px; line-height: 1.6;
+}
+.composer textarea:focus { border-color: var(--forest-600, #2d6b1f); }
+.composer-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+.composer-error { color: #b91c1c; font-size: 0.85rem; min-height: 18px; margin-top: 6px; }
+.composer-locked { text-align: center; color: var(--text-muted, #6b7280); font-size: 0.92rem; padding: 8px; }
+.composer-locked a { color: var(--forest-700, #1e4d14); font-weight: 700; text-decoration: none; }
+
+.forum-loading, .forum-empty { text-align: center; color: var(--text-muted, #6b7280); padding: 56px 0; }
+
+/* ── Empty state (no topics) ── */
+.forum-empty-state {
+  text-align: center; padding: 48px 24px 56px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.forum-empty-state .empty-illu { width: 132px; height: auto; margin-bottom: 18px; }
+.forum-empty-state h3 {
+  font-family: var(--font-display); font-size: 1.25rem; font-weight: 700;
+  color: var(--text-strong, #0b2410); margin: 0 0 8px;
+}
+.forum-empty-state p {
+  color: var(--text-muted, #6b7280); font-size: 0.96rem; line-height: 1.6;
+  max-width: 400px; margin: 0 0 22px;
+}
+.forum-empty-state .btn-new { text-decoration: none; }
+
+/* ── Modal (new topic) ── */
+.modal-backdrop {
+  display: none; position: fixed; inset: 0; background: rgba(11,36,16,0.55);
+  backdrop-filter: blur(4px); z-index: 500; align-items: center; justify-content: center; padding: 24px;
+}
+.modal-backdrop.open { display: flex; }
+.modal-box {
+  background: #fff; border-radius: 20px; padding: 32px; width: 100%; max-width: 560px;
+  box-shadow: 0 24px 60px -16px rgba(11,36,16,0.35); animation: modalIn 0.22s cubic-bezier(0.16,1,0.30,1);
+}
+@keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: none; } }
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.modal-header h2 { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--text-strong, #0b2410); }
+.modal-close { background: none; border: none; font-size: 1.4rem; color: var(--text-muted, #6b7280); cursor: pointer; line-height: 1; padding: 4px; }
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-strong, #0b2410); margin-bottom: 6px; letter-spacing: 0.03em; text-transform: uppercase; }
+.form-input, .form-textarea {
+  width: 100%; border: 1.5px solid var(--border, #e2e8da); border-radius: 10px; padding: 10px 14px;
+  font-size: 0.97rem; font-family: var(--font-sans); color: var(--text, #1f2937); background: #fff; outline: none; transition: border-color 0.15s;
+}
+.form-input:focus, .form-textarea:focus { border-color: var(--forest-600, #2d6b1f); }
+.form-textarea { resize: vertical; min-height: 130px; line-height: 1.6; }
+.modal-error { color: #b91c1c; font-size: 0.875rem; margin-bottom: 12px; min-height: 20px; }
+.modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px; }
+.btn-cancel { background: var(--surface-2, #f3f4f0); color: var(--text, #1f2937); border: none; border-radius: 10px; padding: 10px 22px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+.btn-save { background: var(--forest-700, #1e4d14); color: #a3e635; border: none; border-radius: 10px; padding: 10px 28px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+.btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-save:hover:not(:disabled) { opacity: 0.88; }
+
+.forum-footer { background: #0b2410; color: rgba(255,255,255,0.55); text-align: center; padding: 32px 24px; font-size: 0.85rem; }
+.forum-footer a { color: #a3e635; text-decoration: none; }
+
+@media (max-width: 600px) { .topic-card, .post { padding: 18px 16px; } .modal-box { padding: 26px 20px; } }

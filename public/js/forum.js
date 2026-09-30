@@ -1,7 +1,16 @@
 /* Community forum — topic list + thread detail, with tier gating.
  * Free accounts can read the 5 most recent topics; Pro members post & reply.
  * Single-page: the list and a topic detail are swapped into #forumRoot,
- * routed by the URL hash (#t/<topicId>). */
+ * routed by the URL hash (#t/<topicId>).
+ * Lives as the "Forum" tab of the Communauté page (friends.html), where
+ * #forumRoot carries data-home="#forum" and stays hidden until that tab opens.
+ * forum.html remains the public (logged-out / SEO) copy; signed-in visitors are
+ * sent on to the Communauté tab. */
+
+// Signed-in visitor on the standalone page → the forum now lives in Communauté.
+if (!document.getElementById('forumRoot')?.dataset.home && localStorage.getItem('bwr_token')) {
+  location.replace('friends' + (/^#t\//.test(location.hash) ? location.hash : '#forum'));
+}
 
 let currentUser = null;
 let canPost = false;          // server's verdict for the current user (pro/admin)
@@ -10,6 +19,8 @@ let currentQuery = '';        // active forum search term (persists across list 
 let searchToken = 0;          // guards against out-of-order search responses
 
 const root = () => document.getElementById('forumRoot');
+// Hash that means "topic list": '' on forum.html, '#forum' inside Communauté.
+const forumHome = () => root().dataset.home || '';
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 async function init() {
@@ -32,6 +43,7 @@ function updateNav() {
 }
 
 function route() {
+  if (root().hidden) return;   // Communauté: forum tab not open — friends.js calls route() when it is
   const m = location.hash.match(/^#t\/(.+)$/);
   if (m) renderDetail(decodeURIComponent(m[1]));
   else renderList();
@@ -288,7 +300,7 @@ async function onDelete(topicId, ref) {
     if (!confirm('Supprimer ce sujet et toutes ses réponses ?')) return;
     try {
       await api('DELETE', `/api/forum/topics/${encodeURIComponent(id)}`);
-      location.hash = '';
+      location.hash = forumHome();
     } catch (err) { alert(err.message || 'Erreur.'); }
   } else {
     if (!confirm('Supprimer cette réponse ?')) return;
@@ -412,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Content is rendered dynamically — delegate clicks from the root.
   // (Inline onclick handlers are blocked by the page CSP, so wire them here.)
   root().addEventListener('click', e => {
-    if (e.target.closest('.detail-back')) { location.hash = ''; return; }
+    if (e.target.closest('.detail-back')) { location.hash = forumHome(); return; }
     const card = e.target.closest('.topic-card[data-id]');
     if (card) location.hash = `#t/${encodeURIComponent(card.dataset.id)}`;
   });

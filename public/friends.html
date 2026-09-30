@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/home.css" />
   <link rel="stylesheet" href="css/notif-optin.css" />
   <link rel="stylesheet" href="css/mobile.css" />
+  <link rel="stylesheet" href="css/forum.css" />
   <script src="js/theme.js"></script>
   <style>
     html, body { height: auto !important; overflow: auto !important; }
@@ -42,7 +43,7 @@
     /* The cards/tabs are always white surfaces, so pin light-mode ink tokens here
        — otherwise dark mode flips --text-strong etc. to light and the text
        disappears on the white cards. */
-    .fr-section {
+    :root:not([data-theme="dark"]) .fr-section {
       --text-strong: #0b2410; --text: #374151; --text-muted: #6b7280;
       --surface-2: #f3f4f0; --border-soft: #ebeee5;
       --forest-700: #1e4d14; --forest-600: #2d6b1f;
@@ -153,7 +154,7 @@
         <a href="map">Carte</a>
         <a href="routes">Planifier</a>
         <a href="activities">Mes sorties</a>
-        <a href="forum">Forum</a>
+        <a href="friends#forum">Forum</a>
       </nav>
     </div>
     <div class="header-right">
@@ -191,7 +192,7 @@
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
         <span>Mon profil</span>
       </a>
-      <a href="forum" class="nav-drawer-item">
+      <a href="friends#forum" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
         <span>Forum</span>
       </a>
@@ -214,7 +215,7 @@
   <div class="page-hero">
     <div class="page-hero-badge">👥 Communauté</div>
     <h1>Communauté</h1>
-    <p>Suivez d'autres randonneurs de l'Oise, retrouvez leurs sorties partagées dans votre fil et applaudissez leurs plus belles balades.</p>
+    <p>Suivez d'autres randonneurs de l'Oise, applaudissez leurs plus belles balades et échangez sur le forum.</p>
   </div>
 
   <!-- ── Main ── -->
@@ -223,9 +224,37 @@
       <button class="fr-tab active" data-tab="feed" id="tabFeed">🌿 Fil d'actu</button>
       <button class="fr-tab" data-tab="discover" id="tabDiscover">🔍 Découvrir</button>
       <button class="fr-tab" data-tab="network" id="tabNetwork">👥 Mon réseau</button>
+      <button class="fr-tab" data-tab="forum" id="tabForum">💬 Forum</button>
     </div>
     <div id="frContent"><div class="fr-loading">Chargement…</div></div>
+    <!-- Forum tab: list/detail rendered by js/forum.js, routed by #forum / #t/<id> -->
+    <div id="forumRoot" data-home="#forum" hidden></div>
   </section>
+
+  <!-- ── Forum: new-topic modal (driven by js/forum.js) ── -->
+  <div class="modal-backdrop" id="topicModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modalTitle">Nouveau sujet</h2>
+        <button class="modal-close" id="modalClose" aria-label="Fermer">×</button>
+      </div>
+      <form id="topicForm">
+        <div class="form-group">
+          <label class="form-label" for="fieldTitle">Titre</label>
+          <input type="text" id="fieldTitle" class="form-input" placeholder="De quoi voulez-vous parler ?" required maxlength="140" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="fieldBody">Message</label>
+          <textarea id="fieldBody" class="form-textarea" placeholder="Partagez votre question, votre retour ou votre découverte…" required maxlength="8000"></textarea>
+        </div>
+        <p class="modal-error" id="modalError"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="modalCancel">Annuler</button>
+          <button type="submit" class="btn-save" id="modalSave">Publier</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- ── Replay modal ── -->
   <div class="replay-overlay" id="replayOverlay">
@@ -288,6 +317,7 @@
   <script src="js/track.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/friends.js"></script>
+  <script src="js/forum.js"></script>
   <script src="js/ui-shared.js"></script>
   <script src="js/notif-optin.js"></script>
   <script src="js/rating.js"></script>
