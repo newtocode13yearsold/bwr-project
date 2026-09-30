@@ -287,51 +287,6 @@ function trapFocus(container) {
   return () => container.removeEventListener('keydown', handler);
 }
 
-// ── Contact modal ─────────────────────────────────────────────────────────────
-const contactModal = document.getElementById('contactModal');
-let _contactTrigger = null;
-let _contactTrapRelease = null;
-
-function openContactModal() {
-  contactModal.classList.remove('hidden');
-  const u = getCachedUser();
-  if (u) { document.getElementById('mcName').value = u.name; document.getElementById('mcEmail').value = u.email; }
-  _contactTrapRelease = trapFocus(contactModal);
-  document.getElementById('mcName').focus();
-}
-function closeContactModal() {
-  contactModal.classList.add('hidden');
-  if (_contactTrapRelease) { _contactTrapRelease(); _contactTrapRelease = null; }
-  if (_contactTrigger) { _contactTrigger.focus(); _contactTrigger = null; }
-}
-
-document.getElementById('btnOpenContact').addEventListener('click', e => {
-  _contactTrigger = e.currentTarget;
-  openContactModal();
-});
-document.getElementById('btnCloseContact').addEventListener('click', closeContactModal);
-contactModal.addEventListener('click', e => { if (e.target === contactModal) closeContactModal(); });
-contactModal.addEventListener('keydown', e => { if (e.key === 'Escape') closeContactModal(); });
-
-document.getElementById('mapContactForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const name    = document.getElementById('mcName').value.trim();
-  const email   = document.getElementById('mcEmail').value.trim();
-  const message = document.getElementById('mcMessage').value.trim();
-  const btn     = document.getElementById('mcSubmit');
-  const status  = document.getElementById('mcStatus');
-  if (!name || !email || !message) { status.textContent = 'Tous les champs sont obligatoires.'; status.style.color = '#dc2626'; return; }
-  btn.textContent = 'Envoi…'; btn.disabled = true;
-  try {
-    const res = await fetch(`${API_URL}/api/contact`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, message }) });
-    if (!res.ok) throw new Error();
-    document.getElementById('mapContactForm').reset();
-    status.textContent = '✅ Message envoyé — merci !'; status.style.color = '#1e4d14';
-    setTimeout(() => { closeContactModal(); status.textContent = ''; }, 1800);
-  } catch { status.textContent = 'Erreur, réessaye.'; status.style.color = '#dc2626'; }
-  finally { btn.textContent = 'Envoyer'; btn.disabled = false; }
-});
-
 // ── Offline tile download (preset Oise zones) → js/map-offline.js (lazy-loaded) ──
 (function initOfflineBtn() {
   const btn = document.getElementById('btnOfflineMaps');
