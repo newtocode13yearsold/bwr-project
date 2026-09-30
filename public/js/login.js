@@ -300,6 +300,12 @@ signupForm.addEventListener('submit', async (e) => {
     successEl.textContent = data.message || 'Un email de vérification a été envoyé. Vérifiez votre boîte mail pour activer votre compte.';
     successEl.classList.remove('hidden');
     signupForm.reset();
+    // Account is created — lock the form so the fields can't be filled in
+    // again: hide every field + the submit button, keep only the message.
+    Array.from(signupForm.children).forEach(el => {
+      if (el !== successEl) el.classList.add('hidden');
+    });
+    signupForm.querySelectorAll('input, button').forEach(el => { el.disabled = true; });
   } catch {
     errorEl.textContent = 'Impossible de contacter le serveur.';
     errorEl.classList.remove('hidden');
