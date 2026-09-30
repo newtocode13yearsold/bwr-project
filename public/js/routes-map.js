@@ -257,6 +257,8 @@ function initSaveShareButtons() {
   }
 
   if (!canSave) {
+    BWR.addProOnlyTag(btnSave);
+    BWR.addProOnlyTag(btnShare);
     btnSave.onclick  = () => showUpgradeModal('pro', 'La sauvegarde de trajets');
     btnShare.onclick = () => showUpgradeModal('pro', 'Le partage de trajets');
     return;
@@ -282,9 +284,10 @@ function initRouteHistory() {
     body.style.display = 'none';
     body.innerHTML = `
       <div class="history-empty">
-        <p>🔒 Sauvegardez vos trajets avec le plan Pro.</p>
+        <p>Sauvegardez vos trajets avec le plan Pro. ${BWR.proOnlyTag()}</p>
         <a href="plans" style="color:#6d28d9;font-weight:700">Voir le plan Pro →</a>
       </div>`;
+    BWR.addProOnlyTag(document.querySelector('#historyToggle > span'));
     document.getElementById('historyToggle').addEventListener('click', lazyToggle);
     return;
   }

@@ -210,7 +210,9 @@ const PoiControl = L.Control.extend({
     const el = L.DomUtil.create('div', 'poi-control leaflet-bar');
     el.innerHTML = `
       <button id="poiToggleBtn" class="poi-ctrl-btn" title="Afficher / masquer les points d'intérêt">📍 Points</button>
-      ${canAdd ? '<button id="poiAddBtn" class="poi-ctrl-btn poi-ctrl-add" title="Ajouter un point d\'intérêt">➕</button>' : ''}
+      ${canAdd
+        ? '<button id="poiAddBtn" class="poi-ctrl-btn poi-ctrl-add" title="Ajouter un point d\'intérêt">➕</button>'
+        : `<button id="poiAddLockedBtn" class="poi-ctrl-btn poi-ctrl-add" title="Ajouter un point d'intérêt">➕${typeof BWR !== 'undefined' ? BWR.proOnlyTag() : ''}</button>`}
     `;
     L.DomEvent.disableClickPropagation(el);
     L.DomEvent.disableScrollPropagation(el);
@@ -220,6 +222,9 @@ const PoiControl = L.Control.extend({
         if (_poiLayerVisible) poiLayer.addTo(map);
         else poiLayer.remove();
         document.getElementById('poiToggleBtn')?.classList.toggle('off', !_poiLayerVisible);
+      });
+      document.getElementById('poiAddLockedBtn')?.addEventListener('click', () => {
+        showToast('🔒 Ajouter un point d\'intérêt est réservé aux membres Pro — voir la page Plan');
       });
       document.getElementById('poiAddBtn')?.addEventListener('click', () => {
         if (window.poiAddModeActive) exitPoiAddMode();

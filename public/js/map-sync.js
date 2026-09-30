@@ -181,9 +181,12 @@ document.querySelectorAll('.layer-btn').forEach(btn => {
     const v = radio.value;
     if (v === 'satellite' && !BWR.can('satellite_tiles', _userPlan)) {
       label.classList.add('plan-locked');
-      label.insertAdjacentHTML('beforeend', ' <span class="tier-tag pro">🔒 Pro</span>');
+      BWR.addProOnlyTag(label);
     }
   });
+  // Floating layer switcher on the map itself.
+  const satBtn = document.querySelector('.layer-btn[data-layer="satellite"]');
+  if (satBtn && !BWR.can('satellite_tiles', _userPlan)) BWR.addProOnlyTag(satBtn);
 })();
 
 function showUpgradeToast(featureLabel, tier) {

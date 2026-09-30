@@ -294,7 +294,7 @@ function markCardLocked(el, tier, featureLabel) {
   if (!el.querySelector('.lock-badge')) {
     const badge = document.createElement('span');
     badge.className = `lock-badge tier-${tier}`;
-    badge.textContent = `🔒 ${BWR.TIER_LABEL[tier] || 'Pro'}`;
+    badge.textContent = BWR.PRO_ONLY_LABEL;
     el.appendChild(badge);
   }
   el.dataset.featureLabel = featureLabel;
@@ -303,12 +303,7 @@ function markBtnLocked(el, tier) {
   el.classList.add('locked-feature');
   el.setAttribute('data-tier', tier);
   el.addEventListener('click', interceptLocked, true);
-  if (!el.querySelector('.lock-badge')) {
-    const badge = document.createElement('span');
-    badge.className = `lock-badge tier-${tier}`;
-    badge.textContent = '🔒';
-    el.appendChild(badge);
-  }
+  BWR.addProOnlyTag(el);
 }
 function interceptLocked(e) {
   if (!e.currentTarget.classList.contains('locked-feature')) return;
@@ -1152,17 +1147,14 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   if (btnGPX) {
     if (BWR.can('gpx_export', plan)) {
       btnGPX.classList.remove('locked-feature');
-      btnGPX.querySelector('.lock-badge')?.remove();
+      BWR.removeProOnlyTag(btnGPX);
       btnGPX.onclick = () => downloadGPX(coords, routeName,
         (lastRoute && lastRoute.elevations) ? { elevations: lastRoute.elevations } : {});
     } else {
       btnGPX.classList.add('locked-feature');
       btnGPX.setAttribute('data-tier', 'pro');
       btnGPX.dataset.featureLabel = 'L\'export GPX';
-      if (!btnGPX.querySelector('.lock-badge')) {
-        const b = document.createElement('span'); b.className = 'lock-badge tier-pro'; b.textContent = '🔒 Pro';
-        btnGPX.appendChild(b);
-      }
+      BWR.addProOnlyTag(btnGPX);
       btnGPX.onclick = (e) => { e.preventDefault(); showUpgradeModal('pro', 'L\'export GPX'); };
     }
   }
@@ -1170,19 +1162,14 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   if (btnKML) {
     if (BWR.can('kml_export', plan)) {
       btnKML.classList.remove('locked-feature');
-      btnKML.querySelector('.lock-badge')?.remove();
+      BWR.removeProOnlyTag(btnKML);
       btnKML.onclick = () => downloadKML(coords, routeName);
     } else {
       const kmlTier = BWR.requiredTier('kml_export');
       btnKML.classList.add('locked-feature');
       btnKML.setAttribute('data-tier', kmlTier);
       btnKML.dataset.featureLabel = 'L\'export KML';
-      if (!btnKML.querySelector('.lock-badge')) {
-        const b = document.createElement('span');
-        b.className = `lock-badge tier-${kmlTier}`;
-        b.textContent = `🔒 ${BWR.TIER_LABEL[kmlTier] || 'Pro'}`;
-        btnKML.appendChild(b);
-      }
+      BWR.addProOnlyTag(btnKML);
       btnKML.onclick = (e) => { e.preventDefault(); showUpgradeModal(kmlTier, 'L\'export KML'); };
     }
   }
@@ -1190,9 +1177,11 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
   if (btnStrava) {
     if (BWR.can('strava_komoot_push', plan)) {
       btnStrava.classList.remove('locked-feature');
+      BWR.removeProOnlyTag(btnStrava);
       btnStrava.onclick = () => pushToStrava(coords, routeName);
     } else {
       btnStrava.classList.add('locked-feature');
+      BWR.addProOnlyTag(btnStrava);
       btnStrava.onclick = (e) => { e.preventDefault(); showUpgradeModal(BWR.requiredTier('strava_komoot_push'), 'Le push Strava'); };
     }
   }
@@ -1227,13 +1216,13 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
       wrap.innerHTML = `
         <div class="elevation-locked">
           <span class="el-icon">⛰️</span>
-          <strong>Profil altimétrique</strong>
+          <strong>Profil altimétrique ${BWR.proOnlyTag()}</strong>
           <p>Voyez le dénivelé, l'altitude min/max et la pente — disponibles à partir du plan Pro.</p>
           <a href="plans" class="el-cta">Débloquer avec Pro →</a>
         </div>
       `;
     }
-    document.getElementById('statAscent').textContent = '🔒';
+    document.getElementById('statAscent').innerHTML = BWR.proOnlyTag();
   }
 }
 

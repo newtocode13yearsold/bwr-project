@@ -215,6 +215,55 @@ h1, h2 {
 .tier-tag.pro    { background: var(--gold-grad-soft);   color: var(--gold-text);   border: 1px solid var(--gold-200); box-shadow: 0 0 0 0 transparent; }
 .tier-tag.free   { background: var(--forest-100);       color: var(--forest-700); border: 1px solid var(--forest-100); }
 
+/* "🔒 Pro uniquement" — the one label every Pro-gated element shows to a free
+ * user (built by BWR.proOnlyTag() / BWR.addProOnlyTag() in js/features.js). */
+.pro-only-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--gold-grad-soft);
+  color: var(--gold-text);
+  border: 1px solid var(--gold-200);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+/* On narrow buttons, sit the tag on its own line under the label. */
+.layer-btn .pro-only-tag,
+.badge-item .pro-only-tag {
+  display: flex;
+  width: fit-content;
+  margin: 3px auto 0;
+  font-size: 0.58rem;
+  padding: 0 6px;
+}
+.badge-item .pro-only-tag {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  justify-content: center;
+  line-height: 1.25;
+  padding: 1px 5px;
+}
+/* Buttons laid out in a flex row: float the tag as a ribbon on the top edge. */
+.diff-btn { position: relative; }
+.diff-btn .pro-only-tag {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  margin: 0;
+  padding: 0 6px;
+  font-size: 0.55rem;
+}
+
 .lock-overlay {
   position: relative;
   isolation: isolate;

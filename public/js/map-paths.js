@@ -292,7 +292,7 @@ function openPathPopup(path, latlng) {
         ${gradeHint}
       </div>`
     : `<div class="popup-difficulty-locked">
-        <span class="lock-tag">🔒 Pro</span>
+        ${BWR.proOnlyTag()}
         <span class="lock-hint">Modifier la difficulté</span>
       </div>`;
 

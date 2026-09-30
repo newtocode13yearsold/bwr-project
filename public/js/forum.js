@@ -18,6 +18,10 @@ let editingTopicId = null;    // set while the modal is reused to edit an existi
 let currentQuery = '';        // active forum search term (persists across list ↔ detail)
 let searchToken = 0;          // guards against out-of-order search responses
 
+// Same label as BWR.proOnlyTag() — inlined because friends.html (which embeds
+// the forum) doesn't load features.js.
+const PRO_ONLY_TAG = '<span class="pro-only-tag">🔒 Pro uniquement</span>';
+
 const root = () => document.getElementById('forumRoot');
 // Hash that means "topic list": '' on forum.html, '#forum' inside Communauté.
 const forumHome = () => root().dataset.home || '';
@@ -65,7 +69,7 @@ async function renderList() {
 
   const newBtn = canPost
     ? `<button class="btn-new" id="btnNewTopic">＋ Nouveau sujet</button>`
-    : `<button class="btn-new" disabled title="Réservé aux membres Pro">＋ Nouveau sujet</button>`;
+    : `<button class="btn-new" disabled title="Réservé aux membres Pro">＋ Nouveau sujet ${PRO_ONLY_TAG}</button>`;
 
   root().innerHTML = `
     <div class="forum-toolbar"><h2>Discussions</h2>${newBtn}</div>
@@ -178,7 +182,7 @@ function emptyState(canPost) {
 function topicCard(t) {
   if (t.locked) {
     return `<div class="topic-card locked">
-      <div class="topic-card-title">🔒 ${escHtml(t.title)}</div>
+      <div class="topic-card-title">${escHtml(t.title)} ${PRO_ONLY_TAG}</div>
       <a class="lock-pill" href="plans">⭐ Débloquer avec Pro</a>
     </div>`;
   }
@@ -227,7 +231,7 @@ async function renderDetail(id) {
          <div class="composer-actions"><button class="btn-save" id="btnReply">Répondre</button></div>
        </div>`
     : `<div class="composer"><div class="composer-locked">
-         Réponse réservée aux membres Pro. <a href="plans">Voir les abonnements →</a>
+         Répondre ${PRO_ONLY_TAG} <a href="plans">Voir les abonnements →</a>
        </div></div>`;
 
   root().innerHTML = `
