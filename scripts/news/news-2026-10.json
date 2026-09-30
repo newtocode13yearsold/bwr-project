@@ -1,0 +1,79 @@
+[
+  {
+    "category": "evenement",
+    "title": "Rallye des Ancêtres : des voitures de la Belle Époque les 3 et 4 octobre",
+    "content": "Des dizaines de voitures d'avant 1905 (De Dion-Bouton, Panhard & Levassor, Delage…) partent de Choisy-au-Bac pour deux jours de raid dans l'Est de l'Oise.\n\nDimanche 4 octobre : exposition au château de Compiègne à 9h15, puis balade de Choisy-au-Bac à Pierrefonds à 10h30. Prudence aux traversées de routes forestières ce week-end-là !",
+    "url": "https://www.agglo-compiegne.fr/rallye-des-ancetres-2026",
+    "urlLabel": "Voir le programme"
+  },
+  {
+    "category": "evenement",
+    "title": "Fête de la mobilité douce le dimanche 4 octobre à Compiègne",
+    "content": "Une journée à pied, à vélo et en roller : course et marche Compiègne en Rose (7 et 11 km, départ 9h15), stand randonnée de l'ATPC, ateliers de réparation de vélos et balade à vélo gratuite de 10 km à 14h.",
+    "url": "https://www.agglo-compiegne.fr/fete-de-la-mobilite-douce-2026",
+    "urlLabel": "Voir le programme"
+  },
+  {
+    "category": "evenement",
+    "title": "Exposition gratuite « Dans la peau des arbres » jusqu'au 31 octobre",
+    "content": "De la graine à l'arbre centenaire, de la forêt à la ville : une expo gratuite à la Maison des Projets (27 place d'Armes, Compiègne), du mardi au samedi. Prochaine conférence : « Sur la piste des arbres », mercredi 21 octobre à 14h.",
+    "url": "https://www.agglo-compiegne.fr/exposition-dans-la-peau-des-arbres",
+    "urlLabel": "Voir l'exposition"
+  },
+  {
+    "category": "securite",
+    "title": "Heure d'hiver le 25 octobre : la nuit tombe plus tôt en forêt",
+    "content": "Dans la nuit du 24 au 25 octobre, on recule d'une heure. Sous les arbres, il fera vite nuit en fin d'après-midi : vérifiez la durée de votre trajet dans BWR, gardez de la marge et emportez une lampe frontale.",
+    "url": "https://www.info.gouv.fr/actualite/changement-d-heure-ce-qu-il-faut-savoir-sur-le-passage-a-l-heure-d-hiver",
+    "urlLabel": "Tout savoir sur le changement d'heure"
+  },
+  {
+    "category": "faune",
+    "title": "Brame du cerf : derniers soirs pour l'écouter",
+    "content": "Le brame dure en général de mi-septembre à mi-octobre : il reste quelques soirées pour l'entendre. Restez sur les chemins, gardez le silence, pas de lampe vers les animaux et gardez vos distances : les cerfs peuvent être agressifs à cette période.",
+    "url": "https://www.rectoverso.co/tutoriels/randonnee-brame-cerf-automne",
+    "urlLabel": "Conseils pour écouter le brame"
+  },
+  {
+    "category": "securite",
+    "title": "Saison de chasse : restez vigilants en forêt",
+    "content": "La chasse a repris dans le massif. Respectez les panneaux temporaires à l'entrée des chemins, portez une couleur vive et renseignez-vous auprès de l'ONF avant une longue sortie. Vous voyez un panneau ou un obstacle ? Signalez-le sur la Carte BWR.",
+    "url": "https://www.onf.fr/onf/forets-de-france/+/1a1::foret-de-compiegne.html",
+    "urlLabel": "La forêt de Compiègne sur le site de l'ONF"
+  },
+  {
+    "category": "foret",
+    "title": "Champignons : l'automne est là, cueillez malin",
+    "content": "Les intoxications culminent en octobre. Ne cueillez que ce que vous connaissez parfaitement, ramassez le champignon entier (pied et chapeau) et faites vérifier votre récolte en cas de doute. Au moindre malaise : 15 ou centre antipoison.",
+    "url": "https://www.anses.fr/fr/content/cueillette-des-champignons-vigilance-face-aux-risques-dintoxications",
+    "urlLabel": "Les conseils de l'Anses"
+  },
+  {
+    "category": "foret",
+    "title": "Couleurs d'automne : le moment idéal pour les Beaux-Monts",
+    "content": "De fin octobre à début novembre, hêtres et chênes prennent leurs couleurs. Le belvédère des Beaux-Monts, avec sa perspective vers le château, est l'un des plus beaux points de vue pour en profiter.",
+    "url": "https://bwrmaps.com/best-tours",
+    "urlLabel": "Voir les meilleures balades"
+  },
+  {
+    "category": "evenement",
+    "title": "11 Novembre : cérémonies à la clairière de l'Armistice",
+    "content": "Comme chaque année, les cérémonies du 11 Novembre ont lieu à la clairière de l'Armistice, en forêt de Compiègne, en hommage aux victimes de la Première Guerre mondiale. Attendez-vous à du monde dans ce secteur ce jour-là.",
+    "url": "https://www.agglo-compiegne.fr/les-grands-evenements-de-lannee",
+    "urlLabel": "Voir les grands événements"
+  },
+  {
+    "category": "evenement",
+    "title": "Marché de Noël de Compiègne du 22 novembre au 4 janvier",
+    "content": "Chalets en bois, artisanat, gourmandises, concerts et manège place de l'Hôtel de Ville. Une balade en forêt le matin, un vin chaud l'après-midi : le dimanche parfait de décembre.",
+    "url": "https://www.agglo-compiegne.fr/les-grands-evenements-de-lannee",
+    "urlLabel": "Voir les grands événements"
+  },
+  {
+    "category": "app",
+    "title": "Ce qui a changé dans BWR en septembre",
+    "content": "• 🧭 Le planificateur s'ouvre directement sur la Carte.\n• 🗺️ La carte IGN devient le fond par défaut.\n• 🖨️ Feuille de route imprimable, carrefour par carrefour.\n• 📏 Mesure de distance d'un clic droit.\n• 🌧️ Alerte pluie au départ d'une sortie.\n• 👤 Profil rangé en trois onglets.\n• 🌙 Mode sombre sur toutes les pages.",
+    "url": "https://bwrmaps.com/changelog",
+    "urlLabel": "Voir le changelog complet"
+  }
+]
