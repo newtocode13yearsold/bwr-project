@@ -151,6 +151,12 @@ loginForm.addEventListener('submit', async (e) => {
     localStorage.setItem('bwr_user', JSON.stringify(data.user));
     const redirect = sessionStorage.getItem('bwr_redirect');
     sessionStorage.removeItem('bwr_redirect');
+    // First sign-in right after signup (server `onboarded:false`): go straight
+    // to the map — that's where the welcome tour runs — not the home page.
+    if (data.user && data.user.onboarded === false) {
+      window.location.href = 'map';
+      return;
+    }
     window.location.href = redirect || 'index';
   } catch {
     errorEl.textContent = 'Impossible de contacter le serveur.';
