@@ -6,6 +6,20 @@
   Permissions-Policy: geolocation=(self), camera=(self)
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
 
+# The route planner is shown inside the Carte page's "Planifier" drawer (an
+# <iframe> on map.html), so it — and only it — may be framed by our own origin.
+# `!` detaches the global DENY / frame-ancestors 'none' before re-adding.
+/routes
+  ! X-Frame-Options
+  ! Content-Security-Policy
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://bwrmaps.com https://www.bwrmaps.com https://bwr-worker.ciril8596.workers.dev https://api.openrouteservice.org https://router.project-osrm.org https://nominatim.openstreetmap.org https://api.open-meteo.com https://api.opentopodata.org https://api.open-elevation.com https://*.tile.openstreetmap.org https://*.tile.opentopomap.org https://data.geopf.fr https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com https://overpass-api.de https://ntfy.sh; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'
+/routes.html
+  ! X-Frame-Options
+  ! Content-Security-Policy
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://bwrmaps.com https://www.bwrmaps.com https://bwr-worker.ciril8596.workers.dev https://api.openrouteservice.org https://router.project-osrm.org https://nominatim.openstreetmap.org https://api.open-meteo.com https://api.opentopodata.org https://api.open-elevation.com https://*.tile.openstreetmap.org https://*.tile.opentopomap.org https://data.geopf.fr https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com https://overpass-api.de https://ntfy.sh; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'
+
 # HTML pages must always revalidate so new deploys (changelog, content) show up
 # immediately instead of being held by the Cloudflare edge / browser cache.
 /*.html

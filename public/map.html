@@ -36,7 +36,7 @@
   <link rel="preload" href="lib/leaflet.js" as="script" />
   <link rel="prefetch" href="js/graph-router.js" />
   <link rel="prefetch" href="js/exporters.js" />
-  <link rel="prefetch" href="js/routes.js" />
+  <link rel="prefetch" href="routes" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- API host: same-origin in prod (no-op), but a real cross-origin on *.pages.dev previews -->
@@ -50,6 +50,7 @@
   <link rel="stylesheet" href="css/grade-banner.css" />
   <link rel="stylesheet" href="css/notif-optin.css" />
   <link rel="stylesheet" href="css/mobile.css" />
+  <link rel="stylesheet" href="css/map-planner.css" />
   <!-- Données structurées : application cartographique des forêts de l'Oise -->
   <script type="application/ld+json">
   {
@@ -77,7 +78,7 @@
       <a href="/" class="logo" style="text-decoration:none">BWR</a>
       <nav class="header-nav-links">
         <a href="map" class="active">Carte</a>
-        <a href="routes">Planifier</a>
+        <a href="map?plan=1">Planifier</a>
         <a href="news">Actualités</a>
         <a href="plans">Plan</a>
       </nav>
@@ -107,7 +108,7 @@
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
         <span>Carte</span>
       </a>
-      <a href="routes" class="nav-drawer-item">
+      <a href="map?plan=1" class="nav-drawer-item">
         <span class="nav-drawer-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
         <span>Planifier un trajet</span>
       </a>
@@ -277,12 +278,13 @@
   <script src="js/map-sync.js"></script>
   <script src="js/gps-filter.js"></script>
   <script src="js/gps-tracker.js"></script>
+  <script src="js/map-planner.js"></script>
   <nav class="bottom-nav" aria-label="Navigation principale">
     <a href="map" class="bnav-item active">
       <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span>
       <span class="bnav-label">Carte</span>
     </a>
-    <a href="routes" class="bnav-item">
+    <a href="map?plan=1" class="bnav-item">
       <span class="bnav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
       <span class="bnav-label">Trajets</span>
     </a>

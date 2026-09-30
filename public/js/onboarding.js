@@ -57,7 +57,7 @@
       placement: 'top'
     },
     {
-      target: '.bnav-item[href="routes"], .header-nav-links a[href="routes"]',
+      target: '.planner-tab, .bnav-item[href="map?plan=1"]',
       title: 'Planifiez un trajet',
       body: 'Le cœur de BWR : indiquez un départ et une distance, et l’app génère une boucle ou un A→B en forêt, avec dénivelé et export GPX.',
       placement: 'bottom'

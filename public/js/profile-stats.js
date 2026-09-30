@@ -176,7 +176,7 @@ async function renderRecentRoutes(plan) {
     const routes = await res.json();
 
     if (!routes.length) {
-      list.innerHTML = `<p class="rr-empty">Aucun trajet sauvegardé pour l'instant — <a href="routes">planifiez votre première boucle →</a></p>`;
+      list.innerHTML = `<p class="rr-empty">Aucun trajet sauvegardé pour l'instant — <a href="map?plan=1">planifiez votre première boucle →</a></p>`;
       return;
     }
 
@@ -186,7 +186,7 @@ async function renderRecentRoutes(plan) {
       const dur   = fmtDuration(r.seconds);
       const date  = r.savedAt ? new Date(r.savedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
       const icon  = r.pathType === 'bike' ? '🚴' : '🥾';
-      const href  = r.shareToken ? `routes?share=${encodeURIComponent(r.shareToken)}` : 'routes';
+      const href  = r.shareToken ? `map?plan=1&share=${encodeURIComponent(r.shareToken)}` : 'map?plan=1';
       const name  = escapeHtml(r.name || 'Trajet sans nom');
       return `
         <div class="recent-route" data-id="${r.id}">

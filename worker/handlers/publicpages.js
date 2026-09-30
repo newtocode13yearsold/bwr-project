@@ -106,7 +106,7 @@ function layout({ title, description, canonical, image, jsonLd, headExtra = '', 
       <div class="blog-nav-links">
         <a href="/">Accueil</a>
         <a href="/map">Carte</a>
-        <a href="/routes">Planifier</a>
+        <a href="/map?plan=1">Planifier</a>
         <a href="/best-tours">Balades</a>
         <a href="/blog">Blog</a>
       </div>
@@ -125,7 +125,7 @@ ${body}
     <div class="blog-footer-links">
       <a href="/">Accueil</a>
       <a href="/map">Carte</a>
-      <a href="/routes">Planifier</a>
+      <a href="/map?plan=1">Planifier</a>
       <a href="/best-tours">Balades</a>
       <a href="/blog">Blog</a>
       <a href="/legal">Mentions légales</a>
@@ -262,8 +262,8 @@ function renderTrail(tour) {
   const description = (tour.description || `Balade ${diff.toLowerCase()} de ${km || ''} en forêt de Compiègne : tracé, niveau et point de départ. Planifiez votre sortie à pied ou à vélo avec BWR.`).slice(0, 300);
 
   const planUrl = tour.startAddress
-    ? `/routes?start=${encodeURIComponent(tour.startAddress)}`
-    : `/routes`;
+    ? `/map?plan=1&start=${encodeURIComponent(tour.startAddress)}`
+    : `/map?plan=1`;
 
   const heroImg = image
     ? `<div class="article-hero-img" style="padding:0;overflow:hidden"><img src="${esc(image)}" alt="${esc(tour.name)}" style="width:100%;height:100%;object-fit:cover" /></div>`
@@ -428,7 +428,7 @@ function renderRoute(route, token) {
 
       <p>Ce tracé de <strong>${esc(km)} km</strong> a été partagé depuis BWR, la carte des forêts de l'Oise à pied et à vélo. Ouvrez-le dans le planificateur pour le suivre en direct sur votre téléphone, l'exporter en GPX ou l'adapter à votre point de départ.</p>
 
-      <a class="balade-link" href="/routes?share=${esc(token)}">
+      <a class="balade-link" href="/map?plan=1&share=${esc(token)}">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
         Ouvrir ce trajet dans le planificateur
       </a>
@@ -439,7 +439,7 @@ function renderRoute(route, token) {
       <p>Planificateur de boucles, état des chemins en temps réel et suivi GPS hors-ligne.</p>
       <div class="article-cta-btns">
         <a href="/map" class="btn-cta-primary">Ouvrir la carte →</a>
-        <a href="/routes" class="btn-cta-secondary">Planifier un itinéraire</a>
+        <a href="/map?plan=1" class="btn-cta-secondary">Planifier un itinéraire</a>
       </div>
     </div>
 

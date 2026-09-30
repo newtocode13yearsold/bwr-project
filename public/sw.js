@@ -2,7 +2,7 @@
 // the `sync` handler below can drain queued reports even when no page is open.
 importScripts('/js/outbox.js');
 
-const CACHE = 'bwr-v76';
+const CACHE = 'bwr-v77';
 // Tiles live in two separate caches:
 //   • TILE_CACHE — forests the user explicitly downloaded ("Cartes hors-ligne").
 //     Permanent: never expired, never evicted, so a downloaded forest stays
@@ -83,6 +83,9 @@ const APP_SHELL = [
   'js/routes-engine.js',
   'js/routes-map.js',
   'js/routes-planner.js',
+  'js/routes-embed.js',
+  'js/map-planner.js',
+  'css/map-planner.css',
   'js/gps-tracker.js',
   'js/gps-filter.js',
   'js/activities.js',

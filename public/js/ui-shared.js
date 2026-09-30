@@ -45,7 +45,7 @@
   var NAV_ITEMS = [
     { type: 'section', label: 'Explorer' },
     { href: 'map',         label: 'Carte',                 icon: IC.map },
-    { href: 'routes',      label: 'Planifier un trajet',   icon: IC.routes },
+    { href: 'map?plan=1',  label: 'Planifier un trajet',   icon: IC.routes },
     { href: 'best-tours',  label: 'Meilleures balades',    icon: IC.tours },
 
     { type: 'section', label: 'Ma progression' },
@@ -82,7 +82,7 @@
    * bar everywhere, edit HEADER_LINKS (nothing else). */
   var HEADER_LINKS = [
     { href: 'map',    label: 'Carte' },
-    { href: 'routes', label: 'Planifier' },
+    { href: 'map?plan=1', label: 'Planifier' },
     { href: 'news',   label: 'Actualités' },
     { href: 'plans',  label: 'Plan' }
   ];

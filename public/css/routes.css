@@ -1343,3 +1343,60 @@
 .lp-locked p { margin: 0 0 8px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.45; }
 .lp-cta { font-weight: 700; color: #6d28d9; text-decoration: none; font-size: 0.85rem; }
 .lp-cta:hover { text-decoration: underline; }
+
+/* ── Embedded mode — the planner shown as the Carte page's "Planifier" drawer ──
+   js/routes-embed.js tags <html> with .bwr-embed when this page runs inside
+   that drawer's iframe: the Carte page already has the header + bottom nav. */
+.bwr-embed .header,
+.bwr-embed .bottom-nav,
+.bwr-embed .nav-drawer,
+.bwr-embed .nav-drawer-overlay,
+.bwr-embed #offline-pill,
+.bwr-embed .grade-banner,
+.bwr-embed .notif-optin,
+.bwr-embed .bwr-rating-fab,
+.bwr-embed .sidebar-contact { display: none !important; }
+
+.bwr-embed .planner-sidebar {
+  box-shadow: 4px 0 18px rgba(0, 0, 0, 0.12);
+  animation: embed-slide-in 0.28s ease-out;
+}
+@keyframes embed-slide-in {
+  from { transform: translateX(-100%); }
+  to   { transform: none; }
+}
+
+.embed-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px 10px 16px;
+  background: var(--forest-700);
+  color: #fff;
+  flex-shrink: 0;
+}
+.embed-bar-title { font-weight: 800; font-size: 0.95rem; }
+.embed-bar-close {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.embed-bar-close:hover { background: rgba(255, 255, 255, 0.28); }
+
+@media (max-width: 768px) {
+  .bwr-embed .planner-sidebar { animation: none; }
+  .bwr-embed .planner-sidebar,
+  .bwr-embed body:has(.grade-banner.grade-banner-show) .planner-sidebar {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+  .bwr-embed .planner-sidebar .embed-bar { position: static; }
+}

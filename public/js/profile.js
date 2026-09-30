@@ -226,7 +226,7 @@ function initUserMenu() {
       <span class="dropdown-name">${currentUser.name}</span>
       <a href="/">🏠 Accueil</a>
       <a href="map">🗺 Voir la carte</a>
-      <a href="routes">🧭 Planifier un trajet</a>
+      <a href="map?plan=1">🧭 Planifier un trajet</a>
       ${currentUser.role === 'admin' ? '<a href="admin">🗺 Carte admin</a><a href="admin-panel">⚙️ Panneau admin</a>' : ''}
       <button class="dropdown-logout" id="btnLogout">Se déconnecter</button>
     </div>

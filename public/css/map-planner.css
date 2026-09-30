@@ -1,0 +1,78 @@
+/* "Planifier" drawer on the Carte page — see js/map-planner.js.
+   The planner runs in an <iframe> covering the map area (below the header). */
+
+.planner-tab {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 14px 12px 10px;
+  border: none;
+  border-radius: 0 14px 14px 0;
+  background: var(--forest-700, #1e4d14);
+  color: #fff;
+  font: 700 0.9rem/1 Inter, system-ui, sans-serif;
+  box-shadow: 2px 4px 16px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  transition: padding 0.15s ease, background 0.15s ease;
+}
+.planner-tab:hover { padding-left: 14px; background: #173d10; }
+.planner-tab:focus-visible { outline: 3px solid var(--lime-500, #84cc16); outline-offset: 2px; }
+body.planner-open .planner-tab { display: none; }
+
+.planner-drawer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 56px; /* real value set from the header height in JS */
+  z-index: 1090;
+  background: var(--bg, #f8faf5);
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(-24px);
+  transition: opacity 0.2s ease, transform 0.25s ease, visibility 0s linear 0.25s;
+}
+.planner-drawer.open {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.2s ease, transform 0.25s ease;
+}
+.planner-drawer-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.planner-drawer-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #6b7280);
+  font-weight: 600;
+}
+.planner-drawer.loaded .planner-drawer-loading { display: none; }
+
+/* While planning, the Carte's own floating controls step aside. */
+body.planner-open .map-bottom-btns,
+body.planner-open .contact-chip,
+body.planner-open .legend,
+body.planner-open .grade-banner,
+body.planner-open .filter-panel { display: none !important; }
+
+@media (max-width: 768px) {
+  /* Stop above the fixed bottom nav so "Carte / Trajets / Profil" stay usable. */
+  .planner-drawer { bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+  /* The bottom nav's "Trajets" button opens the drawer on phones; the side tab
+     would only collide with the POI / GPS controls along the bottom edge. */
+  .planner-tab { display: none; }
+}
+
+[data-theme="dark"] .planner-drawer { background: #101812; }
