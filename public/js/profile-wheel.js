@@ -284,8 +284,7 @@ function renderDailyWheel(plan) {
 
     const saved = localStorage.getItem('bwr_wheel_result');
     try {
-      const prize = JSON.parse(saved);
-      wheelText.innerHTML = `${prize.icon} <strong>${prize.label}</strong> — ${prize.desc}`;
+      _renderWheelText(wheelText, JSON.parse(saved));
     } catch {
       wheelText.textContent = saved || 'Vous avez déjà tourné la roue aujourd\'hui — revenez demain !';
     }
@@ -301,7 +300,9 @@ function renderDailyWheel(plan) {
 
 async function spinWheel(plan) {
   const today      = new Date().toISOString().slice(0, 10);
-  const prize      = pickPrize(plan);
+  // Copy: the prize is mutated below (collectible label, tip text) and must not
+  // leak back into the shared WHEEL_PRIZES table.
+  const prize      = { ...pickPrize(plan) };
   const wheelBtn   = document.getElementById('wheelSpinBtn');
   const wheelText  = document.getElementById('wheelText');
   const prizes     = WHEEL_PRIZES[BWR.normalisePlan(plan)] || WHEEL_PRIZES.free;
@@ -310,6 +311,9 @@ async function spinWheel(plan) {
   wheelBtn.disabled    = true;
   wheelBtn.textContent = 'Tirage en cours…';
   wheelText.textContent = '';
+
+  // Ask for the AI tip while the wheel is still turning, so the reveal is instant.
+  const tipPromise = prize.type === 'tip' ? _fetchTrailTip() : null;
 
   // ── 1. Spin the wheel visually ───────────────────────────────────────────────
   await new Promise(resolve => _animateWheelSpin(prizeIndex, resolve));
@@ -338,7 +342,8 @@ async function spinWheel(plan) {
     } else {
       prize.icon  = '🌲';
       prize.label = 'Conseil sentier';
-      prize.desc  = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
+      prize.type  = 'tip';
+      prize.desc  = _randomTip();
     }
   } else if (prize.type === 'badge') {
     if (prize.id === 'exclusive_badge') {
@@ -347,23 +352,149 @@ async function spinWheel(plan) {
       localStorage.setItem('bwr_lucky_badge', '1');
     }
   } else if (prize.type === 'tip') {
-    try {
-      const res = await fetch(`${API_URL}/api/ai-tip`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader() },
-      });
-      if (res.ok) { const d = await res.json(); prize.desc = d.tip; }
-      else          prize.desc = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
-    } catch {
-      prize.desc = TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
-    }
+    prize.desc = await tipPromise;
+  }
+  if (prize.type === 'tip') {
+    const [voice, intro] = TIP_INTROS[Math.floor(Math.random() * TIP_INTROS.length)];
+    prize.voice = voice;
+    prize.intro = intro;
   }
 
   // ── 3. Show result ────────────────────────────────────────────────────────────
-  wheelText.innerHTML = `${prize.icon} <strong>${prize.label}</strong> — ${prize.desc}`;
+  _renderWheelText(wheelText, prize);
   localStorage.setItem('bwr_wheel_last', today);
-  localStorage.setItem('bwr_wheel_result', JSON.stringify({ icon: prize.icon, label: prize.label, desc: prize.desc }));
+  localStorage.setItem('bwr_wheel_result', JSON.stringify({
+    icon: prize.icon, label: prize.label, desc: prize.desc, intro: prize.intro, voice: prize.voice,
+  }));
   wheelBtn.textContent = '✓ Effectué';
+  _showWinReveal(prize);
+}
+
+// ── Win reveal ────────────────────────────────────────────────────────────────
+// A "conseil" is delivered by a character of the forest, not a dry label.
+// [emoji of who speaks, how they say it]
+const TIP_INTROS = [
+  ['🦉', 'La vieille chouette du carrefour ouvre un œil et vous glisse un secret…'],
+  ['🌳', 'Un chêne de 300 ans se penche vers vous et murmure…'],
+  ['🦊', 'Un renard a laissé ce petit mot sous une feuille morte…'],
+  ['🍄', 'Les champignons ont tenu conseil toute la nuit. Leur verdict :'],
+  ['🦌', 'Le grand cerf s\'arrête au milieu de l\'allée et vous confie…'],
+  ['🐿️', 'Un écureuil pressé vous lance ce conseil entre deux noisettes…'],
+  ['🧭', 'Votre boussole s\'affole… puis pointe vers cette sagesse :'],
+  ['🌬️', 'Le vent se lève dans les hêtres et chuchote à votre oreille…'],
+  ['🐗', 'Un sanglier bougon grommelle, mais il a raison :'],
+  ['🌙', 'Les étoiles au-dessus de Compiègne s\'alignent pour vous dire…'],
+];
+
+const WIN_TITLES = ['Gagné !', 'Bravo !', 'Jackpot forestier !', 'La roue a parlé !'];
+
+function _randomTip() {
+  return TRAIL_TIPS[Math.floor(Math.random() * TRAIL_TIPS.length)];
+}
+
+async function _fetchTrailTip() {
+  try {
+    const res = await fetch(`${API_URL}/api/ai-tip`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+    });
+    if (res.ok) { const d = await res.json(); if (d.tip) return d.tip; }
+  } catch { /* fall through to a local tip */ }
+  return _randomTip();
+}
+
+function _el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+
+// Small result line under the wheel. Built with textContent: the tip comes
+// from the AI endpoint and must never be parsed as HTML.
+function _renderWheelText(el, prize) {
+  el.textContent = '';
+  if (prize.intro) {
+    el.append(_el('span', 'wheel-tip-intro', `${prize.voice || '🌲'} ${prize.intro}`));
+    el.append(_el('span', 'wheel-tip-quote', `« ${prize.desc} »`));
+    return;
+  }
+  el.append(`${prize.icon} `, _el('strong', null, prize.label), ` — ${prize.desc}`);
+}
+
+function _showWinReveal(prize) {
+  document.querySelector('.win-reveal')?.remove();
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const isTip = !!prize.intro;
+
+  const overlay = _el('div', 'win-reveal' + (isTip ? ' win-reveal--tip' : ''));
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+
+  // Burst of leaves / sparkles flying out from the centre
+  if (!reduced) {
+    const bits = isTip ? ['🍃', '🍂', '🌿', '✨'] : ['🍃', '✨', '🍂', '⭐', '🌟', '🌿'];
+    for (let i = 0; i < 28; i++) {
+      const p = _el('span', 'win-particle', bits[i % bits.length]);
+      const angle = (i / 28) * Math.PI * 2 + Math.random() * 0.4;
+      const dist  = 140 + Math.random() * 180;
+      p.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+      p.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
+      p.style.setProperty('--rot', `${Math.random() * 720 - 360}deg`);
+      p.style.animationDelay = `${Math.random() * 0.15}s`;
+      overlay.append(p);
+    }
+  }
+
+  const card = _el('div', 'win-card');
+  card.append(_el('div', 'win-rays'));
+  card.append(_el('div', 'win-icon', isTip ? (prize.voice || '🌲') : prize.icon));
+
+  let typeTarget = null;
+  if (isTip) {
+    card.append(_el('p', 'win-kicker', 'Conseil du jour'));
+    card.append(_el('p', 'win-intro', prize.intro));
+    const scroll = _el('blockquote', 'win-scroll');
+    typeTarget = _el('span', 'win-scroll-text', reduced ? prize.desc : '');
+    scroll.append(typeTarget);
+    scroll.append(_el('footer', 'win-sign', '— La forêt de Compiègne 🌲'));
+    card.append(scroll);
+  } else {
+    card.append(_el('p', 'win-kicker', WIN_TITLES[Math.floor(Math.random() * WIN_TITLES.length)]));
+    card.append(_el('h3', 'win-title', prize.label));
+    card.append(_el('p', 'win-desc', prize.desc));
+  }
+
+  const btn = _el('button', 'btn-save win-close', isTip ? 'Merci la forêt ! 🌿' : 'Génial ! 🎉');
+  btn.type = 'button';
+  card.append(btn);
+  overlay.append(card);
+  document.body.append(overlay);
+
+  let typer = null;
+  const close = () => {
+    clearInterval(typer);
+    document.removeEventListener('keydown', onKey);
+    overlay.classList.add('win-reveal--out');
+    setTimeout(() => overlay.remove(), reduced ? 0 : 250);
+  };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  btn.addEventListener('click', close);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  document.addEventListener('keydown', onKey);
+  btn.focus({ preventScroll: true });
+
+  // Typewriter: the tip "writes itself" on the parchment once the card lands
+  if (typeTarget && !reduced) {
+    const chars = [...prize.desc];
+    let i = 0;
+    setTimeout(() => {
+      typer = setInterval(() => {
+        typeTarget.textContent += chars[i++] || '';
+        if (i >= chars.length) { clearInterval(typer); typeTarget.classList.add('is-done'); }
+      }, 22);
+    }, 650);
+  }
 }
 
 function renderPrizeList(plan) {
