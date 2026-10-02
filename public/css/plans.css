@@ -177,8 +177,8 @@
   box-shadow: var(--shadow-sm);
 }
 .bt-save {
-  background: var(--gold-grad);
-  color: var(--gold-text);
+  background: var(--lime-500);
+  color: var(--forest-900);
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   font-size: 0.68rem;
@@ -233,28 +233,21 @@
 /* Free card stays neutral */
 .plan-free { background: var(--surface-0); }
 
-/* Pro: the only paid plan — premium gradient card with a warm glow.
-   (Replaces the old Argent gradient-border card + Or featured card.) */
+/* Pro: the only paid plan — same deep forest-green card + lime accents as the
+   homepage pricing block (css/home.css .pricing-pro), so Pro has ONE look across
+   the site. It is dark by design, so it needs no dark-mode variant (the old
+   cream "Or" card stayed light in dark mode and glared). */
 .plan-pro {
-  background: var(--gold-grad-soft);
-  border: 1px solid var(--gold-200);
-  color: var(--gold-text);
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(163, 230, 53, 0.18) 0%, transparent 55%),
+    linear-gradient(160deg, var(--forest-800) 0%, var(--forest-900) 100%);
+  border: 1px solid rgba(163, 230, 53, 0.45);
+  color: #e7f5dc;
   position: relative;
-}
-.plan-pro::before {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  background: var(--gold-grad);
-  z-index: -1;
-  opacity: 0.4;
-  filter: blur(20px);
-  pointer-events: none;
 }
 .plan-pro.popular {
   transform: scale(1.02);
-  box-shadow: var(--shadow-lg), 0 0 0 2.5px var(--gold-400), var(--gold-glow);
+  box-shadow: 0 20px 50px rgba(11, 36, 16, 0.3), 0 0 0 2px rgba(163, 230, 53, 0.55);
 }
 .plan-pro.popular:hover { transform: scale(1.02) translateY(-6px); }
 
@@ -274,10 +267,14 @@
 }
 .popular-flag.pf-ribbon,
 .popular-flag {
-  background: var(--gold-grad-deep);
-  color: white;
-  box-shadow: 0 4px 12px rgba(180, 83, 9, 0.4);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--lime-500);
+  color: var(--forest-900);
+  box-shadow: 0 4px 12px rgba(163, 230, 53, 0.35);
 }
+.popular-flag svg { width: 14px; height: 14px; }
 
 /* Card header */
 .pc-head { text-align: center; margin-bottom: 4px; }
@@ -292,7 +289,7 @@
   background: var(--forest-100);
   border-radius: var(--radius-lg);
 }
-.pc-icon.icon-pro    { background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.3)); border: 1px solid var(--gold-200); }
+.pc-icon.icon-pro    { background: rgba(163, 230, 53, 0.16); border: 1px solid rgba(163, 230, 53, 0.3); }
 .pc-name {
   font-size: var(--fs-xl);
   font-weight: 800;
@@ -300,13 +297,13 @@
   letter-spacing: -0.01em;
   color: var(--forest-900);
 }
-.plan-pro .pc-name { color: var(--gold-text); }
+.plan-pro .pc-name { color: #fff; }
 .pc-tag {
   margin: 0;
   font-size: var(--fs-sm);
   color: var(--text-muted);
 }
-.plan-pro .pc-tag { color: rgba(74, 44, 0, 0.7); }
+.plan-pro .pc-tag { color: rgba(255, 255, 255, 0.65); }
 
 /* Price */
 .pc-price {
@@ -318,7 +315,7 @@
   padding: 6px 0 12px;
   border-bottom: 1px solid var(--border-soft);
 }
-.plan-pro .pc-price { border-bottom-color: rgba(180, 83, 9, 0.15); }
+.plan-pro .pc-price { border-bottom-color: rgba(255, 255, 255, 0.12); }
 .pc-amount {
   font-family: var(--font-display);
   font-weight: 700;
@@ -327,19 +324,13 @@
   color: var(--forest-900);
   line-height: 1;
 }
-.plan-pro .pc-amount {
-  background: var(--gold-grad-deep);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  position: relative;
-}
+.plan-pro .pc-amount { color: #fff; }
 .pc-period {
   font-size: var(--fs-sm);
   color: var(--text-muted);
   font-weight: 500;
 }
-.plan-pro .pc-period { color: rgba(74, 44, 0, 0.65); }
+.plan-pro .pc-period { color: rgba(255, 255, 255, 0.6); }
 .pc-annual-note {
   text-align: center;
   font-size: var(--fs-sm);
@@ -349,7 +340,7 @@
   min-height: 1.2em;
 }
 .pc-annual-note:empty { margin: 0; min-height: 0; }
-.plan-pro .pc-annual-note { color: var(--gold-700, var(--gold-600)); }
+.plan-pro .pc-annual-note { color: var(--lime-400); }
 
 /* Features wrapper — holds the core list, the collapsible extras and the
    "Tout voir" toggle. Grows to push the CTA to the bottom of the card. */
@@ -390,7 +381,8 @@
   transition: color var(--dur-fast) var(--ease-out);
 }
 .pc-toggle:hover { color: var(--forest-900); text-decoration: underline; }
-.plan-pro .pc-toggle { color: var(--gold-700, var(--gold-600)); }
+.plan-pro .pc-toggle { color: var(--lime-400); }
+.plan-pro .pc-toggle:hover { color: var(--lime-300); }
 .pc-toggle-chev {
   font-size: 0.8rem;
   transition: transform var(--dur) var(--ease-out);
@@ -417,11 +409,12 @@
 }
 .pf.yes .pf-icon { background: var(--forest-100); color: var(--forest-700); }
 .pf.no  .pf-icon { background: var(--surface-3); color: var(--text-faint); }
-.plan-pro .pf.yes .pf-icon { background: rgba(255,255,255,0.6); color: var(--gold-600); }
+.plan-pro .pf.yes .pf-icon { background: rgba(163, 230, 53, 0.18); color: var(--lime-400); }
 .pf.yes { color: var(--text); }
 .pf.no  { color: var(--text-faint); text-decoration: line-through; }
 .pf.yes.hl { color: var(--forest-900); }
-.plan-pro .pf.yes.hl { color: var(--gold-text); }
+.plan-pro .pf.yes { color: rgba(255, 255, 255, 0.85); }
+.plan-pro .pf.yes.hl { color: #fff; }
 
 /* CTA buttons */
 .pc-cta {
@@ -447,9 +440,9 @@
 }
 .cta-ghost:hover { background: var(--surface-3); }
 .cta-pro {
-  background: var(--gold-grad-deep);
-  color: white;
-  box-shadow: 0 8px 24px -8px rgba(180, 83, 9, 0.55);
+  background: var(--lime-500);
+  color: var(--forest-900);
+  box-shadow: 0 6px 20px rgba(163, 230, 53, 0.3);
   position: relative;
   overflow: hidden;
 }
@@ -461,7 +454,7 @@
   transform: translateX(-100%);
   animation: shimmer 3.5s ease-in-out infinite;
 }
-.cta-pro:hover { box-shadow: 0 14px 36px -10px rgba(180, 83, 9, 0.65); }
+.cta-pro:hover { background: var(--lime-400); box-shadow: 0 8px 26px rgba(163, 230, 53, 0.4); }
 @keyframes shimmer {
   0%, 60% { transform: translateX(-100%); }
   100%    { transform: translateX(100%); }
@@ -480,7 +473,7 @@
   width: 100%;
   margin-top: 10px;
   padding: 12px 14px;
-  border: 1.5px solid var(--gold-600, #b45309);
+  border: 1.5px solid rgba(163, 230, 53, 0.55);
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--text);
@@ -492,6 +485,9 @@
   transition: background var(--dur-fast), transform var(--dur-fast);
 }
 .pc-trial-cta:hover { background: var(--surface-2); transform: translateY(-1px); }
+/* On the dark Pro card the trial button reads light-on-dark. */
+.plan-pro .pc-trial-cta { color: #fff; }
+.plan-pro .pc-trial-cta:hover { background: rgba(255, 255, 255, 0.08); }
 .pc-trial-cta:disabled { opacity: 0.6; cursor: progress; }
 
 .pc-footnote {
@@ -500,7 +496,7 @@
   font-size: 0.78rem;
   color: var(--text-faint);
 }
-.plan-pro .pc-footnote { color: rgba(74, 44, 0, 0.55); }
+.plan-pro .pc-footnote { color: rgba(255, 255, 255, 0.5); }
 
 /* ── Trust strip ─────────────────────────────────────────────────────────── */
 .trust-strip {
@@ -661,7 +657,7 @@
   letter-spacing: 0.02em;
 }
 .compare-table th.ct-feature { text-align: left; }
-.compare-table th.ct-pro    { background: var(--gold-grad-deep); }
+.compare-table th.ct-pro    { background: var(--forest-700); }
 .ct-rec-badge {
   display: inline-block;
   margin-left: 6px;
@@ -702,12 +698,12 @@
 .compare-table .no  { color: var(--text-faint); }
 .compare-table .num { color: var(--text); font-weight: 600; }
 
-/* Gold column recommended highlight */
-.compare-table tbody td:nth-child(4) {
-  background: rgba(251, 191, 36, 0.05);
+/* Pro column (3rd: feature · Gratuit · Pro) recommended highlight */
+.compare-table tbody td:nth-child(3) {
+  background: rgba(163, 230, 53, 0.07);
 }
-.compare-table .ct-section td:nth-child(4) {
-  background: rgba(251, 191, 36, 0.09);
+.compare-table .ct-section td:nth-child(3) {
+  background: rgba(163, 230, 53, 0.12);
 }
 
 @media (max-width: 720px) {
@@ -1489,7 +1485,7 @@
   .plan-pro.popular,
   .plan-pro.popular:hover {
     transform: none;
-    box-shadow: var(--shadow-lg), 0 0 0 2px var(--gold-400), var(--gold-glow);
+    box-shadow: 0 20px 50px rgba(11, 36, 16, 0.3), 0 0 0 2px rgba(163, 230, 53, 0.55);
   }
   /* Add top margin so the flag doesn't get clipped */
   .plan-pro.popular { margin-top: 10px; }
@@ -1566,8 +1562,8 @@
  * the --forest-* palette untouched. This page hard-codes --forest-900 /
  * --forest-700 for its headings, plan names and prices, so on a dark surface
  * that near-black green becomes invisible. Retarget those to the theme's light
- * text/accent tokens. The Gold card keeps a light cream background in dark mode,
- * so its dark-gold text is re-asserted below.
+ * text/accent tokens. The Pro card is already dark (forest green) in both themes,
+ * so it needs nothing extra here.
  * ────────────────────────────────────────────────────────────────────────────── */
 :root[data-theme="dark"] .hero-headline,
 :root[data-theme="dark"] .section-title,
@@ -1602,9 +1598,3 @@
   color: var(--forest-300);
 }
 
-/* Pro card stays on its light cream gradient in dark mode → keep dark-gold text */
-:root[data-theme="dark"] .plan-pro .pc-name,
-:root[data-theme="dark"] .plan-pro .pc-tag,
-:root[data-theme="dark"] .plan-pro .pf.yes.hl {
-  color: var(--gold-text);
-}
