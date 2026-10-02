@@ -40,86 +40,6 @@ body {
 .step-item:nth-child(3)    { transition-delay: 0.1s; }
 .step-item:nth-child(5)    { transition-delay: 0.2s; }
 
-/* ════════════════════════════════════════════════
-   NAV
-════════════════════════════════════════════════ */
-.nav {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 1000;
-  background: rgba(30, 77, 20, 0.97);
-  backdrop-filter: blur(10px);
-  transition: box-shadow 0.3s;
-}
-.nav.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,0.25); }
-
-.nav-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 24px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  gap: 32px;
-}
-
-.nav-logo {
-  font-size: 1.6rem;
-  font-weight: 900;
-  letter-spacing: 3px;
-  color: var(--accent);
-  text-decoration: none;
-  flex-shrink: 0;
-}
-
-.nav-links {
-  display: flex;
-  gap: 28px;
-  flex: 1;
-}
-.nav-links a {
-  color: rgba(255,255,255,0.75);
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: color 0.15s;
-}
-.nav-links a:hover { color: white; }
-
-.nav-cta {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.btn-nav-login {
-  color: rgba(255,255,255,0.8);
-  text-decoration: none;
-  font-size: 0.88rem;
-  font-weight: 600;
-  padding: 7px 16px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.25);
-  transition: all 0.15s;
-}
-.btn-nav-login:hover { background: rgba(255,255,255,0.1); color: white; }
-
-.btn-nav-plans {
-  color: var(--gold-200);
-  text-decoration: none;
-  font-size: 0.88rem;
-  font-weight: 700;
-  padding: 7px 14px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, rgba(251,191,36,0.18), rgba(251,191,36,0.06));
-  border: 1px solid rgba(251,191,36,0.4);
-  transition: all 0.18s ease;
-}
-.btn-nav-plans:hover {
-  background: linear-gradient(135deg, rgba(251,191,36,0.28), rgba(251,191,36,0.12));
-  border-color: rgba(251,191,36,0.6);
-  color: #fff;
-}
 
 /* Inline tier tag next to feature card headings */
 .feature-card h3 .feat-tier {
@@ -130,71 +50,14 @@ body {
   font-weight: 700;
 }
 
-.btn-nav-map {
-  background: var(--accent);
-  color: var(--green);
-  text-decoration: none;
-  font-size: 0.88rem;
-  font-weight: 800;
-  padding: 8px 18px;
-  border-radius: 8px;
-  transition: all 0.15s;
-}
-.btn-nav-map:hover { background: var(--lime-400); transform: translateY(-1px); }
-
-.nav-burger {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  margin-left: 12px;
-}
-.nav-burger span {
-  display: block;
-  width: 24px;
-  height: 2px;
-  background: white;
-  border-radius: 2px;
-}
-
-.nav-mobile {
-  border-top: 1px solid rgba(255,255,255,0.12);
-  padding: 12px 24px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.nav-mobile.hidden { display: none; }
-.nav-mobile a {
-  color: rgba(255,255,255,0.8);
-  text-decoration: none;
-  font-size: 0.95rem;
-  font-weight: 600;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  transition: color 0.15s;
-}
-.nav-mobile a:hover { color: white; }
-.nav-mobile .mobile-map-btn {
-  margin-top: 8px;
-  background: var(--accent);
-  color: var(--green);
-  text-align: center;
-  padding: 12px;
-  border-radius: 10px;
-  border: none;
-  font-weight: 800;
-}
-
 /* ════════════════════════════════════════════════
    HERO
 ════════════════════════════════════════════════ */
 .hero {
-  min-height: min(100vh, 900px);
-  padding: 64px 0 40px;
+  /* The shared .header sits in the flow above (sticky), so no top padding is
+     needed to clear it — only the old fixed landing nav needed that. */
+  min-height: min(calc(100vh - 56px), 900px);
+  padding: 0 0 40px;
   display: flex;
   align-items: center;
   position: relative;
@@ -1752,9 +1615,6 @@ textarea.cf-input { resize: vertical; min-height: 100px; }
   .about-inner { grid-template-columns: 1fr; gap: 40px; }
   .about-visual { flex-direction: row; justify-content: flex-start; }
   .about-lines { display: none; }
-  .nav-links { display: none; }
-  .nav-burger { display: flex; margin-left: auto; }
-  .nav-cta { display: none; }
 }
 
 @media (max-width: 480px) {
@@ -1802,92 +1662,6 @@ textarea.cf-input { resize: vertical; min-height: 100px; }
   .btn-hero-primary,
   .btn-hero-secondary { text-align: center; }
 }
-
-/* ── Nav drawer (shared with map) ── */
-.nav-drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  z-index: 1100;
-  opacity: 0;
-  transition: opacity 0.22s;
-}
-.nav-drawer-overlay.hidden { display: none; }
-.nav-drawer-overlay.open { display: block; opacity: 1; }
-
-.nav-drawer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: min(280px, 80vw);
-  background: #fff;
-  z-index: 1101;
-  box-shadow: 4px 0 24px rgba(0,0,0,0.18);
-  display: flex;
-  flex-direction: column;
-  transform: translateX(-100%);
-  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
-}
-.nav-drawer.hidden { display: none; }
-.nav-drawer.open { display: flex; transform: translateX(0); }
-
-.nav-drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  padding-top: max(20px, env(safe-area-inset-top));
-  height: calc(60px + env(safe-area-inset-top));
-  background: var(--forest-700);
-  flex-shrink: 0;
-}
-.nav-drawer-logo {
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: 2px;
-  color: var(--lime-500);
-}
-.nav-drawer-close {
-  background: none;
-  border: none;
-  color: #bbf7d0;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 6px;
-  line-height: 1;
-  border-radius: 6px;
-}
-.nav-drawer-close:hover { background: rgba(255,255,255,0.15); }
-
-.nav-drawer-links {
-  display: flex;
-  flex-direction: column;
-  padding: 12px 0;
-  flex: 1;
-  overflow-y: auto;
-}
-.nav-drawer-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 24px;
-  text-decoration: none;
-  color: #374151;
-  font-size: 0.95rem;
-  font-weight: 500;
-  border-left: 3px solid transparent;
-  transition: background 0.12s, color 0.12s;
-}
-.nav-drawer-item.hidden { display: none; }
-.nav-drawer-item:hover { background: #f0f4ec; color: var(--forest-700); }
-.nav-drawer-item.active {
-  color: var(--forest-700);
-  font-weight: 700;
-  border-left-color: var(--forest-700);
-  background: #f0f4ec;
-}
-.nav-drawer-icon { width: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
 /* ════════════════════════════════════════════════
    PWA INSTALL BANNER
@@ -2191,13 +1965,6 @@ textarea.cf-input { resize: vertical; min-height: 100px; }
    text so the dark token flip doesn't wash it out. */
 [data-theme="dark"] .mockup-title { color: #6b7280; }
 [data-theme="dark"] .ml-item { color: #374151; }
-
-/* Nav drawer */
-[data-theme="dark"] .nav-drawer { background: var(--surface-0); }
-[data-theme="dark"] .nav-drawer-item { color: var(--text); }
-[data-theme="dark"] .nav-drawer-item:hover,
-[data-theme="dark"] .nav-drawer-item.active { background: var(--surface-2); color: var(--lime-400); }
-[data-theme="dark"] .nav-drawer-item.active { border-left-color: var(--lime-500); }
 
 /* PWA install banner */
 [data-theme="dark"] .install-banner { background: var(--surface-0); border-top-color: var(--border); }

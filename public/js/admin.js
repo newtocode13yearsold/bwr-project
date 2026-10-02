@@ -65,7 +65,6 @@ let graderHighlight = null;
 (async () => {
   currentUser = await requireAuth('admin');
   if (!currentUser) return;
-  initUserMenu();
   if (document.getElementById('map')) {
     initMap();
     await loadPaths();
@@ -221,31 +220,6 @@ async function wireGlobalAnalysis() {
       btn.disabled = false;
       btn.innerHTML = original;
     }
-  });
-}
-
-function initUserMenu() {
-  const menuEl = document.getElementById('userMenu');
-  const initials = currentUser.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-  menuEl.innerHTML = `
-    <button class="user-btn" id="userBtn">
-      <div class="user-avatar">${initials}</div>
-      <span class="btn-label">${currentUser.name.split(' ')[0]}</span>
-    </button>
-    <div class="user-dropdown hidden" id="userDropdown">
-      <span class="dropdown-name">${currentUser.name}</span>
-      <a href="/">🏠 Accueil</a>
-      <a href="map">🗺 Voir la carte</a>
-      <a href="profile">👤 Mon profil</a>
-      <button class="dropdown-logout" id="btnLogout">Se déconnecter</button>
-    </div>
-  `;
-  document.getElementById('userBtn').addEventListener('click', () => {
-    document.getElementById('userDropdown').classList.toggle('hidden');
-  });
-  document.getElementById('btnLogout').addEventListener('click', () => logout());
-  document.addEventListener('click', (e) => {
-    if (!menuEl.contains(e.target)) document.getElementById('userDropdown')?.classList.add('hidden');
   });
 }
 

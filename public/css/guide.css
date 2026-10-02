@@ -4,6 +4,7 @@
  * ──────────────────────────────────────────────────────────────────────────── */
 
 .guide-body {
+  margin: 0; /* full-bleed shared header */
   background:
     radial-gradient(1200px 600px at 50% -200px, var(--forest-100, var(--forest-100)), transparent 70%),
     var(--surface-1, var(--surface-1));
@@ -200,41 +201,3 @@
 .guide-cta h2 { color: #fff; font-size: var(--fs-2xl, 1.875rem); margin: 0 0 var(--space-3, 12px); }
 .guide-cta p { color: var(--lime-300, var(--lime-300)); margin: 0 0 var(--space-5, 20px); }
 
-/* Simple top bar for the guide page */
-.guide-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3, 12px) var(--space-5, 20px);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: color-mix(in srgb, var(--surface-1, var(--surface-1)) 86%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border-soft, var(--border-soft));
-}
-.guide-topbar .logo {
-  font-family: var(--font-display, Georgia, serif);
-  font-weight: 700;
-  font-size: var(--fs-lg, 1.25rem);
-  color: var(--forest-700, var(--forest-700));
-  text-decoration: none;
-}
-.guide-topbar-links { display: flex; gap: var(--space-2, 8px); align-items: center; }
-.guide-topbar-links a, .guide-topbar-links button {
-  font: inherit;
-  font-size: var(--fs-sm, 0.875rem);
-  font-weight: 600;
-  text-decoration: none;
-  color: var(--text-muted, var(--text-muted));
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm, 10px);
-}
-.guide-topbar-links a:hover, .guide-topbar-links button:hover { background: var(--surface-2, var(--surface-2)); color: var(--text-strong, var(--forest-900)); }
-.guide-topbar-links a.guide-topbar-cta {
-  background: var(--forest-700, var(--forest-700));
-  color: var(--lime-300, var(--lime-300));
-}

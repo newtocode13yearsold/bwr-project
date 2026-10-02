@@ -32,14 +32,6 @@
   min-height: 100vh;
 }
 
-.profile-body .logo {
-  text-decoration: none;
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: 2px;
-  color: var(--lime-500);
-}
-
 .profile-main {
   max-width: 900px;
   width: 100%;

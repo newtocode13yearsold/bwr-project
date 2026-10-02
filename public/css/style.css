@@ -33,135 +33,8 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ── Header ── */
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  padding-left: max(20px, env(safe-area-inset-left));
-  padding-right: max(20px, env(safe-area-inset-right));
-  padding-top: env(safe-area-inset-top);
-  height: calc(56px + env(safe-area-inset-top));
-  background: var(--forest-700);
-  color: white;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
 
-.header::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  opacity: 0.08;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-size: 180px 180px;
-}
-
-/* Installed desktop PWA: reclaim the OS title bar so Chrome no longer draws
-   the white URL/title strip above the header. The green header fills that
-   space instead. Requires "window-controls-overlay" in manifest display_override. */
-@media (display-mode: window-controls-overlay) {
-  .header {
-    /* keep the header buttons clear of the OS min/max/close controls */
-    padding-right: max(20px, calc(100vw - env(titlebar-area-width, 100vw) - env(titlebar-area-x, 0px)));
-    -webkit-app-region: drag;
-  }
-  .header a,
-  .header button,
-  .header input,
-  .header .user-menu,
-  .header .notif-bell-wrap,
-  .header .header-nav-links {
-    -webkit-app-region: no-drag;
-  }
-}
-
-.header-left { display: flex; align-items: center; gap: 12px; }
-
-/* Horizontal nav links — desktop only, collapsed on mobile */
-.header-nav-links {
-  display: flex;
-  gap: 24px;
-  margin-left: 4px;
-}
-.header-nav-links a {
-  color: rgba(255,255,255,0.72);
-  text-decoration: none;
-  font-size: 0.88rem;
-  font-weight: 600;
-  transition: color 0.15s;
-  white-space: nowrap;
-  padding: 4px 0;
-  position: relative;
-}
-.header-nav-links a:hover { color: rgba(255,255,255,0.95); }
-.header-nav-links a.active { color: #fff; }
-.header-nav-links a.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0; right: 0;
-  height: 2px;
-  background: var(--lime-500);
-  border-radius: 1px;
-}
-
-.logo {
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: 2px;
-  color: var(--lime-500);
-}
-
-.tagline {
-  font-size: 0.85rem;
-  color: #bbf7d0;
-  font-style: italic;
-  display: none;
-}
-
-.admin-tag {
-  background: var(--lime-500);
-  color: var(--forest-700);
-  font-style: normal;
-  font-weight: 700;
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: 999px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.header-right { display: flex; gap: 8px; }
-
-/* ── Buttons ── */
-.btn-icon {
-  background: rgba(255,255,255,0.15);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.3);
-  padding: 6px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: background 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  line-height: 1;
-  touch-action: manipulation;
-}
-.btn-emoji { display: inline-flex; align-items: center; justify-content: center; }
-.btn-label { display: inline-flex; align-items: center; }
-.btn-icon:hover { background: rgba(255,255,255,0.25); }
-.btn-icon.danger { background: rgba(239,68,68,0.3); border-color: rgba(239,68,68,0.5); }
-.btn-icon.danger:hover { background: rgba(239,68,68,0.5); }
+/* Header, nav drawer, user menu & notification bell → css/header.css */
 
 .btn-primary {
   background: var(--forest-700);
@@ -1530,40 +1403,6 @@ body {
 ════════════════════════════════════════════════ */
 @media (max-width: 640px) {
 
-  /* Header — icon-only buttons, hide nav links */
-  .btn-label { display: none; }
-  .header-nav-links { display: none; }
-
-  /* Theme toggle lives in the nav drawer on mobile to declutter the toolbar.
-     Two-class selector so it beats the later `.btn-icon { display:flex }`. */
-  .btn-icon.header-theme-toggle { display: none; }
-
-  .header {
-    padding: 0 10px;
-    padding-top: env(safe-area-inset-top, 0px);
-    height: calc(54px + env(safe-area-inset-top, 0px));
-    gap: 4px;
-  }
-
-  .logo { font-size: 1.35rem; letter-spacing: 1.5px; }
-
-  .header-right {
-    gap: 6px;
-    flex-wrap: nowrap;
-    align-items: center;
-  }
-
-  .btn-icon {
-    padding: 8px 10px;
-    font-size: 0.95rem;
-    min-width: 38px;
-    min-height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-  }
-  .btn-emoji { font-size: 1.05rem; line-height: 1; }
 
   /* Admin panel carries ~10 tool buttons — far more than a phone-width bar can
      hold in one row. Let its toolbar wrap onto multiple rows so every tool
@@ -1670,14 +1509,6 @@ body {
   .color-btn { width: 34px; height: 34px; }
   .popup-edit-btn, .popup-split-btn, .popup-delete-btn { min-height: 40px; }
 
-  /* User dropdown */
-  .user-dropdown { min-width: 170px; right: 0; }
-  .user-btn {
-    padding: 6px 10px;
-    font-size: 0.8rem;
-    min-height: 38px;
-  }
-  .user-avatar { width: 26px; height: 26px; font-size: 0.7rem; }
 
   /* Map search bar — fit better */
   .map-search-wrap {
@@ -1721,100 +1552,6 @@ body {
   .report-photo-preview, .report-popup-photo { max-height: 140px; }
 }
 
-/* ── Nav drawer ── */
-.nav-drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  z-index: 1100;
-  opacity: 0;
-  transition: opacity 0.22s;
-}
-.nav-drawer-overlay.hidden { display: none; }
-.nav-drawer-overlay.open { display: block; opacity: 1; }
-
-.nav-drawer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: min(280px, 80vw);
-  background: #fff;
-  z-index: 1101;
-  box-shadow: 4px 0 24px rgba(0,0,0,0.18);
-  display: flex;
-  flex-direction: column;
-  transform: translateX(-100%);
-  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
-}
-.nav-drawer.hidden { display: none; }
-.nav-drawer.open { display: flex; transform: translateX(0); }
-
-.nav-drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  padding-top: max(20px, env(safe-area-inset-top));
-  height: calc(60px + env(safe-area-inset-top));
-  background: var(--forest-700);
-  flex-shrink: 0;
-}
-.nav-drawer-logo {
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: 2px;
-  color: var(--lime-500);
-}
-.nav-drawer-close {
-  background: none;
-  border: none;
-  color: #bbf7d0;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 6px;
-  line-height: 1;
-  border-radius: 6px;
-}
-.nav-drawer-close:hover { background: rgba(255,255,255,0.15); }
-
-.nav-drawer-links {
-  display: flex;
-  flex-direction: column;
-  padding: 12px 0;
-  flex: 1;
-  overflow-y: auto;
-}
-.nav-drawer-section {
-  padding: 16px 24px 6px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: #9aa79a;
-}
-.nav-drawer-section:first-child { padding-top: 4px; }
-.nav-drawer-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 24px;
-  text-decoration: none;
-  color: #374151;
-  font-size: 0.95rem;
-  font-weight: 500;
-  border-left: 3px solid transparent;
-  transition: background 0.12s, color 0.12s;
-}
-.nav-drawer-item:hover { background: #f0f4ec; color: var(--forest-700); }
-.nav-drawer-item.active {
-  color: var(--forest-700);
-  font-weight: 700;
-  border-left-color: var(--forest-700);
-  background: #f0f4ec;
-}
-.nav-drawer-icon { width: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-button.nav-drawer-item { background: none; border: none; width: 100%; text-align: left; cursor: pointer; font-family: inherit; }
 
 /* ── Bottom navigation bar ── */
 .bottom-nav { display: none; }
@@ -1944,21 +1681,6 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
   }
 }
 
-/* Extra narrow phones */
-@media (max-width: 380px) {
-  .btn-icon { padding: 7px 9px; min-width: 36px; }
-  .logo { font-size: 1.2rem; }
-  .header { padding: 0 8px; padding-top: env(safe-area-inset-top, 0px); gap: 3px; }
-}
-
-/* Ultra-narrow phones (≤340px): the map/admin headers carry up to six icon
-   buttons, so shrink the buttons, gap and avatar enough that the toolbar still
-   fits on one row instead of pushing the user menu off-screen. */
-@media (max-width: 340px) {
-  .header-right { gap: 4px; }
-  .btn-icon { padding: 6px 7px; min-width: 32px; }
-  .user-avatar { width: 30px; height: 30px; }
-}
 
 /* ── PWA iOS install modal ── */
 #pwa-ios-modal {
@@ -2421,12 +2143,6 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
 [data-theme="dark"] .cond-tag:hover      { border-color: #6b7f64; color: #c8dcc0; }
 [data-theme="dark"] .cond-tag.active     { border-color: var(--lime-500); background: #1c3020; color: var(--lime-500); }
 
-/* ── Nav drawer ── */
-[data-theme="dark"] .nav-drawer          { background: #16201a; }
-[data-theme="dark"] .nav-drawer-section  { color: #7a8f72; }
-[data-theme="dark"] .nav-drawer-item     { color: #c8dcc0; }
-[data-theme="dark"] .nav-drawer-item:hover    { background: #1c2a20; color: var(--lime-500); }
-[data-theme="dark"] .nav-drawer-item.active   { background: #1c2a20; color: var(--lime-500); border-left-color: var(--lime-500); }
 
 /* ── Bottom navigation ── */
 [data-theme="dark"] .bottom-nav          { background: #16201a; border-top-color: #2a3a30; box-shadow: 0 -2px 12px rgba(0,0,0,0.4); }
@@ -2465,112 +2181,6 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
   background: linear-gradient(90deg, #2a3a30 25%, #334d3b 50%, #2a3a30 75%);
   background-size: 200% 100%;
 }
-
-/* ── Notification bell ── */
-.notif-bell-wrap {
-  position: relative;
-}
-.notif-bell-btn {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 10px;
-  transition: background 0.15s;
-  line-height: 1;
-}
-.notif-bell-btn:hover { background: rgba(0,0,0,0.06); }
-.notif-bell-icon { font-size: 1.2rem; }
-.notif-dot {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--status-hard);
-  border: 2px solid #fff;
-  animation: notif-pulse 2s ease-in-out infinite;
-}
-@keyframes notif-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50%       { transform: scale(1.3); opacity: 0.8; }
-}
-.notif-dropdown {
-  display: none;
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 280px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  z-index: 2000;
-  overflow: hidden;
-}
-.notif-dropdown.is-open { display: block; }
-.notif-hdr {
-  padding: 12px 14px 10px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  border-bottom: 1px solid #f3f4f6;
-}
-.notif-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px;
-}
-.notif-item-icon { font-size: 1.6rem; flex-shrink: 0; }
-.notif-item-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.notif-item-title { font-size: 0.9rem; color: #1e293b; }
-.notif-item-sub   { font-size: 0.78rem; color: var(--text-muted); }
-.notif-item-link  {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--forest-700);
-  text-decoration: none;
-  margin-top: 4px;
-}
-.notif-item-link:hover { text-decoration: underline; }
-.notif-item-desc {
-  margin: 6px 0 0;
-  font-size: 0.82rem;
-  color: #374151;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  max-height: 120px;
-  overflow-y: auto;
-}
-.notif-empty {
-  margin: 0;
-  padding: 14px;
-  font-size: 0.84rem;
-  color: #9ca3af;
-  text-align: center;
-}
-[data-theme="dark"] .notif-bell-btn:hover { background: rgba(255,255,255,0.08); }
-[data-theme="dark"] .notif-dot            { border-color: #16201a; }
-[data-theme="dark"] .notif-dropdown       { background: #16201a; border-color: #2a3a30; }
-[data-theme="dark"] .notif-hdr            { color: #8fa887; border-bottom-color: #2a3a30; }
-[data-theme="dark"] .notif-item-title     { color: #e2e8f0; }
-[data-theme="dark"] .notif-item-sub       { color: #8fa887; }
-[data-theme="dark"] .notif-item-link      { color: #a3e635; }
-[data-theme="dark"] .notif-empty          { color: #6b7280; }
 
 /* ══ Per-trail reviews (map path popup) ══════════════════════════════════════ */
 .popup-reviews {
@@ -2785,72 +2395,3 @@ body.measuring-active .map-search-wrap { visibility: hidden; }
 [data-theme="dark"] .poi-ctrl-btn        { background: #16201a; color: #a3e635; }
 [data-theme="dark"] .poi-ctrl-btn:hover  { background: #24303a; }
 
-/* ── User menu in header (copied from login.css so every page gets it) ── */
-.user-menu {
-  position: relative;
-}
-
-.user-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.3);
-  color: white;
-  padding: 6px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-.user-btn:hover { background: rgba(255,255,255,0.25); }
-
-.user-avatar {
-  width: 26px;
-  height: 26px;
-  background: var(--lime-500);
-  color: var(--forest-700);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 0.75rem;
-}
-
-.user-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-  min-width: 180px;
-  overflow: hidden;
-  z-index: 2000;
-}
-
-.user-dropdown a,
-.user-dropdown button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 12px 16px;
-  background: none;
-  border: none;
-  font-size: 0.9rem;
-  color: #374151;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.user-dropdown a:hover,
-.user-dropdown button:hover { background: #f3f4f6; }
-
-.user-dropdown .dropdown-name {
-  font-weight: 700;
-  color: var(--forest-700);
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.user-dropdown .dropdown-logout { color: var(--danger); }

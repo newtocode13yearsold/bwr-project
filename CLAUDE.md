@@ -116,6 +116,7 @@ Shared modules:
 - js/config.js — API endpoint, map center/zoom, status colors
 - js/auth.js — Bearer token management, session persistence, role-based access
 - js/carrefours.js — Hardcoded junction names (zero network cost)
+- **One site header everywhere** — every page (app pages, landing, blog + articles, guide, legal, changelog, and the worker-rendered `/balade/` + `/r/` pages) uses the same `<header class="header">` markup, styled by `css/header.css` (header, nav drawer, avatar menu, bell — self-contained, so content pages that don't load `style.css` can use it) and filled by `js/ui-shared.js`: the quick links (`HEADER_LINKS`: Carte · Actualités · Blog · Plan), the ☰ drawer (`NAV_ITEMS`), the bell and the avatar menu / "Connexion" button. Page scripts must NOT draw their own user menu or nav; page-specific tool buttons (map ✎ / layers, admin tools) go in `.header-right` before `#userMenu`. The dark/light toggle lives only in the drawer. All hrefs ui-shared writes are root-absolute so they work under `/blog/…`.
 - sw.js — Service worker (network-first for HTML/JS/CSS, cache-first for assets, always network for API/tiles)
 
 ### Route Planning System (Three-Tier Fallback)

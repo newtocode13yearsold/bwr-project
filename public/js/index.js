@@ -1,11 +1,3 @@
-/* ── Sticky nav shadow ───────────────────────────────────────────────── */
-const nav = document.getElementById('nav');
-if (nav) {
-  window.addEventListener('scroll', () => {
-    nav.classList.toggle('scrolled', window.scrollY > 20);
-  });
-}
-
 /* Nav drawer + hamburger are built and wired by js/ui-shared.js (grouped,
    labelled sections), shared with every other page. */
 
@@ -27,28 +19,6 @@ document.querySelectorAll('.feature-card, .step-item, .about-inner, .contact-inn
   el.classList.add('fade-up');
   observer.observe(el);
 });
-
-/* ── Logged-in detection — swap "Connexion" for "Mon profil" ─────────── */
-try {
-  const cached = localStorage.getItem('bwr_user');
-  if (cached) {
-    const user = JSON.parse(cached);
-    const loginLink = document.getElementById('navLogin');
-    if (loginLink) {
-      loginLink.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> ' + (user.name?.split(' ')[0] || 'Profil');
-      loginLink.href = 'profile';
-    }
-    const mobileLogin = document.querySelector('.nav-mobile a[href="login"]');
-    if (mobileLogin) {
-      mobileLogin.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Mon profil';
-      mobileLogin.href = 'profile';
-    }
-    // Reveal the admin entry in the nav drawer for admins (mirrors map.js)
-    if (user.role === 'admin') {
-      document.querySelectorAll('.nav-drawer-admin').forEach(el => el.classList.remove('hidden'));
-    }
-  }
-} catch {}
 
 /* ── "Dernière vérif. terrain" — auto-set to the current month ─────────── */
 /* Written in JS so the homepage never shows a stale month and looks abandoned.

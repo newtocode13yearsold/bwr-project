@@ -129,7 +129,6 @@ function showMsg(id, text, type = 'error') {
     if (res.ok) currentUser = await res.json();
   }
 
-  initUserMenu();
   populatePage(currentUser);
   buildColorSwatches(currentUser);
   renderAvatar(currentUser, getAvatarColor(currentUser.id));
@@ -213,31 +212,6 @@ document.getElementById('btnRemoveSecondPw')?.addEventListener('click', async ()
     showMsg('secondPwMsg', err.message);
   }
 });
-
-function initUserMenu() {
-  const menuEl = document.getElementById('userMenu');
-  const ini    = initials(currentUser.name);
-  menuEl.innerHTML = `
-    <button class="user-btn" id="userBtn">
-      <div class="user-avatar">${ini}</div>
-      <span class="btn-label">${currentUser.name.split(' ')[0]}</span>
-    </button>
-    <div class="user-dropdown hidden" id="userDropdown">
-      <span class="dropdown-name">${currentUser.name}</span>
-      <a href="/">🏠 Accueil</a>
-      <a href="map">🗺 Voir la carte</a>
-      <a href="map?plan=1">🧭 Planifier un trajet</a>
-      ${currentUser.role === 'admin' ? '<a href="admin">🗺 Carte admin</a><a href="admin-panel">⚙️ Panneau admin</a>' : ''}
-      <button class="dropdown-logout" id="btnLogout">Se déconnecter</button>
-    </div>
-  `;
-  document.getElementById('userBtn').addEventListener('click', () =>
-    document.getElementById('userDropdown').classList.toggle('hidden'));
-  document.getElementById('btnLogout').addEventListener('click', logout);
-  document.addEventListener('click', e => {
-    if (!menuEl.contains(e.target)) document.getElementById('userDropdown')?.classList.add('hidden');
-  });
-}
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
 function escapeHtml(str) {

@@ -63,9 +63,6 @@
 [data-theme="dark"] .blog-search-input { border-color: var(--border); }
 
 /* ── changelog.css ───────────────────────────────────────────────────────── */
-[data-theme="dark"] .cl-nav { background: rgba(22, 32, 26, 0.88); }
-[data-theme="dark"] .cl-logo { color: var(--lime-400); }
-[data-theme="dark"] .cl-back:hover { color: var(--lime-400); }
 [data-theme="dark"] .cl-eyebrow { color: var(--lime-500); }
 [data-theme="dark"] .cl-tag.fix { background: var(--surface-1); color: hsl(0, 80%, 76%); border-color: hsla(0, 55%, 50%, 0.4); }
 [data-theme="dark"] .cl-tag.feat { background: var(--surface-1); color: hsl(142, 80%, 76%); border-color: hsla(141, 55%, 50%, 0.4); }
@@ -100,7 +97,6 @@
 [data-theme="dark"] .guide-tip { background: rgba(163, 230, 53, 0.18); color: var(--text-strong); }
 [data-theme="dark"] .guide-tier.pro { background: rgba(251, 191, 36, 0.14); color: #fcd34d; }
 [data-theme="dark"] .guide-faq summary::after { color: var(--lime-500); }
-[data-theme="dark"] .guide-topbar .logo { color: var(--lime-400); }
 
 /* ── home.css ────────────────────────────────────────────────────────────── */
 [data-theme="dark"] .btn-nav-plans { border-color: hsla(43, 55%, 50%, 0.4); }
@@ -143,9 +139,6 @@
 [data-theme="dark"] .lb-points-cell { color: var(--lime-400); }
 
 /* ── legal.css ───────────────────────────────────────────────────────────── */
-[data-theme="dark"] .lg-nav { background: rgba(22, 32, 26, 0.88); }
-[data-theme="dark"] .lg-logo { color: var(--lime-400); }
-[data-theme="dark"] .lg-back:hover { color: var(--lime-400); }
 [data-theme="dark"] .lg-toc-title { color: var(--lime-500); }
 [data-theme="dark"] .lg-toc-links li a { color: var(--lime-500); }
 [data-theme="dark"] .lg-toc-links li a:hover { color: var(--lime-400); }

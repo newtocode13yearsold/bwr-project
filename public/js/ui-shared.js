@@ -1,5 +1,8 @@
-/* Shared UI bootstrap: SW registration, nav drawer, offline pill.
- * Loaded on every app page (all pages except index.html and verify.html).
+/* Shared UI bootstrap: SW registration, site header, nav drawer, offline pill.
+ * Loaded on every page that shows the site header (app pages, landing, blog,
+ * guide, legal, changelog…). The header markup is the same everywhere — see
+ * css/header.css — and this file fills it: quick links, bell, avatar menu.
+ * All hrefs it writes are root-absolute so they also work under /blog/….
  *
  * SINGLE SOURCE OF TRUTH FOR THE MENU
  * -----------------------------------
@@ -83,12 +86,23 @@
    * bar everywhere, edit HEADER_LINKS (nothing else). */
   var HEADER_LINKS = [
     { href: 'map',    label: 'Carte' },
+    { href: 'news',   label: 'Actualités' },
+    { href: 'blog',   label: 'Blog' },
     { href: 'plans',  label: 'Plan' }
   ];
 
+  // Root-absolute href ("map" -> "/map"): the same header is used on nested
+  // pages (/blog/foret-laigue), where a relative "map" would 404.
+  function abs(href) { return /^(\/|https?:)/.test(href) ? href : '/' + href; }
+
   // Current page slug, e.g. "/map.html" -> "map", "/" -> "".
+  // Nested content pages highlight their section: /blog/… -> "blog",
+  // /balade/… -> "best-tours".
   function currentSlug() {
-    var p = location.pathname.replace(/\/+$/, '').split('/').pop() || '';
+    var path = location.pathname;
+    if (/^\/blog\//.test(path)) return 'blog';
+    if (/^\/balade\//.test(path)) return 'best-tours';
+    var p = path.replace(/\/+$/, '').split('/').pop() || '';
     return p.replace(/\.html$/, '');
   }
 
@@ -123,7 +137,7 @@
     var cls = 'nav-drawer-item';
     if (it.admin) cls += ' nav-drawer-admin' + (isAdmin() ? '' : ' hidden');
     if (it.href === slug) cls += ' active';
-    return '<a href="' + it.href + '" class="' + cls + '"' + (it.id ? ' id="' + it.id + '"' : '') + '>' +
+    return '<a href="' + abs(it.href) + '" class="' + cls + '"' + (it.id ? ' id="' + it.id + '"' : '') + '>' +
       '<span class="nav-drawer-icon">' + it.icon + '</span>' +
       '<span>' + it.label + '</span></a>';
   }
@@ -135,7 +149,7 @@
     if (!nav) return;
     var slug = currentSlug();
     nav.innerHTML = HEADER_LINKS.map(function (l) {
-      return '<a href="' + l.href + '"' + (l.href === slug ? ' class="active"' : '') +
+      return '<a href="' + abs(l.href) + '"' + (l.href === slug ? ' class="active"' : '') +
         '>' + l.label + '</a>';
     }).join('');
   }
@@ -158,8 +172,17 @@
     var hdrInstall = right.querySelector('#btnInstallApp');
     if (hdrInstall) hdrInstall.remove();
 
+    // Every header ends with the avatar menu — add the slot if a page forgot it.
     var menu = right.querySelector('#userMenu');
-    if (!document.getElementById('notifBell')) {
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'userMenu';
+      menu.className = 'user-menu';
+      right.appendChild(menu);
+    }
+    // The bell needs API_URL (js/config.js); content pages that don't load it
+    // skip the bell (it only ever shows when there's an unread event anyway).
+    if (!document.getElementById('notifBell') && typeof API_URL !== 'undefined') {
       var bell = document.createElement('div');
       bell.id = 'notifBell';
       bell.className = 'notif-bell-wrap';
@@ -171,14 +194,17 @@
       }
     }
 
-    if (menu && !menu.children.length) renderUserMenu(menu);
+    renderUserMenu(menu);
   }
 
+  // The ONE avatar menu — page scripts no longer draw their own. Signed-out
+  // visitors get a "Connexion" button in the same slot.
   function renderUserMenu(menuEl) {
     var user = null;
     try { user = JSON.parse(localStorage.getItem('bwr_user') || 'null'); } catch (e) {}
     if (!user || !user.name) {
-      menuEl.innerHTML = '<a href="login" class="btn-icon" style="text-decoration:none">Connexion</a>';
+      menuEl.innerHTML = '<a href="/login" class="btn-icon" style="text-decoration:none">' +
+        '<span class="btn-emoji">' + IC.profile + '</span><span class="btn-label">Connexion</span></a>';
       return;
     }
     var initials = user.name.split(' ').map(function (w) { return w[0]; }).join('').toUpperCase().slice(0, 2);
@@ -190,16 +216,20 @@
       '<div class="user-dropdown hidden" id="userDropdown">' +
         '<span class="dropdown-name">' + escHtml(user.name) + '</span>' +
         '<a href="/">🏠 Accueil</a>' +
-        '<a href="map">🗺 Voir la carte</a>' +
-        '<a href="map?plan=1">🧭 Planifier un trajet</a>' +
-        '<a href="profile">👤 Mon profil</a>' +
-        (user.role === 'admin' ? '<a href="admin">🗺 Carte admin</a><a href="admin-panel">⚙️ Panneau admin</a>' : '') +
+        '<a href="/map">🗺 Voir la carte</a>' +
+        '<a href="/map?plan=1">🧭 Planifier un trajet</a>' +
+        '<a href="/profile">👤 Mon profil</a>' +
+        (user.role === 'admin' ? '<a href="/admin">🗺 Carte admin</a><a href="/admin-panel">⚙️ Panneau admin</a>' : '') +
         '<button class="dropdown-logout" id="btnLogout">Se déconnecter</button>' +
       '</div>';
     var dd = menuEl.querySelector('#userDropdown');
     menuEl.querySelector('#userBtn').addEventListener('click', function () { dd.classList.toggle('hidden'); });
     menuEl.querySelector('#btnLogout').addEventListener('click', function () {
-      if (typeof logout === 'function') logout();
+      if (typeof logout === 'function') return logout();
+      // Content pages don't load js/auth.js — drop the cached session locally
+      // and let the login page take it from there.
+      try { localStorage.removeItem('bwr_token'); localStorage.removeItem('bwr_user'); } catch (e) {}
+      location.href = '/login';
     });
     document.addEventListener('click', function (e) {
       if (!menuEl.contains(e.target)) dd.classList.add('hidden');

@@ -198,15 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (overlay) overlay.addEventListener('click', closeDrawer);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 
-  // User menu
-  const user = getCachedUser();
-  const userMenu = document.getElementById('userMenu');
-  if (userMenu && user) {
-    userMenu.innerHTML = `<a href="profile" class="btn-icon" style="text-decoration:none"><span class="btn-emoji">👤</span><span class="btn-label">${escHtml(user.name.split(' ')[0])}</span></a>`;
-    if (user.role === 'admin') {
-      document.querySelectorAll('.nav-drawer-admin').forEach(el => el.classList.remove('hidden'));
-    }
-  }
+  // The avatar menu is drawn by js/ui-shared.js, same as on every other page.
 
   renderLeaguesLegend();
   initPeriodTabs();

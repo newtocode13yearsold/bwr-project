@@ -113,13 +113,10 @@ window.addEventListener('load', () => requestAnimationFrame(() => map.invalidate
 
 // ── User menu ─────────────────────────────────────────────────────────────────
 async function initUserMenu() {
+  // The avatar menu itself is drawn by js/ui-shared.js (same on every page);
+  // this only reveals the map's own signed-in extras.
   const user = getCachedUser();
-  const menuEl = document.getElementById('userMenu');
-
-  if (!user) {
-    menuEl.innerHTML = `<a href="login" class="btn-icon">Connexion</a>`;
-    return;
-  }
+  if (!user) return;
 
   // Show path-edit button in drawer for Pro users
   if (BWR.can('path_difficulty_edit', _userPlan)) {
@@ -129,33 +126,6 @@ async function initUserMenu() {
   if (user.role === 'admin') {
     document.querySelectorAll('.nav-drawer-admin').forEach(el => el.classList.remove('hidden'));
   }
-
-  const initials = user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-  menuEl.innerHTML = `
-    <button class="user-btn" id="userBtn">
-      <div class="user-avatar">${initials}</div>
-      <span class="btn-label">${user.name.split(' ')[0]}</span>
-    </button>
-    <div class="user-dropdown hidden" id="userDropdown">
-      <span class="dropdown-name">${user.name}</span>
-      <a href="/">🏠 Accueil</a>
-      <a href="profile">👤 Mon profil</a>
-      ${user.role === 'admin' ? '<a href="admin">🗺 Carte admin</a><a href="admin-panel">⚙️ Panneau admin</a>' : ''}
-      <button class="dropdown-logout" id="btnLogout">Se déconnecter</button>
-    </div>
-  `;
-
-  document.getElementById('userBtn').addEventListener('click', () => {
-    document.getElementById('userDropdown').classList.toggle('hidden');
-  });
-
-  document.getElementById('btnLogout').addEventListener('click', () => logout());
-
-  document.addEventListener('click', (e) => {
-    if (!menuEl.contains(e.target)) {
-      document.getElementById('userDropdown')?.classList.add('hidden');
-    }
-  });
 }
 
 // ── Toast ───────────────────────────────────────────────────────────────────

@@ -93,6 +93,8 @@ function layout({ title, description, canonical, image, jsonLd, headExtra = '', 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/tokens.css" />
   <link rel="stylesheet" href="/css/blog.css" />
+  <link rel="stylesheet" href="/css/header.css" />
+  <link rel="stylesheet" href="/css/mobile.css" />
   ${headExtra}
   <link rel="stylesheet" href="/css/dark.css" />
   <script src="/js/theme.js"></script>
@@ -100,22 +102,22 @@ function layout({ title, description, canonical, image, jsonLd, headExtra = '', 
 </head>
 <body style="background:var(--surface-1,#fafbf7);margin:0">
 
-  <nav class="blog-nav">
-    <div class="blog-nav-inner">
-      <a href="/" class="blog-nav-logo">BWR</a>
-      <div class="blog-nav-links">
-        <a href="/">Accueil</a>
+  <!-- Site header: identical on every page (css/header.css, filled by js/ui-shared.js) -->
+  <header class="header">
+    <div class="header-left">
+      <a href="/" class="logo">BWR</a>
+      <nav class="header-nav-links">
         <a href="/map">Carte</a>
-        <a href="/map?plan=1">Planifier</a>
-        <a href="/best-tours">Balades</a>
+        <a href="/news">Actualités</a>
         <a href="/blog">Blog</a>
-      </div>
-      <div class="blog-nav-cta">
-        <a href="/login" class="btn-login">Connexion</a>
-        <a href="/map" class="btn-app">Voir la carte</a>
-      </div>
+        <a href="/plans">Plan</a>
+      </nav>
     </div>
-  </nav>
+    <div class="header-right">
+      <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></span><span class="btn-label">Menu</span></button>
+      <div class="user-menu" id="userMenu"></div>
+    </div>
+  </header>
 
   <main class="article-wrap">
 ${body}
@@ -141,6 +143,7 @@ ${body}
   <script src="/js/config.js"></script>
   <script src="/js/errors.js"></script>
   <script src="/js/track.js"></script>
+  <script defer src="/js/ui-shared.js"></script>
 </body>
 </html>`;
 }

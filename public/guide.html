@@ -36,6 +36,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/guide.css" />
+  <link rel="stylesheet" href="css/header.css" />
   <link rel="stylesheet" href="css/onboarding.css" />
   <link rel="stylesheet" href="css/mobile.css" />
   <!-- Données structurées : guide d'utilisation BWR -->
@@ -55,14 +56,22 @@
 </head>
 <body class="guide-body">
 
-  <div class="guide-topbar">
-    <a href="/" class="logo">BWR</a>
-    <div class="guide-topbar-links">
-      <button id="btnGuideTheme" title="Thème clair / sombre">🌙</button>
-      <a href="map">Carte</a>
-      <a href="map" class="guide-topbar-cta">Aller à la carte</a>
+  <!-- ── Site header: identical on every page (css/header.css, filled by js/ui-shared.js) ── -->
+  <header class="header">
+    <div class="header-left">
+      <a href="/" class="logo">BWR</a>
+      <nav class="header-nav-links">
+        <a href="/map">Carte</a>
+        <a href="/news">Actualités</a>
+        <a href="/blog">Blog</a>
+        <a href="/plans">Plan</a>
+      </nav>
     </div>
-  </div>
+    <div class="header-right">
+      <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></span><span class="btn-label">Menu</span></button>
+      <div class="user-menu" id="userMenu"></div>
+    </div>
+  </header>
 
   <!-- ── Hero ── -->
   <header class="guide-hero">
@@ -231,7 +240,6 @@
   <script src="js/config.js"></script>
   <script src="js/errors.js"></script>
   <script src="js/admin-badge.js"></script>
-  <script src="js/guide.js"></script>
   <script defer src="js/ui-shared.js"></script>
   <script src="js/track.js"></script>
 </body>

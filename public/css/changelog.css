@@ -1,44 +1,10 @@
 /* ── Changelog page ─────────────────────────────────────────────────────────── */
 
 .changelog-body {
+  margin: 0; /* full-bleed shared header */
   background: var(--surface-1);
   min-height: 100vh;
 }
-
-/* ── Nav ── */
-.cl-nav {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(248, 251, 246, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-soft);
-}
-.cl-nav-inner {
-  max-width: var(--container-sm);
-  margin: 0 auto;
-  padding: 0 var(--space-6);
-  height: var(--header-h);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.cl-logo {
-  font-family: var(--font-display);
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  color: var(--forest-700);
-  text-decoration: none;
-  letter-spacing: -0.02em;
-}
-.cl-back {
-  font-size: var(--fs-sm);
-  color: var(--text-muted);
-  text-decoration: none;
-  transition: color var(--dur-fast) var(--ease-out);
-}
-.cl-back:hover { color: var(--forest-700); }
 
 /* ── Header ── */
 .cl-header {
@@ -197,6 +163,5 @@
   .cl-timeline::before { left: calc(var(--space-4) + 19px); }
   .cl-timeline { padding-inline: var(--space-4); }
   .cl-header { padding-inline: var(--space-4); }
-  .cl-nav-inner { padding-inline: var(--space-4); }
   .cl-entries { margin-left: calc(40px + var(--space-3)); }
 }

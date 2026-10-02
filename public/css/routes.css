@@ -6,14 +6,6 @@
   flex-direction: column;
 }
 
-.routes-body .logo {
-  text-decoration: none;
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: 2px;
-  color: var(--lime-500);
-}
-
 .planner-layout {
   display: flex;
   flex: 1;
