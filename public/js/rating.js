@@ -60,20 +60,30 @@
       + '.bwr-rating-cancel{background:transparent;border-color:var(--border,#e2e8da);color:var(--text,#1f2937)}'
       + '.bwr-rating-note{font-size:.82rem;color:var(--text-muted,#6b7280);margin-top:12px;min-height:1em}'
       // Floating "rate us" prompt (bottom-right; bottom-center is taken by the offline banner)
-      + '.bwr-rating-fab{position:fixed;right:18px;bottom:18px;z-index:4500;max-width:min(320px,92vw);'
-      + 'display:flex;align-items:center;gap:12px;background:var(--surface-0,#fff);color:var(--text,#1f2937);'
-      + 'border:1px solid var(--border,#e2e8da);border-radius:14px;padding:12px 14px;'
+      + '.bwr-rating-fab{position:fixed;right:18px;bottom:18px;z-index:4500;max-width:min(340px,calc(100vw - 32px));'
+      + 'display:flex;align-items:center;gap:10px;background:var(--surface-0,#fff);color:var(--text,#1f2937);'
+      + 'border:1px solid var(--border,#e2e8da);border-radius:14px;padding:8px 4px 8px 14px;'
       + 'box-shadow:0 12px 32px -12px rgba(11,36,16,.35);font-size:.88rem;line-height:1.35;'
       + 'transform:translateY(140%);opacity:0;transition:transform .28s ease,opacity .28s ease}'
       + '.bwr-rating-fab.show{transform:translateY(0);opacity:1}'
-      + '.bwr-rating-fab__stars{color:#f59e0b;letter-spacing:1px;font-size:1rem}'
+      + '.bwr-rating-fab__stars{color:#f59e0b;letter-spacing:1px;font-size:1rem;white-space:nowrap}'
       + '.bwr-rating-fab__txt{flex:1;min-width:0}'
-      + '.bwr-rating-fab__txt strong{display:block;color:var(--text-strong,#0b2410);font-size:.92rem}'
+      + '.bwr-rating-fab__txt strong{display:block;color:var(--text-strong,#0b2410);font-size:.92rem;white-space:nowrap}'
       + '.bwr-rating-fab__cta{border:none;background:var(--forest-600,#2d6b1f);color:#fff;border-radius:999px;'
-      + 'padding:7px 14px;font:inherit;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap}'
+      + 'min-height:36px;padding:0 16px;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}'
       + '.bwr-rating-fab__cta:hover{background:var(--forest-700,#1e4d14)}'
-      + '.bwr-rating-fab__close{position:absolute;top:4px;right:8px;border:none;background:transparent;'
-      + 'color:var(--text-muted,#9ca3af);font-size:1.1rem;line-height:1;cursor:pointer;padding:2px}';
+      // 44×44 tap target (WCAG / Apple HIG), glyph stays visually small.
+      + '.bwr-rating-fab__close{flex-shrink:0;width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;'
+      + 'border:none;border-radius:10px;background:transparent;color:var(--text-muted,#6b7280);font-size:1.5rem;line-height:1;cursor:pointer;padding:0}'
+      + '.bwr-rating-fab__close:hover{background:var(--surface-2,rgba(0,0,0,.06))}'
+      // No browser-blue ring on tap; a branded ring only for keyboard users.
+      + '.bwr-rating-fab button:focus{outline:none}'
+      + '.bwr-rating-fab button:focus-visible{outline:2px solid var(--forest-600,#2d6b1f);outline-offset:2px}'
+      // Phones: one compact line, full width, sitting just above the bottom nav (bottom set in JS).
+      + '@media (max-width:768px){'
+      +   '.bwr-rating-fab{left:16px;right:16px;max-width:none;padding:6px 2px 6px 14px}'
+      +   '.bwr-rating-fab__stars,.bwr-rating-fab__sub{display:none}'
+      + '}';
     var el = document.createElement('style');
     el.id = 'bwr-rating-styles';
     el.textContent = css;
@@ -131,7 +141,7 @@
     back.setAttribute('aria-label', 'Noter BWR');
     back.innerHTML =
       '<div class="bwr-rating-modal">'
-      + '<h3>Vous aimez BWR ?</h3>'
+      + '<h3>Vous aimez BWR ?</h3>'
       + '<p>Votre note nous aide à améliorer l\'appli.</p>'
       + '<div class="bwr-rating-picker" role="radiogroup" aria-label="Note en étoiles">'
       +   '<span data-v="1" role="radio">' + STAR + '</span>'
@@ -204,60 +214,102 @@
   }
 
   // ── Floating "rate us" prompt ──────────────────────────────────────────────
-  // A gentle, dismissible nudge that reaches engaged users on pages without a
-  // footer (map, routes, profile…). Shows once per browser, only for a signed-in
-  // user who hasn't rated yet, after a little engagement — never nags again once
-  // dismissed or once a rating is left.
-  var PROMPT_KEY = 'bwr_rating_prompt_done';
-  function promptDone() { try { return localStorage.getItem(PROMPT_KEY) === '1'; } catch (e) { return false; } }
+  // A rare, dismissible nudge for engaged users on pages without a footer (map,
+  // profile…). It must never greet someone on arrival, so it only appears when:
+  //   • the user is signed in and hasn't rated yet,
+  //   • the browser has known them for ≥ MIN_AGE_DAYS and ≥ MIN_PAGEVIEWS pages,
+  //   • they've spent VISIBLE_SECONDS of *visible* time on the current page,
+  //   • it's been COOLDOWN_DAYS since it last showed (even if ignored),
+  // and it stops for good after MAX_IMPRESSIONS, a close, or a rating.
+  var PROMPT_KEY = 'bwr_rating_prompt_done';     // '1' = never again
+  var STATE_KEY = 'bwr_rating_prompt_state';     // {firstSeen, views, shownAt, shows}
+  var MIN_AGE_DAYS = 3, MIN_PAGEVIEWS = 8, VISIBLE_SECONDS = 60;
+  var COOLDOWN_DAYS = 14, MAX_IMPRESSIONS = 2, DAY = 86400000;
+
+  function promptDone() { try { return localStorage.getItem(PROMPT_KEY) === '1'; } catch (e) { return true; } }
   function markPromptDone() { try { localStorage.setItem(PROMPT_KEY, '1'); } catch (e) {} }
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STATE_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function writeState(s) { try { localStorage.setItem(STATE_KEY, JSON.stringify(s)); } catch (e) {} }
+
+  // Keep the prompt clear of the mobile bottom nav (and anything else docked there).
+  function placeAboveBottomNav(fab) {
+    var nav = document.querySelector('.bottom-nav');
+    if (!nav) return;
+    var r = nav.getBoundingClientRect();
+    if (r.height === 0 || getComputedStyle(nav).display === 'none') { fab.style.bottom = ''; return; }
+    fab.style.bottom = Math.max(18, window.innerHeight - r.top + 10) + 'px';
+  }
 
   function maybeShowPrompt() {
+    if (window.self !== window.top) return; // never inside the embedded planner iframe
+    if (document.getElementById('map')) return; // full-screen map: every corner holds a control
     if (promptDone()) return;              // already dismissed / already rated before
     if (!token()) return;                  // rating needs an account — don't nag anonymous visitors
     if (mine) { markPromptDone(); return; } // they've already rated
     if (document.getElementById('bwr-rating-fab')) return;
 
-    var shown = false;
+    var now = Date.now();
+    var st = readState();
+    if (!st.firstSeen) st.firstSeen = now;
+    st.views = (st.views || 0) + 1;
+    writeState(st);
+
+    if (now - st.firstSeen < MIN_AGE_DAYS * DAY) return;
+    if (st.views < MIN_PAGEVIEWS) return;
+    if (st.shownAt && now - st.shownAt < COOLDOWN_DAYS * DAY) return;
+    if ((st.shows || 0) >= MAX_IMPRESSIONS) { markPromptDone(); return; }
+
+    // Count only time the tab is actually visible, so a background tab never pops it.
+    var visibleSecs = 0;
+    var ticker = setInterval(function () {
+      if (document.visibilityState !== 'visible') return;
+      if (++visibleSecs >= VISIBLE_SECONDS) { clearInterval(ticker); show(); }
+    }, 1000);
+
     function show() {
-      if (shown || promptDone() || mine) return;
-      shown = true;
-      cleanup();
+      if (promptDone() || mine || document.getElementById('bwr-rating-fab')) return;
+      // Don't stack on top of a modal the user is busy with (pages keep closed
+      // modals in the DOM, so only count the ones actually rendered).
+      var modals = document.querySelectorAll('[aria-modal="true"]');
+      for (var i = 0; i < modals.length; i++) {
+        if (modals[i].getClientRects().length && getComputedStyle(modals[i]).visibility !== 'hidden') return;
+      }
+      var s = readState();
+      s.shownAt = Date.now();
+      s.shows = (s.shows || 0) + 1;
+      writeState(s);
+
       var fab = document.createElement('div');
       fab.id = 'bwr-rating-fab';
       fab.className = 'bwr-rating-fab';
-      fab.setAttribute('role', 'dialog');
+      // A non-modal toast, NOT role="dialog": ui-shared.js auto-focuses (and traps
+      // Tab inside) every visible dialog, which painted a blue ring on the ×.
+      fab.setAttribute('role', 'region');
       fab.setAttribute('aria-label', 'Donner votre avis sur BWR');
+      //   keeps the "?" glued to "BWR" instead of wrapping onto its own line.
       fab.innerHTML =
-        '<button type="button" class="bwr-rating-fab__close" aria-label="Fermer">×</button>'
-        + '<span class="bwr-rating-fab__stars" aria-hidden="true">' + STAR + STAR + STAR + STAR + STAR + '</span>'
-        + '<span class="bwr-rating-fab__txt"><strong>Vous aimez BWR ?</strong>'
-        + 'Notez le site en un clic, ça nous aide beaucoup.</span>'
-        + '<button type="button" class="bwr-rating-fab__cta">Noter</button>';
+        '<span class="bwr-rating-fab__stars" aria-hidden="true">' + STAR + STAR + STAR + STAR + STAR + '</span>'
+        + '<span class="bwr-rating-fab__txt"><strong>Vous aimez BWR ?</strong>'
+        + '<span class="bwr-rating-fab__sub">Notez le site en un clic, ça nous aide beaucoup.</span></span>'
+        + '<button type="button" class="bwr-rating-fab__cta">Noter</button>'
+        + '<button type="button" class="bwr-rating-fab__close" aria-label="Fermer">×</button>';
       document.body.appendChild(fab);
+      placeAboveBottomNav(fab);
+      function onResize() { placeAboveBottomNav(fab); }
+      window.addEventListener('resize', onResize);
       requestAnimationFrame(function () { fab.classList.add('show'); });
 
       function dismiss(rememberDone) {
         if (rememberDone) markPromptDone();
+        window.removeEventListener('resize', onResize);
         fab.classList.remove('show');
         setTimeout(function () { if (fab.parentNode) fab.parentNode.removeChild(fab); }, 300);
       }
       fab.querySelector('.bwr-rating-fab__close').addEventListener('click', function () { dismiss(true); });
       fab.querySelector('.bwr-rating-fab__cta').addEventListener('click', function () { dismiss(true); openModal(); });
     }
-    function cleanup() {
-      clearTimeout(timer);
-      window.removeEventListener('scroll', onScroll);
-    }
-    function onScroll() {
-      var h = document.documentElement;
-      var scrolled = (h.scrollTop || document.body.scrollTop);
-      var max = (h.scrollHeight - h.clientHeight) || 1;
-      if (scrolled / max > 0.35) show();
-    }
-    // Show after ~25 s of engagement, or once the visitor scrolls a bit — whichever first.
-    var timer = setTimeout(show, 25000);
-    window.addEventListener('scroll', onScroll, { passive: true });
   }
 
   // ── Boot ─────────────────────────────────────────────────────────────────
