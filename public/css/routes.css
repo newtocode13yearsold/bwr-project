@@ -1577,3 +1577,226 @@
 /* Narrow export buttons: short "🔒 Pro" form of the tag (the row title already says "Pro uniquement"). */
 .result-actions .pro-only-tag { font-size: 0; white-space: nowrap; }
 .result-actions .pro-only-tag::before { content: '🔒 Pro'; font-size: 0.58rem; }
+
+/* ══ Airy planner — room to breathe, numbered "trail blaze" steps, soft cards ══
+   Layered last on purpose: it only re-spaces and re-skins the flat look above. */
+@media (min-width: 769px) {
+  .planner-sidebar { width: 364px; min-width: 364px; }
+}
+.planner-sidebar {
+  counter-reset: plan-step;
+  background:
+    radial-gradient(130% 42% at 0% 0%, rgba(132, 204, 22, 0.09), transparent 70%),
+    var(--surface-0, #fff);
+}
+[data-theme="dark"] .planner-sidebar {
+  background:
+    radial-gradient(130% 42% at 0% 0%, rgba(132, 204, 22, 0.07), transparent 70%),
+    var(--surface-1);
+}
+
+/* Header bar: a touch taller, with faint contour lines like a topo map. */
+.embed-bar {
+  padding: 14px 14px 14px 20px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='64' viewBox='0 0 220 64'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.1' stroke-width='1.2'%3E%3Cpath d='M-10 50 C30 26 70 62 112 36 S190 14 230 38'/%3E%3Cpath d='M-10 62 C30 38 70 74 112 48 S190 26 230 50'/%3E%3Cpath d='M-10 38 C30 14 70 50 112 24 S190 2 230 26'/%3E%3Cpath d='M-10 26 C30 2 70 38 112 12 S190 -10 230 14'/%3E%3C/g%3E%3C/svg%3E") repeat-x right center / auto 100%,
+    var(--forest-700);
+}
+.embed-bar-title { font-size: 1rem; letter-spacing: 0.2px; }
+
+/* ✨ AI bar: one pill with a gradient rim and a gentle twinkle. */
+.ai-planner { padding: 22px 20px 20px; }
+.ai-input-row {
+  gap: 8px;
+  padding: 5px 5px 5px 14px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--surface-0, #fff), var(--surface-0, #fff)) padding-box,
+    linear-gradient(115deg, var(--lime-500), var(--forest-700) 55%, #7c5cd6) border-box;
+  box-shadow: 0 6px 18px rgba(30, 77, 20, 0.09);
+  transition: box-shadow 0.2s;
+}
+[data-theme="dark"] .ai-input-row {
+  background:
+    linear-gradient(var(--surface-2), var(--surface-2)) padding-box,
+    linear-gradient(115deg, var(--lime-500), var(--forest-600, #2d6a1f) 55%, #7c5cd6) border-box;
+}
+.ai-input-row:focus-within { box-shadow: 0 0 0 4px rgba(132, 204, 22, 0.2), 0 6px 18px rgba(30, 77, 20, 0.12); }
+.ai-input-row .ai-input { background: none; border: none; padding: 10px 2px; font-size: 0.92rem; }
+.ai-input-row .ai-input:focus { background: none; }
+.ai-input-row .ai-submit { width: 42px; height: 42px; border-radius: 50%; font-size: 1.1rem; }
+.ai-planner-spark { font-size: 1.15rem; display: inline-block; animation: plan-twinkle 3.6s ease-in-out infinite; }
+@keyframes plan-twinkle {
+  0%, 70%, 100% { transform: scale(1) rotate(0); opacity: 1; }
+  80% { transform: scale(1.25) rotate(-12deg); opacity: 0.8; }
+  90% { transform: scale(0.95) rotate(8deg); }
+}
+.ai-planner .ai-chips { margin-top: 12px; gap: 8px; }
+.ai-chip { padding: 7px 12px; }
+
+/* Mode switch: a soft track with three tall tabs — icon over label. */
+.step-mode { padding: 0 20px 6px; }
+.step-mode .mode-cards {
+  gap: 4px; padding: 5px; border: none; border-radius: 16px;
+  background: var(--surface-2, #eef2ea);
+}
+.step-mode .mode-card {
+  flex-direction: column; gap: 5px; padding: 12px 4px 10px;
+  border: none; border-radius: 12px; margin: 0;
+  color: var(--text-muted);
+  transition: background 0.18s, box-shadow 0.18s, color 0.18s, transform 0.12s;
+}
+.step-mode .mode-card:hover:not(.active) { background: rgba(255, 255, 255, 0.55); color: var(--text); }
+[data-theme="dark"] .step-mode .mode-card:hover:not(.active) { background: rgba(255, 255, 255, 0.05); }
+.step-mode .mode-card:active { transform: scale(0.97); }
+.step-mode .mode-card.active {
+  background: var(--surface-0, #fff); color: var(--forest-700);
+  box-shadow: 0 2px 10px rgba(30, 77, 20, 0.14);
+}
+[data-theme="dark"] .step-mode .mode-card.active { background: var(--surface-0); color: var(--lime-400); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35); }
+.step-mode .mode-icon { display: flex; line-height: 1; }
+.step-mode .mode-icon svg { display: block; }
+.step-mode .mode-card strong { font-size: 0.84rem; color: inherit; }
+.step-mode .mode-card.active strong { color: inherit; }
+.step-mode .mode-card .lock-badge { top: -6px; right: -2px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }
+
+/* Numbered steps — each visible label wears a round "balise", like a trail blaze. */
+.step { padding: 20px 22px; }
+.step-where .field-label,
+.step-options .step-title {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.92rem; font-weight: 800; color: var(--text); margin-bottom: 12px;
+}
+.step-where .field-label::before,
+.step-options .step-title::before {
+  counter-increment: plan-step;
+  content: counter(plan-step);
+  flex: none; display: grid; place-items: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--forest-700); color: var(--lime-400, #a3e635);
+  font-size: 0.75rem; font-weight: 800;
+  box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.22);
+}
+[data-theme="dark"] .step-where .field-label::before,
+[data-theme="dark"] .step-options .step-title::before { background: var(--lime-500); color: #13240d; }
+.step-options .step-title { margin: 0; font-size: 0.92rem; }
+
+/* Where: taller, rounder fields. */
+.step-where .search-row { gap: 10px; margin-bottom: 0; align-items: stretch; }
+.step-where .search-input {
+  height: 48px; padding: 0 16px; border-radius: 14px;
+  border: 1.5px solid var(--border); background: var(--surface-0, #fff);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.step-where .search-input:focus { border-color: var(--forest-700); box-shadow: 0 0 0 4px rgba(30, 77, 20, 0.1); outline: none; }
+.step-where .btn-locate { width: 48px; height: 48px; border-radius: 14px; border-width: 1.5px; font-size: 1.15rem; }
+[data-theme="dark"] .step-where .btn-locate { background: var(--surface-2); }
+.step-where .step-hint { margin: 10px 2px 0; font-size: 0.8rem; line-height: 1.45; }
+.step-where .point-status:not(:empty) { margin-top: 10px; }
+.step-where { border-bottom: none; padding-bottom: 14px; }
+
+/* Distance: label on its own line, then a roomy row of chips. */
+.distance-group { display: block; margin-top: 22px; padding-top: 20px; border-top: 1px dashed var(--border); }
+.distance-group .field-label { margin: 0 0 12px; }
+.step-where .qs-distance-chips { gap: 8px; }
+.step-where .qs-chip {
+  height: 42px; padding: 0; border-radius: 12px; font-size: 0.95rem; font-weight: 700;
+  transition: background 0.15s, border-color 0.15s, transform 0.12s;
+}
+.step-where .qs-chip:hover:not(.active) { border-color: var(--forest-700); }
+.step-where .qs-chip.active {
+  background: var(--forest-700); border-color: var(--forest-700); color: var(--lime-400, #a3e635);
+  transform: translateY(-2px); box-shadow: 0 4px 10px rgba(30, 77, 20, 0.25);
+}
+[data-theme="dark"] .step-where .qs-chip.active { background: var(--lime-500); border-color: var(--lime-500); color: #13240d; }
+.step-where .distance-custom {
+  height: 42px; padding: 0 10px 0 4px; gap: 2px;
+  border: 1.5px solid var(--border); border-radius: 12px; background: var(--surface-0, #fff);
+}
+[data-theme="dark"] .step-where .distance-custom { background: var(--surface-2); }
+.step-where .distance-custom:focus-within { border-color: var(--forest-700); }
+.step-where .distance-input { width: 44px; border: none; background: none; text-align: right; font-weight: 700; padding: 0; }
+.step-where .distance-input:focus { outline: none; }
+.distance-unit { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+
+/* Options: a soft card you tap to unfold. */
+.step-options { padding: 4px 20px 20px; border-bottom: none; }
+.step-options .step-header {
+  padding: 14px 16px; border: 1.5px solid var(--border); border-radius: 14px;
+  background: var(--surface-0, #fff); transition: border-color 0.15s, background 0.15s;
+}
+[data-theme="dark"] .step-options .step-header { background: var(--surface-2); }
+.step-options .step-header:hover { border-color: var(--forest-700); background: var(--surface-0, #fff); }
+.step-options:not(.collapsed) .step-header { margin-bottom: 16px; border-color: var(--forest-700); }
+.step-options .step2-body { padding: 0 4px 4px; }
+.step-options .option-group { margin-bottom: 16px; }
+.step-options .option-label { margin-bottom: 8px; }
+.step-options .pathtype-grid { gap: 8px; }
+.step-options .pathtype-btn { padding: 10px 2px; border-radius: 12px; }
+.step-options .difficulty-group { gap: 8px; }
+.step-options .diff-btn { border-radius: 10px; padding: 9px 6px; }
+
+/* CTA: a floating rounded button with a fade behind it, not a full-bleed slab. */
+.step-cta {
+  padding: 14px 20px 18px; border-top: none;
+  background: linear-gradient(to bottom, transparent, var(--surface-0, #fff) 26%);
+}
+[data-theme="dark"] .planner-sidebar .step-cta { background: linear-gradient(to bottom, transparent, var(--surface-1) 26%); }
+.step-cta .quota-strip {
+  margin: 0 0 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 14px;
+  background: var(--surface-2, #f1f5ee);
+}
+.step-cta .quota-strip .qs-bar { height: 6px; border-radius: 999px; }
+/* "0 / 10" repeats the "10 restants" pill — keep just the upsell link, on the right. */
+.step-cta .quota-strip .qs-count { display: none; }
+.step-cta .quota-strip .qs-cta { margin-left: auto; }
+.btn-generate {
+  border-radius: 16px; padding: 16px 18px; font-size: 1.02rem; font-weight: 800;
+  box-shadow: 0 8px 22px rgba(30, 77, 20, 0.22);
+}
+.btn-generate.btn-quick-loop {
+  background: linear-gradient(135deg, #b9f25b, var(--lime-500) 55%, #6fb312);
+  box-shadow: 0 8px 22px rgba(132, 204, 22, 0.35);
+}
+.btn-generate.btn-quick-loop:hover { background: linear-gradient(135deg, #c6f777, #97d92a 55%, #74bb14); }
+.btn-generate:disabled { box-shadow: none; }
+
+/* Results + tools get the same breathing room. */
+.route-result { padding: 22px 20px; gap: 16px; }
+.planner-tools { padding: 20px 20px 28px; border-top: 1px solid var(--border); }
+.tools-grid { gap: 10px; }
+.tool-btn,
+.tool-btn.btn-import-gpx {
+  padding: 14px 10px; border-radius: 14px; font-size: 0.84rem; line-height: 1.3;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+}
+.tool-btn:hover,
+.tool-btn.btn-import-gpx:hover { transform: translateY(-1px); }
+.planner-tools .route-history { margin-top: 20px; }
+.planner-tools .history-header { padding: 14px 2px; font-size: 0.95rem; }
+.planner-tools .history-item { padding: 12px 4px; gap: 12px; border-bottom-color: var(--border); }
+.planner-tools .history-item-name { font-size: 0.9rem; }
+.planner-tools .history-item-meta { margin-top: 3px; }
+.planner-tools .history-item-actions { gap: 6px; }
+.planner-tools .history-item-actions button { border-radius: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-planner-spark { animation: none; }
+  .step-where .qs-chip.active,
+  .tool-btn:hover { transform: none; }
+}
+@media (max-width: 768px) {
+  .step { padding: 18px 16px; }
+  .ai-planner { padding: 18px 16px 16px; }
+  .step-mode { padding: 0 16px 6px; }
+  .step-options { padding: 4px 16px 18px; }
+  .step-cta { padding: 12px 16px 16px; }
+  /* The sheet is short: the sticky quota collapses to one line (pill + upsell). */
+  .step-cta .quota-strip { flex-direction: row; align-items: center; gap: 10px; padding: 8px 12px; margin-bottom: 10px; }
+  .step-cta .quota-strip .qs-label,
+  .step-cta .quota-strip .qs-bar { display: none; }
+  .step-cta .quota-strip > div:last-child { flex: 1; }
+  .step-cta .quota-strip .qs-cta { min-height: 0; margin-top: 0; padding: 4px 0; }
+  .btn-generate { padding: 14px 16px; }
+}
