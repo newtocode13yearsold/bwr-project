@@ -401,12 +401,19 @@ function exitSplitMode() {
 }
 
 // ── Edit mode — click any path (saved or OSM) to edit it ──────────────────────
+// The edit button's pencil icon (an inline SVG in admin.html), kept while the
+// button shows the close icon so exitEditMode() can put it back.
+let _editBtnIcon = null;
+const EDIT_CLOSE_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+
 function enterEditMode() {
   if (selectModeActive) exitSelectMode();
   if (splitModeActive) exitSplitMode();
   editModeActive = true;
   const btn = document.getElementById('btnEditMode');
-  btn.querySelector('.btn-emoji').textContent = '✕';
+  const icon = btn.querySelector('.btn-emoji');
+  if (_editBtnIcon === null) _editBtnIcon = icon.innerHTML;
+  icon.innerHTML = EDIT_CLOSE_ICON;
   btn.querySelector('.btn-label').textContent = 'Quitter';
   btn.style.background = 'rgba(239,68,68,0.4)';
   map.getContainer().style.cursor = 'crosshair';
@@ -417,7 +424,7 @@ function enterEditMode() {
 function exitEditMode() {
   editModeActive = false;
   const btn = document.getElementById('btnEditMode');
-  btn.querySelector('.btn-emoji').textContent = '✎';
+  if (_editBtnIcon !== null) btn.querySelector('.btn-emoji').innerHTML = _editBtnIcon;
   btn.querySelector('.btn-label').textContent = 'Modifier';
   btn.style.background = '';
   map.getContainer().style.cursor = '';

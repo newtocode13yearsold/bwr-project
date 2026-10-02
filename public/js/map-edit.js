@@ -9,6 +9,10 @@
 // ── Edit-mode internal state ──────────────────────────────────────────────────
 let _editPolylines  = [];
 let _osmEditLayers  = [];
+// The edit button's pencil icon (an inline SVG in map.html), kept while the
+// button shows the close icon so exitPathEditMode() can put it back.
+let _editBtnIcon    = null;
+const EDIT_CLOSE_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
 
 // ── Edit polylines ────────────────────────────────────────────────────────────
 function renderEditPolylines() {
@@ -161,7 +165,9 @@ function openNewPathPopupUser(coords, name, latlng) {
 function enterPathEditMode() {
   pathEditModeActive = true;
   const btn = document.getElementById('btnEditPaths');
-  btn.querySelector('.btn-emoji').textContent = '✕';
+  const icon = btn.querySelector('.btn-emoji');
+  if (_editBtnIcon === null) _editBtnIcon = icon.innerHTML;
+  icon.innerHTML = EDIT_CLOSE_ICON;
   btn.querySelector('.btn-label').textContent = 'Terminer';
   btn.style.background = 'rgba(239,68,68,0.15)';
   btn.style.color = '#dc2626';
@@ -174,7 +180,7 @@ function enterPathEditMode() {
 function exitPathEditMode() {
   pathEditModeActive = false;
   const btn = document.getElementById('btnEditPaths');
-  btn.querySelector('.btn-emoji').textContent = '✎';
+  if (_editBtnIcon !== null) btn.querySelector('.btn-emoji').innerHTML = _editBtnIcon;
   btn.querySelector('.btn-label').textContent = 'Modifier';
   btn.style.background = '';
   btn.style.color = '';

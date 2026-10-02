@@ -248,6 +248,23 @@
     min-width: 44px;
     min-height: 44px;
   }
+  /* In the top bar, the BUTTON is the 44×44 tap target — same square as the
+     ☰ / ✎ / ⋮ buttons beside it. Forcing the avatar circle itself to 44px
+     (rule above) and then wrapping it in the button's 6px/14px padding made
+     the avatar box 74×58, taller and wider than its neighbours. */
+  .header-right .user-btn {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+  .header-right .user-btn .user-avatar {
+    width: 30px;
+    height: 30px;
+    min-width: 0;
+    min-height: 0;
+  }
   .header-right {
     flex-wrap: wrap;
     justify-content: flex-end;

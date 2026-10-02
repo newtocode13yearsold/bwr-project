@@ -1871,6 +1871,20 @@ button.nav-drawer-item { background: none; border: none; width: 100%; text-align
   .map-body .map-bottom-btns:not(.open) .map-fab-actions { display: none; }
   .map-body .map-bottom-btns.open .map-fab-actions { animation: fab-rise 0.18s ease; }
 
+  /* The "📍 Points" control (js/map-poi.js) is a Leaflet bottom-left control, so
+     it landed right under the FAB and the 52px circle hid "📍 Po…". The row
+     beside the FAB is too narrow (the legend sits bottom-right), so stack the
+     control just ABOVE the FAB, left-aligned with it. The FAB's bottom is
+     measured from the viewport, the control's from the map, which ends above
+     the 56px (+ safe area) bottom nav — hence the subtraction. */
+  .map-body .leaflet-bottom.leaflet-left .poi-control {
+    margin-left: max(12px, env(safe-area-inset-left));
+    margin-bottom: calc(max(72px, 64px + env(safe-area-inset-bottom)) - 56px - env(safe-area-inset-bottom) + 52px + 10px);
+  }
+  /* When the FAB opens, its actions rise into that same spot — hide the
+     control meanwhile so the two never stack on top of each other. */
+  .map-body:has(.map-bottom-btns.open) .poi-control { visibility: hidden; }
+
   /* The FAB is now bottom-LEFT, so the legend no longer collides with a centred
      pill row — drop it back down beside the FAB baseline (was lifted to 128px). */
   .map-body .legend {
