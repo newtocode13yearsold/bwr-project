@@ -288,6 +288,8 @@
   .bnav-item {
     min-height: 56px;
   }
+  /* Five tabs share ~64px each at 320px — drop the tracking so labels fit. */
+  .bnav-label { letter-spacing: 0; }
 
   /* Standalone navigation links — a logo, a "← back", a CTA at the end of a
      card. These read as buttons, so they get button-sized targets. Links that

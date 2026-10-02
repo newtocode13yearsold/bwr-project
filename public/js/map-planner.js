@@ -65,8 +65,13 @@
   function markNav(open) {
     document.querySelectorAll('.header-nav-links a, .bottom-nav a').forEach(function (a) {
       var href = a.getAttribute('href');
-      if (href === 'map?plan=1') a.classList.toggle('active', open);
-      else if (href === 'map') a.classList.toggle('active', !open);
+      var on;
+      if (href === 'map?plan=1') on = open;
+      else if (href === 'map') on = !open;
+      else return;
+      a.classList.toggle('active', on);
+      if (on) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
     });
   }
 
