@@ -14,7 +14,7 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
-Run all automated tests (640 tests, ~7 s):
+Run all automated tests (647 tests, ~7 s):
   npm test
 
 Run tests in watch mode (re-runs on file save):
@@ -116,6 +116,7 @@ Shared modules:
 - js/config.js — API endpoint, map center/zoom, status colors
 - js/auth.js — Bearer token management, session persistence, role-based access
 - js/carrefours.js — Hardcoded junction names (zero network cost)
+- **js/icons.js — the ONE icon style of the site (no emoji in the UI).** Outline icons (24×24, stroke 2, `currentColor`, same family as the landing page) — emoji render differently on iPhone / Samsung / Windows, so they are not used as UI icons. Write `<i class="ic" data-ic="map"></i>` in HTML or JS strings; a MutationObserver fills it with the SVG (also inside innerHTML / Leaflet popups). `bwrIcon(name)` returns the raw SVG (canvas, print pop-up), `bwrIconFor(v)` / `bwrIconName(v)` accept a name, markup or a **legacy emoji** still stored in old data (wheel prizes, admin challenges) and map it. Data tables store icon *names* (`icon: 'medal'`), never markup or emoji. Plain-text contexts (`textContent`, toasts, `alert`, `<option>`, `title=`, chart labels) get no icon. Loaded in `<head>` right after theme.js on every page (and the worker `/balade/` + `/r/` pages); precached in the SW. Add new icons to its `P` table; `tests/icons.test.js` fails if a page uses an unknown icon name or reintroduces an emoji.
 - **One site header everywhere** — every page (app pages, landing, blog + articles, guide, legal, changelog, and the worker-rendered `/balade/` + `/r/` pages) uses the same `<header class="header">` markup, styled by `css/header.css` (header, nav drawer, avatar menu, bell — self-contained, so content pages that don't load `style.css` can use it) and filled by `js/ui-shared.js`: the quick links (`HEADER_LINKS`: Carte · Actualités · Blog · Plan), the ☰ drawer (`NAV_ITEMS`), the bell and the avatar menu / "Connexion" button. Page scripts must NOT draw their own user menu or nav; page-specific tool buttons (map ✎ / layers, admin tools) go in `.header-right` before `#userMenu`. The dark/light toggle lives only in the drawer. All hrefs ui-shared writes are root-absolute so they work under `/blog/…`.
 - **One site footer everywhere** — the same `<footer class="site-footer">` markup on every page that has a footer (landing, blog + articles, app pages, guide/legal/changelog, and the worker-rendered `/balade/` + `/r/` pages), styled by `css/footer.css`. It is a sticky footer (`body:has(> .site-footer)` becomes a full-height flex column, footer `margin-top:auto`) and, on mobile pages with the fixed `.bottom-nav`, runs down behind the bar instead of the body being padded — so never re-add a page-level `body { padding-bottom }` for the nav on a footer page. `js/rating.js` injects the site rating into `.site-footer-inner`.
 - sw.js — Service worker (network-first for HTML/JS/CSS, cache-first for assets, always network for API/tiles)
@@ -275,7 +276,7 @@ Cloudflare Config (wrangler.jsonc):
 
 ## Testing Notes
 
-Automated test suite: **640 tests, ~7 s** (`npm test`). Test files:
+Automated test suite: **647 tests, ~7 s** (`npm test`). Test files:
 
 | File | What it covers | Style |
 |------|---------------|-------|
@@ -299,6 +300,7 @@ Automated test suite: **640 tests, ~7 s** (`npm test`). Test files:
 | `tests/worker-errors.test.mjs` | Error monitoring — public ingest, signature grouping + count, bot/empty drop, throttled ntfy + email alert, admin-only count/list/delete/clear | ESM |
 | `tests/worker-publicpages.test.mjs` | Public SEO pages — trail (`/balade/:slug`) + shared-route (`/r/:token`) rendering, canonical-slug 301 redirect, 404s, dynamic sitemap injection, slug helpers | ESM |
 | `tests/sw.test.js` | Service-worker cache-version sync | CJS |
+| `tests/icons.test.js` | Line-icon library — helpers, legacy-emoji mapping, every `data-ic` name defined, no emoji left in app pages/scripts | CJS |
 
 E2E (Playwright, `npx playwright test`) runs against the live prod URL — see `tests/e2e/`.
 

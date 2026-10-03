@@ -38,7 +38,7 @@
             <strong>Installer BWR</strong>
             <span>Accès rapide depuis votre écran d'accueil</span>
           </div>
-          <button class="pwa-ios-close" aria-label="Fermer">✕</button>
+          <button class="pwa-ios-close" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
         </div>
         ${isIOSSafari ? `
         <ol class="pwa-ios-steps">
@@ -191,7 +191,7 @@
               <span>Accès rapide, fonctionne hors-ligne</span>
             </div>
             <button class="pwa-banner-install" aria-label="Installer l'application">Installer</button>
-            <button class="pwa-banner-dismiss" aria-label="Fermer">✕</button>
+            <button class="pwa-banner-dismiss" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
           </div>`;
         document.body.appendChild(banner);
         requestAnimationFrame(() => banner.classList.add('pwa-banner-visible'));

@@ -20,7 +20,7 @@ let searchToken = 0;          // guards against out-of-order search responses
 
 // Same label as BWR.proOnlyTag() — inlined because friends.html (which embeds
 // the forum) doesn't load features.js.
-const PRO_ONLY_TAG = '<span class="pro-only-tag">🔒 Pro uniquement</span>';
+const PRO_ONLY_TAG = '<span class="pro-only-tag"><i class="ic" data-ic="lock"></i> Pro uniquement</span>';
 
 const root = () => document.getElementById('forumRoot');
 // Hash that means "topic list": '' on forum.html, '#forum' inside Communauté.
@@ -74,7 +74,7 @@ async function renderList() {
   root().innerHTML = `
     <div class="forum-toolbar"><h2>Discussions</h2>${newBtn}</div>
     <div class="forum-search">
-      <span class="forum-search-icon" aria-hidden="true">🔍</span>
+      <span class="forum-search-icon" aria-hidden="true"><i class="ic" data-ic="search"></i></span>
       <input type="search" id="forumSearch" class="forum-search-input"
              placeholder="Rechercher un sujet…" aria-label="Rechercher un sujet dans le forum" autocomplete="off"
              value="${escAttr(currentQuery)}" />
@@ -141,7 +141,7 @@ function fillTopicList(data, q) {
   html += topics.map(topicCard).join('');
   if (lockedCount > 0) {
     html += `<div class="upsell-banner">
-      <p>🔒 ${lockedCount} autre${lockedCount > 1 ? 's' : ''} sujet${lockedCount > 1 ? 's' : ''} ${lockedCount > 1 ? 'sont réservés' : 'est réservé'} aux membres Pro.<br>
+      <p><i class="ic" data-ic="lock"></i> ${lockedCount} autre${lockedCount > 1 ? 's' : ''} sujet${lockedCount > 1 ? 's' : ''} ${lockedCount > 1 ? 'sont réservés' : 'est réservé'} aux membres Pro.<br>
       Passe à un abonnement pour lire tout le forum et participer aux discussions.</p>
       <a href="plans">Voir les abonnements →</a>
     </div>`;
@@ -183,7 +183,7 @@ function topicCard(t) {
   if (t.locked) {
     return `<div class="topic-card locked">
       <div class="topic-card-title">${escHtml(t.title)} ${PRO_ONLY_TAG}</div>
-      <a class="lock-pill" href="plans">⭐ Débloquer avec Pro</a>
+      <a class="lock-pill" href="plans"><i class="ic" data-ic="star"></i> Débloquer avec Pro</a>
     </div>`;
   }
   const replies = t.replyCount || 0;
@@ -193,7 +193,7 @@ function topicCard(t) {
     <div class="topic-card-meta">
       <span class="topic-card-author">${escHtml(t.authorName || 'Membre')}</span>
       <span>${relTime(t.lastActivityAt || t.createdAt)}</span>
-      <span class="topic-card-replies">💬 ${replies} réponse${replies > 1 ? 's' : ''}</span>
+      <span class="topic-card-replies"><i class="ic" data-ic="message"></i> ${replies} réponse${replies > 1 ? 's' : ''}</span>
     </div>
   </div>`;
 }
@@ -208,7 +208,7 @@ async function renderDetail(id) {
     const locked = err.status === 403;
     root().innerHTML = `<button class="detail-back">← Retour</button>
       <div class="forum-empty">${locked
-        ? '🔒 Ce sujet est réservé aux membres Pro.<br><br><a class="lock-pill" href="plans">Voir les abonnements →</a>'
+        ? '<i class="ic" data-ic="lock"></i> Ce sujet est réservé aux membres Pro.<br><br><a class="lock-pill" href="plans">Voir les abonnements →</a>'
         : 'Sujet introuvable.'}</div>`;
     return;
   }

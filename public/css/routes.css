@@ -26,7 +26,7 @@
 }
 
 /* ── Quick start hero ── */
-/* ✨ AI planner */
+/* AI planner */
 .ai-planner {
   padding: 18px 20px;
   background: linear-gradient(135deg, #143d2e 0%, var(--forest-700) 55%, #3a2d6b 100%);
@@ -1409,14 +1409,14 @@
 .step-mode .mode-card strong { font-size: 0.82rem; display: inline; }
 .step-mode .mode-icon { font-size: 1rem; }
 .step-mode .mode-card.active { background: var(--surface-0, #fff); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
-/* Locked mode: a tiny 🔒 in the corner instead of the full "Pro uniquement" pill,
+/* Locked mode: a tiny lock icon in the corner instead of the full "Pro uniquement" pill,
    which overflowed the switch. The button's upsell modal still explains it. */
 .step-mode .mode-card .lock-badge {
   position: absolute; top: 3px; right: 4px;
   padding: 0; background: none; box-shadow: none; border: none;
   font-size: 0; line-height: 1;
 }
-.step-mode .mode-card .lock-badge::before { content: '🔒'; font-size: 0.68rem; }
+.step-mode .mode-card .lock-badge .ic { font-size: 0.68rem; }
 .field-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; }
 .step-where .step-hint { margin: 6px 0 8px; font-size: 0.78rem; }
 .distance-group { margin-top: 12px; }
@@ -1486,8 +1486,9 @@
 [data-theme="dark"] .step-mode .mode-card.active { background: none; }
 [data-theme="dark"] .step-mode .mode-card.active strong { color: var(--lime-400); }
 .step-mode .mode-card:hover:not(.active) { background: var(--surface-2, #f1f5ee); }
-/* Locked "Sur mesure" tab: a compact gold "🔒 Pro" pill in the corner. */
-.step-mode .mode-card .lock-badge::before { content: '🔒 Pro'; font-size: 0.58rem; font-weight: 800; }
+/* Locked "Sur mesure" tab: a compact gold "[lock] Pro" pill in the corner. */
+.step-mode .mode-card .lock-badge .ic { font-size: 0.58rem; }
+.step-mode .mode-card .lock-badge::after { content: 'Pro'; margin-left: 2px; font-size: 0.58rem; font-weight: 800; }
 .step-mode .mode-card .lock-badge {
   top: 2px; right: 2px; padding: 1px 5px; border-radius: 999px;
   background: var(--gold-grad-soft); color: var(--gold-text); border: 1px solid var(--gold-200);
@@ -1566,9 +1567,10 @@
 .result-save-row .pro-only-tag { margin: 0; }
 .result-actions .btn-gpx { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
 .result-actions .pro-only-tag { margin: 0; font-size: 0.55rem; padding: 0 5px; max-width: 100%; white-space: normal; text-align: center; line-height: 1.3; }
-/* Narrow export buttons: short "🔒 Pro" form of the tag (the row title already says "Pro uniquement"). */
+/* Narrow export buttons: short "[lock] Pro" form of the tag (the row title already says "Pro uniquement"). */
 .result-actions .pro-only-tag { font-size: 0; white-space: nowrap; }
-.result-actions .pro-only-tag::before { content: '🔒 Pro'; font-size: 0.58rem; }
+.result-actions .pro-only-tag .ic { font-size: 0.58rem; }
+.result-actions .pro-only-tag::after { content: 'Pro'; margin-left: 2px; font-size: 0.58rem; }
 
 /* ══ Airy planner — room to breathe, numbered "trail blaze" steps, soft cards ══
    Layered last on purpose: it only re-spaces and re-skins the flat look above. */
@@ -1596,7 +1598,7 @@
 }
 .embed-bar-title { font-size: 1rem; letter-spacing: 0.2px; }
 
-/* ✨ AI bar: one pill with a gradient rim and a gentle twinkle. */
+/* AI bar: one pill with a gradient rim and a gentle twinkle. */
 .ai-planner { padding: 22px 20px 20px; }
 .ai-input-row {
   gap: 8px;

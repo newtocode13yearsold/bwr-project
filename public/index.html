@@ -37,6 +37,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css" />
   <script src="js/theme.js"></script>
+  <script src="js/icons.js"></script>
   <link rel="stylesheet" href="css/home.css" />
   <link rel="stylesheet" href="css/header.css" />
   <link rel="stylesheet" href="css/footer.css" />
@@ -133,7 +134,7 @@
   <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
     <div class="nav-drawer-header">
       <span class="nav-drawer-logo">BWR</span>
-      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
     </div>
     <nav class="nav-drawer-links">
       <a href="/" class="nav-drawer-item active">
@@ -356,7 +357,7 @@
         <div class="feat-row">
           <div class="feat-row-icon orange"><svg class="feature-icon" width="22" height="22" aria-hidden="true"><use href="#i-download"/></svg></div>
           <div class="feat-row-body">
-            <h3>Export GPX / KML <span class="feat-tier tier-tag pro">⭐ Pro</span></h3>
+            <h3>Export GPX / KML <span class="feat-tier tier-tag pro"><i class="ic" data-ic="star"></i> Pro</span></h3>
             <p>Téléchargez vos itinéraires et importez-les dans Garmin, Strava ou Komoot pour naviguer sans connexion.</p>
           </div>
         </div>
@@ -364,7 +365,7 @@
         <div class="feat-row">
           <div class="feat-row-icon purple"><svg class="feature-icon" width="22" height="22" aria-hidden="true"><use href="#i-mountain"/></svg></div>
           <div class="feat-row-body">
-            <h3>Profil altimétrique <span class="feat-tier tier-tag pro">⭐ Pro</span></h3>
+            <h3>Profil altimétrique <span class="feat-tier tier-tag pro"><i class="ic" data-ic="star"></i> Pro</span></h3>
             <p>Dénivelé positif et négatif, altitude min/max — tout pour préparer votre sortie avant de partir.</p>
           </div>
         </div>
@@ -372,7 +373,7 @@
         <div class="feat-row">
           <div class="feat-row-icon blue"><svg class="feature-icon" width="22" height="22" aria-hidden="true"><use href="#i-offline"/></svg></div>
           <div class="feat-row-body">
-            <h3>Cartes hors-ligne <span class="feat-tier tier-tag pro">⭐ Pro</span></h3>
+            <h3>Cartes hors-ligne <span class="feat-tier tier-tag pro"><i class="ic" data-ic="star"></i> Pro</span></h3>
             <p>Téléchargez les tuiles de votre trajet avant de partir et naviguez sans signal en forêt profonde.</p>
           </div>
         </div>
@@ -380,7 +381,7 @@
         <div class="feat-row">
           <div class="feat-row-icon amber"><svg class="feature-icon" width="22" height="22" aria-hidden="true"><use href="#i-weather"/></svg></div>
           <div class="feat-row-body">
-            <h3>Météo &amp; alertes en temps réel <span class="feat-tier tier-tag pro">⭐ Pro</span></h3>
+            <h3>Météo &amp; alertes en temps réel <span class="feat-tier tier-tag pro"><i class="ic" data-ic="star"></i> Pro</span></h3>
             <p>Météo forêt en temps réel, alertes push quand l'état d'un chemin change. Plus jamais de mauvaise surprise.</p>
           </div>
         </div>
@@ -439,7 +440,7 @@
 
       </div>
 
-      <p class="pricing-trial">🎁 Envie de tester ? <a href="plans"><strong>7 jours de Pro offerts</strong></a>, sans carte bancaire.</p>
+      <p class="pricing-trial"><i class="ic" data-ic="gift"></i> Envie de tester ? <a href="plans"><strong>7 jours de Pro offerts</strong></a>, sans carte bancaire.</p>
       <p class="pricing-footnote">Sans engagement · Annulable en 1 clic · <a href="plans">Voir la comparaison complète →</a></p>
     </div>
   </section>
@@ -589,14 +590,14 @@
         <span>Installez l'app pour un accès rapide hors-ligne</span>
       </div>
       <button id="installBannerBtn" class="install-banner-cta">Installer</button>
-      <button id="installBannerDismiss" class="install-banner-close" aria-label="Fermer">✕</button>
+      <button id="installBannerDismiss" class="install-banner-close" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
     </div>
   </div>
 
   <!-- ── iOS install guide modal ── -->
   <div id="iosGuideModal" class="ios-modal" hidden role="dialog" aria-modal="true" aria-label="Installer BWR sur votre téléphone">
     <div class="ios-modal-box">
-      <button class="ios-modal-close" id="iosGuideClose" aria-label="Fermer">✕</button>
+      <button class="ios-modal-close" id="iosGuideClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
       <div class="ios-modal-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
       </div>

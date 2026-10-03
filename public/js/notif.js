@@ -21,14 +21,14 @@
 
   wrap.innerHTML = `
     <button class="notif-bell-btn" id="notifBtn" aria-label="Notifications" title="Événements">
-      <span class="notif-bell-icon">🔔</span>
+      <span class="notif-bell-icon"><i class="ic" data-ic="bell"></i></span>
       ${hasUnread ? '<span class="notif-dot"></span>' : ''}
     </button>
     <div class="notif-dropdown" id="notifDropdown" aria-live="polite">
       <div class="notif-hdr">Événements</div>
       ${challenge ? `
         <div class="notif-item">
-          <span class="notif-item-icon">${challenge.icon || '🗓'}</span>
+          <span class="notif-item-icon">${(window.bwrIconName && bwrIconName(challenge.icon)) ? bwrIconFor(challenge.icon) : '<i class="ic" data-ic="calendar"></i>'}</span>
           <div class="notif-item-body">
             <strong class="notif-item-title">${esc(challenge.name)}</strong>
             <span class="notif-item-sub">Défi du mois · Objectif ${challenge.target} km</span>

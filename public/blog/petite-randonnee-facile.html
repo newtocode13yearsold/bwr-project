@@ -40,6 +40,7 @@
   <link rel="stylesheet" href="../css/footer.css" />
   <link rel="stylesheet" href="../css/mobile.css" />
   <script src="../js/theme.js"></script>
+  <script src="../js/icons.js"></script>
   <link rel="stylesheet" href="/lib/leaflet.css" />
   <style>
     #bwr-map { height: 420px; width: 100%; border-radius: 14px; overflow: hidden; margin: 8px 0 4px; z-index: 0; }
@@ -95,20 +96,20 @@
     <h1 class="article-title">Petite randonnée facile en forêt de Compiègne (~5 km)</h1>
 
     <div class="article-meta">
-      <span>✍️ Thomas Legros</span>
-      <span>📅 18 septembre 2026</span>
-      <span>🕐 5 min de lecture</span>
-      <span>🥾 Facile · ~1h30</span>
+      <span><i class="ic" data-ic="pencil"></i> Thomas Legros</span>
+      <span><i class="ic" data-ic="calendar"></i> 18 septembre 2026</span>
+      <span><i class="ic" data-ic="clock"></i> 5 min de lecture</span>
+      <span><i class="ic" data-ic="footprints"></i> Facile · ~1h30</span>
     </div>
 
-    <div class="article-hero-img" style="background:linear-gradient(135deg,#0b2410,#1e4d14)">🥾</div>
+    <div class="article-hero-img" style="background:linear-gradient(135deg,#0b2410,#1e4d14)"><i class="ic" data-ic="footprints"></i></div>
 
     <div class="article-body">
 
       <p>Pas besoin d'une journée entière pour profiter de la forêt de Compiègne. Une boucle de 4 à 6 km suffit pour se vider la tête, prendre l'air et marcher une heure et demie sans forcer — parfait après le travail, un dimanche pluvieux ou avec des personnes peu habituées à marcher. Voici trois idées de petites randonnées faciles, et comment en créer une sur mesure.</p>
 
       <div class="info-box">
-        <div class="info-box-title">⏱️ Ce que « facile » veut dire ici</div>
+        <div class="info-box-title"><i class="ic" data-ic="timer"></i> Ce que « facile » veut dire ici</div>
         Boucles de 4 à 6 km, sur de grandes allées quasi plates, sans passage technique. Comptez environ <strong>1h à 1h30</strong> à un rythme tranquille. Accessibles à presque tout le monde, y compris pour une première randonnée.
       </div>
 
@@ -225,9 +226,9 @@
   </footer>
 
 <script type="application/json" id="bwr-spots">{"spots":[
-  {"lat":49.40576,"lng":2.84595,"emoji":"🥾","title":"Petite boucle du Carrefour Royal (~5 km)","label":"Carrefour Royal · 5 km","note":"Grandes allées stabilisées, impossible de se perdre. ~1h15.","link":"/map?plan=1&lat=49.40576&lng=2.84595&distance=5&mode=loop&type=foot&diff=easy"},
-  {"lat":49.37761,"lng":2.96736,"emoji":"💧","title":"Tour des étangs de Saint-Pierre (~4,5 km)","label":"Étangs St-Pierre · 4,5 km","note":"Boucle plate au bord de l'eau (D547, côté Pierrefonds). ~1h.","link":"/map?plan=1&lat=49.37761&lng=2.96736&distance=4.5&mode=loop&type=foot&diff=easy"},
-  {"lat":49.40779,"lng":2.88191,"emoji":"🔭","title":"Boucle des Beaux Monts par le Tréan (~6 km)","label":"Beaux Monts · 6 km","note":"Un peu plus vallonnée, avec un aperçu de la perspective des Beaux Monts. ~1h30.","link":"/map?plan=1&lat=49.40779&lng=2.88191&distance=6&mode=loop&type=foot&diff=easy"}
+  {"lat":49.40576,"lng":2.84595,"emoji":"footprints","title":"Petite boucle du Carrefour Royal (~5 km)","label":"Carrefour Royal · 5 km","note":"Grandes allées stabilisées, impossible de se perdre. ~1h15.","link":"/map?plan=1&lat=49.40576&lng=2.84595&distance=5&mode=loop&type=foot&diff=easy"},
+  {"lat":49.37761,"lng":2.96736,"emoji":"droplet","title":"Tour des étangs de Saint-Pierre (~4,5 km)","label":"Étangs St-Pierre · 4,5 km","note":"Boucle plate au bord de l'eau (D547, côté Pierrefonds). ~1h.","link":"/map?plan=1&lat=49.37761&lng=2.96736&distance=4.5&mode=loop&type=foot&diff=easy"},
+  {"lat":49.40779,"lng":2.88191,"emoji":"search","title":"Boucle des Beaux Monts par le Tréan (~6 km)","label":"Beaux Monts · 6 km","note":"Un peu plus vallonnée, avec un aperçu de la perspective des Beaux Monts. ~1h30.","link":"/map?plan=1&lat=49.40779&lng=2.88191&distance=6&mode=loop&type=foot&diff=easy"}
 ]}</script>
 <script src="/lib/leaflet.js"></script>
 <script src="/js/blog-map.js"></script>

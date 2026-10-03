@@ -53,6 +53,7 @@
   }
   </script>
   <script src="js/theme.js"></script>
+  <script src="js/icons.js"></script>
   <link rel="stylesheet" href="css/dark.css" />
 </head>
 <body class="guide-body">
@@ -87,13 +88,13 @@
 
   <!-- ── Table of contents ── -->
   <nav class="guide-toc" aria-label="Sommaire">
-    <a href="#carte"><span class="toc-emoji">🗺️</span> La carte</a>
-    <a href="#planifier"><span class="toc-emoji">🧭</span> Planifier un trajet</a>
-    <a href="#signaler"><span class="toc-emoji">⚠️</span> Signaler un obstacle</a>
-    <a href="#noter"><span class="toc-emoji">🎨</span> Noter un chemin</a>
-    <a href="#profil"><span class="toc-emoji">🏅</span> Profil &amp; badges</a>
-    <a href="#hors-ligne"><span class="toc-emoji">📡</span> Hors-ligne &amp; install</a>
-    <a href="#plans"><span class="toc-emoji">💎</span> Plan</a>
+    <a href="#carte"><span class="toc-emoji"><i class="ic" data-ic="map"></i></span> La carte</a>
+    <a href="#planifier"><span class="toc-emoji"><i class="ic" data-ic="compass"></i></span> Planifier un trajet</a>
+    <a href="#signaler"><span class="toc-emoji"><i class="ic" data-ic="alert"></i></span> Signaler un obstacle</a>
+    <a href="#noter"><span class="toc-emoji"><i class="ic" data-ic="palette"></i></span> Noter un chemin</a>
+    <a href="#profil"><span class="toc-emoji"><i class="ic" data-ic="medal"></i></span> Profil &amp; badges</a>
+    <a href="#hors-ligne"><span class="toc-emoji"><i class="ic" data-ic="radio"></i></span> Hors-ligne &amp; install</a>
+    <a href="#plans"><span class="toc-emoji"><i class="ic" data-ic="gem"></i></span> Plan</a>
   </nav>
 
   <main class="guide-main">
@@ -101,24 +102,24 @@
     <!-- Carte -->
     <section class="guide-section" id="carte">
       <div class="guide-section-head">
-        <span class="guide-section-icon">🗺️</span>
+        <span class="guide-section-icon"><i class="ic" data-ic="map"></i></span>
         <h2>Explorer la carte</h2>
       </div>
       <p>La carte affiche tous les chemins vérifiés sur le terrain. Chaque sentier a une couleur selon sa difficulté&nbsp;: <strong style="color:#22c55e">vert = facile</strong>, <strong style="color:#f97316">orange = moyen</strong>, <strong style="color:#ef4444">rouge = difficile</strong>, gris = impraticable.</p>
       <ul class="guide-steps">
         <li>Utilisez la <strong>barre de recherche</strong> en haut pour aller directement à une ville, une forêt ou une adresse.</li>
         <li>Touchez <strong>Filtres</strong> (⋮) pour masquer certaines difficultés ou basculer entre la carte IGN et la vue satellite.</li>
-        <li>Appuyez sur <strong>📍 Ma position</strong> pour vous localiser, même en pleine forêt.</li>
-        <li>Touchez un chemin pour voir son état, ou <strong>🗺 Mon chemin</strong> pour afficher celui sous vos pieds.</li>
+        <li>Appuyez sur <strong><i class="ic" data-ic="pin"></i> Ma position</strong> pour vous localiser, même en pleine forêt.</li>
+        <li>Touchez un chemin pour voir son état, ou <strong><i class="ic" data-ic="map"></i> Mon chemin</strong> pour afficher celui sous vos pieds.</li>
         <li>En zoomant, les <strong>carrefours nommés</strong> apparaissent pour vous orienter comme les panneaux de la forêt.</li>
       </ul>
-      <div class="guide-tip"><span class="guide-tip-emoji">💡</span><span>Autorisez la géolocalisation dans votre navigateur pour profiter du suivi GPS en temps réel.</span></div>
+      <div class="guide-tip"><span class="guide-tip-emoji"><i class="ic" data-ic="lightbulb"></i></span><span>Autorisez la géolocalisation dans votre navigateur pour profiter du suivi GPS en temps réel.</span></div>
     </section>
 
     <!-- Planifier -->
     <section class="guide-section" id="planifier">
       <div class="guide-section-head">
-        <span class="guide-section-icon">🧭</span>
+        <span class="guide-section-icon"><i class="ic" data-ic="compass"></i></span>
         <h2>Planifier un trajet</h2>
       </div>
       <p>Le planificateur génère un itinéraire qui emprunte en priorité les chemins forestiers de la carte — pas les grandes routes.</p>
@@ -127,15 +128,15 @@
         <li>Indiquez la <strong>distance souhaitée</strong> ou un raccourci rapide (5, 8, 12, 20&nbsp;km).</li>
         <li>Définissez le <strong>départ</strong>&nbsp;: votre position GPS ou une adresse recherchée.</li>
         <li>Lancez la génération — l'app trace le trajet, calcule la distance et le <strong>profil altimétrique</strong>.</li>
-        <li>Exportez en <strong>GPX</strong> pour l'ouvrir dans Garmin, Strava ou Komoot. <span class="guide-tier pro">⭐ Pro</span></li>
+        <li>Exportez en <strong>GPX</strong> pour l'ouvrir dans Garmin, Strava ou Komoot. <span class="guide-tier pro"><i class="ic" data-ic="star"></i> Pro</span></li>
       </ul>
-      <div class="guide-tip"><span class="guide-tip-emoji">⚡</span><span>Pressé&nbsp;? Le bouton <strong>« Boucle depuis ma position »</strong> crée un trajet en un seul tap.</span></div>
+      <div class="guide-tip"><span class="guide-tip-emoji"><i class="ic" data-ic="zap"></i></span><span>Pressé&nbsp;? Le bouton <strong>« Boucle depuis ma position »</strong> crée un trajet en un seul tap.</span></div>
     </section>
 
     <!-- Signaler -->
     <section class="guide-section" id="signaler">
       <div class="guide-section-head">
-        <span class="guide-section-icon">⚠️</span>
+        <span class="guide-section-icon"><i class="ic" data-ic="alert"></i></span>
         <h2>Signaler un obstacle</h2>
       </div>
       <p>Un arbre tombé, un chemin inondé&nbsp;? Vos signalements aident toute la communauté à rester informée en temps réel.</p>
@@ -149,44 +150,44 @@
     <!-- Noter -->
     <section class="guide-section" id="noter">
       <div class="guide-section-head">
-        <span class="guide-section-icon">🎨</span>
+        <span class="guide-section-icon"><i class="ic" data-ic="palette"></i></span>
         <h2>Noter la difficulté d'un chemin</h2>
       </div>
       <p>La carte ne vit que grâce à vous&nbsp;! Chaque chemin que vous connaissez peut recevoir une <strong>couleur de difficulté</strong> qui aide toute la communauté à choisir ses balades. C'est le geste le plus utile que vous puissiez faire pour BWR.</p>
       <ul class="guide-steps">
         <li>Sur la <strong>carte</strong>, touchez le chemin que vous voulez noter&nbsp;: une bulle s'ouvre avec ses infos.</li>
-        <li>Dans la bulle, section <strong>« 🎨 Changer la difficulté »</strong>, choisissez la couleur qui correspond&nbsp;: <strong style="color:#22c55e">vert = facile</strong>, <strong style="color:#f97316">orange = moyen</strong>, <strong style="color:#ef4444">rouge = difficile</strong>, <strong style="color:#9ca3af">gris = impraticable</strong> ou <strong>vélo interdit</strong>.</li>
+        <li>Dans la bulle, section <strong>« <i class="ic" data-ic="palette"></i> Changer la difficulté »</strong>, choisissez la couleur qui correspond&nbsp;: <strong style="color:#22c55e">vert = facile</strong>, <strong style="color:#f97316">orange = moyen</strong>, <strong style="color:#ef4444">rouge = difficile</strong>, <strong style="color:#9ca3af">gris = impraticable</strong> ou <strong>vélo interdit</strong>.</li>
         <li>C'est enregistré immédiatement&nbsp;: le chemin change de couleur pour tout le monde.</li>
       </ul>
       <p><strong>Comment bien juger&nbsp;?</strong> Pensez au promeneur qui découvre le chemin. La difficulté tient compte de l'état du sol (boueux, ornières, racines), de la pente et de la largeur — pas seulement de la distance. Un doute&nbsp;? Notez selon votre ressenti sur place, vous pourrez toujours corriger.</p>
-      <div class="guide-tip"><span class="guide-tip-emoji">🏅</span><span>Chaque chemin noté vous rapporte des <strong>points</strong> au classement et de l'<strong>XP</strong> de progression. Les comptes gratuits ont <strong>5 notations libres</strong>&nbsp;; ensuite, il faut avoir parcouru le chemin (suivi GPS) pour le noter. Les membres <span class="guide-tier pro">⭐ Pro</span> notent sans limite.</span></div>
+      <div class="guide-tip"><span class="guide-tip-emoji"><i class="ic" data-ic="medal"></i></span><span>Chaque chemin noté vous rapporte des <strong>points</strong> au classement et de l'<strong>XP</strong> de progression. Les comptes gratuits ont <strong>5 notations libres</strong>&nbsp;; ensuite, il faut avoir parcouru le chemin (suivi GPS) pour le noter. Les membres <span class="guide-tier pro"><i class="ic" data-ic="star"></i> Pro</span> notent sans limite.</span></div>
     </section>
 
     <!-- Profil -->
     <section class="guide-section" id="profil">
       <div class="guide-section-head">
-        <span class="guide-section-icon">🏅</span>
+        <span class="guide-section-icon"><i class="ic" data-ic="medal"></i></span>
         <h2>Profil, badges &amp; objectifs</h2>
       </div>
       <p>Votre profil suit votre progression et la synchronise sur tous vos appareils.</p>
       <ul class="guide-steps">
         <li>Suivez vos <strong>kilomètres</strong> et votre <strong>nombre de trajets</strong> cumulés.</li>
         <li>Débloquez des <strong>badges</strong> au fil de vos sorties.</li>
-        <li>Fixez-vous des <strong>objectifs personnalisés</strong> et tournez la <strong>roue du jour</strong> pour un conseil sentier. <span class="guide-tier pro">⭐ Pro</span></li>
-        <li>Consultez la <strong>météo de la forêt</strong> en temps réel. <span class="guide-tier pro">⭐ Pro</span></li>
+        <li>Fixez-vous des <strong>objectifs personnalisés</strong> et tournez la <strong>roue du jour</strong> pour un conseil sentier. <span class="guide-tier pro"><i class="ic" data-ic="star"></i> Pro</span></li>
+        <li>Consultez la <strong>météo de la forêt</strong> en temps réel. <span class="guide-tier pro"><i class="ic" data-ic="star"></i> Pro</span></li>
       </ul>
     </section>
 
     <!-- Hors-ligne -->
     <section class="guide-section" id="hors-ligne">
       <div class="guide-section-head">
-        <span class="guide-section-icon">📡</span>
+        <span class="guide-section-icon"><i class="ic" data-ic="radio"></i></span>
         <h2>Hors-ligne &amp; installation</h2>
       </div>
       <p>BWR est une application web progressive&nbsp;: installez-la et utilisez-la même sans réseau, là où la forêt est la plus dense.</p>
       <ul class="guide-steps">
         <li><strong>Installez l'app</strong> sur votre écran d'accueil (menu ▸ « Installer l'application », ou via le bouton Partager sur iPhone).</li>
-        <li>Avant de partir, téléchargez les <strong>cartes hors-ligne</strong> de votre zone (menu ▸ « Cartes hors-ligne »). <span class="guide-tier pro">⭐ Pro</span></li>
+        <li>Avant de partir, téléchargez les <strong>cartes hors-ligne</strong> de votre zone (menu ▸ « Cartes hors-ligne »). <span class="guide-tier pro"><i class="ic" data-ic="star"></i> Pro</span></li>
         <li>Les chemins et signalements déjà consultés restent disponibles sans signal.</li>
       </ul>
     </section>
@@ -194,7 +195,7 @@
     <!-- Plan -->
     <section class="guide-section" id="plans">
       <div class="guide-section-head">
-        <span class="guide-section-icon">💎</span>
+        <span class="guide-section-icon"><i class="ic" data-ic="gem"></i></span>
         <h2>Le plan</h2>
       </div>
       <p><strong>Gratuit</strong> — carte complète, 10 trajets A→B et 3 boucles par semaine, badges débutant.<br>
@@ -205,7 +206,7 @@
     <!-- FAQ -->
     <section class="guide-section guide-faq" id="faq">
       <div class="guide-section-head">
-        <span class="guide-section-icon">❓</span>
+        <span class="guide-section-icon"><i class="ic" data-ic="help"></i></span>
         <h2>Questions fréquentes</h2>
       </div>
       <details>

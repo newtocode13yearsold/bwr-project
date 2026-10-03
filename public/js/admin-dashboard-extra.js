@@ -9,10 +9,10 @@
 function memberStatsChips(stats) {
   const s = stats || {};
   const chips = [];
-  if (s.km)         chips.push(`🚶 ${Number(s.km).toFixed(1)} km`);
-  if (s.routes)     chips.push(`🧭 ${s.routes} trajet${s.routes > 1 ? 's' : ''}`);
-  if (s.reports)    chips.push(`📣 ${s.reports} signalement${s.reports > 1 ? 's' : ''}`);
-  if (s.pathGrades) chips.push(`🎨 ${s.pathGrades} noté${s.pathGrades > 1 ? 's' : ''}`);
+  if (s.km)         chips.push(`<i class="ic" data-ic="footprints"></i> ${Number(s.km).toFixed(1)} km`);
+  if (s.routes)     chips.push(`<i class="ic" data-ic="compass"></i> ${s.routes} trajet${s.routes > 1 ? 's' : ''}`);
+  if (s.reports)    chips.push(`<i class="ic" data-ic="megaphone"></i> ${s.reports} signalement${s.reports > 1 ? 's' : ''}`);
+  if (s.pathGrades) chips.push(`<i class="ic" data-ic="palette"></i> ${s.pathGrades} noté${s.pathGrades > 1 ? 's' : ''}`);
   if (!chips.length) return '';
   return `<div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">${chips.map(c =>
     `<span style="font-size:0.72rem;color:#475569;background:#eef2f7;border-radius:999px;padding:2px 8px">${c}</span>`).join('')}</div>`;
@@ -34,8 +34,8 @@ function renderErrorBreakdown(errors) {
   const devices = tally('device').map(([d, n]) => chip(d, n)).join(' ');
   bd.style.display = 'flex';
   bd.innerHTML =
-    `<div><div style="font-weight:700;color:var(--text-muted);margin-bottom:4px">📄 Pages touchées</div><div style="display:flex;gap:6px;flex-wrap:wrap">${pages || '—'}</div></div>` +
-    `<div><div style="font-weight:700;color:var(--text-muted);margin-bottom:4px">📱 Appareils</div><div style="display:flex;gap:6px;flex-wrap:wrap">${devices || '—'}</div></div>`;
+    `<div><div style="font-weight:700;color:var(--text-muted);margin-bottom:4px"><i class="ic" data-ic="file"></i> Pages touchées</div><div style="display:flex;gap:6px;flex-wrap:wrap">${pages || '—'}</div></div>` +
+    `<div><div style="font-weight:700;color:var(--text-muted);margin-bottom:4px"><i class="ic" data-ic="smartphone"></i> Appareils</div><div style="display:flex;gap:6px;flex-wrap:wrap">${devices || '—'}</div></div>`;
 }
 
 // ── Small stat-tile helper (shared by content + engagement cards) ─────────────
@@ -90,7 +90,7 @@ async function loadContentStats() {
     box.innerHTML = tiles.join('');
 
     // Difficulty breakdown line under the tiles
-    const labels = { easy: '🟢 Facile', medium: '🟠 Moyen', hard: '🔴 Difficile', not_passable: '⚪ Impraticable', no_bike: '🚫 Vélo interdit' };
+    const labels = { easy: '<i class="ic ic-green" data-ic="dot"></i> Facile', medium: '<i class="ic ic-orange" data-ic="dot"></i> Moyen', hard: '<i class="ic ic-red" data-ic="dot"></i> Difficile', not_passable: '<i class="ic ic-grey" data-ic="dot"></i> Impraticable', no_bike: '<i class="ic" data-ic="ban"></i> Vélo interdit' };
     const parts = Object.entries(byStatus)
       .sort((a, b) => b[1] - a[1])
       .map(([st, n]) => `${labels[st] || st} ${n}`);
@@ -180,12 +180,12 @@ async function loadEngagement() {
       if (!ranked.length) {
         topBox.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Aucune contribution pour l\'instant.</p>';
       } else {
-        const medal = ['🥇', '🥈', '🥉'];
+        const medal = ['<i class="ic ic-gold" data-ic="medal"></i>', '<i class="ic ic-silver" data-ic="medal"></i>', '<i class="ic ic-bronze" data-ic="medal"></i>'];
         topBox.innerHTML = ranked.map((u, i) => `
           <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface-1,#f9fafb);border:1px solid var(--border);border-radius:10px">
             <span style="font-size:1rem;width:22px;text-align:center">${medal[i] || (i + 1)}</span>
             <div style="flex:1;min-width:0;font-weight:600;font-size:0.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(u.name)}</div>
-            <div style="font-size:0.74rem;color:var(--text-muted)">📣 ${u.reports} · 🎨 ${u.grades}</div>
+            <div style="font-size:0.74rem;color:var(--text-muted)"><i class="ic" data-ic="megaphone"></i> ${u.reports} · <i class="ic" data-ic="palette"></i> ${u.grades}</div>
             <span style="flex:none;font-size:0.78rem;font-weight:800;color:#15803d">${u.xp} XP</span>
           </div>`).join('');
       }

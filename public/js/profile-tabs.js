@@ -1,5 +1,5 @@
 // profile-tabs.js — the three-tab layout of the profile page
-// (📊 Activité / 🏅 Récompenses / ⚙️ Compte).
+// (Activité / Récompenses / Compte).
 // Only one panel is visible at a time. The active tab is mirrored in the URL
 // hash (#activite / #recompenses / #compte) so a link can open a given tab and
 // the browser's back button walks between tabs.

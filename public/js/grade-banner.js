@@ -35,12 +35,12 @@
     banner.setAttribute('role', 'region');
     banner.setAttribute('aria-label', 'Aidez à noter les chemins');
     banner.innerHTML =
-      '<span class="grade-banner-emoji" aria-hidden="true">🎨</span>' +
+      '<span class="grade-banner-emoji" aria-hidden="true"><i class="ic" data-ic="palette"></i></span>' +
       '<div class="grade-banner-body">' +
         '<p>J’ai besoin de votre aide&nbsp;! Notez la <strong>difficulté</strong> des chemins que vous connaissez pour aider toute la communauté.</p>' +
         '<a class="grade-banner-cta" href="guide#noter">Comment noter un chemin →</a>' +
       '</div>' +
-      '<button class="grade-banner-close" aria-label="Fermer">✕</button>';
+      '<button class="grade-banner-close" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>';
     document.body.appendChild(banner);
     requestAnimationFrame(function () { banner.classList.add('grade-banner-show'); });
 

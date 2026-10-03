@@ -63,11 +63,11 @@ function renderReviewBox(box, path, data) {
   const more = count > 3 ? `<div class="rv-more">+ ${count - 3} autre${count - 3 > 1 ? 's' : ''}</div>` : '';
 
   const action = signedIn
-    ? `<button class="rv-btn" id="rvOpen-${path.id}">${data.mine ? '✎ Modifier mon avis' : '★ Donner mon avis'}</button>`
+    ? `<button class="rv-btn" id="rvOpen-${path.id}">${data.mine ? '<i class="ic" data-ic="pencil"></i> Modifier mon avis' : '<i class="ic" data-ic="star"></i> Donner mon avis'}</button>`
     : `<a class="rv-btn rv-btn-login" href="login">Connectez-vous pour laisser un avis</a>`;
 
   box.innerHTML = `
-    <div class="popup-reviews-title">💬 Avis sur ce chemin</div>
+    <div class="popup-reviews-title"><i class="ic" data-ic="message"></i> Avis sur ce chemin</div>
     ${header}
     ${list}
     ${more}
@@ -116,7 +116,7 @@ function openReviewForm(box, path, mine) {
         headers: { 'Content-Type': 'application/json', ..._reviewAuth() },
         body: JSON.stringify({ stars: chosen, comment }),
       });
-      if (res.ok) { showToast('✅ Merci pour votre avis !'); initPathReviews(path); }
+      if (res.ok) { showToast('Merci pour votre avis !'); initPathReviews(path); }
       else if (res.status === 401) { showToast('Connectez-vous pour laisser un avis.'); }
       else { const d = await res.json().catch(() => ({})); showToast(d.error || 'Erreur lors de l\'envoi.'); }
     } catch { showToast('Erreur réseau.'); }

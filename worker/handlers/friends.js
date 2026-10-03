@@ -287,7 +287,7 @@ async function notifyNewFollower(env, follower, target) {
   const message = {
     id,
     createdAt: new Date().toISOString(),
-    subject: '👋 Un nouvel abonné',
+    subject: 'Un nouvel abonné',
     body: `${follower.name || 'Un randonneur'} suit désormais vos sorties sur BWR. Partagez vos balades pour qu'il/elle les retrouve dans son fil d'actu !`,
     target: target.id,
     targetName: target.name || '',
@@ -304,7 +304,7 @@ async function notifyKudos(env, fan, ownerId, activity) {
   const message = {
     id,
     createdAt: new Date().toISOString(),
-    subject: '👏 Bravo pour votre sortie',
+    subject: 'Bravo pour votre sortie',
     body: `${fan.name || 'Un randonneur'} a applaudi votre sortie « ${activity.name || 'Sortie'} ».`,
     target: owner.id,
     targetName: owner.name || '',

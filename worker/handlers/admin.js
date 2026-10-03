@@ -852,7 +852,9 @@ Utilise les vrais chiffres. Pas d'intro type "Bien sûr" ni de conclusion. Puces
     const month = parseInt(body.month, 10);
     if (isNaN(month) || month < 0 || month > 11) return fail('Mois invalide.');
     const name   = String(body.name  || '').trim().slice(0, 80);
-    const icon   = String(body.icon  || '').trim().slice(0, 8);
+    // An icon name from public/js/icons.js ('snowflake', 'tree-round'…);
+    // older challenges may still hold an emoji.
+    const icon   = String(body.icon  || '').trim().slice(0, 24);
     const target = parseFloat(body.target);
     if (!name || !icon)             return fail('Nom et icône requis.');
     if (!target || target < 1 || target > 9999) return fail('Objectif invalide.');

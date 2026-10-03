@@ -223,7 +223,7 @@ document.getElementById('btnEditPaths')?.addEventListener('click', async () => {
 });
 
 // ── Path popup & report flow ──────────────────────────────────────────────────
-const REPORT_ICONS  = { fallen_tree:'🪵', flooded:'💧', muddy:'🟤', rutted:'🛞', broken_sign:'🪧', closed:'🚫', danger:'⚠️', other:'📝' };
+const REPORT_ICONS  = { fallen_tree:'<i class="ic" data-ic="trees"></i>', flooded:'<i class="ic" data-ic="droplet"></i>', muddy:'<i class="ic ic-bronze" data-ic="dot"></i>', rutted:'<i class="ic" data-ic="wheel"></i>', broken_sign:'<i class="ic" data-ic="signpost"></i>', closed:'<i class="ic" data-ic="ban"></i>', danger:'<i class="ic" data-ic="alert"></i>', other:'<i class="ic" data-ic="pencil"></i>' };
 const REPORT_LABELS = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', muddy:'Boueux', rutted:'Ornières', broken_sign:'Carrefour cassé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
 
 function _escPathHtml(s) {
@@ -240,13 +240,13 @@ function gradedByHTML(path) {
     const d = new Date(path.gradedAt);
     if (!isNaN(d)) when = ` le ${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`;
   }
-  return `<div class="popup-graded-by">🎨 Difficulté notée par <strong>${_escPathHtml(path.gradedByName)}</strong>${when}</div>`;
+  return `<div class="popup-graded-by"><i class="ic" data-ic="palette"></i> Difficulté notée par <strong>${_escPathHtml(path.gradedByName)}</strong>${when}</div>`;
 }
 
 function openPathPopup(path, latlng) {
   const condHTML = path.conditions?.length
     ? `<div class="popup-cond-row">${path.conditions.map(c => {
-        const icons2 = { dry:'✅', muddy:'🟤', rutted:'🛞', fallen:'❌', mtb:'🚴', running:'🏃', family:'👨‍👩‍👧' };
+        const icons2 = { dry:'<i class="ic" data-ic="check-circle"></i>', muddy:'<i class="ic ic-bronze" data-ic="dot"></i>', rutted:'<i class="ic" data-ic="wheel"></i>', fallen:'<i class="ic" data-ic="x-circle"></i>', mtb:'<i class="ic" data-ic="bike"></i>', running:'<i class="ic" data-ic="run"></i>', family:'<i class="ic" data-ic="users"></i>' };
         const labels2 = { dry:'Sec', muddy:'Boueux', rutted:'Ornières', fallen:'Arbres tombés', mtb:'Idéal MTB', running:'Running', family:'Famille' };
         return `<span class="popup-cond-tag">${icons2[c] || ''} ${labels2[c] || c}</span>`;
       }).join('')}</div>` : '';
@@ -256,7 +256,7 @@ function openPathPopup(path, latlng) {
   // button to admins so non-admins don't get a button that always 403s.
   const isAdmin = _cachedUser?.role === 'admin';
   const deleteHTML = isAdmin
-    ? `<button class="popup-delete-path-btn" id="deletePath-${path.id}">🗑 Supprimer ce chemin</button>`
+    ? `<button class="popup-delete-path-btn" id="deletePath-${path.id}"><i class="ic" data-ic="trash"></i> Supprimer ce chemin</button>`
     : '';
 
   // Only free users have a grading cap, and it only applies to "remote" gradings
@@ -266,13 +266,13 @@ function openPathPopup(path, latlng) {
     : 5;
   const gradeHint = (canEdit && _userPlan === 'free' && freeGradesLeft < 5)
     ? `<div class="popup-grade-quota">${freeGradesLeft > 0
-        ? `${freeGradesLeft} notation${freeGradesLeft > 1 ? 's' : ''} à distance restante${freeGradesLeft > 1 ? 's' : ''} · activez 📍 votre position (&lt; 2 km) pour noter sans limite`
-        : '🔒 Limite atteinte — activez 📍 votre position (&lt; 2 km) ou parcourez ce chemin pour noter sans limite'}</div>`
+        ? `${freeGradesLeft} notation${freeGradesLeft > 1 ? 's' : ''} à distance restante${freeGradesLeft > 1 ? 's' : ''} · activez <i class="ic" data-ic="pin"></i> votre position (&lt; 2 km) pour noter sans limite`
+        : '<i class="ic" data-ic="lock"></i> Limite atteinte — activez <i class="ic" data-ic="pin"></i> votre position (&lt; 2 km) ou parcourez ce chemin pour noter sans limite'}</div>`
     : '';
 
   const difficultyHTML = canEdit
     ? `<div class="popup-difficulty-section">
-        <div class="popup-difficulty-label">🎨 Changer la difficulté :</div>
+        <div class="popup-difficulty-label"><i class="ic" data-ic="palette"></i> Changer la difficulté :</div>
         <div class="popup-difficulty-btns" id="diffBtns-${path.id}">
           ${Object.entries(STATUS_COLORS).map(([status, color]) => `
             <button class="diff-btn ${path.status === status ? 'active' : ''}"
@@ -308,12 +308,12 @@ function openPathPopup(path, latlng) {
         ${difficultyHTML}
         ${typeof pathReviewShellHTML === 'function' ? pathReviewShellHTML(path) : ''}
         <div class="popup-report-section">
-          <button class="popup-fallen-btn" id="openFallenTree-${path.id}">🪵 Arbre tombé ici</button>
-          <button class="popup-fallen-btn" id="openFlooded-${path.id}">💧 Chemin inondé</button>
-          <button class="popup-fallen-btn" id="openMuddy-${path.id}">🟤 Boueux ici</button>
-          <button class="popup-fallen-btn" id="openRutted-${path.id}">🛞 Ornières ici</button>
-          <button class="popup-fallen-btn" id="openBrokenSign-${path.id}">🪧 Carrefour cassé</button>
-          <button class="popup-report-btn" id="openReport-${path.id}">⚠️ Autre problème</button>
+          <button class="popup-fallen-btn" id="openFallenTree-${path.id}"><i class="ic" data-ic="trees"></i> Arbre tombé ici</button>
+          <button class="popup-fallen-btn" id="openFlooded-${path.id}"><i class="ic" data-ic="droplet"></i> Chemin inondé</button>
+          <button class="popup-fallen-btn" id="openMuddy-${path.id}"><i class="ic ic-bronze" data-ic="dot"></i> Boueux ici</button>
+          <button class="popup-fallen-btn" id="openRutted-${path.id}"><i class="ic" data-ic="wheel"></i> Ornières ici</button>
+          <button class="popup-fallen-btn" id="openBrokenSign-${path.id}"><i class="ic" data-ic="signpost"></i> Carrefour cassé</button>
+          <button class="popup-report-btn" id="openReport-${path.id}"><i class="ic" data-ic="alert"></i> Autre problème</button>
         </div>
         ${deleteHTML}
       </div>
@@ -356,10 +356,10 @@ function openPathPopup(path, latlng) {
               }
               renderPaths();
               map.closePopup();
-              showToast(`✅ Difficulté mise à jour : ${STATUS_LABELS[newStatus]}`);
+              showToast(`Difficulté mise à jour : ${STATUS_LABELS[newStatus]}`);
             } else if (res.status === 403) {
               const data = await res.json().catch(() => ({}));
-              showToast(`🔒 ${data.error || 'Notation non autorisée.'}`);
+              showToast(`${data.error || 'Notation non autorisée.'}`);
             } else if (!navigator.onLine || res.status === 503) {
               path.status = newStatus;
               const idx = allPaths.findIndex(p => p.id === path.id);
@@ -367,7 +367,7 @@ function openPathPopup(path, latlng) {
               renderPaths();
               map.closePopup();
               queueMapPatch(path.id, newStatus, pos);
-              showToast('📶 Hors-ligne — changement enregistré, envoi à la reconnexion.');
+              showToast('Hors-ligne — changement enregistré, envoi à la reconnexion.');
             } else {
               showToast('Erreur lors de la mise à jour.');
             }
@@ -378,7 +378,7 @@ function openPathPopup(path, latlng) {
             renderPaths();
             map.closePopup();
             queueMapPatch(path.id, newStatus, pos);
-            showToast('📶 Hors-ligne — changement enregistré, envoi à la reconnexion.');
+            showToast('Hors-ligne — changement enregistré, envoi à la reconnexion.');
           }
         });
       });
@@ -387,7 +387,7 @@ function openPathPopup(path, latlng) {
     const guardReport = async (type) => {
       if (!BWR.can('reports_create', _userPlan)) {
         map.closePopup();
-        showToast('🔒 Le signalement est disponible avec Pro — voir la page Plan');
+        showToast('Le signalement est disponible avec Pro — voir la page Plan');
         return;
       }
       await _loadMapEdit();
@@ -411,7 +411,7 @@ function openPathPopup(path, latlng) {
         allPaths = allPaths.filter(p => p.id !== path.id);
         renderPaths();
         map.closePopup();
-        showToast('🗑 Chemin supprimé.');
+        showToast('Chemin supprimé.');
       } else {
         showToast('Erreur lors de la suppression.');
       }

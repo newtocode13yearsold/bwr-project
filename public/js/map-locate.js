@@ -53,22 +53,22 @@ function _updateLocateBtn() {
   btn.classList.remove('locate-following', 'locate-searching', 'locate-watching');
   switch (locateState) {
     case 'searching':
-      btn.textContent = '⏳';
+      btn.innerHTML = '<i class="ic" data-ic="hourglass"></i>';
       btn.classList.add('locate-searching');
       btn.title = 'Annuler';
       break;
     case 'following':
-      btn.textContent = '◎ Suivi actif';
+      btn.innerHTML = '<i class="ic" data-ic="locate"></i> Suivi actif';
       btn.classList.add('locate-following');
       btn.title = 'Arrêter le suivi';
       break;
     case 'watching':
-      btn.textContent = '📍 Recentrer';
+      btn.innerHTML = '<i class="ic" data-ic="pin"></i> Recentrer';
       btn.classList.add('locate-watching');
       btn.title = 'Recentrer sur ma position';
       break;
     default:
-      btn.textContent = '📍 Ma position';
+      btn.innerHTML = '<i class="ic" data-ic="pin"></i> Ma position';
       btn.title = 'Ma position';
   }
 }
@@ -395,8 +395,8 @@ updateCarrefourVisibility();
   const toggle = document.getElementById('mapFabToggle');
   if (!wrap || !toggle) return;
 
-  function open()  { wrap.classList.add('open');    toggle.setAttribute('aria-expanded', 'true');  toggle.textContent = '✕'; }
-  function close() { wrap.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); toggle.textContent = '🧭'; }
+  function open()  { wrap.classList.add('open');    toggle.setAttribute('aria-expanded', 'true');  toggle.innerHTML = '<i class="ic" data-ic="x"></i>'; }
+  function close() { wrap.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); toggle.innerHTML = '<i class="ic" data-ic="compass"></i>'; }
   function isOpen() { return wrap.classList.contains('open'); }
 
   toggle.addEventListener('click', (e) => { e.stopPropagation(); isOpen() ? close() : open(); });

@@ -92,7 +92,7 @@ function _drainToastQueue() {
     el.className = 'badge-toast';
     document.body.appendChild(el);
   }
-  el.textContent = `🎉 Nouveau badge débloqué : ${badge.icon} ${badge.label}`;
+  el.innerHTML = `Nouveau badge débloqué : ${bwrIconFor(badge.icon)} ${escapeHtml(badge.label)}`;
   el.classList.add('show');
 
   setTimeout(() => {
@@ -151,9 +151,9 @@ function paintSecondPwState(isSet) {
   const state = document.getElementById('secondPwState');
   const removeBtn = document.getElementById('btnRemoveSecondPw');
   if (state) {
-    state.textContent = isSet
-      ? '✅ Actif — la connexion admin demande deux mots de passe.'
-      : "⚠️ Inactif — votre compte admin n'est protégé que par un seul mot de passe.";
+    state.innerHTML = isSet
+      ? '<i class="ic" data-ic="check-circle"></i> Actif — la connexion admin demande deux mots de passe.'
+      : '<i class="ic" data-ic="alert"></i> Inactif — votre compte admin n’est protégé que par un seul mot de passe.';
     state.style.color = isSet ? '#15803d' : '#b45309';
   }
   if (removeBtn) removeBtn.classList.toggle('hidden', !isSet);

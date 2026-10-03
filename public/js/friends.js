@@ -123,8 +123,8 @@
           ${asc}
         </div>
         <div class="fr-feed-actions">
-          <button class="fr-kudos${on}" data-role="kudos"><span data-role="clap">👏</span> <span data-role="kcount">${a.kudos || 0}</span></button>
-          <button class="fr-btn ghost" data-role="replay">▶ Rejouer</button>
+          <button class="fr-kudos${on}" data-role="kudos"><span data-role="clap"><i class="ic" data-ic="hand"></i></span> <span data-role="kcount">${a.kudos || 0}</span></button>
+          <button class="fr-btn ghost" data-role="replay"><i class="ic" data-ic="play"></i> Rejouer</button>
         </div>
       </div>`;
   }
@@ -300,7 +300,7 @@
               <div class="fr-act-name">${esc(a.name || 'Sortie')}</div>
               <div class="fr-act-meta">${fmtKm(a.meters)} · ${fmtDuration(a.seconds)} · ${esc(fmtAgo(a.startedAt || a.savedAt))}</div>
             </div>
-            <button class="fr-btn ghost" data-role="pf-replay" data-act="${esc(a.id)}">▶ Rejouer</button>
+            <button class="fr-btn ghost" data-role="pf-replay" data-act="${esc(a.id)}"><i class="ic" data-ic="play"></i> Rejouer</button>
           </div>`).join('')
       : `<div class="fr-empty" style="padding:24px 0"><p>${p.isMe ? "Vous n'avez pas encore partagé de sortie." : "Cette personne n'a pas encore partagé de sortie publique."}</p></div>`;
     profileBody.innerHTML = `
@@ -407,7 +407,7 @@
 
   function setPlaying(on) {
     replay.playing = on;
-    playBtn.textContent = on ? '⏸' : '▶';
+    playBtn.innerHTML = on ? '<i class="ic" data-ic="pause"></i>' : '<i class="ic" data-ic="play"></i>';
     if (on) {
       if (replay.progress >= 1) setProgress(0);
       let last = performance.now();

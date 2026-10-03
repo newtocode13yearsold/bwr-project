@@ -65,7 +65,7 @@ let _activationTrapRelease = null;
 
 function openActivation(plan, triggerEl) {
   // Pro is the only paid plan, so the modal always activates Pro.
-  activationIcon.textContent  = '⭐';
+  activationIcon.innerHTML    = '<i class="ic" data-ic="star"></i>';
   activationTitle.textContent = 'Activation du plan Pro';
   afPlan.value = 'pro';
   afPeriod.value = currentPeriod;
@@ -162,7 +162,7 @@ Message : ${message || '(aucun)'}
 
   btn.addEventListener('click', async () => {
     if (!loggedIn()) { location.href = 'login'; return; }
-    const original = btn.textContent;
+    const original = btn.innerHTML;
     btn.disabled = true;
     btn.textContent = 'Activation…';
     try {
@@ -174,11 +174,11 @@ Message : ${message || '(aucun)'}
       if (!res.ok) throw new Error(data.error || 'Activation impossible.');
       const cached = getCachedUser();
       if (cached) setSession(getToken(), { ...cached, plan: 'pro', planExpiresAt: data.planExpiresAt, proTrialUsed: true });
-      alert('🎉 Essai Pro activé ! Vous profitez de toutes les fonctionnalités pendant 7 jours.');
+      alert('Essai Pro activé ! Vous profitez de toutes les fonctionnalités pendant 7 jours.');
       location.href = 'profile';
     } catch (err) {
       btn.disabled = false;
-      btn.textContent = original;
+      btn.innerHTML = original;
       alert('Impossible d\'activer l\'essai : ' + err.message);
     }
   });
@@ -536,7 +536,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
       } : {};
 
       analyseBtn.disabled = true;
-      analyseBtn.textContent = '⏳ Analyse en cours…';
+      analyseBtn.textContent = 'Analyse en cours…';
       insightEl.classList.add('loading');
 
       try {
@@ -558,7 +558,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
           'Impossible de joindre le serveur. Vérifiez votre connexion.';
       } finally {
         analyseBtn.disabled = false;
-        analyseBtn.innerHTML = '<span class="arf-ai-btn-icon">✨</span> Analyser avec l\'IA';
+        analyseBtn.innerHTML = '<span class="arf-ai-btn-icon"><i class="ic" data-ic="sparkles"></i></span> Analyser avec l\'IA';
         insightEl.classList.remove('loading');
       }
     });

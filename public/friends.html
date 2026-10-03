@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="css/forum.css" />
   <script src="js/theme.js"></script>
   <style>
+  <script src="js/icons.js"></script>
     html, body { height: auto !important; overflow: auto !important; }
     body { background: var(--surface-1, #fafbf7); }
 
@@ -168,7 +169,7 @@
   <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
     <div class="nav-drawer-header">
       <span class="nav-drawer-logo">BWR</span>
-      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
     </div>
     <nav class="nav-drawer-links">
       <a href="map" class="nav-drawer-item">
@@ -212,7 +213,7 @@
 
   <!-- ── Hero ── -->
   <div class="page-hero">
-    <div class="page-hero-badge">👥 Communauté</div>
+    <div class="page-hero-badge"><i class="ic" data-ic="users"></i> Communauté</div>
     <h1>Communauté</h1>
     <p>Suivez d'autres randonneurs de l'Oise, applaudissez leurs plus belles balades et échangez sur le forum.</p>
   </div>
@@ -220,10 +221,10 @@
   <!-- ── Main ── -->
   <section class="fr-section">
     <div class="fr-tabs">
-      <button class="fr-tab active" data-tab="feed" id="tabFeed">🌿 Fil d'actu</button>
-      <button class="fr-tab" data-tab="discover" id="tabDiscover">🔍 Découvrir</button>
-      <button class="fr-tab" data-tab="network" id="tabNetwork">👥 Mon réseau</button>
-      <button class="fr-tab" data-tab="forum" id="tabForum">💬 Forum</button>
+      <button class="fr-tab active" data-tab="feed" id="tabFeed"><i class="ic" data-ic="leaf"></i> Fil d'actu</button>
+      <button class="fr-tab" data-tab="discover" id="tabDiscover"><i class="ic" data-ic="search"></i> Découvrir</button>
+      <button class="fr-tab" data-tab="network" id="tabNetwork"><i class="ic" data-ic="users"></i> Mon réseau</button>
+      <button class="fr-tab" data-tab="forum" id="tabForum"><i class="ic" data-ic="message"></i> Forum</button>
     </div>
     <div id="frContent"><div class="fr-loading">Chargement…</div></div>
     <!-- Forum tab: list/detail rendered by js/forum.js, routed by #forum / #t/<id> -->
@@ -260,11 +261,11 @@
     <div class="replay-card">
       <div class="replay-head">
         <h3 id="replayTitle">Rejouer</h3>
-        <button class="replay-close" id="replayClose" aria-label="Fermer">✕</button>
+        <button class="replay-close" id="replayClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
       </div>
       <div id="replayMap"></div>
       <div class="replay-controls">
-        <button class="replay-play" id="replayPlay" aria-label="Lecture">▶</button>
+        <button class="replay-play" id="replayPlay" aria-label="Lecture"><i class="ic" data-ic="play"></i></button>
         <input type="range" class="replay-scrub" id="replayScrub" min="0" max="1000" value="0" />
         <span class="replay-time" id="replayTime">0 %</span>
       </div>
@@ -276,7 +277,7 @@
     <div class="fr-profile-card">
       <div class="fr-profile-head">
         <h3 id="profileTitle">Profil</h3>
-        <button class="replay-close" id="profileClose" aria-label="Fermer">✕</button>
+        <button class="replay-close" id="profileClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
       </div>
       <div class="fr-profile-body" id="profileBody">
         <div class="fr-loading">Chargement…</div>

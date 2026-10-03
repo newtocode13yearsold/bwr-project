@@ -126,7 +126,7 @@
       // are handled by theme.js's delegated listener (matches .js-theme-toggle).
       var dark = document.documentElement.getAttribute('data-theme') === 'dark';
       return '<button type="button" class="nav-drawer-item js-theme-toggle">' +
-        '<span class="nav-drawer-icon theme-toggle-icon">' + (dark ? '☀️' : '🌙') + '</span>' +
+        '<span class="nav-drawer-icon theme-toggle-icon">' + (dark ? '<i class="ic" data-ic="sun"></i>' : '<i class="ic" data-ic="moon"></i>') + '</span>' +
         '<span>Mode sombre / clair</span></button>';
     }
     if (it.type === 'install') {
@@ -161,7 +161,7 @@
   }
 
   // Make the right side of the top bar identical on every page:
-  //   ☰ Menu · (page tools, if any) · 🔔 bell · user menu.
+  //   ☰ Menu · (page tools, if any) · bell · user menu.
   // - The "Installer" button lives in the drawer only (the header copy duplicated its id).
   // - The bell is added (and js/notif.js loaded) on pages that lacked it.
   // - The user menu is filled on pages whose own script never renders it.
@@ -215,11 +215,11 @@
       '</button>' +
       '<div class="user-dropdown hidden" id="userDropdown">' +
         '<span class="dropdown-name">' + escHtml(user.name) + '</span>' +
-        '<a href="/">🏠 Accueil</a>' +
-        '<a href="/map">🗺 Voir la carte</a>' +
-        '<a href="/map?plan=1">🧭 Planifier un trajet</a>' +
-        '<a href="/profile">👤 Mon profil</a>' +
-        (user.role === 'admin' ? '<a href="/admin">🗺 Carte admin</a><a href="/admin-panel">⚙️ Panneau admin</a>' : '') +
+        '<a href="/"><i class="ic" data-ic="home"></i> Accueil</a>' +
+        '<a href="/map"><i class="ic" data-ic="map"></i> Voir la carte</a>' +
+        '<a href="/map?plan=1"><i class="ic" data-ic="compass"></i> Planifier un trajet</a>' +
+        '<a href="/profile"><i class="ic" data-ic="user"></i> Mon profil</a>' +
+        (user.role === 'admin' ? '<a href="/admin"><i class="ic" data-ic="map"></i> Carte admin</a><a href="/admin-panel"><i class="ic" data-ic="gear"></i> Panneau admin</a>' : '') +
         '<button class="dropdown-logout" id="btnLogout">Se déconnecter</button>' +
       '</div>';
     var dd = menuEl.querySelector('#userDropdown');
@@ -266,7 +266,7 @@
     drawer.innerHTML =
       '<div class="nav-drawer-header">' +
         '<span class="nav-drawer-logo">BWR</span>' +
-        '<button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>' +
+        '<button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>' +
       '</div>' +
       '<nav class="nav-drawer-links">' +
         NAV_ITEMS.map(function (it) { return itemHTML(it, slug); }).join('') +

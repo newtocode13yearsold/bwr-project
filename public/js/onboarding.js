@@ -184,13 +184,13 @@
     overlay.setAttribute('aria-label', 'Bienvenue sur BWR');
     overlay.innerHTML =
       '<div class="bwr-tut-welcome">' +
-        '<div class="bwr-tut-welcome-badge">🌲</div>' +
+        '<div class="bwr-tut-welcome-badge"><i class="ic" data-ic="tree"></i></div>' +
         '<h2>Bienvenue sur BWR&nbsp;!</h2>' +
         '<p class="bwr-tut-lead">Les cartes qui vous simplifient la balade. Voici l’essentiel en 30&nbsp;secondes.</p>' +
         '<ul class="bwr-tut-bullets">' +
-          '<li><span class="bwr-tut-emoji">🗺️</span><span><strong>Explorez</strong> tous les chemins vérifiés des forêts de l’Oise.</span></li>' +
-          '<li><span class="bwr-tut-emoji">🧭</span><span><strong>Planifiez</strong> une boucle ou un A→B sur mesure, à pied ou à vélo.</span></li>' +
-          '<li><span class="bwr-tut-emoji">🏅</span><span><strong>Progressez</strong> : kilomètres, badges et objectifs sur votre profil.</span></li>' +
+          '<li><span class="bwr-tut-emoji"><i class="ic" data-ic="map"></i></span><span><strong>Explorez</strong> tous les chemins vérifiés des forêts de l’Oise.</span></li>' +
+          '<li><span class="bwr-tut-emoji"><i class="ic" data-ic="compass"></i></span><span><strong>Planifiez</strong> une boucle ou un A→B sur mesure, à pied ou à vélo.</span></li>' +
+          '<li><span class="bwr-tut-emoji"><i class="ic" data-ic="medal"></i></span><span><strong>Progressez</strong> : kilomètres, badges et objectifs sur votre profil.</span></li>' +
         '</ul>' +
         '<div class="bwr-tut-welcome-actions">' +
           '<button class="bwr-tut-btn bwr-tut-btn-primary" id="bwrTutStart">Faire la visite guidée →</button>' +
@@ -312,7 +312,7 @@
     }
 
     els.tip.innerHTML =
-      '<button class="bwr-tip-skip" id="bwrTipSkip">Passer ✕</button>' +
+      '<button class="bwr-tip-skip" id="bwrTipSkip">Passer <i class="ic" data-ic="x"></i></button>' +
       '<div class="bwr-tip-step">Étape ' + (idx + 1) + ' / ' + order.length + '</div>' +
       '<h3>' + def.title + '</h3>' +
       '<p>' + def.body + '</p>' +
@@ -394,7 +394,7 @@
   }
 
   function finishToast() {
-    var t = el('div', 'bwr-tut-toast', '🎉 C’est parti — bonne balade&nbsp;!');
+    var t = el('div', 'bwr-tut-toast', '<i class="ic" data-ic="party"></i> C’est parti — bonne balade&nbsp;!');
     document.body.appendChild(t);
     requestAnimationFrame(function () { t.classList.add('bwr-tut-show'); });
     setTimeout(function () {

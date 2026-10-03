@@ -41,7 +41,7 @@ function queueMapPatch(pathId, newStatus, pos) {
 
 async function queueMapReport(data) {
   const count = await bwrOutbox.count().catch(() => 0);
-  if (count >= 20) { showToast('⚠️ File hors-ligne pleine (20 signalements max).'); return; }
+  if (count >= 20) { showToast('File hors-ligne pleine (20 signalements max).'); return; }
   // Snapshot the auth header + full URL now: the service worker replays this with
   // no page context, so it can't call authHeader() or read API_URL itself.
   const record = { url: `${API_URL}/api/reports`, auth: authHeader(), payload: data, queuedAt: Date.now() };
@@ -95,12 +95,12 @@ async function replayMapPatches() {
   }
   saveMapPatches(remaining);
   if (rejected > 0) {
-    showToast(`⚠️ ${rejected} changement${rejected > 1 ? 's' : ''} de difficulté refusé${rejected > 1 ? 's' : ''} par le serveur (limite ou chemin supprimé).`);
+    showToast(`${rejected} changement${rejected > 1 ? 's' : ''} de difficulté refusé${rejected > 1 ? 's' : ''} par le serveur (limite ou chemin supprimé).`);
   }
   document.getElementById('mapSyncBanner')?.classList.remove('syncing');
   updateMapSyncBanner();
   if (remaining.length === 0 && q.length > 0) {
-    showToast('✅ Synchronisation terminée — difficultés envoyées !');
+    showToast('Synchronisation terminée — difficultés envoyées !');
     await loadPaths();
   }
 }
@@ -130,7 +130,7 @@ async function replayMapReports() {
   document.getElementById('mapSyncBanner')?.classList.remove('syncing');
   await updateMapSyncBanner();
   if (sent > 0 && (await bwrOutbox.count().catch(() => 0)) === 0) {
-    showToast('✅ Synchronisation terminée — signalements envoyés !');
+    showToast('Synchronisation terminée — signalements envoyés !');
     loadReports();
   }
 }
@@ -191,7 +191,7 @@ document.querySelectorAll('.layer-btn').forEach(btn => {
 
 function showUpgradeToast(featureLabel, tier) {
   const planLabel = BWR.TIER_LABEL[tier] || 'Pro';
-  showToast(`🔒 ${featureLabel} est disponible avec le plan ${planLabel} — voir la page Plan`);
+  showToast(`${featureLabel} est disponible avec le plan ${planLabel} — voir la page Plan`);
 }
 
 document.getElementById('toggleFilters').addEventListener('click', () => {
@@ -296,7 +296,7 @@ function trapFocus(container) {
   if (!btn) return;
   btn.addEventListener('click', async () => {
     if (!BWR.can('offline_cache', _userPlan)) {
-      showToast('🔒 Cartes hors-ligne disponibles avec Pro — voir la page Plan');
+      showToast('Cartes hors-ligne disponibles avec Pro — voir la page Plan');
       return;
     }
     document.getElementById('navDrawer')?.classList.add('hidden');

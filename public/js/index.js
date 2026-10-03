@@ -475,7 +475,7 @@ form?.addEventListener('submit', async e => {
       return;
     }
     form.reset();
-    status.textContent = '✅ Message envoyé — merci !';
+    status.textContent = 'Message envoyé — merci !';
     status.style.color = '#a3e635';
   } catch {
     status.textContent = `Impossible de joindre le serveur. Écrivez directement à ${CONTACT_EMAIL}.`;

@@ -1,11 +1,11 @@
 const CONDITIONS = [
-  { id: 'dry',     icon: '✅', label: 'Sec' },
-  { id: 'muddy',   icon: '🟤', label: 'Boueux' },
-  { id: 'rutted',  icon: '🛞', label: 'Ornières' },
-  { id: 'fallen',  icon: '❌', label: 'Arbres tombés' },
-  { id: 'mtb',     icon: '🚴', label: 'Idéal MTB' },
-  { id: 'running', icon: '🏃', label: 'Running' },
-  { id: 'family',  icon: '👨‍👩‍👧', label: 'Famille' },
+  { id: 'dry',     icon: 'check-circle', label: 'Sec' },
+  { id: 'muddy',   icon: 'dot', label: 'Boueux' },
+  { id: 'rutted',  icon: 'wheel', label: 'Ornières' },
+  { id: 'fallen',  icon: 'x-circle', label: 'Arbres tombés' },
+  { id: 'mtb',     icon: 'bike', label: 'Idéal MTB' },
+  { id: 'running', icon: 'run', label: 'Running' },
+  { id: 'family',  icon: 'users', label: 'Famille' },
 ];
 
 function getSelectedConditions(containerId) {
@@ -34,7 +34,7 @@ function escapeHtml(str) {
   ));
 }
 
-const REPORT_ICONS  = { fallen_tree:'🪵', flooded:'💧', muddy:'🟤', rutted:'🛞', broken_sign:'🪧', closed:'🚫', danger:'⚠️', other:'📝' };
+const REPORT_ICONS  = { fallen_tree:'<i class="ic" data-ic="trees"></i>', flooded:'<i class="ic" data-ic="droplet"></i>', muddy:'<i class="ic ic-bronze" data-ic="dot"></i>', rutted:'<i class="ic" data-ic="wheel"></i>', broken_sign:'<i class="ic" data-ic="signpost"></i>', closed:'<i class="ic" data-ic="ban"></i>', danger:'<i class="ic" data-ic="alert"></i>', other:'<i class="ic" data-ic="pencil"></i>' };
 const REPORT_LABELS_ADMIN = { fallen_tree:'Arbre tombé', flooded:'Chemin inondé', muddy:'Boueux', rutted:'Ornières', broken_sign:'Carrefour cassé', closed:'Chemin fermé', danger:'Danger', other:'Autre' };
 
 let currentUser = null;
@@ -190,17 +190,17 @@ async function wireGlobalAnalysis() {
   buildSnapshot().then(s => {
     snapshot = s;
     if (statusEl) {
-      statusEl.textContent = `✅ Données prêtes · ${s.members.total} membres · ${s.members.paying} payant(s) · ${s.activity.visitsThisMonth} visiteurs ce mois · ${s.ratings.count} avis`;
+      statusEl.textContent = `Données prêtes · ${s.members.total} membres · ${s.members.paying} payant(s) · ${s.activity.visitsThisMonth} visiteurs ce mois · ${s.ratings.count} avis`;
       statusEl.style.color = '#15803d';
     }
   }).catch(() => {
-    if (statusEl) statusEl.textContent = '⚠️ Erreur de chargement des données — cliquez quand même pour réessayer.';
+    if (statusEl) statusEl.textContent = 'Erreur de chargement des données — cliquez quand même pour réessayer.';
   });
 
   btn.addEventListener('click', async () => {
     btn.disabled = true;
     const original = btn.innerHTML;
-    btn.innerHTML = '⏳ Analyse en cours…';
+    btn.innerHTML = '<i class="ic" data-ic="hourglass"></i> Analyse en cours…';
     const resultEl = document.getElementById('aiaResult');
     const textEl   = document.getElementById('aiaText');
     try {
@@ -323,7 +323,7 @@ let ignLayer = null;
 
 function enterSelectMode() {
   selectModeActive = true;
-  document.getElementById('btnSelectPath').textContent = '✕ Annuler';
+  document.getElementById('btnSelectPath').innerHTML = '<i class="ic" data-ic="x"></i> Annuler';
   document.getElementById('btnSelectPath').style.background = 'rgba(239,68,68,0.4)';
   map.getContainer().style.cursor = 'crosshair';
   // Keep IGN tiles — they are more accurate for forest paths
@@ -333,7 +333,7 @@ function enterSelectMode() {
 function exitSelectMode() {
   selectModeActive = false;
   offlineSelectMode = false;
-  document.getElementById('btnSelectPath').textContent = '🗺 Sélectionner un chemin';
+  document.getElementById('btnSelectPath').textContent = 'Sélectionner un chemin';
   document.getElementById('btnSelectPath').style.background = '';
   map.getContainer().style.cursor = '';
   clearOSMLayer();
@@ -673,8 +673,8 @@ function openNewPathPopup(coords, name, latlng, autoType = 'foot') {
     ? 'border:2px solid #1e4d14;background:#f0f7ec'
     : 'border:2px solid #e2e8da;background:white';
   const autoLabel = autoType === 'bike'
-    ? '<span style="font-size:0.72rem;color:#6b7280;display:block;margin-bottom:6px">🤖 Détecté automatiquement comme piste cyclable</span>'
-    : '<span style="font-size:0.72rem;color:#6b7280;display:block;margin-bottom:6px">🤖 Détecté automatiquement comme chemin forestier</span>';
+    ? '<span style="font-size:0.72rem;color:#6b7280;display:block;margin-bottom:6px"><i class="ic" data-ic="bot"></i> Détecté automatiquement comme piste cyclable</span>'
+    : '<span style="font-size:0.72rem;color:#6b7280;display:block;margin-bottom:6px"><i class="ic" data-ic="bot"></i> Détecté automatiquement comme chemin forestier</span>';
 
   const popupContent = `
     <div class="color-popup">
@@ -682,8 +682,8 @@ function openNewPathPopup(coords, name, latlng, autoType = 'foot') {
       <div class="color-popup-label">Type de chemin :</div>
       ${autoLabel}
       <div style="display:flex;gap:6px;margin-bottom:10px">
-        <button class="type-btn" data-type="foot" style="flex:1;padding:6px 4px;${footStyle};border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer">🌲 Forestier</button>
-        <button class="type-btn" data-type="bike" style="flex:1;padding:6px 4px;${bikeStyle};border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer">🚴 Cyclable</button>
+        <button class="type-btn" data-type="foot" style="flex:1;padding:6px 4px;${footStyle};border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer"><i class="ic" data-ic="tree"></i> Forestier</button>
+        <button class="type-btn" data-type="bike" style="flex:1;padding:6px 4px;${bikeStyle};border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer"><i class="ic" data-ic="bike"></i> Cyclable</button>
       </div>
       <div class="color-popup-label">Choisir la couleur :</div>
       <div class="color-popup-btns" id="newColorBtns">
@@ -737,7 +737,7 @@ async function saveNewPath(name, status, coordinates, pathType = 'foot', conditi
     allPaths.push(tempPath);
     localStorage.setItem('bwr_cached_paths', JSON.stringify(allPaths));
     renderPaths();
-    showStatus(`📶 Hors-ligne — "${name}" enregistré, envoi à la reconnexion.`);
+    showStatus(`<i class="ic" data-ic="wifi"></i> Hors-ligne — "${name}" enregistré, envoi à la reconnexion.`);
     return;
   }
   try {
@@ -754,7 +754,7 @@ async function saveNewPath(name, status, coordinates, pathType = 'foot', conditi
       allPaths.push({ ...payload, id: `offline_${Date.now()}` });
       localStorage.setItem('bwr_cached_paths', JSON.stringify(allPaths));
       renderPaths();
-      showStatus(`📶 Hors-ligne — "${name}" enregistré, envoi à la reconnexion.`);
+      showStatus(`<i class="ic" data-ic="wifi"></i> Hors-ligne — "${name}" enregistré, envoi à la reconnexion.`);
     } else {
       showStatus('Erreur lors de l\'enregistrement.', true);
     }
@@ -763,7 +763,7 @@ async function saveNewPath(name, status, coordinates, pathType = 'foot', conditi
     allPaths.push({ ...payload, id: `offline_${Date.now()}` });
     localStorage.setItem('bwr_cached_paths', JSON.stringify(allPaths));
     renderPaths();
-    showStatus(`📶 Hors-ligne — "${name}" enregistré, envoi à la reconnexion.`);
+    showStatus(`<i class="ic" data-ic="wifi"></i> Hors-ligne — "${name}" enregistré, envoi à la reconnexion.`);
   }
 }
 
@@ -947,7 +947,7 @@ function renderReportMarkers() {
     if (!path) return;
     const coords = path.coordinates;
     const mid = (r.lat && r.lon) ? [r.lat, r.lon] : coords[Math.floor(coords.length / 2)];
-    const icon = REPORT_ICONS[r.type] || '⚠️';
+    const icon = REPORT_ICONS[r.type] || '<i class="ic" data-ic="alert"></i>';
     const label = REPORT_LABELS_ADMIN[r.type] || r.type;
     const marker = L.marker(mid, {
       icon: L.divIcon({ className: 'report-marker', html: `<div class="report-dot">${icon}</div>`, iconAnchor: [16, 16], iconSize: [32, 32] }),
@@ -1091,7 +1091,7 @@ function showGraderBanner(name, count) {
   const bar = document.createElement('div');
   bar.id = 'graderBanner';
   bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:70px;z-index:1200;display:flex;align-items:center;gap:12px;background:#1e4d14;color:#fff;padding:8px 14px;border-radius:999px;box-shadow:0 4px 16px rgba(0,0,0,0.25);font-size:0.85rem;font-weight:600;max-width:92vw';
-  bar.innerHTML = `<span>🎨 ${count} chemin${count > 1 ? 's' : ''} noté${count > 1 ? 's' : ''} par ${safe}</span>
+  bar.innerHTML = `<span><i class="ic" data-ic="palette"></i> ${count} chemin${count > 1 ? 's' : ''} noté${count > 1 ? 's' : ''} par ${safe}</span>
     <button id="graderBannerClear" style="background:#facc15;color:#1e4d14;border:none;border-radius:999px;padding:4px 12px;font-size:0.8rem;font-weight:700;cursor:pointer;flex:none">Tout afficher ✕</button>`;
   document.body.appendChild(bar);
   document.getElementById('graderBannerClear').addEventListener('click', clearGraderHighlight);
@@ -1109,7 +1109,7 @@ function openColorPopup(path, latlng) {
     .setContent(`
       <div class="color-popup">
         <div class="color-popup-name">${path.name || 'Chemin sans nom'}</div>
-        ${path.gradedByName ? `<div class="popup-graded-by" style="font-size:0.72rem;color:var(--text-muted)">🎨 Difficulté notée par <strong>${String(path.gradedByName).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</strong></div>` : ''}
+        ${path.gradedByName ? `<div class="popup-graded-by" style="font-size:0.72rem;color:var(--text-muted)"><i class="ic" data-ic="palette"></i> Difficulté notée par <strong>${String(path.gradedByName).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</strong></div>` : ''}
         <div class="color-popup-label">Changer la couleur :</div>
         <div class="color-popup-btns" id="colorBtns-${path.id}">${colorButtons}</div>
         <div class="color-popup-legend">
@@ -1122,37 +1122,37 @@ function openColorPopup(path, latlng) {
         <div class="popup-conditions">
           ${path.conditions.map(c => {
             const def = CONDITIONS.find(x => x.id === c);
-            return def ? `<span class="popup-cond-tag">${def.icon} ${def.label}</span>` : '';
+            return def ? `<span class="popup-cond-tag">${bwrIconFor(def.icon)} ${def.label}</span>` : '';
           }).join('')}
         </div>` : ''}
         ${(() => {
           const pathReports = allReports.filter(r => r.status === 'open' && r.pathId === path.id);
           if (!pathReports.length) return '';
           return `<div class="popup-reports-section">
-            <div class="popup-reports-title">🚨 ${pathReports.length} signalement(s)</div>
+            <div class="popup-reports-title"><i class="ic" data-ic="alert"></i> ${pathReports.length} signalement(s)</div>
             ${pathReports.map(r => `
               <div class="popup-report-row">
-                <span>${REPORT_ICONS[r.type] || '⚠️'} ${REPORT_LABELS_ADMIN[r.type] || r.type}${r.note ? ' — ' + r.note : ''}</span>
+                <span>${REPORT_ICONS[r.type] || '<i class="ic" data-ic="alert"></i>'} ${REPORT_LABELS_ADMIN[r.type] || r.type}${r.note ? ' — ' + r.note : ''}</span>
                 <button class="popup-resolve-btn" data-rid="${r.id}">✓ Résolu</button>
               </div>`).join('')}
           </div>`;
         })()}
         <div class="admin-quick-actions">
-          <button class="popup-fallen-btn" id="adminFallenTree-${path.id}">🪵 Arbre tombé ici</button>
-          <button class="popup-fallen-btn" id="adminMuddy-${path.id}">🟤 Boueux ici</button>
-          <button class="popup-fallen-btn" id="adminRutted-${path.id}">🛞 Ornières ici</button>
-          <button class="popup-fallen-btn" id="adminBrokenSign-${path.id}">🪧 Carrefour cassé</button>
+          <button class="popup-fallen-btn" id="adminFallenTree-${path.id}"><i class="ic" data-ic="trees"></i> Arbre tombé ici</button>
+          <button class="popup-fallen-btn" id="adminMuddy-${path.id}"><i class="ic ic-bronze" data-ic="dot"></i> Boueux ici</button>
+          <button class="popup-fallen-btn" id="adminRutted-${path.id}"><i class="ic" data-ic="wheel"></i> Ornières ici</button>
+          <button class="popup-fallen-btn" id="adminBrokenSign-${path.id}"><i class="ic" data-ic="signpost"></i> Carrefour cassé</button>
           ${(() => {
             const openReports = allReports.filter(r => r.status === 'open' && r.pathId === path.id);
             return openReports.length
-              ? `<button class="admin-resolved-btn" id="adminResolved-${path.id}" data-rid="${openReports[0].id}">✅ Problème résolu</button>`
+              ? `<button class="admin-resolved-btn" id="adminResolved-${path.id}" data-rid="${openReports[0].id}"><i class="ic" data-ic="check-circle"></i> Problème résolu</button>`
               : '';
           })()}
         </div>
         <div class="color-popup-actions">
-          <button class="popup-edit-btn" id="editBtn-${path.id}">✎ Modifier</button>
-          <button class="popup-split-btn" id="splitBtn-${path.id}">✂️ Couper</button>
-          <button class="popup-delete-btn" id="delBtn-${path.id}">🗑</button>
+          <button class="popup-edit-btn" id="editBtn-${path.id}"><i class="ic" data-ic="pencil"></i> Modifier</button>
+          <button class="popup-split-btn" id="splitBtn-${path.id}"><i class="ic" data-ic="scissors"></i> Couper</button>
+          <button class="popup-delete-btn" id="delBtn-${path.id}"><i class="ic" data-ic="trash"></i></button>
         </div>
       </div>
     `)
@@ -1177,16 +1177,16 @@ function openColorPopup(path, latlng) {
         const report = await res.json();
         allReports.push(report);
         renderReportMarkers();
-        showStatus('🪵 Arbre tombé signalé !');
+        showStatus('<i class="ic" data-ic="trees"></i> Arbre tombé signalé !');
       } else {
         showStatus('Erreur lors du signalement.', true);
       }
     });
 
     for (const [btnId, type, msg] of [
-      [`adminMuddy-${path.id}`,      'muddy',       '🟤 Boueux signalé !'],
-      [`adminRutted-${path.id}`,     'rutted',      '🛞 Ornières signalées !'],
-      [`adminBrokenSign-${path.id}`, 'broken_sign', '🪧 Carrefour cassé signalé !'],
+      [`adminMuddy-${path.id}`,      'muddy',       '<i class="ic ic-bronze" data-ic="dot"></i> Boueux signalé !'],
+      [`adminRutted-${path.id}`,     'rutted',      '<i class="ic" data-ic="wheel"></i> Ornières signalées !'],
+      [`adminBrokenSign-${path.id}`, 'broken_sign', '<i class="ic" data-ic="signpost"></i> Carrefour cassé signalé !'],
     ]) {
       document.getElementById(btnId)?.addEventListener('click', async () => {
         map.closePopup();
@@ -1353,7 +1353,7 @@ async function loadMessages() {
           <button class="btn-secondary msg-delete-btn" data-id="${m.id}" style="width:auto;padding:4px 10px;font-size:0.78rem;flex-shrink:0">Supprimer</button>
         </div>
         <p style="margin:8px 0 0;font-size:0.88rem;white-space:pre-wrap;color:#374151">${escapeHtml(m.message)}</p>
-        <a href="mailto:${encodeURIComponent(m.email)}?subject=Re: votre message BWR" style="display:inline-block;margin-top:8px;font-size:0.8rem;color:#166534;text-decoration:underline">↩ Répondre par email</a>
+        <a href="mailto:${encodeURIComponent(m.email)}?subject=Re: votre message BWR" style="display:inline-block;margin-top:8px;font-size:0.8rem;color:#166534;text-decoration:underline"><i class="ic" data-ic="undo"></i> Répondre par email</a>
       </div>`;
     }).join('');
     list.querySelectorAll('.msg-delete-btn').forEach(btn => {
@@ -1409,7 +1409,7 @@ async function loadRatings() {
   }
 }
 
-// ── Client-side error monitoring (🐞 Erreurs JS) ──────────────────────────────
+// ── Client-side error monitoring (Erreurs JS) ──────────────────────────────
 // Lists every uncaught JS error/rejection reported from real users' devices,
 // grouped by signature with an occurrence count. See worker/handlers/errors.js.
 async function loadErrors() {
@@ -1431,7 +1431,7 @@ async function loadErrors() {
     if (typeof renderErrorBreakdown === 'function') renderErrorBreakdown(errors);
 
     if (errors.length === 0) {
-      list.innerHTML = '<p style="color:#16a34a;font-size:0.88rem">✅ Aucune erreur remontée. Tout roule.</p>';
+      list.innerHTML = '<p style="color:#16a34a;font-size:0.88rem"><i class="ic" data-ic="check-circle"></i> Aucune erreur remontée. Tout roule.</p>';
       return;
     }
     const fmt = iso => { try { return new Date(iso).toLocaleString('fr-FR'); } catch { return iso; } };
@@ -1780,11 +1780,11 @@ async function loadVisits() {
       statCard("Aujourd'hui", today, '#d1fae5') +
       statCard('Cette semaine', week, '#fef3c7') +
       `<div style="display:flex;gap:6px;width:100%;margin-top:6px">
-         <button id="btnDebugKV" style="flex:1;padding:7px 10px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#374151">🔍 Diagnostic KV</button>
-         <button id="btnResetActivity" style="flex:1;padding:7px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#b91c1c">🗑️ Réinitialiser</button>
+         <button id="btnDebugKV" style="flex:1;padding:7px 10px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#374151"><i class="ic" data-ic="search"></i> Diagnostic KV</button>
+         <button id="btnResetActivity" style="flex:1;padding:7px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#b91c1c"><i class="ic" data-ic="trash"></i> Réinitialiser</button>
        </div>` +
       `<div style="width:100%;margin-top:6px">
-         <button id="btnExcludeIp" style="width:100%;padding:7px 10px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#3730a3">🙈 Exclure mon réseau</button>
+         <button id="btnExcludeIp" style="width:100%;padding:7px 10px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#3730a3"><i class="ic" data-ic="eye-off"></i> Exclure mon réseau</button>
          <div style="font-size:0.65rem;color:#9ca3af;margin-top:3px;line-height:1.3">N'utilisez ceci que depuis votre connexion maison — pas en 4G ni VPN (ça masquerait de vrais visiteurs).</div>
          <div id="excludeIpMsg" style="font-size:0.7rem;margin-top:3px"></div>
        </div>`;
@@ -1804,13 +1804,9 @@ async function loadVisits() {
            + ' ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
     };
 
-    // 🇫🇷 flag from an ISO country code, and the country name in French.
-    const flagEmoji = cc => {
-      if (!cc || cc.length !== 2) return '🌍';
-      const A = 0x1F1E6;
-      return String.fromCodePoint(A + cc.toUpperCase().charCodeAt(0) - 65,
-                                  A + cc.toUpperCase().charCodeAt(1) - 65);
-    };
+    // Country marker: a globe line icon (flag emoji render as two letters on
+    // Windows); the country name is spelled out next to it.
+    const flagEmoji = () => '<i class="ic" data-ic="globe"></i>';
     const countryName = cc => {
       if (!cc) return '';
       try { countryName._n ??= new Intl.DisplayNames(['fr'], { type: 'region' }); return countryName._n.of(cc) || cc; }
@@ -1843,7 +1839,7 @@ async function loadVisits() {
     const visitorRow = (v, i) => {
       const place = [v.city, countryName(v.country)].filter(Boolean).join(', ') || 'Localisation inconnue';
       const visitsTxt = (v.visits || 1) > 1 ? `${v.visits} pages vues` : '1 page vue';
-      const totalTxt  = v.seconds != null ? ` · ⏱️ ${fmtDur(v.seconds)}` : '';
+      const totalTxt  = v.seconds != null ? ` · <i class="ic" data-ic="timer"></i> ${fmtDur(v.seconds)}` : '';
 
       // Every page this visitor opened, most time-consuming first.
       const pages = (v.pages && typeof v.pages === 'object') ? Object.entries(v.pages) : [];
@@ -1855,7 +1851,7 @@ async function loadVisits() {
           <div style="font-size:0.7rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:2px">Pages visitées (${pages.length})</div>
           ${pages.map(([path, d]) => `
             <div style="display:flex;justify-content:space-between;gap:8px;font-size:0.75rem;color:#374151">
-              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📄 ${escapeHtml(pageName(path))}</span>
+              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><i class="ic" data-ic="file"></i> ${escapeHtml(pageName(path))}</span>
               <span style="flex-shrink:0;color:#6b7280">${fmtDur(d.seconds)}${(d.views || 1) > 1 ? ` · ${d.views} vues` : ''}</span>
             </div>`).join('')}
         </div>` : '';
@@ -1870,11 +1866,11 @@ async function loadVisits() {
         <div ${hasPages ? `data-visitor-toggle="${i}"` : ''} style="display:flex;align-items:flex-start;gap:10px;${cursor}">
           <span style="font-size:1.25rem;flex-shrink:0">${flagEmoji(v.country)}</span>
           <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🧍 ${escapeHtml(place)}</div>
-            <div style="font-size:0.75rem;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(v.device || 'Appareil inconnu')} · ${visitsTxt}${totalTxt} · 🕐 ${formatTime(v.lastSeen)}</div>
+            <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><i class="ic" data-ic="user"></i> ${escapeHtml(place)}</div>
+            <div style="font-size:0.75rem;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(v.device || 'Appareil inconnu')} · ${visitsTxt}${totalTxt} · <i class="ic" data-ic="clock"></i> ${formatTime(v.lastSeen)}</div>
           </div>
           ${caret}
-          <button type="button" data-del-visitor="${escapeHtml(v.vid || '')}" title="C'est moi — retirer de la liste" style="flex-shrink:0;background:none;border:none;cursor:pointer;font-size:0.9rem;padding:2px 4px;line-height:1;color:#9ca3af">🗑️</button>
+          <button type="button" data-del-visitor="${escapeHtml(v.vid || '')}" title="C'est moi — retirer de la liste" style="flex-shrink:0;background:none;border:none;cursor:pointer;font-size:0.9rem;padding:2px 4px;line-height:1;color:#9ca3af"><i class="ic" data-ic="trash"></i></button>
         </div>
         ${detailHtml}
       </div>`;
@@ -1882,16 +1878,16 @@ async function loadVisits() {
 
     const eventRow = e => {
       const isSignup = e.type === 'signup';
-      const icon  = isSignup ? '✨' : '🔑';
+      const icon  = isSignup ? '<i class="ic" data-ic="sparkles"></i>' : '<i class="ic" data-ic="key"></i>';
       const label = isSignup ? 'Nouveau compte' : 'Connexion';
       return `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px">
         <span style="font-size:1.1rem">${icon}</span>
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-            👤 ${escapeHtml(e.userName || e.email || 'Utilisateur')}
+            <i class="ic" data-ic="user"></i> ${escapeHtml(e.userName || e.email || 'Utilisateur')}
           </div>
-          <div style="font-size:0.75rem;color:#6b7280">${label} — 🕐 ${formatTime(e.timestamp)}</div>
+          <div style="font-size:0.75rem;color:#6b7280">${label} — <i class="ic" data-ic="clock"></i> ${formatTime(e.timestamp)}</div>
         </div>
       </div>`;
     };
@@ -1908,15 +1904,15 @@ async function loadVisits() {
     let html = '';
     if (visitors.length > 0) {
       const count = visitors.length + (data.visitorsTruncated ? '+' : '');
-      html += sectionTitle('🌍', 'Visiteurs ce mois', count);
+      html += sectionTitle('<i class="ic" data-ic="globe"></i>', 'Visiteurs ce mois', count);
       html += visitors.map(visitorRow).join('');
     }
     if (signups.length > 0) {
-      html += sectionTitle('✨', 'Nouveaux comptes', signups.length);
+      html += sectionTitle('<i class="ic" data-ic="sparkles"></i>', 'Nouveaux comptes', signups.length);
       html += signups.slice(0, 100).map(eventRow).join('');
     }
     if (logins.length > 0) {
-      html += sectionTitle('🔑', 'Connexions', logins.length);
+      html += sectionTitle('<i class="ic" data-ic="key"></i>', 'Connexions', logins.length);
       html += logins.slice(0, 100).map(eventRow).join('');
     }
 
@@ -1975,7 +1971,7 @@ async function resetActivity() {
     });
     const data = await res.json();
     if (!res.ok || !data.ok) { alert('Erreur : ' + (data.error || 'réinitialisation impossible')); return; }
-    alert(`✅ ${data.deleted} entrée(s) supprimée(s)${data.kept ? `, ${data.kept} conservée(s)` : ''}.`);
+    alert(`${data.deleted} entrée(s) supprimée(s)${data.kept ? `, ${data.kept} conservée(s)` : ''}.`);
     await loadVisits();
   } catch {
     alert('Erreur réseau lors de la réinitialisation.');
@@ -1995,7 +1991,7 @@ async function excludeMyNetwork() {
     });
     const data = await res.json();
     if (!res.ok || !data.ok) { set(`<span style="color:#b91c1c">${escapeHtml(data.error || 'Échec')}</span>`); return; }
-    set(`<span style="color:#166534">✅ Réseau exclu (${escapeHtml(data.ip || '')}). Vos visites depuis ce réseau ne compteront plus.</span> <a href="#" id="undoExcludeIp" style="color:#2563eb">Annuler</a>`);
+    set(`<span style="color:#166534"><i class="ic" data-ic="check-circle"></i> Réseau exclu (${escapeHtml(data.ip || '')}). Vos visites depuis ce réseau ne compteront plus.</span> <a href="#" id="undoExcludeIp" style="color:#2563eb">Annuler</a>`);
     document.getElementById('undoExcludeIp')?.addEventListener('click', async (e) => {
       e.preventDefault();
       try {
@@ -2023,7 +2019,7 @@ async function loadDebug() {
          <span style="color:#111827;font-weight:700">${val}</span>
        </div>`;
 
-    let html = `<div style="font-weight:700;font-size:0.82rem;color:#374151;margin-bottom:8px">📦 Clés KV — total : ${data.totalKeys}</div>`;
+    let html = `<div style="font-weight:700;font-size:0.82rem;color:#374151;margin-bottom:8px"><i class="ic" data-ic="package"></i> Clés KV — total : ${data.totalKeys}</div>`;
     html += `<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:12px">`;
     for (const [prefix, count] of Object.entries(data.counts)) {
       if (count > 0) html += row(prefix, count);
@@ -2031,10 +2027,10 @@ async function loadDebug() {
     html += `</div>`;
 
     if (data.eventSample?.length > 0) {
-      html += `<div style="font-weight:700;font-size:0.82rem;color:#374151;margin-bottom:6px">🔬 Dernières activités (échantillon)</div>`;
+      html += `<div style="font-weight:700;font-size:0.82rem;color:#374151;margin-bottom:6px"><i class="ic" data-ic="search"></i> Dernières activités (échantillon)</div>`;
       html += `<div style="display:flex;flex-direction:column;gap:3px">`;
       for (const v of data.eventSample) {
-        html += row(`${escapeHtml(v.timestamp?.slice(0,16))} — ${escapeHtml(v.userName || '?')}`, v.type === 'signup' ? '✨ compte' : '🔑 connexion');
+        html += row(`${escapeHtml(v.timestamp?.slice(0,16))} — ${escapeHtml(v.userName || '?')}`, v.type === 'signup' ? '<i class="ic" data-ic="sparkles"></i> compte' : '<i class="ic" data-ic="key"></i> connexion');
       }
       html += `</div>`;
     }
@@ -2057,7 +2053,7 @@ async function loadMembers() {
     const res = await fetch(`${API_URL}/api/users`, { headers: authHeader() });
     const users = await res.json();
     if (!res.ok) { list.innerHTML = `<p style="color:red">${users.error}</p>`; return; }
-    const planIcon = { free: '🌿', pro: '⭐' };
+    const planIcon = { free: '<i class="ic" data-ic="leaf"></i>', pro: '<i class="ic" data-ic="star"></i>' };
     // Oldest sign-ups first (top), newest last (bottom); accounts with no date go last.
     users.sort((a, b) => {
       if (!a.createdAt && !b.createdAt) return 0;
@@ -2067,13 +2063,13 @@ async function loadMembers() {
     });
     list.innerHTML = users.map(u => {
       const joined = u.createdAt
-        ? `<span style="font-size:0.75rem;color:#6b7280">📅 inscrit le ${new Date(u.createdAt).toLocaleDateString('fr-FR')}</span>`
+        ? `<span style="font-size:0.75rem;color:#6b7280"><i class="ic" data-ic="calendar"></i> inscrit le ${new Date(u.createdAt).toLocaleDateString('fr-FR')}</span>`
         : '';
       const expiry = u.planExpiresAt
-        ? `<span style="font-size:0.75rem;color:#f97316">⏳ expire le ${new Date(u.planExpiresAt).toLocaleDateString('fr-FR')}</span>`
+        ? `<span style="font-size:0.75rem;color:#f97316"><i class="ic" data-ic="hourglass"></i> expire le ${new Date(u.planExpiresAt).toLocaleDateString('fr-FR')}</span>`
         : '';
       const compedBadge = u.comped
-        ? `<span style="font-size:0.75rem;color:#7c3aed">🎁 offert</span>`
+        ? `<span style="font-size:0.75rem;color:#7c3aed"><i class="ic" data-ic="gift"></i> offert</span>`
         : '';
       const uName = escapeHtml(u.name);
       const uPlan = escapeHtml(BWR.TIER_LABEL[BWR.normalisePlan(u.plan)] || 'Gratuit');
@@ -2086,13 +2082,13 @@ async function loadMembers() {
         <div class="member-identity">
           <div style="font-weight:600;font-size:0.9rem">${uName} ${uHandle}</div>
           <div style="font-size:0.78rem;color:#6b7280">${escapeHtml(u.email)}</div>
-          <div style="margin-top:3px">${planIcon[BWR.normalisePlan(u.plan)] || '🌿'} <strong>${uPlan}</strong> ${expiry} ${compedBadge}</div>
+          <div style="margin-top:3px">${planIcon[BWR.normalisePlan(u.plan)] || '<i class="ic" data-ic="leaf"></i>'} <strong>${uPlan}</strong> ${expiry} ${compedBadge}</div>
           ${joined ? `<div style="margin-top:2px">${joined}</div>` : ''}
           ${statsLine}
         </div>
         <div class="member-actions" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
           <button class="btn-secondary member-grades-btn" style="width:auto;padding:6px 12px;font-size:0.8rem"
-            data-id="${u.id}" data-name="${uName}">🎨 Chemins notés</button>
+            data-id="${u.id}" data-name="${uName}"><i class="ic" data-ic="palette"></i> Chemins notés</button>
           ${u.role !== 'admin' ? `
           <button class="btn-secondary member-plan-btn" style="width:auto;padding:6px 12px;font-size:0.8rem"
             data-id="${u.id}" data-name="${uName}" data-plan="${uPlan}" data-base="${escapeHtml(u.planBase||'free')}" data-comped="${u.comped ? '1' : ''}">Modifier plan</button>
@@ -2150,8 +2146,8 @@ async function showUserGrades(userId, name) {
   overlay.setAttribute('aria-modal', 'true');
   overlay.innerHTML = `
     <div class="modal-card" style="max-width:520px;width:92%;max-height:80vh;display:flex;flex-direction:column">
-      <button class="modal-close-x" aria-label="Fermer">✕</button>
-      <h3 style="margin-bottom:4px">🎨 Chemins notés par ${escapeHtml(name)}</h3>
+      <button class="modal-close-x" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
+      <h3 style="margin-bottom:4px"><i class="ic" data-ic="palette"></i> Chemins notés par ${escapeHtml(name)}</h3>
       <div class="grades-body" style="overflow-y:auto;margin-top:10px">
         <p style="color:#6b7280;font-size:0.88rem">Chargement…</p>
       </div>
@@ -2185,8 +2181,8 @@ async function showUserGrades(userId, name) {
       // set spotlighted.
       return `<a href="admin?grader=${uid}&focus=${encodeURIComponent(p.id)}" title="Voir sur la carte" style="text-decoration:none;color:inherit;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:6px">
         <div style="min-width:0">
-          <div style="font-weight:600;font-size:0.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🗺 ${escapeHtml(p.name)}</div>
-          <div style="font-size:0.74rem;color:#6b7280">${when ? `📅 ${when} ` : ''}${stale}</div>
+          <div style="font-weight:600;font-size:0.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><i class="ic" data-ic="map"></i> ${escapeHtml(p.name)}</div>
+          <div style="font-size:0.74rem;color:#6b7280">${when ? `<i class="ic" data-ic="calendar"></i> ${when} ` : ''}${stale}</div>
         </div>
         <span style="flex:none;font-size:0.74rem;font-weight:700;color:#fff;background:${color};padding:3px 9px;border-radius:999px">${escapeHtml(label)}</span>
       </a>`;
@@ -2194,7 +2190,7 @@ async function showUserGrades(userId, name) {
     body.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:0.82rem;color:#6b7280">${data.count} chemin${data.count > 1 ? 's' : ''} noté${data.count > 1 ? 's' : ''} · ${current} avec la difficulté actuelle</span>
-        <a href="admin?grader=${uid}" class="btn-primary" style="width:auto;padding:6px 12px;font-size:0.8rem;text-decoration:none">🗺 Voir tous sur la carte</a>
+        <a href="admin?grader=${uid}" class="btn-primary" style="width:auto;padding:6px 12px;font-size:0.8rem;text-decoration:none"><i class="ic" data-ic="map"></i> Voir tous sur la carte</a>
       </div>${rows}`;
   } catch (e) {
     body.innerHTML = `<p style="color:red">Erreur réseau</p>`;
@@ -2396,7 +2392,7 @@ function renderTimedCharts(users, period) {
       labels,
       datasets: [
         { label: 'Gratuit',  data: freeCnt, backgroundColor: 'rgba(229,231,235,0.85)', borderColor: '#9ca3af', borderWidth: 1, borderRadius: 4, stack: 'members' },
-        { label: 'Pro ⭐',    data: proCnt, backgroundColor: 'rgba(34,197,94,0.85)', borderColor: '#15803d', borderWidth: 1, borderRadius: 4, stack: 'members' },
+        { label: 'Pro',    data: proCnt, backgroundColor: 'rgba(34,197,94,0.85)', borderColor: '#15803d', borderWidth: 1, borderRadius: 4, stack: 'members' },
       ]
     },
     options: {
@@ -2508,7 +2504,7 @@ async function loadRevenue() {
     _revenueCharts.plans = new Chart(document.getElementById('chartPlans'), {
       type: 'doughnut',
       data: {
-        labels: ['Gratuit', 'Pro ⭐'],
+        labels: ['Gratuit', 'Pro'],
         datasets: [{ data: [counts.free, counts.pro], backgroundColor: ['#e5e7eb', '#22c55e'], borderColor: bgPanel, borderWidth: 4, hoverOffset: 8 }]
       },
       options: {
@@ -2568,7 +2564,7 @@ async function loadRevenue() {
 
   async function loadRealData() {
     const statusEl = document.getElementById('aifDataStatus');
-    statusEl.textContent = '⏳ Chargement des données réelles…';
+    statusEl.textContent = 'Chargement des données réelles…';
 
     try {
       const [eventsRes, usersRes] = await Promise.all([
@@ -2628,12 +2624,12 @@ async function loadRevenue() {
 
       const unit = hasRealVisits ? 'vis.' : 'act.';
       const trendLabel = slope > 0 ? `+${Math.round(slope)} ${unit}/mois` : slope < 0 ? `${Math.round(slope)} ${unit}/mois` : 'Stable';
-      statusEl.textContent = `✅ ${visitsCurrent} ${metricLabel} ce mois · ${payingUsers} abonné${payingUsers !== 1 ? 's' : ''} payant${payingUsers !== 1 ? 's' : ''} · Tendance : ${trendLabel}`;
+      statusEl.textContent = `${visitsCurrent} ${metricLabel} ce mois · ${payingUsers} abonné${payingUsers !== 1 ? 's' : ''} payant${payingUsers !== 1 ? 's' : ''} · Tendance : ${trendLabel}`;
       statusEl.style.color = '#15803d';
 
       updateForecast();
     } catch {
-      statusEl.textContent = '⚠️ Erreur de chargement — prévisions basées sur les sliders';
+      statusEl.textContent = 'Erreur de chargement — prévisions basées sur les sliders';
       updateForecast();
     }
   }
@@ -2733,7 +2729,7 @@ async function loadRevenue() {
       const prob       = Math.max(1, Math.min(99, Math.round(100 / (1 + Math.exp(-7 * (mrr / (target || 1) - 0.85))))));
 
       btn.disabled = true;
-      btn.innerHTML = '⏳ Analyse en cours…';
+      btn.innerHTML = '<i class="ic" data-ic="hourglass"></i> Analyse en cours…';
 
       try {
         const res = await fetch(`${API_URL}/api/ai/revenue-forecast`, {
@@ -2748,7 +2744,7 @@ async function loadRevenue() {
         document.getElementById('aifInsightText').textContent = 'Impossible de joindre le serveur.';
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '✨ Analyser avec l\'IA';
+        btn.innerHTML = '<i class="ic" data-ic="sparkles"></i> Analyser avec l\'IA';
       }
     });
   }
@@ -2797,22 +2793,22 @@ if (btnAdminSync) btnAdminSync.addEventListener('click', function () { replayOff
     currentPos = null;
     pendingHere = false;
     btn.classList.remove('locate-following');
-    btn.textContent = '📍 Ma position';
+    btn.innerHTML = '<i class="ic" data-ic="pin"></i> Ma position';
   }
 
   function startWatch() {
     if (watchId !== null) return;
-    btn.textContent = '⏳ Recherche…';
+    btn.innerHTML = '<i class="ic" data-ic="hourglass"></i> Recherche…';
     watchId = navigator.geolocation.watchPosition(
       ({ coords: { latitude: lat, longitude: lng, accuracy } }) => {
         if (!map) return;
-        btn.textContent = '⏹ Arrêter le suivi';
+        btn.innerHTML = '<i class="ic" data-ic="stop"></i> Arrêter le suivi';
         btn.classList.add('locate-following');
         currentPos = { lat, lng };
         if (circle) circle.setLatLng([lat, lng]).setRadius(accuracy);
         else circle = L.circle([lat, lng], { radius: accuracy, color: '#3b82f6', fillColor: '#93c5fd', fillOpacity: 0.15, weight: 1.5, interactive: false }).addTo(map);
         if (marker) marker.setLatLng([lat, lng]);
-        else marker = L.circleMarker([lat, lng], { radius: 7, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.9, weight: 2 }).addTo(map).bindTooltip('📍 Vous êtes ici');
+        else marker = L.circleMarker([lat, lng], { radius: 7, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.9, weight: 2 }).addTo(map).bindTooltip('<i class="ic" data-ic="pin"></i> Vous êtes ici');
         if (!centered) { map.setView([lat, lng], Math.max(map.getZoom(), 15), { animate: true }); centered = true; }
         if (pendingHere) { pendingHere = false; selectHere(); }
       },
@@ -2890,13 +2886,13 @@ function latToTileY(lat, z) {
   const btn = document.getElementById('btnOfflineAdmin');
   if (!btn) return;
   if (localStorage.getItem('bwr_forest_cached') === '1') {
-    btn.querySelector('.btn-emoji').textContent = '✅';
+    btn.querySelector('.btn-emoji').innerHTML = '<i class="ic" data-ic="check-circle"></i>';
     btn.querySelector('.btn-label').textContent = 'Téléchargée';
   }
   btn.addEventListener('click', async () => {
     if (btn.dataset.downloading === '1') return;
     btn.dataset.downloading = '1';
-    btn.querySelector('.btn-emoji').textContent = '⏳';
+    btn.querySelector('.btn-emoji').innerHTML = '<i class="ic" data-ic="hourglass"></i>';
     btn.querySelector('.btn-label').textContent = '0%';
     btn.disabled = true;
     const tiles = [];
@@ -2924,7 +2920,7 @@ function latToTileY(lat, z) {
       }
       localStorage.setItem('bwr_forest_cached', '1');
       showStatus(`Carte hors-ligne sauvegardée ! (${tiles.length} tuiles)`);
-      btn.querySelector('.btn-emoji').textContent = '✅';
+      btn.querySelector('.btn-emoji').innerHTML = '<i class="ic" data-ic="check-circle"></i>';
       btn.querySelector('.btn-label').textContent = 'Téléchargée';
     } catch { showStatus('Erreur lors du téléchargement.', true); }
     finally {
@@ -2939,18 +2935,18 @@ const MONTH_NAMES_FR = ['Janvier','Février','Mars','Avril','Mai','Juin',
                         'Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
 const CHALLENGE_DEFAULTS = [
-  { icon:'❄️',  name:'Défi hivernal',          target:20 },
-  { icon:'🌨️',  name:'Braver le froid',        target:20 },
-  { icon:'🌱',  name:'Renouveau printanier',   target:30 },
-  { icon:'🌸',  name:'Floraison',              target:35 },
-  { icon:'🌿',  name:'Forêt verdoyante',       target:40 },
-  { icon:'☀️',  name:'Longues journées',       target:50 },
-  { icon:'🌳',  name:'Plein été',              target:50 },
-  { icon:'🏞️',  name:'Évasion estivale',       target:45 },
-  { icon:'🍂',  name:"Couleurs d'automne",     target:40 },
-  { icon:'🍄',  name:'Saison des champignons', target:30 },
-  { icon:'🌫️',  name:'Brumes de novembre',     target:25 },
-  { icon:'🎄',  name:"Défi de fin d'année",    target:20 },
+  { icon:'snowflake',  name:'Défi hivernal',          target:20 },
+  { icon:'snowflake',  name:'Braver le froid',        target:20 },
+  { icon:'sprout',  name:'Renouveau printanier',   target:30 },
+  { icon:'sprout',  name:'Floraison',              target:35 },
+  { icon:'leaf',  name:'Forêt verdoyante',       target:40 },
+  { icon:'sun',  name:'Longues journées',       target:50 },
+  { icon:'tree-round',  name:'Plein été',              target:50 },
+  { icon:'mountain',  name:'Évasion estivale',       target:45 },
+  { icon:'leaf',  name:"Couleurs d'automne",     target:40 },
+  { icon:'mushroom',  name:'Saison des champignons', target:30 },
+  { icon:'cloud',  name:'Brumes de novembre',     target:25 },
+  { icon:'tree',  name:"Défi de fin d'année",    target:20 },
 ];
 
 let _challengeData = {};
@@ -2960,7 +2956,7 @@ function _showChallengePreview(ch) {
   const preview = document.getElementById('chlPreview');
   if (!ch) { preview.style.display = 'none'; return; }
   preview.style.display = '';
-  document.getElementById('chlPreviewIcon').textContent   = ch.icon || '';
+  document.getElementById('chlPreviewIcon').innerHTML     = ch.icon ? bwrIconFor(ch.icon) : '';
   document.getElementById('chlPreviewName').textContent   = ch.name || '';
   document.getElementById('chlPreviewTarget').textContent = `Objectif : ${ch.target} km`;
   const descEl = document.getElementById('chlPreviewDesc');
@@ -2983,7 +2979,7 @@ function _loadFormForMonth(month) {
 
   const custom = _challengeData[month];
   const def    = CHALLENGE_DEFAULTS[month];
-  document.getElementById('chlIcon').value   = custom ? custom.icon        : def.icon;
+  document.getElementById('chlIcon').value   = bwrIconName(custom ? custom.icon : def.icon) || def.icon;
   document.getElementById('chlName').value   = custom ? custom.name        : def.name;
   document.getElementById('chlTarget').value = custom ? custom.target      : def.target;
   document.getElementById('chlDesc').value   = custom ? (custom.description || '') : '';
@@ -3053,7 +3049,7 @@ document.getElementById('challengeForm')?.addEventListener('submit', async e => 
   const msgEl  = document.getElementById('chlMsg');
 
   if (!icon || !name || !target) {
-    msgEl.textContent = 'Emoji, titre et objectif km sont requis.';
+    msgEl.textContent = 'Icône, titre et objectif km sont requis.';
     msgEl.style.color = '#dc2626';
     return;
   }
@@ -3078,13 +3074,13 @@ document.getElementById('challengeForm')?.addEventListener('submit', async e => 
     msgEl.style.color = '#dc2626';
   } finally {
     btn.disabled = false;
-    btn.textContent = '📢 Publier le défi';
+    btn.textContent = 'Publier le défi';
   }
 });
 
 // ── Reset km all users ────────────────────────────────────────────────────────
 document.getElementById('btnResetKm')?.addEventListener('click', async () => {
-  if (!confirm('⚠️ Remettre les kilomètres de TOUS les membres à 0 ?\n\nCette action est irréversible.')) return;
+  if (!confirm('Remettre les kilomètres de TOUS les membres à 0 ?\n\nCette action est irréversible.')) return;
   const btn = document.getElementById('btnResetKm');
   btn.disabled = true;
   btn.querySelector('.btn-label').textContent = '…';
@@ -3095,7 +3091,7 @@ document.getElementById('btnResetKm')?.addEventListener('click', async () => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-    alert(`✅ Km remis à 0 pour ${data.usersReset} membre(s).`);
+    alert(`Km remis à 0 pour ${data.usersReset} membre(s).`);
   } catch (err) {
     alert('Erreur : ' + err.message);
   } finally {

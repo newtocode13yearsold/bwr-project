@@ -40,6 +40,7 @@
   <link rel="stylesheet" href="../css/footer.css" />
   <link rel="stylesheet" href="../css/mobile.css" />
   <script src="../js/theme.js"></script>
+  <script src="../js/icons.js"></script>
   <link rel="stylesheet" href="/lib/leaflet.css" />
   <style>
     #bwr-map { height: 420px; width: 100%; border-radius: 14px; overflow: hidden; margin: 8px 0 4px; z-index: 0; }
@@ -95,13 +96,13 @@
     <h1 class="article-title">Les plus beaux endroits de la forêt de Compiègne</h1>
 
     <div class="article-meta">
-      <span>✍️ Thomas Legros</span>
-      <span>📅 18 septembre 2026</span>
-      <span>🕐 7 min de lecture</span>
-      <span>📍 Incontournables</span>
+      <span><i class="ic" data-ic="pencil"></i> Thomas Legros</span>
+      <span><i class="ic" data-ic="calendar"></i> 18 septembre 2026</span>
+      <span><i class="ic" data-ic="clock"></i> 7 min de lecture</span>
+      <span><i class="ic" data-ic="pin"></i> Incontournables</span>
     </div>
 
-    <div class="article-hero-img" style="background:linear-gradient(135deg,#0b2410,#1e4d14)">🌳</div>
+    <div class="article-hero-img" style="background:linear-gradient(135deg,#0b2410,#1e4d14)"><i class="ic" data-ic="tree-round"></i></div>
 
     <div class="article-body">
 
@@ -133,7 +134,7 @@
       <p>Un lieu de mémoire majeur : c'est ici, dans une clairière aménagée, que fut signé l'Armistice du 11 novembre 1918 mettant fin à la Première Guerre mondiale, dans le wagon du maréchal Foch. Le site abrite aujourd'hui un mémorial et un musée. Un incontournable, à la fois historique et empreint de solennité, accessible au cœur de la forêt.</p>
 
       <div class="info-box">
-        <div class="info-box-title">📍 Bon à savoir</div>
+        <div class="info-box-title"><i class="ic" data-ic="pin"></i> Bon à savoir</div>
         La clairière de l'Armistice se visite (mémorial et musée). Vous pouvez combiner la visite avec une balade dans les allées environnantes — un beau mélange d'histoire et de nature.
       </div>
 
@@ -162,7 +163,7 @@
       </ul>
 
       <div class="info-box">
-        <div class="info-box-title">🗺️ Préparez votre visite</div>
+        <div class="info-box-title"><i class="ic" data-ic="map"></i> Préparez votre visite</div>
         Repérez ces lieux sur <a href="/map">la carte BWR</a> et générez un itinéraire qui les relie, à pied ou à vélo. Vérifiez aussi l'état des chemins avant de partir.
       </div>
 
@@ -215,11 +216,11 @@
   </footer>
 
 <script type="application/json" id="bwr-spots">{"spots":[
-  {"lat":49.41379,"lng":2.88981,"emoji":"🔭","title":"Perspective des Beaux Monts","label":"Beaux Monts","note":"La vue emblématique de la forêt, dessinée pour Napoléon Ier. Parking au Tréan.","link":"/map?plan=1&lat=49.40779&lng=2.88191&distance=7&mode=loop&type=foot&diff=medium"},
-  {"lat":49.37761,"lng":2.96736,"emoji":"💧","title":"Étangs de Saint-Pierre","label":"Étangs St-Pierre","note":"Le cadre le plus paisible du massif (côté Pierrefonds), superbe à l'aube et au crépuscule.","link":"/map?plan=1&lat=49.37761&lng=2.96736&distance=6&mode=loop&type=foot&diff=easy"},
-  {"lat":49.42786,"lng":2.90569,"emoji":"🕊️","title":"Clairière de l'Armistice","label":"Clairière de l'Armistice","note":"Lieu de signature de l'Armistice de 1918 — mémorial et musée.","link":"/map?plan=1&lat=49.42786&lng=2.90569&distance=6&mode=loop&type=foot&diff=easy"},
-  {"lat":49.36748,"lng":2.84159,"emoji":"🌳","title":"Puits du Roi & Grand Fouteau","label":"Puits du Roi","note":"Centre historique du domaine royal, futaie centenaire en cathédrale végétale.","link":"/map?plan=1&lat=49.36748&lng=2.84159&distance=8&mode=loop&type=foot&diff=easy"},
-  {"lat":49.39343,"lng":2.92987,"emoji":"🏘️","title":"Village de Vieux-Moulin","label":"Vieux-Moulin","note":"Village pittoresque en pleine forêt ; les étangs sont à quelques km au sud-est.","link":"/map?plan=1&lat=49.39343&lng=2.92987&distance=5&mode=loop&type=foot&diff=easy"}
+  {"lat":49.41379,"lng":2.88981,"emoji":"search","title":"Perspective des Beaux Monts","label":"Beaux Monts","note":"La vue emblématique de la forêt, dessinée pour Napoléon Ier. Parking au Tréan.","link":"/map?plan=1&lat=49.40779&lng=2.88191&distance=7&mode=loop&type=foot&diff=medium"},
+  {"lat":49.37761,"lng":2.96736,"emoji":"droplet","title":"Étangs de Saint-Pierre","label":"Étangs St-Pierre","note":"Le cadre le plus paisible du massif (côté Pierrefonds), superbe à l'aube et au crépuscule.","link":"/map?plan=1&lat=49.37761&lng=2.96736&distance=6&mode=loop&type=foot&diff=easy"},
+  {"lat":49.42786,"lng":2.90569,"emoji":"bird","title":"Clairière de l'Armistice","label":"Clairière de l'Armistice","note":"Lieu de signature de l'Armistice de 1918 — mémorial et musée.","link":"/map?plan=1&lat=49.42786&lng=2.90569&distance=6&mode=loop&type=foot&diff=easy"},
+  {"lat":49.36748,"lng":2.84159,"emoji":"tree-round","title":"Puits du Roi & Grand Fouteau","label":"Puits du Roi","note":"Centre historique du domaine royal, futaie centenaire en cathédrale végétale.","link":"/map?plan=1&lat=49.36748&lng=2.84159&distance=8&mode=loop&type=foot&diff=easy"},
+  {"lat":49.39343,"lng":2.92987,"emoji":"home","title":"Village de Vieux-Moulin","label":"Vieux-Moulin","note":"Village pittoresque en pleine forêt ; les étangs sont à quelques km au sud-est.","link":"/map?plan=1&lat=49.39343&lng=2.92987&distance=5&mode=loop&type=foot&diff=easy"}
 ]}</script>
 <script src="/lib/leaflet.js"></script>
 <script src="/js/blog-map.js"></script>

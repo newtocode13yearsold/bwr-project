@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="css/login.css" />
   <link rel="stylesheet" href="css/mobile.css" />
   <script src="js/theme.js"></script>
+  <script src="js/icons.js"></script>
   <link rel="stylesheet" href="css/dark.css" />
 </head>
 <body>
@@ -46,7 +47,7 @@
         <button class="btn-icon" id="btnSelectPath" title="Sélectionner un chemin"><span class="btn-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg></span><span class="btn-label">Sélectionner</span></button>
         <button class="btn-icon" id="btnEditMode" title="Modifier les chemins — cliquez sur n'importe quel chemin pour le modifier"><span class="btn-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.17 6.81a2.83 2.83 0 0 0-4-4L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/><path d="m15 5 4 4"/></svg></span><span class="btn-label">Modifier</span></button>
         <button class="btn-icon" id="btnDrawPath" title="Dessiner"><span class="btn-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22h8"/><path d="M16.38 3.62a1 1 0 0 1 3 3L7.37 18.64a2 2 0 0 1-.86.5l-2.87.84a.5.5 0 0 1-.62-.62l.84-2.87a2 2 0 0 1 .5-.86z"/></svg></span><span class="btn-label">Dessiner</span></button>
-        <a class="btn-icon" href="admin-panel" title="Panneau admin — messages, membres, revenus, défis"><span class="btn-emoji">📊</span><span class="btn-label">Panneau</span></a>
+        <a class="btn-icon" href="admin-panel" title="Panneau admin — messages, membres, revenus, défis"><span class="btn-emoji"><i class="ic" data-ic="chart"></i></span><span class="btn-label">Panneau</span></a>
         <button class="btn-icon" id="btnSplitCancel" title="Annuler le découpage" style="display:none;background:rgba(239,68,68,0.4)"><span class="btn-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span><span class="btn-label">Annuler</span></button>
         <div class="user-menu" id="userMenu"></div>
       </div>
@@ -59,7 +60,7 @@
     <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
       <div class="nav-drawer-header">
         <span class="nav-drawer-logo">BWR</span>
-        <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+        <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
       </div>
       <nav class="nav-drawer-links">
         <a href="map" class="nav-drawer-item">
@@ -115,7 +116,7 @@
           <span>Panneau admin</span>
         </a>
         <button id="btnOfflineAdmin" class="nav-drawer-item">
-          <span class="nav-drawer-icon"><span class="btn-emoji">⬇</span></span>
+          <span class="nav-drawer-icon"><span class="btn-emoji"><i class="ic" data-ic="download"></i></span></span>
           <span class="btn-label">Télécharger hors-ligne</span>
         </button>
       </nav>
@@ -123,7 +124,7 @@
 
     <!-- Offline sync banner -->
     <div id="syncBanner" style="display:none;background:#92400e;color:#fef3c7;padding:8px 16px;font-size:0.82rem;align-items:center;gap:10px;justify-content:center;">
-      <span class="sync-icon">↻</span>
+      <span class="sync-icon"><i class="ic" data-ic="refresh"></i></span>
       <span class="sync-count"></span>
       <button id="btnAdminSync" style="background:#fef3c7;color:#92400e;border:none;border-radius:6px;padding:3px 10px;font-size:0.8rem;cursor:pointer;font-weight:600;">Synchroniser maintenant</button>
     </div>
@@ -136,9 +137,9 @@
       </label>
       <label>Type de chemin
         <select id="pathType" class="input-field">
-          <option value="foot">🌲 Chemin forestier</option>
-          <option value="bike">🚴 Piste cyclable</option>
-          <option value="field">🌾 Chemin de champs</option>
+          <option value="foot">Chemin forestier</option>
+          <option value="bike">Piste cyclable</option>
+          <option value="field">Chemin de champs</option>
         </select>
       </label>
       <label>État
@@ -152,13 +153,13 @@
       </label>
       <label>Conditions du chemin</label>
       <div class="condition-tags" id="newConditions">
-        <button type="button" class="cond-tag" data-cond="dry">✅ Sec</button>
-        <button type="button" class="cond-tag" data-cond="muddy">🟤 Boueux</button>
-        <button type="button" class="cond-tag" data-cond="rutted">🛞 Ornières</button>
-        <button type="button" class="cond-tag" data-cond="fallen">❌ Arbres tombés</button>
-        <button type="button" class="cond-tag" data-cond="mtb">🚴 Idéal MTB</button>
-        <button type="button" class="cond-tag" data-cond="running">🏃 Running</button>
-        <button type="button" class="cond-tag" data-cond="family">👨‍👩‍👧 Famille</button>
+        <button type="button" class="cond-tag" data-cond="dry"><i class="ic" data-ic="check-circle"></i> Sec</button>
+        <button type="button" class="cond-tag" data-cond="muddy"><i class="ic ic-bronze" data-ic="dot"></i> Boueux</button>
+        <button type="button" class="cond-tag" data-cond="rutted"><i class="ic" data-ic="wheel"></i> Ornières</button>
+        <button type="button" class="cond-tag" data-cond="fallen"><i class="ic" data-ic="x-circle"></i> Arbres tombés</button>
+        <button type="button" class="cond-tag" data-cond="mtb"><i class="ic" data-ic="bike"></i> Idéal MTB</button>
+        <button type="button" class="cond-tag" data-cond="running"><i class="ic" data-ic="run"></i> Running</button>
+        <button type="button" class="cond-tag" data-cond="family"><i class="ic" data-ic="users"></i> Famille</button>
       </div>
       <label>Notes (optionnel)
         <textarea id="pathNotes" class="input-field" placeholder="Surface, obstacles, saison..." rows="3"></textarea>
@@ -177,9 +178,9 @@
       </label>
       <label>Type de chemin
         <select id="editType" class="input-field">
-          <option value="foot">🌲 Chemin forestier</option>
-          <option value="bike">🚴 Piste cyclable</option>
-          <option value="field">🌾 Chemin de champs</option>
+          <option value="foot">Chemin forestier</option>
+          <option value="bike">Piste cyclable</option>
+          <option value="field">Chemin de champs</option>
         </select>
       </label>
       <label>État
@@ -193,13 +194,13 @@
       </label>
       <label>Conditions du chemin</label>
       <div class="condition-tags" id="editConditions">
-        <button type="button" class="cond-tag" data-cond="dry">✅ Sec</button>
-        <button type="button" class="cond-tag" data-cond="muddy">🟤 Boueux</button>
-        <button type="button" class="cond-tag" data-cond="rutted">🛞 Ornières</button>
-        <button type="button" class="cond-tag" data-cond="fallen">❌ Arbres tombés</button>
-        <button type="button" class="cond-tag" data-cond="mtb">🚴 Idéal MTB</button>
-        <button type="button" class="cond-tag" data-cond="running">🏃 Running</button>
-        <button type="button" class="cond-tag" data-cond="family">👨‍👩‍👧 Famille</button>
+        <button type="button" class="cond-tag" data-cond="dry"><i class="ic" data-ic="check-circle"></i> Sec</button>
+        <button type="button" class="cond-tag" data-cond="muddy"><i class="ic ic-bronze" data-ic="dot"></i> Boueux</button>
+        <button type="button" class="cond-tag" data-cond="rutted"><i class="ic" data-ic="wheel"></i> Ornières</button>
+        <button type="button" class="cond-tag" data-cond="fallen"><i class="ic" data-ic="x-circle"></i> Arbres tombés</button>
+        <button type="button" class="cond-tag" data-cond="mtb"><i class="ic" data-ic="bike"></i> Idéal MTB</button>
+        <button type="button" class="cond-tag" data-cond="running"><i class="ic" data-ic="run"></i> Running</button>
+        <button type="button" class="cond-tag" data-cond="family"><i class="ic" data-ic="users"></i> Famille</button>
       </div>
       <label>Notes
         <textarea id="editNotes" class="input-field" rows="3"></textarea>
@@ -215,9 +216,9 @@
     <div id="map"></div>
 
     <div class="map-bottom-btns">
-      <button class="map-locate-btn" id="btnAdminLocate" title="Ma position">📍 Ma position</button>
-      <button class="map-select-path-btn" id="btnAdminSelectHere" title="Ouvrir le chemin sur lequel je me trouve">🗺 Mon point</button>
-      <button class="map-locate-btn map-track-btn" id="btnGpsTracker" title="Compter ma distance parcourue">▶ Suivi GPS</button>
+      <button class="map-locate-btn" id="btnAdminLocate" title="Ma position"><i class="ic" data-ic="pin"></i> Ma position</button>
+      <button class="map-select-path-btn" id="btnAdminSelectHere" title="Ouvrir le chemin sur lequel je me trouve"><i class="ic" data-ic="map"></i> Mon point</button>
+      <button class="map-locate-btn map-track-btn" id="btnGpsTracker" title="Compter ma distance parcourue"><i class="ic" data-ic="play"></i> Suivi GPS</button>
     </div>
 
     <div class="legend">

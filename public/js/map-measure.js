@@ -1,7 +1,7 @@
 // map-measure.js — Google-Maps-style "measure distance" tool.
 //
 // Right-click (desktop) or long-press (mobile) anywhere on the map opens a small
-// context menu; "📏 Mesurer une distance" starts a measurement. From there each
+// context menu; "Mesurer une distance" starts a measurement. From there each
 // left-click drops a point, a live line follows the cursor and a floating panel
 // shows the running total. Vertices are draggable and right-click-to-remove.
 // Double-click or Échap (or the panel button) finishes; the drawn line stays
@@ -121,8 +121,8 @@
          <button class="measure-btn measure-btn-ghost" data-act="clear">Effacer</button>`;
     panel.innerHTML = `
       <div class="measure-panel-top">
-        <span class="measure-total">📏 ${dist}</span>
-        <button class="measure-close" data-act="clear" aria-label="Fermer">✕</button>
+        <span class="measure-total"><i class="ic" data-ic="ruler"></i> ${dist}</span>
+        <button class="measure-close" data-act="clear" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
       </div>
       <div class="measure-hint">${hint}</div>
       <div class="measure-actions">${btns}</div>`;
@@ -200,23 +200,23 @@
     closeMenu();
     const items = [];
     if (measuring) {
-      items.push({ label: '➕ Ajouter un point ici', act: () => addPoint(latlng) });
-      items.push({ label: '✓ Terminer la mesure',    act: finishMeasure });
-      items.push({ label: '🗑 Effacer',               act: clearMeasure });
+      items.push({ label: '<i class="ic" data-ic="plus"></i> Ajouter un point ici', act: () => addPoint(latlng) });
+      items.push({ label: '<i class="ic" data-ic="check"></i> Terminer la mesure',    act: finishMeasure });
+      items.push({ label: '<i class="ic" data-ic="trash"></i> Effacer',               act: clearMeasure });
     } else if (points.length) {
-      items.push({ label: '📏 Nouvelle mesure',       act: () => startMeasure(latlng) });
-      items.push({ label: '🗑 Effacer',               act: clearMeasure });
+      items.push({ label: '<i class="ic" data-ic="ruler"></i> Nouvelle mesure',       act: () => startMeasure(latlng) });
+      items.push({ label: '<i class="ic" data-ic="trash"></i> Effacer',               act: clearMeasure });
     } else {
-      items.push({ label: '📏 Mesurer une distance',  act: () => startMeasure(latlng) });
+      items.push({ label: '<i class="ic" data-ic="ruler"></i> Mesurer une distance',  act: () => startMeasure(latlng) });
     }
-    items.push({ label: '📍 Copier les coordonnées',  act: () => copyCoords(latlng) });
+    items.push({ label: '<i class="ic" data-ic="pin"></i> Copier les coordonnées',  act: () => copyCoords(latlng) });
 
     menuEl = document.createElement('div');
     menuEl.className = 'measure-menu';
     items.forEach(it => {
       const b = document.createElement('button');
       b.className = 'measure-menu-item';
-      b.textContent = it.label;
+      b.innerHTML = it.label; // static labels with line icons
       b.addEventListener('click', () => { closeMenu(); it.act(); });
       menuEl.appendChild(b);
     });

@@ -44,7 +44,7 @@
     root.innerHTML = `
       <div class="act-empty">
         <h2>Aucune sortie enregistrée pour l'instant</h2>
-        <p>Ouvrez la <a href="map">carte</a>, appuyez sur <b>▶ Suivi GPS</b> et partez marcher.<br>
+        <p>Ouvrez la <a href="map">carte</a>, appuyez sur <b><i class="ic" data-ic="play"></i> Suivi GPS</b> et partez marcher.<br>
         À la fin, gardez votre balade ici — distance, durée, dénivelé et tracé, tout est sauvegardé.</p>
       </div>`;
   }
@@ -62,10 +62,10 @@
 
   function card(a) {
     const asc = a.ascent ? `<div class="act-stat"><b>↑ ${a.ascent} m</b><span>Dénivelé</span></div>` : '';
-    const badge = a.shared ? ' <span class="act-shared-badge" title="Visible dans le fil de vos abonnés">👥 Partagée</span>' : '';
+    const badge = a.shared ? ' <span class="act-shared-badge" title="Visible dans le fil de vos abonnés">Partagée</span>' : '';
     const shareBtn = a.shared
       ? `<button class="act-btn ghost" data-role="share">Ne plus partager</button>`
-      : `<button class="act-btn ghost" data-role="share">👥 Partager</button>`;
+      : `<button class="act-btn ghost" data-role="share"><i class="ic" data-ic="users"></i> Partager</button>`;
     return `
       <div class="act-card" data-id="${esc(a.id)}">
         <div class="act-card-head">
@@ -79,10 +79,10 @@
           ${asc}
         </div>
         <div class="act-actions">
-          <button class="act-btn primary" data-role="replay">▶ Rejouer</button>
+          <button class="act-btn primary" data-role="replay"><i class="ic" data-ic="play"></i> Rejouer</button>
           ${shareBtn}
-          <button class="act-btn ghost" data-role="gpx">⬇ GPX</button>
-          <button class="act-btn ghost" data-role="rename">✎ Renommer</button>
+          <button class="act-btn ghost" data-role="gpx"><i class="ic" data-ic="download"></i> GPX</button>
+          <button class="act-btn ghost" data-role="rename"><i class="ic" data-ic="pencil"></i> Renommer</button>
           <button class="act-btn danger" data-role="delete">Supprimer</button>
         </div>
       </div>`;
@@ -216,8 +216,8 @@
   }
 
   async function importGpxFile(file, btn) {
-    const original = btn ? btn.textContent : '';
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Lecture…'; }
+    const original = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Lecture…'; }
     try {
       const text = await file.text();
       const { coords, elevations, times, name } = parseGPX(text);
@@ -275,7 +275,7 @@
         ? err.message
         : "Impossible d'importer ce fichier GPX.");
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = original; }
+      if (btn) { btn.disabled = false; btn.innerHTML = original; }
     }
   }
 
@@ -354,7 +354,7 @@
 
   function setPlaying(on) {
     replay.playing = on;
-    playBtn.textContent = on ? '⏸' : '▶';
+    playBtn.innerHTML = on ? '<i class="ic" data-ic="pause"></i>' : '<i class="ic" data-ic="play"></i>';
     if (on) {
       if (replay.progress >= 1) setProgress(0);
       let last = performance.now();

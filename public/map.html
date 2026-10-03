@@ -68,11 +68,12 @@
   }
   </script>
   <script src="js/theme.js"></script>
+  <script src="js/icons.js"></script>
   <link rel="stylesheet" href="css/dark.css" />
 </head>
 <body class="map-body">
 
-  <div id="offline-pill">📶 Hors-ligne — données en cache</div>
+  <div id="offline-pill"><i class="ic" data-ic="wifi"></i> Hors-ligne — données en cache</div>
 
   <header class="header">
     <div class="header-left">
@@ -102,7 +103,7 @@
   <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
     <div class="nav-drawer-header">
       <span class="nav-drawer-logo">BWR</span>
-      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
     </div>
     <nav class="nav-drawer-links">
       <a href="map" class="nav-drawer-item active">
@@ -192,7 +193,7 @@
 
   <!-- Offline sync banner -->
   <div id="mapSyncBanner" style="display:none;background:#92400e;color:#fef3c7;padding:8px 16px;font-size:0.82rem;align-items:center;gap:10px;justify-content:center;">
-    <span class="sync-icon">↻</span>
+    <span class="sync-icon"><i class="ic" data-ic="refresh"></i></span>
     <span class="sync-count"></span>
     <button id="btnMapSync" style="background:#fef3c7;color:#92400e;border:none;border-radius:6px;padding:3px 10px;font-size:0.8rem;cursor:pointer;font-weight:600;">Synchroniser maintenant</button>
   </div>
@@ -207,10 +208,10 @@
     <!-- Floating search bar -->
     <div class="map-search-wrap" id="mapSearchWrap">
       <div class="map-search-box">
-        <span class="map-search-icon">🔍</span>
+        <span class="map-search-icon"><i class="ic" data-ic="search"></i></span>
         <input type="text" id="mapSearchInput" class="map-search-input"
           placeholder="Chercher un lieu…" aria-label="Chercher un lieu sur la carte" autocomplete="off" />
-        <button class="map-search-clear hidden" id="mapSearchClear">✕</button>
+        <button class="map-search-clear hidden" id="mapSearchClear"><i class="ic" data-ic="x"></i></button>
       </div>
       <div class="map-search-results hidden" id="mapSearchResults"></div>
     </div>
@@ -218,7 +219,7 @@
 
   <div class="legend" id="mapLegend">
     <button type="button" class="legend-toggle" id="legendToggle" aria-expanded="false" aria-controls="legendBody">
-      <span>Légende</span><span class="legend-caret" aria-hidden="true">▸</span>
+      <span>Légende</span><span class="legend-caret" aria-hidden="true"><i class="ic" data-ic="chevron-right"></i></span>
     </button>
     <div class="legend-body" id="legendBody">
     <div class="legend-title">Légende</div>
@@ -227,32 +228,32 @@
     <div class="legend-item"><span class="dot hard"></span> Difficile</div>
     <div class="legend-item"><span class="dot not_passable"></span> Impraticable</div>
     <div class="legend-item"><span class="dot no_bike"></span> Vélo interdit</div>
-    <div class="legend-item legend-note"><span class="legend-emoji">⚠️</span> La difficulté est relative à la région&nbsp;: un chemin «&nbsp;facile&nbsp;» en montagne peut être plus dur qu'un «&nbsp;difficile&nbsp;» en forêt. Vérifiez la distance et le dénivelé avant de partir.</div>
+    <div class="legend-item legend-note"><span class="legend-emoji"><i class="ic" data-ic="alert"></i></span> La difficulté est relative à la région&nbsp;: un chemin «&nbsp;facile&nbsp;» en montagne peut être plus dur qu'un «&nbsp;difficile&nbsp;» en forêt. Vérifiez la distance et le dénivelé avant de partir.</div>
     <hr style="border:none;border-top:1px solid #d1d5db;margin:5px 0">
     <div class="legend-item"><span class="legend-dash deployed-dash"></span> Section déployée</div>
     <hr style="border:none;border-top:1px solid #d1d5db;margin:5px 0">
     <div class="legend-title">Signalements</div>
-    <div class="legend-item"><span class="legend-emoji">🪵</span> Arbre tombé</div>
-    <div class="legend-item"><span class="legend-emoji">💧</span> Chemin inondé</div>
-    <div class="legend-item"><span class="legend-emoji">🟤</span> Boueux</div>
-    <div class="legend-item"><span class="legend-emoji">🛞</span> Ornières</div>
-    <div class="legend-item"><span class="legend-emoji">🪧</span> Carrefour cassé</div>
-    <div class="legend-item"><span class="legend-emoji">🚫</span> Chemin fermé</div>
-    <div class="legend-item"><span class="legend-emoji">⚠️</span> Danger</div>
-    <div class="legend-item"><span class="legend-emoji">📝</span> Autre</div>
+    <div class="legend-item"><span class="legend-emoji"><i class="ic" data-ic="trees"></i></span> Arbre tombé</div>
+    <div class="legend-item"><span class="legend-emoji"><i class="ic" data-ic="droplet"></i></span> Chemin inondé</div>
+    <div class="legend-item"><span class="legend-emoji"><i class="ic ic-bronze" data-ic="dot"></i></span> Boueux</div>
+    <div class="legend-item"><span class="legend-emoji"><i class="ic" data-ic="wheel"></i></span> Ornières</div>
+    <div class="legend-item"><span class="legend-emoji"><i class="ic" data-ic="signpost"></i></span> Carrefour cassé</div>
+    <div class="legend-item"><span class="legend-emoji"><i class="ic" data-ic="ban"></i></span> Chemin fermé</div>
+    <div class="legend-item"><span class="legend-emoji"><i class="ic" data-ic="alert"></i></span> Danger</div>
+    <div class="legend-item"><span class="legend-emoji"><i class="ic" data-ic="pencil"></i></span> Autre</div>
     <hr style="border:none;border-top:1px solid #d1d5db;margin:5px 0">
     <div class="legend-title">Fond de carte</div>
-    <div class="legend-item legend-note"><span class="legend-emoji">🌲</span> Forêts &amp; points de vue (symboles OpenTopoMap)</div>
+    <div class="legend-item legend-note"><span class="legend-emoji"><i class="ic" data-ic="tree"></i></span> Forêts &amp; points de vue (symboles OpenTopoMap)</div>
     </div>
   </div>
 
   <div class="map-bottom-btns" id="mapBottomBtns">
     <div class="map-fab-actions" id="mapFabActions">
-      <button class="map-locate-btn" id="btnLocate" title="Ma position">📍 Ma position</button>
-      <button class="map-select-path-btn" id="btnSelectPath" title="Sélectionner le chemin et l'endroit où je suis pour le signaler">🗺 Mon point</button>
-      <button class="map-locate-btn map-track-btn" id="btnGpsTracker" title="Compter ma distance parcourue">▶ Suivi GPS</button>
+      <button class="map-locate-btn" id="btnLocate" title="Ma position"><i class="ic" data-ic="pin"></i> Ma position</button>
+      <button class="map-select-path-btn" id="btnSelectPath" title="Sélectionner le chemin et l'endroit où je suis pour le signaler"><i class="ic" data-ic="map"></i> Mon point</button>
+      <button class="map-locate-btn map-track-btn" id="btnGpsTracker" title="Compter ma distance parcourue"><i class="ic" data-ic="play"></i> Suivi GPS</button>
     </div>
-    <button class="map-fab-toggle" id="mapFabToggle" type="button" aria-expanded="false" aria-controls="mapFabActions" aria-label="Outils de la carte" title="Outils de la carte">🧭</button>
+    <button class="map-fab-toggle" id="mapFabToggle" type="button" aria-expanded="false" aria-controls="mapFabActions" aria-label="Outils de la carte" title="Outils de la carte"><i class="ic" data-ic="compass"></i></button>
   </div>
 
   <script src="lib/leaflet.js"></script>

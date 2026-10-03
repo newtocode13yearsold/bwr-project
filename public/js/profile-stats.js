@@ -58,11 +58,11 @@ function renderStreakBanner(stats) {
 
   if (!active || streak < 2) { banner.style.display = 'none'; return; }
 
-  const recordTxt = best > streak ? ` · Record : ${best} j` : (streak === best ? ' · Record personnel ! 🏅' : '');
+  const recordTxt = best > streak ? ` · Record : ${best} j` : (streak === best ? ' · Record personnel ! <i class="ic" data-ic="medal"></i>' : '');
   banner.style.display = '';
   banner.innerHTML = last === todayKey
-    ? `<span class="streak-flame">🔥</span><span><strong>${streak} jours d'affilée</strong> — continuez sur votre lancée !${recordTxt}</span>`
-    : `<span class="streak-flame">🔥</span><span>Série de <strong>${streak} jours</strong> — sors aujourd'hui pour ne pas la perdre !${recordTxt}</span>`;
+    ? `<span class="streak-flame"><i class="ic" data-ic="flame"></i></span><span><strong>${streak} jours d'affilée</strong> — continuez sur votre lancée !${recordTxt}</span>`
+    : `<span class="streak-flame"><i class="ic" data-ic="flame"></i></span><span>Série de <strong>${streak} jours</strong> — sors aujourd'hui pour ne pas la perdre !${recordTxt}</span>`;
 }
 
 // ── Personal records ──────────────────────────────────────────────────────────
@@ -93,18 +93,18 @@ function renderRecords(stats) {
 
 // ── Monthly challenge ───────────────────────────────────────────────────────
 const MONTHLY_CHALLENGES = [
-  { icon: '❄️',  name: 'Défi hivernal',         target: 20 },
-  { icon: '🌨️',  name: 'Braver le froid',       target: 20 },
-  { icon: '🌱',  name: 'Renouveau printanier',  target: 30 },
-  { icon: '🌸',  name: 'Floraison',             target: 35 },
-  { icon: '🌿',  name: 'Forêt verdoyante',      target: 40 },
-  { icon: '☀️',  name: 'Longues journées',      target: 50 },
-  { icon: '🌳',  name: 'Plein été',             target: 50 },
-  { icon: '🏞️',  name: 'Évasion estivale',      target: 45 },
-  { icon: '🍂',  name: "Couleurs d'automne",    target: 40 },
-  { icon: '🍄',  name: 'Saison des champignons', target: 30 },
-  { icon: '🌫️',  name: 'Brumes de novembre',    target: 25 },
-  { icon: '🎄',  name: "Défi de fin d'année",   target: 20 },
+  { icon: 'snowflake',  name: 'Défi hivernal',         target: 20 },
+  { icon: 'snowflake',  name: 'Braver le froid',       target: 20 },
+  { icon: 'sprout',  name: 'Renouveau printanier',  target: 30 },
+  { icon: 'sprout',  name: 'Floraison',             target: 35 },
+  { icon: 'leaf',  name: 'Forêt verdoyante',      target: 40 },
+  { icon: 'sun',  name: 'Longues journées',      target: 50 },
+  { icon: 'tree-round',  name: 'Plein été',             target: 50 },
+  { icon: 'mountain',  name: 'Évasion estivale',      target: 45 },
+  { icon: 'leaf',  name: "Couleurs d'automne",    target: 40 },
+  { icon: 'mushroom',  name: 'Saison des champignons', target: 30 },
+  { icon: 'cloud',  name: 'Brumes de novembre',    target: 25 },
+  { icon: 'tree',  name: "Défi de fin d'année",   target: 20 },
 ];
 
 async function renderMonthlyChallenge(stats) {
@@ -139,7 +139,7 @@ async function renderMonthlyChallenge(stats) {
   box.innerHTML = `
     <div class="challenge-card ${reached ? 'is-done' : ''}">
       <div class="challenge-top">
-        <span class="challenge-emoji">${ch.icon}</span>
+        <span class="challenge-emoji">${bwrIconFor(ch.icon)}</span>
         <div class="challenge-info">
           <strong class="challenge-name">${escapeHtml(ch.name)}</strong>
           <span class="challenge-target">Objectif : ${ch.target} km en ${monthName}</span>
@@ -147,7 +147,7 @@ async function renderMonthlyChallenge(stats) {
         ${reached ? '<span class="challenge-medal">✓ Réussi</span>' : ''}
       </div>
       <div class="xp-bar"><div class="xp-fill" style="width:${pct}%"></div></div>
-      <p class="challenge-prog">${fmtKm(done)} / ${ch.target} km${reached ? ' — bravo ! 🎉' : ` · ${fmtKm(remaining)} restants`}</p>
+      <p class="challenge-prog">${fmtKm(done)} / ${ch.target} km${reached ? ' — bravo ! <i class="ic" data-ic="party"></i>' : ` · ${fmtKm(remaining)} restants`}</p>
     </div>`;
 }
 
@@ -185,7 +185,7 @@ async function renderRecentRoutes(plan) {
       const km    = fmtKm((r.meters || 0) / 1000);
       const dur   = fmtDuration(r.seconds);
       const date  = r.savedAt ? new Date(r.savedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
-      const icon  = r.pathType === 'bike' ? '🚴' : '🥾';
+      const icon  = r.pathType === 'bike' ? '<i class="ic" data-ic="bike"></i>' : '<i class="ic" data-ic="footprints"></i>';
       const href  = r.shareToken ? `map?plan=1&share=${encodeURIComponent(r.shareToken)}` : 'map?plan=1';
       const name  = escapeHtml(r.name || 'Trajet sans nom');
       return `
@@ -194,11 +194,11 @@ async function renderRecentRoutes(plan) {
             <span class="rr-dot" style="background:${color}"></span>
             <span class="rr-main">
               <span class="rr-name">${icon} ${name}</span>
-              <span class="rr-meta">📏 ${km} · ⏱ ${dur}${date ? ` · 🗓 ${date}` : ''}</span>
+              <span class="rr-meta"><i class="ic" data-ic="ruler"></i> ${km} · <i class="ic" data-ic="timer"></i> ${dur}${date ? ` · <i class="ic" data-ic="calendar"></i> ${date}` : ''}</span>
             </span>
             <span class="rr-go">→</span>
           </a>
-          <button class="rr-download" type="button" data-id="${r.id}" title="Télécharger l'itinéraire (GPX — Garmin, Strava, Komoot…)" aria-label="Télécharger l'itinéraire en GPX">⬇</button>
+          <button class="rr-download" type="button" data-id="${r.id}" title="Télécharger l'itinéraire (GPX — Garmin, Strava, Komoot…)" aria-label="Télécharger l'itinéraire en GPX"><i class="ic" data-ic="download"></i></button>
         </div>`;
     }).join('');
 
@@ -215,9 +215,9 @@ async function renderRecentRoutes(plan) {
 // id first, then hand it to the shared exporter (js/exporters.js — downloadGPX).
 async function downloadSavedRouteGpx(id, btn) {
   if (typeof downloadGPX !== 'function') { alert('Export GPX indisponible.'); return; }
-  const orig = btn.textContent;
+  const orig = btn.innerHTML;
   btn.disabled = true;
-  btn.textContent = '⏳';
+  btn.innerHTML = '<i class="ic" data-ic="hourglass"></i>';
   try {
     const res = await fetch(`${API_URL}/api/savedroutes/${id}`, { headers: authHeader() });
     if (!res.ok) throw new Error();
@@ -226,11 +226,11 @@ async function downloadSavedRouteGpx(id, btn) {
     downloadGPX(route.coords, route.name || 'Itinéraire BWR', {
       description: `Itinéraire BWR — ${route.name || ''}`.trim(),
     });
-    btn.textContent = '✓';
+    btn.innerHTML = '<i class="ic" data-ic="check"></i>';
   } catch {
-    btn.textContent = '⚠';
+    btn.innerHTML = '<i class="ic" data-ic="alert"></i>';
   } finally {
     btn.disabled = false;
-    setTimeout(() => { btn.textContent = orig; }, 1600);
+    setTimeout(() => { btn.innerHTML = orig; }, 1600);
   }
 }

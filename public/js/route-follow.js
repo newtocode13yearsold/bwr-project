@@ -1,6 +1,6 @@
 // route-follow.js — live "guide me" navigation for a planned route.
 // Lazy-loaded from the routes page (js/routes.js → _loadRouteFollow) the first
-// time the user taps "🧭 Suivre l'itinéraire" on a generated/imported route.
+// time the user taps "Suivre l'itinéraire" on a generated/imported route.
 //
 // It opens a full-screen navigation HUD with its own Leaflet map, watches the
 // live GPS position, and continuously matches it against the planned polyline:
@@ -125,8 +125,8 @@
     return `${verb} ${m.dir === 'right' ? 'droite' : 'gauche'}`;
   }
   function turnArrow(m) {
-    if (m.sharp) return m.dir === 'right' ? '↩' : '↪';
-    return m.dir === 'right' ? '↱' : '↰';
+    if (m.sharp) return m.dir === 'right' ? '<i class="ic" data-ic="turn-right"></i>' : '<i class="ic" data-ic="turn-left"></i>';
+    return m.dir === 'right' ? '<i class="ic" data-ic="turn-right"></i>' : '<i class="ic" data-ic="turn-left"></i>';
   }
 
   // ── Voice ─────────────────────────────────────────────────────────────────────
@@ -152,7 +152,7 @@
     root.className = 'rf-overlay';
     root.innerHTML = `
       <div class="rf-banner" id="rfBanner">
-        <div class="rf-arrow" id="rfArrow">🧭</div>
+        <div class="rf-arrow" id="rfArrow"><i class="ic" data-ic="compass"></i></div>
         <div class="rf-instr">
           <div class="rf-instr-dist" id="rfInstrDist">Acquisition GPS…</div>
           <div class="rf-instr-text" id="rfInstrText">Placez-vous sur le tracé pour démarrer.</div>
@@ -160,7 +160,7 @@
       </div>
       <div class="rf-map" id="rfMap"></div>
       <div class="rf-acc" id="rfAcc"></div>
-      <button class="rf-recenter" id="rfRecenter" title="Recentrer">🎯</button>
+      <button class="rf-recenter" id="rfRecenter" title="Recentrer"><i class="ic" data-ic="locate"></i></button>
       <div class="rf-bottom">
         <div class="rf-progress"><div class="rf-progress-fill" id="rfProgFill"></div></div>
         <div class="rf-stats">
@@ -169,8 +169,8 @@
           <div class="rf-stat"><strong id="rfPct">0%</strong><span>parcouru</span></div>
         </div>
         <div class="rf-actions">
-          <button class="rf-btn rf-voice" id="rfVoice">🔊 Voix</button>
-          <button class="rf-btn rf-quit" id="rfQuit">✕ Quitter</button>
+          <button class="rf-btn rf-voice" id="rfVoice"><i class="ic" data-ic="volume"></i> Voix</button>
+          <button class="rf-btn rf-quit" id="rfQuit"><i class="ic" data-ic="x"></i> Quitter</button>
         </div>
       </div>`;
     document.body.appendChild(root);
@@ -191,7 +191,7 @@
     root.querySelector('#rfVoice').addEventListener('click', (e) => {
       voiceOn = !voiceOn;
       e.currentTarget.classList.toggle('off', !voiceOn);
-      e.currentTarget.textContent = voiceOn ? '🔊 Voix' : '🔇 Voix';
+      e.currentTarget.innerHTML = voiceOn ? '<i class="ic" data-ic="volume"></i> Voix' : '<i class="ic" data-ic="volume-off"></i> Voix';
       if (!voiceOn && 'speechSynthesis' in window) speechSynthesis.cancel();
     });
   }
@@ -250,7 +250,7 @@
     // Arrival
     if (remaining <= ARRIVE_M) {
       el.banner.className = 'rf-banner arrived';
-      el.arrow.textContent = '🏁';
+      el.arrow.innerHTML = '<i class="ic" data-ic="flag"></i>';
       el.instrDist.textContent = 'Arrivée';
       el.instrText.textContent = 'Vous êtes arrivé à destination !';
       speak('Vous êtes arrivé à destination.');
@@ -266,7 +266,7 @@
     if (offRoute) {
       const back = compass(brg(lat, lng, p.lat, p.lng));
       el.banner.className = 'rf-banner off';
-      el.arrow.textContent = '⚠️';
+      el.arrow.innerHTML = '<i class="ic" data-ic="alert"></i>';
       el.instrDist.textContent = `Hors itinéraire · ${fmtDist(p.off)}`;
       el.instrText.textContent = `Revenez sur le tracé — vers le ${back}`;
       // Show the shortest way back to the line.
@@ -283,7 +283,7 @@
     el.banner.className = 'rf-banner';
     if (next) {
       const d = next.along - p.along;
-      el.arrow.textContent = turnArrow(next);
+      el.arrow.innerHTML = turnArrow(next);
       el.instrDist.textContent = fmtDist(d);
       el.instrText.textContent = turnLabel(next);
       // Spoken cues at ~200 m, ~60 m and ~15 m before each turn (once per level).
@@ -295,7 +295,7 @@
         if (level === 0) vibrate([120, 60, 120]);
       }
     } else {
-      el.arrow.textContent = '⬆️';
+      el.arrow.innerHTML = '<i class="ic" data-ic="arrow-up"></i>';
       el.instrDist.textContent = fmtDist(remaining);
       el.instrText.textContent = 'Continuez tout droit jusqu\'à l\'arrivée';
     }

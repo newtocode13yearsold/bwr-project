@@ -84,8 +84,8 @@
     var bar = document.createElement('div');
     bar.className = 'embed-bar';
     bar.innerHTML =
-      '<span class="embed-bar-title">🧭 Planifier un trajet</span>' +
-      '<button type="button" class="embed-bar-close" aria-label="Fermer le planificateur" title="Fermer (Échap)">✕</button>';
+      '<span class="embed-bar-title"><i class="ic" data-ic="compass"></i> Planifier un trajet</span>' +
+      '<button type="button" class="embed-bar-close" aria-label="Fermer le planificateur" title="Fermer (Échap)"><i class="ic" data-ic="x"></i></button>';
     bar.querySelector('button').addEventListener('click', close);
     sidebar.insertBefore(bar, sidebar.firstChild);
   });

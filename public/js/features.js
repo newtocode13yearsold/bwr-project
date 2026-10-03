@@ -119,16 +119,16 @@
   // bonusRoutes is CUMULATIVE by "highest reached" (see routeBonus): reaching a
   // level with a higher bonusRoutes replaces the previous one, it does not stack.
   const LEVEL_REWARDS = [
-    { level: 1,  icon: '🌱', title: null,                    frame: null,     bonusRoutes: 0, label: 'Bienvenue',                 desc: 'Votre aventure commence' },
-    { level: 2,  icon: '🥾', title: 'Promeneur',             frame: null,     bonusRoutes: 0, label: 'Titre « Promeneur »',       desc: 'Un titre affiché sur votre profil' },
-    { level: 3,  icon: '🥉', title: null,                    frame: 'bronze', bonusRoutes: 0, label: 'Cadre Bronze',              desc: 'Cadre de profil bronze' },
-    { level: 4,  icon: '➕', title: null,                    frame: null,     bonusRoutes: 1, label: '+1 trajet / semaine',       desc: 'Quota hebdo gratuit augmenté' },
-    { level: 5,  icon: '🧭', title: 'Éclaireur',             frame: null,     bonusRoutes: 0, label: 'Titre « Éclaireur »',       desc: 'Un nouveau titre de profil' },
-    { level: 6,  icon: '🥈', title: null,                    frame: 'silver', bonusRoutes: 0, label: 'Cadre Argent',              desc: 'Cadre de profil argent' },
-    { level: 7,  icon: '➕', title: null,                    frame: null,     bonusRoutes: 2, label: '+2 trajets / semaine',      desc: 'Quota hebdo gratuit augmenté' },
-    { level: 8,  icon: '🌲', title: 'Gardien de la forêt',   frame: null,     bonusRoutes: 0, label: 'Titre « Gardien de la forêt »', desc: 'Un titre prestigieux' },
-    { level: 9,  icon: '✨', title: null,                    frame: 'gold',   bonusRoutes: 0, label: 'Cadre Or animé',            desc: 'Cadre de profil or, animé' },
-    { level: 10, icon: '👑', title: 'Légende de Compiègne',  frame: null,     bonusRoutes: 0, label: 'Titre « Légende »',         desc: 'Le titre ultime + reconnaissance' },
+    { level: 1,  icon: 'sprout', title: null,                    frame: null,     bonusRoutes: 0, label: 'Bienvenue',                 desc: 'Votre aventure commence' },
+    { level: 2,  icon: 'footprints', title: 'Promeneur',             frame: null,     bonusRoutes: 0, label: 'Titre « Promeneur »',       desc: 'Un titre affiché sur votre profil' },
+    { level: 3,  icon: 'medal', title: null,                    frame: 'bronze', bonusRoutes: 0, label: 'Cadre Bronze',              desc: 'Cadre de profil bronze' },
+    { level: 4,  icon: 'plus', title: null,                    frame: null,     bonusRoutes: 1, label: '+1 trajet / semaine',       desc: 'Quota hebdo gratuit augmenté' },
+    { level: 5,  icon: 'compass', title: 'Éclaireur',             frame: null,     bonusRoutes: 0, label: 'Titre « Éclaireur »',       desc: 'Un nouveau titre de profil' },
+    { level: 6,  icon: 'medal', title: null,                    frame: 'silver', bonusRoutes: 0, label: 'Cadre Argent',              desc: 'Cadre de profil argent' },
+    { level: 7,  icon: 'plus', title: null,                    frame: null,     bonusRoutes: 2, label: '+2 trajets / semaine',      desc: 'Quota hebdo gratuit augmenté' },
+    { level: 8,  icon: 'tree', title: 'Gardien de la forêt',   frame: null,     bonusRoutes: 0, label: 'Titre « Gardien de la forêt »', desc: 'Un titre prestigieux' },
+    { level: 9,  icon: 'sparkles', title: null,                    frame: 'gold',   bonusRoutes: 0, label: 'Cadre Or animé',            desc: 'Cadre de profil or, animé' },
+    { level: 10, icon: 'crown', title: 'Légende de Compiègne',  frame: null,     bonusRoutes: 0, label: 'Titre « Légende »',         desc: 'Le titre ultime + reconnaissance' },
   ];
 
   /** Community XP from a user's stats object. */
@@ -229,7 +229,7 @@
 
   /** Human-readable tier label for upsell prompts. */
   const TIER_LABEL = { free: 'Gratuit', pro: 'Pro' };
-  const TIER_ICON  = { free: '🌿',      pro: '⭐' };
+  const TIER_ICON  = { free: '<i class="ic" data-ic="leaf"></i>',      pro: '<i class="ic" data-ic="star"></i>' };
 
   /* ── Weekly route quota helpers ─────────────────────────────────────────── */
 
@@ -293,7 +293,7 @@
   /* ── "Pro uniquement" label ─────────────────────────────────────────────────
    * Every Pro-gated element a free user can see carries this same tag, so the
    * wording is identical on every page. Styled by .pro-only-tag in tokens.css. */
-  const PRO_ONLY_LABEL = '🔒 Pro uniquement';
+  const PRO_ONLY_LABEL = '<i class="ic" data-ic="lock"></i> Pro uniquement';
 
   function proOnlyTag() {
     return `<span class="pro-only-tag">${PRO_ONLY_LABEL}</span>`;

@@ -17,7 +17,10 @@ const SITE = 'https://bwrmaps.com';
 
 const DIFF_LABEL = { easy: 'Facile', medium: 'Moyen', hard: 'Difficile' };
 const TYPE_LABEL = { foot: 'Pédestre', bike: 'Vélo', mix: 'Mixte', champs: 'Champs' };
-const TYPE_EMOJI = { foot: '🌲', bike: '🚴', mix: '🗺️', champs: '🌾' };
+// Line icons (public/js/icons.js fills <i class="ic" data-ic="…">): the site
+// uses one icon style everywhere, no emoji.
+const TYPE_ICON = { foot: 'tree', bike: 'bike', mix: 'map', champs: 'sprout' };
+const ic = (name) => `<i class="ic" data-ic="${name}"></i>`;
 
 /** Escape text for safe interpolation into HTML. */
 const esc = (str) => String(str ?? '').replace(/[&<>"']/g, (c) => (
@@ -99,6 +102,7 @@ function layout({ title, description, canonical, image, jsonLd, headExtra = '', 
   ${headExtra}
   <link rel="stylesheet" href="/css/dark.css" />
   <script src="/js/theme.js"></script>
+  <script src="/js/icons.js"></script>
   <script type="application/ld+json">${jsonForScript(jsonLd)}</script>
 </head>
 <body style="background:var(--surface-1,#fafbf7);margin:0">
@@ -266,7 +270,8 @@ export async function handlePublicPages(request, env, { pathname }) {
 function renderTrail(tour) {
   const canonical = `${SITE}${trailPath(tour)}`;
   const diff = DIFF_LABEL[tour.difficulty] || tour.difficulty || 'Facile';
-  const typeLabel = `${TYPE_EMOJI[tour.type] || '🌲'} ${TYPE_LABEL[tour.type] || tour.type || 'Pédestre'}`;
+  const typeLabel = TYPE_LABEL[tour.type] || tour.type || 'Pédestre';
+  const typeIcon = ic(TYPE_ICON[tour.type] || 'tree');
   const image = tour.imageDataUri || tour.imageUrl || '';
   const km = tour.distance ? `${tour.distance} km` : null;
 
@@ -279,7 +284,7 @@ function renderTrail(tour) {
 
   const heroImg = image
     ? `<div class="article-hero-img" style="padding:0;overflow:hidden"><img src="${esc(image)}" alt="${esc(tour.name)}" style="width:100%;height:100%;object-fit:cover" /></div>`
-    : `<div class="article-hero-img" style="background:linear-gradient(135deg,#133b18,#3f7a2a)">${esc(TYPE_EMOJI[tour.type] || '🌲')}</div>`;
+    : `<div class="article-hero-img" style="background:linear-gradient(135deg,#133b18,#3f7a2a)">${ic(TYPE_ICON[tour.type] || 'tree')}</div>`;
 
   const pills =
     (km ? statPill(km, 'Distance') : '') +
@@ -287,7 +292,7 @@ function renderTrail(tour) {
     statPill(TYPE_LABEL[tour.type] || 'Pédestre', 'Type');
 
   const startBlock = tour.startAddress
-    ? `<div class="info-box"><div class="info-box-title">🚗 Départ conseillé</div>${esc(tour.startAddress)}</div>`
+    ? `<div class="info-box"><div class="info-box-title">${ic('car')} Départ conseillé</div>${esc(tour.startAddress)}</div>`
     : '';
 
   const extBtn = tour.externalUrl
@@ -329,9 +334,9 @@ function renderTrail(tour) {
     <h1 class="article-title">${esc(tour.name)}</h1>
 
     <div class="article-meta">
-      <span>${esc(typeLabel)}</span>
-      <span>⛰️ ${esc(diff)}</span>
-      ${km ? `<span>📏 ${esc(km)}</span>` : ''}
+      <span>${typeIcon} ${esc(typeLabel)}</span>
+      <span>${ic('mountain')} ${esc(diff)}</span>
+      ${km ? `<span>${ic('ruler')} ${esc(km)}</span>` : ''}
     </div>
 
     ${heroImg}
@@ -368,8 +373,10 @@ function renderRoute(route, token) {
   const canonical = `${SITE}/r/${token}`;
   const km = ((route.meters || 0) / 1000).toFixed(1);
   const diff = DIFF_LABEL[route.difficulty] || 'Facile';
-  const typeLabel = `${TYPE_EMOJI[route.pathType] || '🌲'} ${TYPE_LABEL[route.pathType] || 'Pédestre'}`;
-  const modeLabel = route.mode === 'loop' ? '🔄 Boucle' : '➡️ Aller simple';
+  const typeLabel = TYPE_LABEL[route.pathType] || 'Pédestre';
+  const typeIcon = ic(TYPE_ICON[route.pathType] || 'tree');
+  const modeLabel = route.mode === 'loop' ? 'Boucle' : 'Aller simple';
+  const modeIcon = ic(route.mode === 'loop' ? 'refresh' : 'arrow-right');
   const mins = Math.round((route.seconds || 0) / 60);
   const durLabel = mins >= 60 ? `${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}` : `${mins} min`;
 
@@ -423,9 +430,9 @@ function renderRoute(route, token) {
     <h1 class="article-title">${esc(name)}</h1>
 
     <div class="article-meta">
-      <span>${esc(modeLabel)}</span>
-      <span>${esc(typeLabel)}</span>
-      <span>⛰️ ${esc(diff)}</span>
+      <span>${modeIcon} ${esc(modeLabel)}</span>
+      <span>${typeIcon} ${esc(typeLabel)}</span>
+      <span>${ic('mountain')} ${esc(diff)}</span>
     </div>
 
     <div class="article-body">

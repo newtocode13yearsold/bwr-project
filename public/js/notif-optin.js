@@ -125,7 +125,7 @@
     banner.setAttribute('role', 'region');
     banner.setAttribute('aria-label', 'Activer les notifications');
     banner.innerHTML =
-      '<span class="notif-optin-emoji" aria-hidden="true">🔔</span>' +
+      '<span class="notif-optin-emoji" aria-hidden="true"><i class="ic" data-ic="bell"></i></span>' +
       '<div class="notif-optin-body">' +
         '<p><strong>Activer les notifications de la carte&nbsp;?</strong> Soyez prévenu dès qu’un ' +
           'obstacle (arbre tombé, inondation…) est signalé sur l’un de vos trajets, ou quand la ' +
@@ -137,7 +137,7 @@
           '<button class="notif-optin-btn notif-optin-ghost" id="notifOptinNo">Plus tard</button>' +
         '</div>' +
       '</div>' +
-      '<button class="notif-optin-close" id="notifOptinClose" aria-label="Fermer">✕</button>';
+      '<button class="notif-optin-close" id="notifOptinClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>';
     document.body.appendChild(banner);
     requestAnimationFrame(function () { banner.classList.add('notif-optin-show'); });
 
@@ -169,13 +169,13 @@
             u.alertsEnabled = true;
             localStorage.setItem('bwr_user', JSON.stringify(u));
           } catch (e) {}
-          toast('🔔 Notifications activées ! Vous serez prévenu des obstacles.');
+          toast('Notifications activées ! Vous serez prévenu des obstacles.');
         } catch (e) {
           toast('Autorisation accordée ✓ — gérez vos alertes dans votre profil.');
         }
       } else {
         // Free tier: permission captured; obstacle alerts unlock with Pro.
-        toast('✅ Autorisation accordée — les alertes obstacles arrivent avec le plan Pro.');
+        toast('Autorisation accordée — les alertes obstacles arrivent avec le plan Pro.');
       }
       dismiss();
     }

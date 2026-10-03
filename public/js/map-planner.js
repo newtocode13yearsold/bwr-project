@@ -8,7 +8,7 @@
 // the frame, hides the planner's own header and talks back to us via
 // postMessage (close button / Échap → hand the map view back).
 //
-// Entry points: the "🧭 Planifier" tab on the map, and every "Planifier" link
+// Entry points: the "Planifier" tab on the map, and every "Planifier" link
 // in the app, which now points at `map?plan=1` (intercepted here so the drawer
 // opens without a page reload). Deep-link params (share, lat/lng best tour,
 // start) are forwarded to the planner.
@@ -164,14 +164,14 @@
     if (isOpen) close(null); else open();
   });
 
-  // The on-map "🧭 Planifier" tab.
+  // The on-map "Planifier" tab.
   var tab = document.createElement('button');
   tab.type = 'button';
   tab.className = 'planner-tab js-open-planner';
   tab.setAttribute('aria-expanded', 'false');
   tab.setAttribute('aria-controls', 'plannerDrawer');
   tab.title = 'Planifier un trajet';
-  tab.innerHTML = '<span aria-hidden="true">🧭</span><span class="planner-tab-label">Planifier</span>';
+  tab.innerHTML = '<span aria-hidden="true"><i class="ic" data-ic="compass"></i></span><span class="planner-tab-label">Planifier</span>';
   tab.addEventListener('click', function () { if (isOpen) close(null); else open(); });
   document.body.appendChild(tab);
 

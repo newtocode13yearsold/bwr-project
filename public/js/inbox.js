@@ -137,7 +137,7 @@ function composeCard() {
       <div class="form-group">
         <label class="form-label" for="composeTarget">Destinataire</label>
         <select class="form-select" id="composeTarget">
-          <option value="all">📢 Tous les membres (diffusion)</option>
+          <option value="all">Tous les membres (diffusion)</option>
         </select>
       </div>
       <div class="form-group">

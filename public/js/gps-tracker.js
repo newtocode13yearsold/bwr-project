@@ -125,13 +125,13 @@
         const w = rainWarningFrom(data.hourly, Date.now(), RAIN_WINDOW_H);
         if (!w) return;
         const prob = w.prob != null ? ` (${w.prob}%)` : '';
-        toast(`🌧 Pluie prévue ${fmtWhen(w.minutes)}${prob} — pensez à prendre un coupe-vent !`);
+        toast(`Pluie prévue ${fmtWhen(w.minutes)}${prob} — pensez à prendre un coupe-vent !`);
       } catch { /* forecast is a nicety — never block the walk on it */ }
     });
   }
 
   function setLabel() {
-    btn.textContent = active ? `⏹ ${fmtKm(sessionKm)}` : '▶ Suivi GPS';
+    btn.innerHTML = active ? `<i class="ic" data-ic="stop"></i> ${fmtKm(sessionKm)}` : '<i class="ic" data-ic="play"></i> Suivi GPS';
     btn.title = active ? 'Terminer le suivi de distance' : 'Compter ma distance parcourue';
   }
 
@@ -150,7 +150,7 @@
         userMarker = L.circleMarker([r.lat, r.lng], {
           radius: 7, color: '#2563eb', fillColor: '#3b82f6',
           fillOpacity: 0.9, weight: 2,
-        }).addTo(m).bindTooltip('📍 Vous êtes ici', { permanent: false });
+        }).addTo(m).bindTooltip('<i class="ic" data-ic="pin"></i> Vous êtes ici', { permanent: false });
       } else {
         userMarker.setLatLng([r.lat, r.lng]);
       }
@@ -186,7 +186,7 @@
     active    = true;
     btn.classList.add('tracking');
     setLabel();
-    toast('🏃 Suivi démarré — bonne balade !');
+    toast('Suivi démarré — bonne balade !');
     // Heads-up if rain is likely on the walk that's just starting.
     warnIfRainSoon();
 
@@ -254,7 +254,7 @@
 
     if (finishedKm >= 0.05) {
       persistKm();
-      toast(`✅ ${fmtKm(finishedKm)} ajoutés à votre total !`);
+      toast(`${fmtKm(finishedKm)} ajoutés à votre total !`);
       // Offer to keep it as a journal entry (signed-in users only).
       const hasAuth = typeof getToken === 'function' && getToken();
       if (hasAuth && finishedTrack.length >= 2) {
@@ -292,7 +292,7 @@
     });
 
     const h = document.createElement('h3');
-    h.textContent = '🥾 Enregistrer cette sortie ?';
+    h.textContent = 'Enregistrer cette sortie ?';
     Object.assign(h.style, { margin: '0 0 6px', fontSize: '1.25rem', color: '#0b2410', fontFamily: 'var(--font-display, Fraunces, serif)' });
 
     const stat = document.createElement('p');
@@ -319,7 +319,7 @@
     shareChk.type = 'checkbox';
     Object.assign(shareChk.style, { width: '17px', height: '17px', accentColor: '#1e4d14', cursor: 'pointer' });
     const shareTxt = document.createElement('span');
-    shareTxt.textContent = '👥 Partager avec mes abonnés';
+    shareTxt.textContent = 'Partager avec mes abonnés';
     shareRow.append(shareChk, shareTxt);
 
     const actions = document.createElement('div');
@@ -363,7 +363,7 @@
         });
         if (!res.ok) throw new Error('save failed');
         close();
-        toast('📓 Sortie ajoutée à votre journal !');
+        toast('Sortie ajoutée à votre journal !');
       } catch {
         save.disabled = false;
         save.textContent = 'Réessayer';

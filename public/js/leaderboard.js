@@ -1,11 +1,11 @@
 /* leaderboard.js — Leaderboard page */
 
 const LEAGUES = [
-  { key: 'legende',    name: 'Légende',    icon: '👑', min: 300, color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
-  { key: 'forestier',  name: 'Forestier',  icon: '🌲', min: 100, color: '#15803d', bg: '#f0fdf4', border: '#86efac' },
-  { key: 'gardien',    name: 'Gardien',    icon: '🦌', min: 50,  color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
-  { key: 'randonneur', name: 'Randonneur', icon: '🌱', min: 20,  color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
-  { key: 'promeneur',  name: 'Promeneur',  icon: '🪵', min: 0,   color: '#374151', bg: '#f3f4f6', border: '#d1d5db' },
+  { key: 'legende',    name: 'Légende',    icon: 'crown', min: 300, color: '#92400e', bg: '#fffbeb', border: '#fde68a' },
+  { key: 'forestier',  name: 'Forestier',  icon: 'tree', min: 100, color: '#15803d', bg: '#f0fdf4', border: '#86efac' },
+  { key: 'gardien',    name: 'Gardien',    icon: 'deer', min: 50,  color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe' },
+  { key: 'randonneur', name: 'Randonneur', icon: 'sprout', min: 20,  color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  { key: 'promeneur',  name: 'Promeneur',  icon: 'trees', min: 0,   color: '#374151', bg: '#f3f4f6', border: '#d1d5db' },
 ];
 
 function getLeague(points) {
@@ -21,7 +21,7 @@ function renderLeaguesLegend() {
   if (!grid) return;
   grid.innerHTML = [...LEAGUES].reverse().map(l => `
     <div class="league-pill league-${l.key}">
-      <span class="league-icon">${l.icon}</span>
+      <span class="league-icon">${bwrIconFor(l.icon)}</span>
       <span class="league-name">${l.name}</span>
       <span class="league-pts">${l.min === 0 ? '0+' : l.min + '+'} pts</span>
     </div>
@@ -41,7 +41,7 @@ function renderMyRank(entries, myId, period) {
 
   document.getElementById('myRankNum').textContent = '#' + rank;
   document.getElementById('myRankName').textContent = me.name;
-  document.getElementById('myRankLeague').textContent = league.icon + ' ' + league.name;
+  document.getElementById('myRankLeague').innerHTML = bwrIconFor(league.icon) + ' ' + league.name;
   document.getElementById('myRankReports').textContent = me.reports;
   document.getElementById('myRankGrades').textContent = me.pathGrades;
   document.getElementById('myRankPoints').textContent = me.points;
@@ -66,13 +66,13 @@ function renderTable(entries, myId, period) {
     const when = period === 'week' ? 'cette semaine' : period === 'month' ? 'ce mois-ci' : '';
     wrap.innerHTML = `
       <div class="lb-empty">
-        <div class="lb-empty-icon">🏆</div>
+        <div class="lb-empty-icon"><i class="ic" data-ic="trophy"></i></div>
         <div class="lb-empty-text">Aucun participant ${when ? when + ' ' : ''}pour l'instant.<br>Signalez un problème ou notez un chemin pour apparaître ici !</div>
       </div>`;
     return;
   }
 
-  const medals = ['🥇', '🥈', '🥉'];
+  const medals = ['<i class="ic ic-gold" data-ic="medal"></i>', '<i class="ic ic-silver" data-ic="medal"></i>', '<i class="ic ic-bronze" data-ic="medal"></i>'];
 
   const TOP = 5;
 
@@ -103,7 +103,7 @@ function renderTable(entries, myId, period) {
               <span class="lb-name">${escHtml(e.name)}</span>${isMe ? '<span class="lb-name-you">Vous</span>' : ''}
               <div>
                 <span class="lb-league-tag" style="background:${league.bg};color:${league.color};border:1px solid ${league.border}">
-                  ${league.icon} ${league.name}
+                  ${bwrIconFor(league.icon)} ${league.name}
                 </span>
               </div>
             </div>

@@ -64,7 +64,7 @@
   // ── Render ────────────────────────────────────────────────────────────────
   const DIFF_LABEL = { easy: 'Facile', medium: 'Moyen', hard: 'Difficile' };
   const DIFF_CLASS = { easy: 'tour-badge-easy', medium: 'tour-badge-medium', hard: 'tour-badge-hard' };
-  const TYPE_LABEL = { foot: '🌲 Pédestre', bike: '🚴 Vélo', mix: '🗺️ Mix' };
+  const TYPE_LABEL = { foot: '<i class="ic" data-ic="tree"></i> Pédestre', bike: '<i class="ic" data-ic="bike"></i> Vélo', mix: '<i class="ic" data-ic="map"></i> Mix' };
 
   function renderTours() {
     const list = filteredTours();
@@ -76,7 +76,7 @@
       : '';
 
     if (!list.length) {
-      el.innerHTML = `<div class="tours-empty"><div class="tours-empty-icon">🌲</div><p>Aucune balade pour ce filtre.</p></div>`;
+      el.innerHTML = `<div class="tours-empty"><div class="tours-empty-icon"><i class="ic" data-ic="tree"></i></div><p>Aucune balade pour ce filtre.</p></div>`;
       return;
     }
 
@@ -84,13 +84,13 @@
       const imgSrc = t.imageDataUri || t.imageUrl;
       const imgHtml = imgSrc
         ? `<img class="tour-card-img" src="${escHtml(imgSrc)}" alt="${escHtml(t.name)}" loading="lazy" />`
-        : `<div class="tour-card-img-placeholder">🌲</div>`;
+        : `<div class="tour-card-img-placeholder"><i class="ic" data-ic="trees"></i></div>`;
 
       const rankBadge = (t.rank && t.rank < 9999)
         ? `<span class="tour-rank">#${t.rank}</span>` : '';
 
       const distBadge = t.distance
-        ? `<span class="tour-badge tour-badge-dist">📏 ${t.distance} km</span>` : '';
+        ? `<span class="tour-badge tour-badge-dist"><i class="ic" data-ic="ruler"></i> ${t.distance} km</span>` : '';
 
       const startHtml = t.startAddress
         ? `<div class="tour-start"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>${escHtml(t.startAddress)}</div>` : '';

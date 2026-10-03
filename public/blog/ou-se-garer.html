@@ -40,6 +40,7 @@
   <link rel="stylesheet" href="../css/footer.css" />
   <link rel="stylesheet" href="../css/mobile.css" />
   <script src="../js/theme.js"></script>
+  <script src="../js/icons.js"></script>
   <link rel="stylesheet" href="/lib/leaflet.css" />
   <style>
     #bwr-map { height: 420px; width: 100%; border-radius: 14px; overflow: hidden; margin: 8px 0 4px; z-index: 0; }
@@ -95,20 +96,20 @@
     <h1 class="article-title">Où se garer en forêt de Compiègne : le guide des parkings</h1>
 
     <div class="article-meta">
-      <span>✍️ Thomas Legros</span>
-      <span>📅 18 septembre 2026</span>
-      <span>🕐 6 min de lecture</span>
-      <span>🅿️ Parkings gratuits</span>
+      <span><i class="ic" data-ic="pencil"></i> Thomas Legros</span>
+      <span><i class="ic" data-ic="calendar"></i> 18 septembre 2026</span>
+      <span><i class="ic" data-ic="clock"></i> 6 min de lecture</span>
+      <span><i class="ic" data-ic="parking"></i> Parkings gratuits</span>
     </div>
 
-    <div class="article-hero-img" style="background:linear-gradient(135deg,#0b2410,#1e4d14)">🅿️</div>
+    <div class="article-hero-img" style="background:linear-gradient(135deg,#0b2410,#1e4d14)"><i class="ic" data-ic="parking"></i></div>
 
     <div class="article-body">
 
       <p>La forêt de Compiègne est immense — plus de 14 400 hectares — et le point de départ que vous choisissez change complètement votre balade. La bonne nouvelle : la quasi-totalité des parkings forestiers sont <strong>gratuits</strong> et bien répartis autour du massif. Voici les meilleurs points de départ, selon d'où vous venez et le type de sortie que vous cherchez.</p>
 
       <div class="info-box">
-        <div class="info-box-title">💡 Astuce</div>
+        <div class="info-box-title"><i class="ic" data-ic="lightbulb"></i> Astuce</div>
         Chaque parking ci-dessous est un point de départ sur la carte BWR. Ouvrez le lien « planifier cette balade » pour générer directement une boucle depuis ce parking, à la distance de votre choix.
       </div>
 
@@ -204,10 +205,10 @@
   </footer>
 
 <script type="application/json" id="bwr-spots">{"spots":[
-  {"lat":49.40576,"lng":2.84595,"emoji":"🅿️","title":"Carrefour Royal","label":"Carrefour Royal","note":"Grand carrefour central et polyvalent — accès à tout le réseau d'allées.","link":"/map?plan=1&lat=49.40576&lng=2.84595&distance=8&mode=loop&type=foot&diff=easy"},
-  {"lat":49.40779,"lng":2.88191,"emoji":"🅿️","title":"Parking du Tréan (Beaux Monts)","label":"P. du Tréan","note":"Départ pour la perspective des Beaux Monts, la plus belle vue de la forêt.","link":"/map?plan=1&lat=49.40779&lng=2.88191&distance=7&mode=loop&type=foot&diff=medium"},
-  {"lat":49.37761,"lng":2.96736,"emoji":"🅿️","title":"Étangs de Saint-Pierre","label":"Étangs St-Pierre","note":"Parking le long de la D547, au bord des plans d'eau (côté Pierrefonds). Pique-nique.","link":"/map?plan=1&lat=49.37761&lng=2.96736&distance=6&mode=loop&type=foot&diff=easy"},
-  {"lat":49.42206,"lng":2.82352,"emoji":"🚉","title":"Gare de Compiègne","label":"Gare de Compiègne","note":"Sans voiture : la forêt commence à une vingtaine de minutes de marche."}
+  {"lat":49.40576,"lng":2.84595,"emoji":"parking","title":"Carrefour Royal","label":"Carrefour Royal","note":"Grand carrefour central et polyvalent — accès à tout le réseau d'allées.","link":"/map?plan=1&lat=49.40576&lng=2.84595&distance=8&mode=loop&type=foot&diff=easy"},
+  {"lat":49.40779,"lng":2.88191,"emoji":"parking","title":"Parking du Tréan (Beaux Monts)","label":"P. du Tréan","note":"Départ pour la perspective des Beaux Monts, la plus belle vue de la forêt.","link":"/map?plan=1&lat=49.40779&lng=2.88191&distance=7&mode=loop&type=foot&diff=medium"},
+  {"lat":49.37761,"lng":2.96736,"emoji":"parking","title":"Étangs de Saint-Pierre","label":"Étangs St-Pierre","note":"Parking le long de la D547, au bord des plans d'eau (côté Pierrefonds). Pique-nique.","link":"/map?plan=1&lat=49.37761&lng=2.96736&distance=6&mode=loop&type=foot&diff=easy"},
+  {"lat":49.42206,"lng":2.82352,"emoji":"train","title":"Gare de Compiègne","label":"Gare de Compiègne","note":"Sans voiture : la forêt commence à une vingtaine de minutes de marche."}
 ]}</script>
 <script src="/lib/leaflet.js"></script>
 <script src="/js/blog-map.js"></script>

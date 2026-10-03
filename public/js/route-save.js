@@ -13,7 +13,7 @@ async function saveCurrentRoute() {
   if (!lastRoute) return;
   const btn = document.getElementById('btnSaveRoute');
   btn.disabled = true;
-  btn.textContent = '⏳ Sauvegarde…';
+  btn.innerHTML = '<i class="ic" data-ic="hourglass"></i> Sauvegarde…';
 
   const typeLabelShort = { foot: 'Forestier', bike: 'Cyclable', champs: 'Champs', mix: 'Mix' }[pathType] || '';
   const defaultName = `${mode === 'loop' ? 'Boucle' : 'Trajet'} ${typeLabelShort} ${(lastRoute.meters / 1000).toFixed(1)} km`;
@@ -40,7 +40,7 @@ async function saveCurrentRoute() {
   } catch (e) {
     showToast(`Erreur : ${e.message}`);
   } finally {
-    btn.textContent = '💾 Sauvegarder';
+    btn.innerHTML = '<i class="ic" data-ic="save"></i> Sauvegarder';
     btn.disabled = false;
   }
 }
@@ -56,7 +56,7 @@ async function shareCurrentRoute() {
 
   const btn = document.getElementById('btnShareRoute');
   btn.disabled = true;
-  btn.textContent = '⏳…';
+  btn.innerHTML = '<i class="ic" data-ic="hourglass"></i>';
 
   const typeLabelShort = { foot: 'Forestier', bike: 'Cyclable', champs: 'Champs', mix: 'Mix' }[pathType] || '';
   const defaultName = `${mode === 'loop' ? 'Boucle' : 'Trajet'} ${typeLabelShort} ${(lastRoute.meters / 1000).toFixed(1)} km`;
@@ -83,7 +83,7 @@ async function shareCurrentRoute() {
   } catch (e) {
     showToast(`Erreur : ${e.message}`);
   } finally {
-    btn.textContent = '🔗 Partager';
+    btn.innerHTML = '<i class="ic" data-ic="link"></i> Partager';
     btn.disabled = false;
   }
 }
@@ -140,7 +140,7 @@ async function fetchAndRenderHistory() {
     listEl.innerHTML = routes.map(r => {
       const km       = (r.meters / 1000).toFixed(1);
       const date     = new Date(r.savedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-      const modeIcon = r.mode === 'loop' ? '🔄' : '➡️';
+      const modeIcon = r.mode === 'loop' ? '<i class="ic" data-ic="refresh"></i>' : '<i class="ic" data-ic="arrow-right"></i>';
       return `
         <div class="history-item" data-id="${r.id}" data-token="${r.shareToken}">
           <div class="history-item-info">
@@ -148,11 +148,11 @@ async function fetchAndRenderHistory() {
             <div class="history-item-meta">${modeIcon} ${km} km · ${date}</div>
           </div>
           <div class="history-item-actions">
-            <button class="btn-history-replay"   title="Afficher sur la carte">▶</button>
-            <button class="btn-history-download" title="Télécharger (GPX — Garmin, Strava…)">⬇</button>
-            <button class="btn-history-print"    title="Imprimer / PDF">🖨</button>
-            <button class="btn-history-share"    title="Copier le lien de partage">🔗</button>
-            <button class="btn-history-delete"   title="Supprimer">🗑</button>
+            <button class="btn-history-replay"   title="Afficher sur la carte"><i class="ic" data-ic="play"></i></button>
+            <button class="btn-history-download" title="Télécharger (GPX — Garmin, Strava…)"><i class="ic" data-ic="download"></i></button>
+            <button class="btn-history-print"    title="Imprimer / PDF"><i class="ic" data-ic="printer"></i></button>
+            <button class="btn-history-share"    title="Copier le lien de partage"><i class="ic" data-ic="link"></i></button>
+            <button class="btn-history-delete"   title="Supprimer"><i class="ic" data-ic="trash"></i></button>
           </div>
         </div>`;
     }).join('');

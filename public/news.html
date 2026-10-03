@@ -55,6 +55,7 @@
   </script>
   <script src="js/theme.js"></script>
   <style>
+  <script src="js/icons.js"></script>
     /* ── Page-specific styles ── */
     html, body { height: auto !important; overflow: auto !important; }
     body { background: var(--surface-1, #fafbf7); }
@@ -440,6 +441,7 @@
       cursor: pointer;
     }
     .btn-save {
+      color: rgba(236, 252, 203, 0.92);
       background: var(--forest-700, #1e4d14);
       color: #a3e635;
       border: none;
@@ -535,7 +537,7 @@
     </div>
     <div class="header-right">
       <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></span><span class="btn-label">Menu</span></button>
-      <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji">⬇</span><span class="btn-label">Installer</span></button>
+      <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji"><i class="ic" data-ic="download"></i></span><span class="btn-label">Installer</span></button>
       <div class="user-menu" id="userMenu"></div>
     </div>
   </header>
@@ -545,7 +547,7 @@
   <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
     <div class="nav-drawer-header">
       <span class="nav-drawer-logo">BWR</span>
-      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
     </div>
     <nav class="nav-drawer-links">
       <a href="map" class="nav-drawer-item">
@@ -605,7 +607,7 @@
 
   <!-- ── Hero ── -->
   <div class="page-hero">
-    <div class="page-hero-badge">🌲 Oise</div>
+    <div class="page-hero-badge"><i class="ic" data-ic="tree"></i> Oise</div>
     <h1>Actualités</h1>
     <p>Informations, articles et nouveautés sélectionnés par l'équipe BWR.</p>
   </div>
@@ -639,12 +641,12 @@
         <div class="form-group">
           <label class="form-label" for="fieldCategory">Catégorie</label>
           <select id="fieldCategory" class="form-select">
-            <option value="foret">🌲 Forêt</option>
-            <option value="evenement">📅 Événement</option>
-            <option value="faune">🦌 Faune &amp; flore</option>
-            <option value="securite">⚠️ Sécurité</option>
-            <option value="travaux">🚧 Travaux</option>
-            <option value="app">📱 App BWR</option>
+            <option value="foret">Forêt</option>
+            <option value="evenement">Événement</option>
+            <option value="faune">Faune &amp; flore</option>
+            <option value="securite">Sécurité</option>
+            <option value="travaux">Travaux</option>
+            <option value="app">App BWR</option>
           </select>
         </div>
 
@@ -657,11 +659,11 @@
           <label class="form-label">Image <span>(optionnel)</span></label>
           <div class="img-upload-area" id="imgUploadArea">
             <input type="file" id="fieldImage" accept="image/*" aria-label="Choisir une image pour l'actualité" />
-            <p class="img-upload-label">📷 <strong>Choisir une image</strong> ou glisser-déposer<br><small>JPG, PNG, WebP · max ~450 Ko après compression</small></p>
+            <p class="img-upload-label"><i class="ic" data-ic="camera"></i> <strong>Choisir une image</strong> ou glisser-déposer<br><small>JPG, PNG, WebP · max ~450 Ko après compression</small></p>
           </div>
           <div id="imgPreviewWrap" style="display:none" class="img-preview-wrap">
             <img id="imgPreview" src="" alt="Aperçu" />
-            <button type="button" class="img-remove-btn">✕</button>
+            <button type="button" class="img-remove-btn"><i class="ic" data-ic="x"></i></button>
           </div>
         </div>
 

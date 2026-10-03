@@ -149,7 +149,7 @@ const GpsTracker = (() => {
         userMarker = L.circleMarker([r.lat, r.lng], {
           radius: 7, color: '#2563eb', fillColor: '#3b82f6',
           fillOpacity: 0.9, weight: 2,
-        }).addTo(map).bindTooltip('📍 Vous êtes ici', { permanent: false });
+        }).addTo(map).bindTooltip('<i class="ic" data-ic="pin"></i> Vous êtes ici', { permanent: false });
       } else {
         userMarker.setLatLng([r.lat, r.lng]);
       }
@@ -185,7 +185,7 @@ const GpsTracker = (() => {
     const btn    = document.getElementById('btnTracker');
     const kmEl   = document.getElementById('trackerKm');
     if (liveEl) liveEl.classList.remove('hidden');
-    if (btn)    { btn.textContent = '⏹ Terminer la balade'; btn.classList.add('tracking'); }
+    if (btn)    { btn.innerHTML = '<i class="ic" data-ic="stop"></i> Terminer la balade'; btn.classList.add('tracking'); }
     if (kmEl)   kmEl.textContent = '0,00 km';
     setAccuracyLabel('Acquisition du signal GPS…');
 
@@ -210,7 +210,7 @@ const GpsTracker = (() => {
     const liveEl = document.getElementById('gpsTrackerLive');
     const btn    = document.getElementById('btnTracker');
     if (liveEl) liveEl.classList.add('hidden');
-    if (btn)    { btn.textContent = '▶ Démarrer ma balade'; btn.classList.remove('tracking'); }
+    if (btn)    { btn.innerHTML = '<i class="ic" data-ic="play"></i> Démarrer ma balade'; btn.classList.remove('tracking'); }
     setAccuracyLabel('');
 
     if (sessionKm >= 0.05) {
@@ -224,7 +224,7 @@ const GpsTracker = (() => {
         }).catch(() => {});
       }
       const kmFmt = sessionKm.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      showToast(`✅ ${kmFmt} km ajoutés à votre total !`);
+      showToast(`${kmFmt} km ajoutés à votre total !`);
     } else {
       showToast('Balade trop courte — moins de 50 m enregistrés.');
     }

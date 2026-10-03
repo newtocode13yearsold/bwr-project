@@ -52,11 +52,12 @@
   <link rel="stylesheet" href="css/notif-optin.css" />
   <link rel="stylesheet" href="css/mobile.css" />
   <script src="js/theme.js"></script>
+  <script src="js/icons.js"></script>
   <link rel="stylesheet" href="css/dark.css" />
 </head>
 <body class="routes-body">
 
-  <div id="offline-pill">📶 Hors-ligne — données en cache</div>
+  <div id="offline-pill"><i class="ic" data-ic="wifi"></i> Hors-ligne — données en cache</div>
 
   <header class="header">
     <div class="header-left">
@@ -70,7 +71,7 @@
     </div>
     <div class="header-right">
       <button class="btn-icon" id="btnNavMenu" title="Menu"><span class="btn-emoji"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></span><span class="btn-label">Menu</span></button>
-      <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji">⬇</span><span class="btn-label">Installer</span></button>
+      <button class="btn-icon" id="btnInstallApp" title="Installer l'application" style="display:none"><span class="btn-emoji"><i class="ic" data-ic="download"></i></span><span class="btn-label">Installer</span></button>
       <div id="notifBell" class="notif-bell-wrap"></div>
       <div class="user-menu" id="userMenu"></div>
     </div>
@@ -83,7 +84,7 @@
   <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
     <div class="nav-drawer-header">
       <span class="nav-drawer-logo">BWR</span>
-      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
     </div>
     <nav class="nav-drawer-links">
       <a href="map" class="nav-drawer-item">
@@ -152,10 +153,10 @@
 
       <div class="sheet-handle" aria-hidden="true"></div>
 
-      <!-- ✨ AI planner — describe your walk in one sentence -->
+      <!-- AI planner — describe your walk in one sentence -->
       <div class="ai-planner" id="aiPlanner">
         <div class="ai-input-row">
-          <span class="ai-planner-spark" aria-hidden="true">✨</span>
+          <span class="ai-planner-spark" aria-hidden="true"><i class="ic" data-ic="sparkles"></i></span>
           <input type="text" id="aiInput" class="ai-input"
             placeholder="Décrivez votre balade…"
             aria-label="Décrivez votre balade à l'IA"
@@ -164,9 +165,9 @@
         </div>
         <!-- Example prompts: revealed only while the AI field is focused -->
         <div class="ai-chips" id="aiChips">
-          <button type="button" class="ai-chip" data-q="Une boucle facile de 10 km en forêt">🌲 Boucle 10 km</button>
-          <button type="button" class="ai-chip" data-q="Une sortie vélo de 25 km">🚴 Vélo 25 km</button>
-          <button type="button" class="ai-chip" data-q="Une boucle de 15 km par les Beaux Monts">⛰ Beaux Monts</button>
+          <button type="button" class="ai-chip" data-q="Une boucle facile de 10 km en forêt"><i class="ic" data-ic="tree"></i> Boucle 10 km</button>
+          <button type="button" class="ai-chip" data-q="Une sortie vélo de 25 km"><i class="ic" data-ic="bike"></i> Vélo 25 km</button>
+          <button type="button" class="ai-chip" data-q="Une boucle de 15 km par les Beaux Monts"><i class="ic" data-ic="mountain"></i> Beaux Monts</button>
         </div>
         <div class="ai-feedback hidden" id="aiFeedback"></div>
       </div>
@@ -199,7 +200,7 @@
               placeholder="Chercher un lieu..." autocomplete="off" />
             <div class="search-results hidden" id="searchResults"></div>
           </div>
-          <button class="btn-locate" id="btnLocate" title="Utiliser ma position">📍</button>
+          <button class="btn-locate" id="btnLocate" title="Utiliser ma position"><i class="ic" data-ic="pin"></i></button>
         </div>
 
         <p class="step-hint" id="step3Hint">Ou cliquez directement sur la carte.</p>
@@ -216,7 +217,7 @@
           <p class="cb-empty" id="cbEmpty">Cliquez sur la carte ou cherchez un carrefour pour ajouter des étapes (2 minimum).</p>
           <label class="cb-loop-toggle">
             <input type="checkbox" id="cbReturnStart" />
-            <span>↩ Revenir au départ (boucle)</span>
+            <span><i class="ic" data-ic="undo"></i> Revenir au départ (boucle)</span>
           </label>
         </div>
 
@@ -249,10 +250,10 @@
         <div class="option-group">
           <label class="option-label">Chemins</label>
           <div class="pathtype-grid">
-            <button class="pathtype-btn active" data-type="foot">🌲<span>Forestier</span></button>
-            <button class="pathtype-btn" data-type="bike">🚴<span>Cyclable</span></button>
-            <button class="pathtype-btn" data-type="champs">🌾<span>Champs</span></button>
-            <button class="pathtype-btn" data-type="mix">🗺️<span>Mix</span></button>
+            <button class="pathtype-btn active" data-type="foot"><i class="ic" data-ic="tree"></i><span>Forestier</span></button>
+            <button class="pathtype-btn" data-type="bike"><i class="ic" data-ic="bike"></i><span>Cyclable</span></button>
+            <button class="pathtype-btn" data-type="champs"><i class="ic" data-ic="sprout"></i><span>Champs</span></button>
+            <button class="pathtype-btn" data-type="mix"><i class="ic" data-ic="map"></i><span>Mix</span></button>
           </div>
         </div>
 
@@ -268,16 +269,16 @@
         <div class="option-group">
           <label class="option-label">Déplacement</label>
           <div class="difficulty-group">
-            <button class="diff-btn active" data-transport="foot">🚶 À pied</button>
-            <button class="diff-btn" data-transport="bike">🚴 Vélo</button>
+            <button class="diff-btn active" data-transport="foot"><i class="ic" data-ic="footprints"></i> À pied</button>
+            <button class="diff-btn" data-transport="bike"><i class="ic" data-ic="bike"></i> Vélo</button>
           </div>
         </div>
 
         <div class="option-group" id="priorityGroup">
           <label class="option-label">Priorité</label>
           <div class="difficulty-group">
-            <button class="diff-btn active" data-priority="forest">🌲 Forestier</button>
-            <button class="diff-btn" data-priority="shortest">📏 Plus court</button>
+            <button class="diff-btn active" data-priority="forest"><i class="ic" data-ic="tree"></i> Forestier</button>
+            <button class="diff-btn" data-priority="shortest"><i class="ic" data-ic="ruler"></i> Plus court</button>
           </div>
         </div>
 
@@ -285,8 +286,8 @@
           <label class="option-label">Revêtement</label>
           <div class="difficulty-group">
             <button class="diff-btn active" data-surface="any">Tous</button>
-            <button class="diff-btn" data-surface="natural">🌱 Terre</button>
-            <button class="diff-btn" data-surface="paved">🛣️ Asphalte</button>
+            <button class="diff-btn" data-surface="natural"><i class="ic" data-ic="sprout"></i> Terre</button>
+            <button class="diff-btn" data-surface="paved"><i class="ic" data-ic="route"></i> Asphalte</button>
           </div>
         </div>
         </div><!-- /step2-body -->
@@ -297,7 +298,7 @@
         <!-- Free-tier weekly quota strip (hidden for Pro) -->
         <div class="quota-strip hidden" id="quotaStrip"></div>
         <!-- Loop with no start yet → one tap: locate me + generate -->
-        <button type="button" class="btn-generate btn-quick-loop hidden" id="btnQuickLoop">📍 Boucle depuis ma position</button>
+        <button type="button" class="btn-generate btn-quick-loop hidden" id="btnQuickLoop"><i class="ic" data-ic="pin"></i> Boucle depuis ma position</button>
         <button class="btn-generate" id="btnGenerate" disabled>Calculer le trajet</button>
       </div>
 
@@ -310,15 +311,15 @@
 
         <div class="result-stats">
           <div class="stat">
-            <span class="stat-icon">📏</span>
+            <span class="stat-icon"><i class="ic" data-ic="ruler"></i></span>
             <div><strong id="statDistance">—</strong><small id="statDistanceSub"></small></div>
           </div>
           <div class="stat">
-            <span class="stat-icon">⏱</span>
+            <span class="stat-icon"><i class="ic" data-ic="timer"></i></span>
             <div><strong id="statDuration">—</strong><small>Durée estimée</small></div>
           </div>
           <div class="stat">
-            <span class="stat-icon">⛰</span>
+            <span class="stat-icon"><i class="ic" data-ic="mountain"></i></span>
             <div><strong id="statAscent">—</strong><small>Dénivelé +/-</small></div>
           </div>
         </div>
@@ -332,21 +333,21 @@
         </div>
 
         <!-- Live GPS guidance — track the walk against the planned route -->
-        <button class="btn-follow-route hidden" id="btnFollowRoute">🧭 Suivre l'itinéraire en GPS</button>
+        <button class="btn-follow-route hidden" id="btnFollowRoute"><i class="ic" data-ic="compass"></i> Suivre l'itinéraire en GPS</button>
 
         <div class="result-save-row">
-          <button class="btn-save-route" id="btnSaveRoute">💾 Sauvegarder</button>
-          <button class="btn-share-route" id="btnShareRoute">🔗 Partager</button>
+          <button class="btn-save-route" id="btnSaveRoute"><i class="ic" data-ic="save"></i> Sauvegarder</button>
+          <button class="btn-share-route" id="btnShareRoute"><i class="ic" data-ic="link"></i> Partager</button>
         </div>
 
         <!-- Secondary actions, folded away until needed -->
         <details class="result-more" id="exportMore">
-          <summary>⬇ Exporter &amp; imprimer</summary>
+          <summary><i class="ic" data-ic="download"></i> Exporter &amp; imprimer</summary>
           <div class="result-actions">
-            <button class="btn-gpx" id="btnGPX">⬇ GPX</button>
-            <button class="btn-gpx btn-kml" id="btnKML">⬇ KML</button>
-            <button class="btn-gpx btn-strava" id="btnStrava">↗ Strava</button>
-            <button class="btn-gpx btn-print" id="btnPrint">🖨 Imprimer / PDF</button>
+            <button class="btn-gpx" id="btnGPX"><i class="ic" data-ic="download"></i> GPX</button>
+            <button class="btn-gpx btn-kml" id="btnKML"><i class="ic" data-ic="download"></i> KML</button>
+            <button class="btn-gpx btn-strava" id="btnStrava"><i class="ic" data-ic="arrow-up-right"></i> Strava</button>
+            <button class="btn-gpx btn-print" id="btnPrint"><i class="ic" data-ic="printer"></i> Imprimer / PDF</button>
             <label class="print-topo-opt" id="printTopoOpt">
               <input type="checkbox" id="printTopo"> Carte topo (courbes de niveau)
             </label>
@@ -355,7 +356,7 @@
 
         <!-- Loop "reshape": add carrefours the boucle must pass through (Pro) -->
         <details class="result-more loop-personalize hidden" id="loopPersonalize">
-          <summary>🧭 Passer par des carrefours</summary>
+          <summary><i class="ic" data-ic="compass"></i> Passer par des carrefours</summary>
           <div id="lpPicker">
             <p class="lp-hint">Ajoutez des carrefours que votre boucle doit traverser, puis regénérez-la.</p>
             <div class="cb-carrefour-wrap">
@@ -366,17 +367,17 @@
             <ol class="cb-stops" id="loopViaList"></ol>
             <div class="lp-actions">
               <button type="button" class="lp-map-btn" id="btnAddViaMap">＋ Ajouter sur la carte</button>
-              <button type="button" class="lp-regen-btn" id="btnRegenLoop">🔄 Regénérer la boucle</button>
+              <button type="button" class="lp-regen-btn" id="btnRegenLoop"><i class="ic" data-ic="refresh"></i> Regénérer la boucle</button>
             </div>
           </div>
           <div id="lpLocked" class="lp-locked hidden">
-            <p>🔒 Personnalisez votre boucle — choisissez les carrefours qu'elle doit traverser — avec le plan Pro.</p>
+            <p><i class="ic" data-ic="lock"></i> Personnalisez votre boucle — choisissez les carrefours qu'elle doit traverser — avec le plan Pro.</p>
             <a href="plans" class="lp-cta">Débloquer avec Pro →</a>
           </div>
         </details>
 
         <details class="result-more">
-          <summary>📋 Détails du trajet</summary>
+          <summary><i class="ic" data-ic="clipboard"></i> Détails du trajet</summary>
           <div class="route-resume" id="routeResume"></div>
           <div class="route-breakdown hidden" id="breakdownWrap"></div>
         </details>
@@ -386,11 +387,11 @@
       <div class="planner-tools">
         <div class="tools-grid">
           <div class="gps-tracker-card" id="gpsTrackerCard">
-            <button class="tool-btn btn-gps-track" id="btnTracker" title="Mesurez votre vraie distance parcourue">▶ Démarrer ma balade</button>
+            <button class="tool-btn btn-gps-track" id="btnTracker" title="Mesurez votre vraie distance parcourue"><i class="ic" data-ic="play"></i> Démarrer ma balade</button>
           </div>
           <div class="import-gpx-card" id="importGpxCard">
             <input type="file" id="gpxFileInput" accept=".gpx,application/gpx+xml,application/xml,text/xml" hidden />
-            <button class="tool-btn btn-import-gpx" id="btnImportGpx" title="Votre tracé Strava / Garmin sur la carte BWR">📥 Importer un GPX</button>
+            <button class="tool-btn btn-import-gpx" id="btnImportGpx" title="Votre tracé Strava / Garmin sur la carte BWR"><i class="ic" data-ic="download"></i> Importer un GPX</button>
           </div>
         </div>
         <div class="gps-tracker-live hidden" id="gpsTrackerLive">
@@ -405,7 +406,7 @@
         <!-- Route history (Pro) -->
         <div class="route-history hidden" id="routeHistory">
           <div class="history-header" id="historyToggle">
-            <span>📚 Mes trajets sauvegardés</span>
+            <span><i class="ic" data-ic="book"></i> Mes trajets sauvegardés</span>
             <span class="history-chevron" id="historyChevron">▾</span>
           </div>
           <div class="history-body" id="historyBody">

@@ -7,11 +7,11 @@
 
 // Keep in sync with POI_TYPES in worker/handlers/poi.js.
 const POI_TYPES = {
-  parking:   { icon: '🅿️', label: 'Parking' },
-  water:     { icon: '🚰', label: 'Point d\'eau' },
-  picnic:    { icon: '🧺', label: 'Aire de pique-nique' },
-  viewpoint: { icon: '👀', label: 'Point de vue' },
-  toilet:    { icon: '🚻', label: 'Toilettes' },
+  parking:   { icon: 'parking', label: 'Parking' },
+  water:     { icon: 'droplet', label: 'Point d\'eau' },
+  picnic:    { icon: 'utensils', label: 'Aire de pique-nique' },
+  viewpoint: { icon: 'eye', label: 'Point de vue' },
+  toilet:    { icon: 'toilet', label: 'Toilettes' },
 };
 
 const poiLayer = L.layerGroup();
@@ -28,10 +28,10 @@ function _poiEsc(s) {
 }
 
 function _poiIcon(type) {
-  const t = POI_TYPES[type] || { icon: '📍' };
+  const t = POI_TYPES[type] || { icon: 'pin' };
   return L.divIcon({
     className: 'poi-marker',
-    html: `<span class="poi-pin">${t.icon}</span>`,
+    html: `<span class="poi-pin">${bwrIconFor(t.icon)}</span>`,
     iconSize: [30, 30],
     iconAnchor: [15, 30],
     popupAnchor: [0, -28],
@@ -62,22 +62,22 @@ function renderPois() {
 }
 
 function openPoiPopup(poi) {
-  const t = POI_TYPES[poi.type] || { icon: '📍', label: poi.type };
+  const t = POI_TYPES[poi.type] || { icon: 'pin', label: poi.type };
   const isAdmin = _cachedUser?.role === 'admin';
   const isOwner = _cachedUser?.id && poi.createdBy === _cachedUser.id;
   const canEdit = isAdmin || isOwner;
 
   const controls = canEdit
     ? `<div class="poi-popup-actions">
-        <button class="rv-btn rv-btn-ghost" id="poiEdit-${poi.id}">✎ Modifier</button>
-        <button class="rv-btn rv-btn-danger" id="poiDel-${poi.id}">🗑 Supprimer</button>
+        <button class="rv-btn rv-btn-ghost" id="poiEdit-${poi.id}"><i class="ic" data-ic="pencil"></i> Modifier</button>
+        <button class="rv-btn rv-btn-danger" id="poiDel-${poi.id}"><i class="ic" data-ic="trash"></i> Supprimer</button>
       </div>` : '';
 
   L.popup({ maxWidth: 260 })
     .setLatLng([poi.lat, poi.lon])
     .setContent(`
       <div class="popup poi-popup">
-        <strong>${t.icon} ${_poiEsc(poi.name || t.label)}</strong>
+        <strong>${bwrIconFor(t.icon)} ${_poiEsc(poi.name || t.label)}</strong>
         <span class="poi-type-tag">${t.label}</span>
         ${poi.note ? `<p class="popup-notes">${_poiEsc(poi.note)}</p>` : ''}
         <div class="poi-popup-meta">Ajouté par ${_poiEsc(poi.createdByName || 'un membre')}</div>
@@ -96,7 +96,7 @@ function openPoiPopup(poi) {
           _pois = _pois.filter(p => p.id !== poi.id);
           renderPois();
           map.closePopup();
-          showToast('🗑 Point supprimé.');
+          showToast('Point supprimé.');
         } else { showToast('Erreur lors de la suppression.'); }
       } catch { showToast('Erreur réseau.'); }
     });
@@ -107,14 +107,14 @@ function openPoiPopup(poi) {
 function openPoiForm(poi, latlng) {
   const editing = !!poi;
   const typeBtns = Object.entries(POI_TYPES).map(([id, t]) =>
-    `<button type="button" class="poi-type-btn ${editing && poi.type === id ? 'active' : ''}" data-type="${id}">${t.icon} ${t.label}</button>`
+    `<button type="button" class="poi-type-btn ${editing && poi.type === id ? 'active' : ''}" data-type="${id}">${bwrIconFor(t.icon)} ${t.label}</button>`
   ).join('');
 
   const popup = L.popup({ maxWidth: 280, autoClose: false, closeOnClick: false })
     .setLatLng(latlng)
     .setContent(`
       <div class="popup poi-form">
-        <strong>${editing ? '✎ Modifier le point' : '➕ Nouveau point'}</strong>
+        <strong>${editing ? '<i class="ic" data-ic="pencil"></i> Modifier le point' : '<i class="ic" data-ic="plus"></i> Nouveau point'}</strong>
         <div class="poi-type-grid" id="poiTypes">${typeBtns}</div>
         <input type="text" class="poi-input" id="poiName" maxlength="120"
           placeholder="Nom (ex. Parking des Beaux Monts)" value="${editing ? _poiEsc(poi.name) : ''}">
@@ -162,10 +162,10 @@ function openPoiForm(poi, latlng) {
           renderPois();
           map.closePopup();
           exitPoiAddMode();
-          showToast(editing ? '✅ Point mis à jour.' : '✅ Point ajouté, merci !');
+          showToast(editing ? 'Point mis à jour.' : 'Point ajouté, merci !');
         } else if (res.status === 403) {
           const d = await res.json().catch(() => ({}));
-          showToast(`🔒 ${d.error || 'Abonnement Pro requis pour ajouter un point.'}`);
+          showToast(`${d.error || 'Abonnement Pro requis pour ajouter un point.'}`);
         } else if (res.status === 401) {
           showToast('Connectez-vous pour ajouter un point.');
         } else {
@@ -182,7 +182,7 @@ function enterPoiAddMode() {
   window.poiAddModeActive = true;
   map.getContainer().classList.add('poi-add-cursor');
   document.getElementById('poiAddBtn')?.classList.add('active');
-  showToast('📍 Cliquez sur la carte pour placer le point.');
+  showToast('Cliquez sur la carte pour placer le point.');
 }
 function exitPoiAddMode() {
   window.poiAddModeActive = false;
@@ -209,10 +209,10 @@ const PoiControl = L.Control.extend({
     const canAdd = (typeof BWR !== 'undefined') && BWR.can('poi_create', _userPlan);
     const el = L.DomUtil.create('div', 'poi-control leaflet-bar');
     el.innerHTML = `
-      <button id="poiToggleBtn" class="poi-ctrl-btn" title="Afficher / masquer les points d'intérêt">📍 Points</button>
+      <button id="poiToggleBtn" class="poi-ctrl-btn" title="Afficher / masquer les points d'intérêt"><i class="ic" data-ic="pin"></i> Points</button>
       ${canAdd
-        ? '<button id="poiAddBtn" class="poi-ctrl-btn poi-ctrl-add" title="Ajouter un point d\'intérêt">➕</button>'
-        : `<button id="poiAddLockedBtn" class="poi-ctrl-btn poi-ctrl-add" title="Ajouter un point d'intérêt">➕${typeof BWR !== 'undefined' ? BWR.proOnlyTag() : ''}</button>`}
+        ? '<button id="poiAddBtn" class="poi-ctrl-btn poi-ctrl-add" title="Ajouter un point d\'intérêt"><i class="ic" data-ic="plus"></i></button>'
+        : `<button id="poiAddLockedBtn" class="poi-ctrl-btn poi-ctrl-add" title="Ajouter un point d'intérêt"><i class="ic" data-ic="plus"></i>${typeof BWR !== 'undefined' ? BWR.proOnlyTag() : ''}</button>`}
     `;
     L.DomEvent.disableClickPropagation(el);
     L.DomEvent.disableScrollPropagation(el);
@@ -224,7 +224,7 @@ const PoiControl = L.Control.extend({
         document.getElementById('poiToggleBtn')?.classList.toggle('off', !_poiLayerVisible);
       });
       document.getElementById('poiAddLockedBtn')?.addEventListener('click', () => {
-        showToast('🔒 Ajouter un point d\'intérêt est réservé aux membres Pro — voir la page Plan');
+        showToast('Ajouter un point d\'intérêt est réservé aux membres Pro — voir la page Plan');
       });
       document.getElementById('poiAddBtn')?.addEventListener('click', () => {
         if (window.poiAddModeActive) exitPoiAddMode();

@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="css/mobile.css" />
   <script src="js/theme.js"></script>
   <style>
+  <script src="js/icons.js"></script>
     html, body { height: auto !important; overflow: auto !important; }
     body { background: var(--surface-1, #fafbf7); }
 
@@ -149,7 +150,7 @@
   <div class="nav-drawer hidden" id="navDrawer" role="dialog" aria-label="Navigation">
     <div class="nav-drawer-header">
       <span class="nav-drawer-logo">BWR</span>
-      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer">✕</button>
+      <button class="nav-drawer-close" id="btnNavDrawerClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
     </div>
     <nav class="nav-drawer-links">
       <a href="map" class="nav-drawer-item">
@@ -193,12 +194,12 @@
 
   <!-- ── Hero ── -->
   <div class="page-hero">
-    <div class="page-hero-badge">📓 Journal</div>
+    <div class="page-hero-badge"><i class="ic" data-ic="book"></i> Journal</div>
     <h1>Mes sorties</h1>
     <p>Chaque balade enregistrée au GPS, avec distance, durée et dénivelé — à revoir, rejouer et exporter quand vous voulez.</p>
     <div class="act-import">
       <input type="file" id="gpxImportInput" accept=".gpx,application/gpx+xml,application/xml,text/xml" hidden />
-      <button class="act-import-btn" id="btnImportActivity">📥 Importer un GPX</button>
+      <button class="act-import-btn" id="btnImportActivity"><i class="ic" data-ic="download"></i> Importer un GPX</button>
       <span class="act-import-hint">Depuis Strava, Garmin, Komoot…</span>
     </div>
   </div>
@@ -213,11 +214,11 @@
     <div class="replay-card">
       <div class="replay-head">
         <h3 id="replayTitle">Rejouer</h3>
-        <button class="replay-close" id="replayClose" aria-label="Fermer">✕</button>
+        <button class="replay-close" id="replayClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
       </div>
       <div id="replayMap"></div>
       <div class="replay-controls">
-        <button class="replay-play" id="replayPlay" aria-label="Lecture">▶</button>
+        <button class="replay-play" id="replayPlay" aria-label="Lecture"><i class="ic" data-ic="play"></i></button>
         <input type="range" class="replay-scrub" id="replayScrub" min="0" max="1000" value="0" />
         <span class="replay-time" id="replayTime">0 %</span>
       </div>

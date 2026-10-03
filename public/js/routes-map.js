@@ -91,15 +91,15 @@ function initMap() {
 document.getElementById('btnLocate').addEventListener('click', () => {
   if (!navigator.geolocation) return;
   const btn = document.getElementById('btnLocate');
-  btn.textContent = '⏳';
+  btn.innerHTML = '<i class="ic" data-ic="hourglass"></i>';
   navigator.geolocation.getCurrentPosition(
     pos => {
-      btn.textContent = '📍';
+      btn.innerHTML = '<i class="ic" data-ic="pin"></i>';
       const { latitude: lat, longitude: lng } = pos.coords;
       map.setView([lat, lng], 15);
       if (mode) onMapClick({ latlng: { lat, lng } });
     },
-    () => { btn.textContent = '📍'; }
+    () => { btn.innerHTML = '<i class="ic" data-ic="pin"></i>'; }
   );
 });
 
@@ -370,10 +370,10 @@ async function handleSharedRouteParam() {
     enableRouteFollow(route.coords);
 
     const km   = (route.meters / 1000).toFixed(2);
-    const modeIcon = route.mode === 'loop' ? '🔄 Boucle' : '➡️ A → B';
+    const modeIcon = route.mode === 'loop' ? '<i class="ic" data-ic="refresh"></i> Boucle' : '<i class="ic" data-ic="arrow-right"></i> A → B';
     const banner = document.createElement('div');
     banner.className = 'shared-route-banner';
-    banner.innerHTML = `🔗 Trajet partagé : <strong>${escapeHtml(route.name)}</strong> — ${modeIcon}, ${km} km`;
+    banner.innerHTML = `<i class="ic" data-ic="link"></i> Trajet partagé : <strong>${escapeHtml(route.name)}</strong> — ${modeIcon}, ${km} km`;
     document.getElementById('routeResult').prepend(banner);
     document.getElementById('routeResult').classList.remove('hidden');
   } catch {

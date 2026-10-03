@@ -14,7 +14,7 @@
   function updateIcons() {
     var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     document.querySelectorAll('.theme-toggle-icon').forEach(function (el) {
-      el.textContent = isDark ? '☀️' : '🌙';
+      el.innerHTML = isDark ? '<i class="ic" data-ic="sun"></i>' : '<i class="ic" data-ic="moon"></i>';
     });
   }
 

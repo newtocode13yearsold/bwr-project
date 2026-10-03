@@ -161,7 +161,7 @@ async function downloadOfflineZone(zone, onProgress, opts = {}) {
 function openOfflineZonePicker() {
   if (typeof BWR !== 'undefined' && typeof _userPlan !== 'undefined'
       && !BWR.can('offline_cache', _userPlan)) {
-    showToast('🔒 Cartes hors-ligne disponibles avec Pro — voir la page Plan');
+    showToast('Cartes hors-ligne disponibles avec Pro — voir la page Plan');
     return;
   }
 
@@ -171,10 +171,10 @@ function openOfflineZonePicker() {
     const cached = localStorage.getItem(_zoneCacheKey(z.id)) === '1';
     return `
       <div class="offline-zone-row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border,#e5e7eb)">
-        <span style="font-size:0.9rem">🌲 ${z.name}</span>
+        <span style="font-size:0.9rem"><i class="ic" data-ic="tree"></i> ${z.name}</span>
         <button class="btn-secondary offline-zone-btn" data-zone="${z.id}"
           style="white-space:nowrap;font-size:0.82rem;padding:5px 11px">
-          ${cached ? '✅ Téléchargée' : '⬇ Télécharger'}
+          ${cached ? '<i class="ic" data-ic="check-circle"></i> Téléchargée' : '<i class="ic" data-ic="download"></i> Télécharger'}
         </button>
       </div>`;
   }).join('');
@@ -184,7 +184,7 @@ function openOfflineZonePicker() {
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
     <div class="modal-card" style="max-width:420px">
-      <button class="modal-close-x" id="offlineZoneClose" aria-label="Fermer">✕</button>
+      <button class="modal-close-x" id="offlineZoneClose" aria-label="Fermer"><i class="ic" data-ic="x"></i></button>
       <h3>Cartes hors-ligne</h3>
       <p style="font-size:0.85rem;color:#6b7280;margin-bottom:6px">
         Téléchargez une forêt pour la consulter sans connexion (zoom 10–15).
@@ -204,27 +204,27 @@ function openOfflineZonePicker() {
       if (!zone) return;
       btn.dataset.downloading = '1';
       btn.disabled = true;
-      btn.textContent = '⏳ 0%';
+      btn.textContent = '0%';
       try {
         const { total, ok, failed } = await downloadOfflineZone(zone, info => {
           // Phase 2 (gap-filling) gets its own icon so the user can see the app
           // is patching holes rather than stuck at the same percentage.
-          btn.textContent = info.phase === 'fill' ? `🧩 ${info.pct}%` : `⏳ ${info.pct}%`;
+          btn.textContent = info.phase === 'fill' ? `${info.pct}%` : `${info.pct}%`;
         });
         if (failed === 0) {
-          btn.textContent = '✅ Téléchargée';
-          showToast(`✅ ${zone.name} sauvegardée hors-ligne ! (${ok} tuiles)`);
+          btn.textContent = 'Téléchargée';
+          showToast(`${zone.name} sauvegardée hors-ligne ! (${ok} tuiles)`);
         } else if (ok / total >= 0.995) {
           // essentially complete — flagged as cached, a stray blocked tile aside
-          btn.textContent = '✅ Téléchargée';
-          showToast(`✅ ${zone.name} sauvegardée (${ok}/${total} tuiles)`);
+          btn.textContent = 'Téléchargée';
+          showToast(`${zone.name} sauvegardée (${ok}/${total} tuiles)`);
         } else {
           // too patchy to trust offline — keep it as a retry, don't fake success
-          btn.textContent = '⚠️ Incomplète — réessayer';
-          showToast(`⚠️ ${zone.name} : ${ok}/${total} tuiles (le serveur a bloqué le reste). Réessayez dans un instant.`);
+          btn.textContent = 'Incomplète — réessayer';
+          showToast(`${zone.name} : ${ok}/${total} tuiles (le serveur a bloqué le reste). Réessayez dans un instant.`);
         }
       } catch {
-        btn.textContent = '⬇ Réessayer';
+        btn.textContent = 'Réessayer';
         showToast('Erreur lors du téléchargement hors-ligne');
       } finally {
         delete btn.dataset.downloading;
@@ -263,7 +263,7 @@ function _autoBanner(zone) {
     'background:var(--surface-0,#fff);color:var(--text,#111);border:1px solid var(--border,#e5e7eb);' +
     'box-shadow:0 6px 24px rgba(0,0,0,.18);border-radius:12px;padding:10px 14px;font-size:0.85rem';
   el.innerHTML =
-    `<span id="bwrAutoOfflineTxt">📥 Téléchargement de ${zone.name} pour la carte hors-ligne… 0%</span>` +
+    `<span id="bwrAutoOfflineTxt"><i class="ic" data-ic="download"></i> Téléchargement de ${zone.name} pour la carte hors-ligne… 0%</span>` +
     `<button id="bwrAutoOfflineCancel" class="btn-secondary" style="white-space:nowrap;padding:4px 10px;font-size:0.8rem">Annuler</button>`;
   document.body.appendChild(el);
   return el;
@@ -295,14 +295,14 @@ async function autoDownloadNearestZone() {
 
   try {
     const res = await downloadOfflineZone(zone, info => {
-      if (txt) txt.textContent =
-        `📥 ${zone.name} hors-ligne… ${info.pct}%${info.phase === 'fill' ? ' (finalisation)' : ''}`;
+      if (txt) txt.innerHTML =
+        `<i class="ic" data-ic="download"></i> ${zone.name} hors-ligne… ${info.pct}%${info.phase === 'fill' ? ' (finalisation)' : ''}`;
     }, { shouldAbort: () => cancelled });
 
     if (cancelled || res.aborted) return; // banner already removed on cancel
     banner.remove();
     if (res.failed === 0 || res.ok / res.total >= 0.995) {
-      if (typeof showToast === 'function') showToast(`✅ ${zone.name} disponible hors-ligne`);
+      if (typeof showToast === 'function') showToast(`${zone.name} disponible hors-ligne`);
     }
     // A patchy run stays silent + un-flagged; it'll retry on the next map open.
   } catch {

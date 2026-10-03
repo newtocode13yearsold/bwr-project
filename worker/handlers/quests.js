@@ -19,14 +19,14 @@ import { sendPush } from '../webpush.js';
 //   inboxmsg:{ts}:{id} → the win notification, delivered to the user's inbox
 
 const ONE_TIME_QUESTS = {
-  o1: { metric: 'pathGrades', target: 200, title: 'Grand cartographe',    label: '1 mois de Pro offert ⭐',           plan: 'pro', days: 30 },
-  o2: { metric: 'reports',    target: 100, title: 'Gardien de la forêt',  label: '1 semaine de Pro + badge ⭐',       plan: 'pro', days: 7,
-        badge: { id: 'quest_guardian', icon: '🚧', label: 'Gardien de la forêt' } },
-  o3: { metric: 'km',         target: 500, title: 'Marcheur infatigable', label: 'Badge exclusif 🏅',
-        badge: { id: 'quest_walker',    icon: '🏅', label: 'Marcheur infatigable' } },
-  o4: { metric: 'routes',     target: 100, title: 'Explorateur assidu',   label: 'Badge Explorateur 🗺️',
-        badge: { id: 'quest_explorer',  icon: '🗺️', label: 'Explorateur assidu' } },
-  o5: { metric: 'bestStreak', target: 30,  title: 'Assidu légendaire',    label: '2 semaines de Pro offertes ⭐',     plan: 'pro', days: 14 },
+  o1: { metric: 'pathGrades', target: 200, title: 'Grand cartographe',    label: '1 mois de Pro offert',           plan: 'pro', days: 30 },
+  o2: { metric: 'reports',    target: 100, title: 'Gardien de la forêt',  label: '1 semaine de Pro + badge',       plan: 'pro', days: 7,
+        badge: { id: 'quest_guardian', icon: 'construction', label: 'Gardien de la forêt' } },
+  o3: { metric: 'km',         target: 500, title: 'Marcheur infatigable', label: 'Badge exclusif',
+        badge: { id: 'quest_walker',    icon: 'medal', label: 'Marcheur infatigable' } },
+  o4: { metric: 'routes',     target: 100, title: 'Explorateur assidu',   label: 'Badge Explorateur',
+        badge: { id: 'quest_explorer',  icon: 'map', label: 'Explorateur assidu' } },
+  o5: { metric: 'bestStreak', target: 30,  title: 'Assidu légendaire',    label: '2 semaines de Pro offertes',     plan: 'pro', days: 14 },
 };
 
 // Plan tiers, low → high. Keys are CANONICAL ids (see normalisePlan in kv.js),
@@ -68,11 +68,11 @@ async function sendQuestInbox(env, user, def, planApplied) {
     const until = new Date(planApplied.planExpiresAt).toLocaleDateString('fr-FR');
     body += ` Ton abonnement Pro est actif jusqu'au ${until}.`;
   }
-  if (def.badge) body += ` Le badge « ${def.badge.icon} ${def.badge.label} » a été ajouté à ton profil.`;
+  if (def.badge) body += ` Le badge « ${def.badge.label} » a été ajouté à ton profil.`;
   const message = {
     id,
     createdAt: now,
-    subject: `🎉 Récompense débloquée : ${def.label}`,
+    subject: `Récompense débloquée : ${def.label}`,
     body,
     target: user.id,
     targetName: user.name || '',

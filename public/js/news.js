@@ -5,12 +5,12 @@ let activeFilter = 'all';
 
 // Category catalogue — keep slugs in sync with NEWS_CATEGORIES in worker/handlers/content.js.
 const NEWS_CATEGORIES = {
-  foret:     { label: 'Forêt',          icon: '🌲' },
-  evenement: { label: 'Événement',      icon: '📅' },
-  faune:     { label: 'Faune & flore',  icon: '🦌' },
-  securite:  { label: 'Sécurité',       icon: '⚠️' },
-  travaux:   { label: 'Travaux',        icon: '🚧' },
-  app:       { label: 'App BWR',        icon: '📱' },
+  foret:     { label: 'Forêt',          icon: 'tree' },
+  evenement: { label: 'Événement',      icon: 'calendar' },
+  faune:     { label: 'Faune & flore',  icon: 'deer' },
+  securite:  { label: 'Sécurité',       icon: 'alert' },
+  travaux:   { label: 'Travaux',        icon: 'construction' },
+  app:       { label: 'App BWR',        icon: 'smartphone' },
 };
 const catOf = (item) => NEWS_CATEGORIES[item.category] ? item.category : 'foret';
 
@@ -38,7 +38,7 @@ function updateNav() {
   const loginLink = document.getElementById('navLogin');
   if (!loginLink) return;
   if (currentUser) {
-    loginLink.textContent = '👤 ' + (currentUser.name?.split(' ')[0] || 'Profil');
+    loginLink.textContent = '' + (currentUser.name?.split(' ')[0] || 'Profil');
     loginLink.href = 'profile';
   }
 }
@@ -66,7 +66,7 @@ function renderFilters() {
   for (const [slug, cat] of Object.entries(NEWS_CATEGORIES)) {
     if (!present.has(slug)) continue;
     chips.push(
-      `<button class="news-chip ${activeFilter === slug ? 'active' : ''}" data-filter="${slug}">${cat.icon} ${cat.label}</button>`
+      `<button class="news-chip ${activeFilter === slug ? 'active' : ''}" data-filter="${slug}">${bwrIconFor(cat.icon)} ${cat.label}</button>`
     );
   }
   bar.innerHTML = chips.join('');
@@ -88,7 +88,7 @@ function renderFeed() {
   attachFadeObserver();
 }
 
-const FOREST_PLACEHOLDERS = ['🌲', '🌳', '🦌', '🍄', '🌿', '🐦'];
+const FOREST_PLACEHOLDERS = ['<i class="ic" data-ic="tree"></i>', '<i class="ic" data-ic="tree-round"></i>', '<i class="ic" data-ic="deer"></i>', '<i class="ic" data-ic="mushroom"></i>', '<i class="ic" data-ic="leaf"></i>', '<i class="ic" data-ic="bird"></i>'];
 
 function newsCard(item) {
   const date = new Date(item.createdAt).toLocaleDateString('fr-FR', {
@@ -124,7 +124,7 @@ function newsCard(item) {
            ${escHtml(item.urlLabel || 'Lire l\'article')} →
          </a>`
       : `<span class="news-link news-link-locked" title="Réservé aux membres Pro">
-           ⭐ ${escHtml(item.urlLabel || 'Lire l\'article')} →
+           <i class="ic" data-ic="star"></i> ${escHtml(item.urlLabel || 'Lire l\'article')} →
          </span>`
     : '';
   const adminControls = currentUser?.role === 'admin'
@@ -140,12 +140,12 @@ function newsCard(item) {
     <div class="news-reactions">
       <button class="news-react news-like ${myReaction === 'like' ? 'active' : ''}"
               data-react-id="${item.id}" data-react-type="like" aria-label="J'aime">
-        <span class="news-react-icon">👍</span>
+        <span class="news-react-icon"><i class="ic" data-ic="thumbs-up"></i></span>
         <span class="news-react-count" data-like-count="${item.id}">${item.likes || 0}</span>
       </button>
       <button class="news-react news-dislike ${myReaction === 'dislike' ? 'active' : ''}"
               data-react-id="${item.id}" data-react-type="dislike" aria-label="Je n'aime pas">
-        <span class="news-react-icon">👎</span>
+        <span class="news-react-icon"><i class="ic" data-ic="thumbs-down"></i></span>
         <span class="news-react-count" data-dislike-count="${item.id}">${item.dislikes || 0}</span>
       </button>
     </div>`;
@@ -155,7 +155,7 @@ function newsCard(item) {
       ${imgHtml}
       <div class="news-meta">
         <span class="news-date">${date}</span>
-        <span class="news-cat-badge">${NEWS_CATEGORIES[catOf(item)].icon} ${escHtml(NEWS_CATEGORIES[catOf(item)].label)}</span>
+        <span class="news-cat-badge">${bwrIconFor(NEWS_CATEGORIES[catOf(item)].icon)} ${escHtml(NEWS_CATEGORIES[catOf(item)].label)}</span>
       </div>
       <h2 class="news-title">${escHtml(item.title)}</h2>
       ${contentHtml}

@@ -6,33 +6,33 @@
 // irrelevant; they are all defined by the time the boot IIFE calls them.
 
 const TRAIL_TIPS = [
-  '🌲 Essayez le Carrefour du Puits du Roi aujourd\'hui !',
-  '🦌 Observez la faune au lever du jour.',
-  '🍂 Sortie automnale parfaite pour les couleurs.',
-  '🥾 10 km en boucle, ça vous tente ?',
-  '🌳 Découvrez les vieux chênes des Beaux Monts.',
-  '🌅 Profitez de la lumière dorée du matin.',
-  '🏞️ Tentez un nouveau sentier inconnu.',
-  '🍄 Ouvrez l\'œil pour les champignons.',
-  '🦊 Restez silencieux, vous verrez peut-être un renard.',
-  '⛰️ Mont Saint-Pierre — panorama garanti !',
-  '🌿 Sortie courte mais intense : 5 km en 1h.',
-  '🦉 Sortie crépusculaire pour écouter la chouette.',
-  '🐗 Prenez le sentier des Grands Monts pour croiser des sangliers.',
-  '🌊 Après la pluie, les rus de la forêt reprennent vie.',
-  '🍁 Saison idéale pour les photos en sous-bois.',
+  'Essayez le Carrefour du Puits du Roi aujourd\'hui !',
+  'Observez la faune au lever du jour.',
+  'Sortie automnale parfaite pour les couleurs.',
+  '10 km en boucle, ça vous tente ?',
+  'Découvrez les vieux chênes des Beaux Monts.',
+  'Profitez de la lumière dorée du matin.',
+  'Tentez un nouveau sentier inconnu.',
+  'Ouvrez l\'œil pour les champignons.',
+  'Restez silencieux, vous verrez peut-être un renard.',
+  'Mont Saint-Pierre — panorama garanti !',
+  'Sortie courte mais intense : 5 km en 1h.',
+  'Sortie crépusculaire pour écouter la chouette.',
+  'Prenez le sentier des Grands Monts pour croiser des sangliers.',
+  'Après la pluie, les rus de la forêt reprennent vie.',
+  'Saison idéale pour les photos en sous-bois.',
 ];
 
 // Badges de collection remportés à la roue. Stockés comme un tableau d'ids dans
 // localStorage ('bwr_collectible_badges'). Partagé avec profile-plan.js (chargé
 // après celui-ci) qui les rend dans la grille de badges du profil.
 const COLLECTIBLE_BADGES = [
-  { id: 'cb_chene',      icon: '🌳', label: 'Vieux Chêne' },
-  { id: 'cb_cerf',       icon: '🦌', label: 'Cerf Majestueux' },
-  { id: 'cb_renard',     icon: '🦊', label: 'Renard Rusé' },
-  { id: 'cb_chouette',   icon: '🦉', label: 'Chouette Nocturne' },
-  { id: 'cb_champignon', icon: '🍄', label: 'Cueilleur de Champignons' },
-  { id: 'cb_sanglier',   icon: '🐗', label: 'Sanglier des Grands Monts' },
+  { id: 'cb_chene',      icon: 'tree-round', label: 'Vieux Chêne' },
+  { id: 'cb_cerf',       icon: 'deer', label: 'Cerf Majestueux' },
+  { id: 'cb_renard',     icon: 'fox', label: 'Renard Rusé' },
+  { id: 'cb_chouette',   icon: 'owl', label: 'Chouette Nocturne' },
+  { id: 'cb_champignon', icon: 'mushroom', label: 'Cueilleur de Champignons' },
+  { id: 'cb_sanglier',   icon: 'paw', label: 'Sanglier des Grands Monts' },
 ];
 
 function ownedCollectibles() {
@@ -83,6 +83,25 @@ function _initWheelCanvas() {
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
   return ctx;
+}
+
+// Line icons drawn on the canvas: the icon SVG (js/icons.js) loaded as an
+// image, cached per icon + colour. The wheel redraws once an image arrives.
+const _wheelIconCache = {};
+function _wheelIconImg(v, color) {
+  const name = window.bwrIconName && bwrIconName(v);
+  if (!name) return null;
+  const key = name + color;
+  let img = _wheelIconCache[key];
+  if (!img) {
+    img = new Image();
+    img.onload = () => _drawWheelCanvas(_wheelRotation);
+    // width/height give the SVG an intrinsic size (else naturalWidth is 0)
+    img.src = 'data:image/svg+xml,' + encodeURIComponent(
+      bwrIcon(name).replace('<svg ', '<svg width="48" height="48" ').replace(/currentColor/g, color));
+    _wheelIconCache[key] = img;
+  }
+  return img.complete && img.naturalWidth ? img : null;
 }
 
 function _drawWheelCanvas(rotation) {
@@ -143,8 +162,9 @@ function _drawWheelCanvas(rotation) {
     ctx.rotate(midA + Math.PI / 2);
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = seg.sweep > 0.9 ? '17px serif' : '13px serif';
-    ctx.fillText(seg.prize.icon, 0, 0);
+    const isz = seg.sweep > 0.9 ? 18 : 14;
+    const img = _wheelIconImg(seg.prize.icon, ink);
+    if (img) ctx.drawImage(img, -isz / 2, -isz / 2 - 2, isz, isz);
 
     if (seg.sweep > 0.6) {
       ctx.font      = `600 ${seg.sweep > 1.1 ? 9 : 7.5}px system-ui, sans-serif`;
@@ -241,17 +261,17 @@ function _animateWheelSpin(prizeIndex, onDone) {
 //   1 in 120 -> weight 7 ; 1 in 70 -> weight 12
 const WHEEL_PRIZES = {
   free: [
-    { id: 'bonus_route',  icon: '🎫', label: '+1 trajet bonus',      desc: 'Un trajet supplémentaire cette semaine',    type: 'bonus_route',                           weight: 228 },
-    { id: 'lucky_badge',  icon: '🍀', label: 'Badge Chanceux',       desc: 'Badge exclusif de la roue de la chance',   type: 'badge',                                weight: 189 },
-    { id: 'collectible',  icon: '🎖️', label: 'Badge Nature',        desc: 'Un badge de collection de la forêt',       type: 'collectible',                          weight: 195 },
-    { id: 'trail_tip',    icon: '🌲', label: 'Conseil sentier',       desc: 'Une suggestion pour votre prochaine sortie',  type: 'tip',                                  weight: 228 },
+    { id: 'bonus_route',  icon: 'ticket', label: '+1 trajet bonus',      desc: 'Un trajet supplémentaire cette semaine',    type: 'bonus_route',                           weight: 228 },
+    { id: 'lucky_badge',  icon: 'clover', label: 'Badge Chanceux',       desc: 'Badge exclusif de la roue de la chance',   type: 'badge',                                weight: 189 },
+    { id: 'collectible',  icon: 'medal', label: 'Badge Nature',        desc: 'Un badge de collection de la forêt',       type: 'collectible',                          weight: 195 },
+    { id: 'trail_tip',    icon: 'tree', label: 'Conseil sentier',       desc: 'Une suggestion pour votre prochaine sortie',  type: 'tip',                                  weight: 228 },
   ],
   pro: [
-    { id: 'exclusive_badge', icon: '✨', label: 'Badge exclusif',      desc: 'Badge animé réservé aux membres Pro',     type: 'badge',                                weight: 12  },
-    { id: 'lucky_badge',  icon: '🍀', label: 'Badge Chanceux',        desc: 'Badge exclusif de la roue de la chance',  type: 'badge',                                weight: 144 },
-    { id: 'collectible',  icon: '🎖️', label: 'Badge Nature',         desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 182 },
-    { id: 'collectible2', icon: '🏅', label: 'Badge Forêt',          desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 228 },
-    { id: 'trail_tip',    icon: '🌲', label: 'Conseil sentier',        desc: 'Une suggestion pour votre prochaine sortie', type: 'tip',                                  weight: 274 },
+    { id: 'exclusive_badge', icon: 'sparkles', label: 'Badge exclusif',      desc: 'Badge animé réservé aux membres Pro',     type: 'badge',                                weight: 12  },
+    { id: 'lucky_badge',  icon: 'clover', label: 'Badge Chanceux',        desc: 'Badge exclusif de la roue de la chance',  type: 'badge',                                weight: 144 },
+    { id: 'collectible',  icon: 'medal', label: 'Badge Nature',         desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 182 },
+    { id: 'collectible2', icon: 'medal', label: 'Badge Forêt',          desc: 'Un badge de collection de la forêt',      type: 'collectible',                          weight: 228 },
+    { id: 'trail_tip',    icon: 'tree', label: 'Conseil sentier',        desc: 'Une suggestion pour votre prochaine sortie', type: 'tip',                                  weight: 274 },
   ],
 };
 
@@ -340,7 +360,7 @@ async function spinWheel(plan) {
       prize.label = `Badge ${won.label}`;
       prize.desc  = 'Ajouté à votre collection de badges de la forêt !';
     } else {
-      prize.icon  = '🌲';
+      prize.icon  = 'tree';
       prize.label = 'Conseil sentier';
       prize.type  = 'tip';
       prize.desc  = _randomTip();
@@ -372,18 +392,18 @@ async function spinWheel(plan) {
 
 // ── Win reveal ────────────────────────────────────────────────────────────────
 // A "conseil" is delivered by a character of the forest, not a dry label.
-// [emoji of who speaks, how they say it]
+// [icon of who speaks, how they say it]
 const TIP_INTROS = [
-  ['🦉', 'La vieille chouette du carrefour ouvre un œil et vous glisse un secret…'],
-  ['🌳', 'Un chêne de 300 ans se penche vers vous et murmure…'],
-  ['🦊', 'Un renard a laissé ce petit mot sous une feuille morte…'],
-  ['🍄', 'Les champignons ont tenu conseil toute la nuit. Leur verdict :'],
-  ['🦌', 'Le grand cerf s\'arrête au milieu de l\'allée et vous confie…'],
-  ['🐿️', 'Un écureuil pressé vous lance ce conseil entre deux noisettes…'],
-  ['🧭', 'Votre boussole s\'affole… puis pointe vers cette sagesse :'],
-  ['🌬️', 'Le vent se lève dans les hêtres et chuchote à votre oreille…'],
-  ['🐗', 'Un sanglier bougon grommelle, mais il a raison :'],
-  ['🌙', 'Les étoiles au-dessus de Compiègne s\'alignent pour vous dire…'],
+  ['owl', 'La vieille chouette du carrefour ouvre un œil et vous glisse un secret…'],
+  ['tree-round', 'Un chêne de 300 ans se penche vers vous et murmure…'],
+  ['fox', 'Un renard a laissé ce petit mot sous une feuille morte…'],
+  ['mushroom', 'Les champignons ont tenu conseil toute la nuit. Leur verdict :'],
+  ['deer', 'Le grand cerf s\'arrête au milieu de l\'allée et vous confie…'],
+  ['squirrel', 'Un écureuil pressé vous lance ce conseil entre deux noisettes…'],
+  ['compass', 'Votre boussole s\'affole… puis pointe vers cette sagesse :'],
+  ['wind', 'Le vent se lève dans les hêtres et chuchote à votre oreille…'],
+  ['paw', 'Un sanglier bougon grommelle, mais il a raison :'],
+  ['moon', 'Les étoiles au-dessus de Compiègne s\'alignent pour vous dire…'],
 ];
 
 const WIN_TITLES = ['Gagné !', 'Bravo !', 'Jackpot forestier !', 'La roue a parlé !'];
@@ -403,6 +423,16 @@ async function _fetchTrailTip() {
   return _randomTip();
 }
 
+// Line-icon element for an icon name (or a legacy emoji from an older saved
+// result) — see js/icons.js.
+function _ic(v) {
+  const n = document.createElement('i');
+  n.className = 'ic';
+  const name = window.bwrIconName && bwrIconName(v);
+  if (name) n.dataset.ic = name;
+  return n;
+}
+
 function _el(tag, cls, text) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -415,11 +445,13 @@ function _el(tag, cls, text) {
 function _renderWheelText(el, prize) {
   el.textContent = '';
   if (prize.intro) {
-    el.append(_el('span', 'wheel-tip-intro', `${prize.voice || '🌲'} ${prize.intro}`));
+    const intro = _el('span', 'wheel-tip-intro', ` ${prize.intro}`);
+    intro.prepend(_ic(prize.voice || 'tree'));
+    el.append(intro);
     el.append(_el('span', 'wheel-tip-quote', `« ${prize.desc} »`));
     return;
   }
-  el.append(`${prize.icon} `, _el('strong', null, prize.label), ` — ${prize.desc}`);
+  el.append(_ic(prize.icon), ' ', _el('strong', null, prize.label), ` — ${prize.desc}`);
 }
 
 function _showWinReveal(prize) {
@@ -433,9 +465,10 @@ function _showWinReveal(prize) {
 
   // Burst of leaves / sparkles flying out from the centre
   if (!reduced) {
-    const bits = isTip ? ['🍃', '🍂', '🌿', '✨'] : ['🍃', '✨', '🍂', '⭐', '🌟', '🌿'];
+    const bits = isTip ? ['leaf', 'leaf', 'sprout', 'sparkles'] : ['leaf', 'sparkles', 'leaf', 'star', 'sparkles', 'sprout'];
     for (let i = 0; i < 28; i++) {
-      const p = _el('span', 'win-particle', bits[i % bits.length]);
+      const p = _el('span', 'win-particle');
+      p.append(_ic(bits[i % bits.length]));
       const angle = (i / 28) * Math.PI * 2 + Math.random() * 0.4;
       const dist  = 140 + Math.random() * 180;
       p.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
@@ -448,7 +481,9 @@ function _showWinReveal(prize) {
 
   const card = _el('div', 'win-card');
   card.append(_el('div', 'win-rays'));
-  card.append(_el('div', 'win-icon', isTip ? (prize.voice || '🌲') : prize.icon));
+  const winIcon = _el('div', 'win-icon');
+  winIcon.append(_ic(isTip ? (prize.voice || 'tree') : prize.icon));
+  card.append(winIcon);
 
   let typeTarget = null;
   if (isTip) {
@@ -457,7 +492,7 @@ function _showWinReveal(prize) {
     const scroll = _el('blockquote', 'win-scroll');
     typeTarget = _el('span', 'win-scroll-text', reduced ? prize.desc : '');
     scroll.append(typeTarget);
-    scroll.append(_el('footer', 'win-sign', '— La forêt de Compiègne 🌲'));
+    scroll.append(_el('footer', 'win-sign', '— La forêt de Compiègne'));
     card.append(scroll);
   } else {
     card.append(_el('p', 'win-kicker', WIN_TITLES[Math.floor(Math.random() * WIN_TITLES.length)]));
@@ -465,7 +500,7 @@ function _showWinReveal(prize) {
     card.append(_el('p', 'win-desc', prize.desc));
   }
 
-  const btn = _el('button', 'btn-save win-close', isTip ? 'Merci la forêt ! 🌿' : 'Génial ! 🎉');
+  const btn = _el('button', 'btn-save win-close', isTip ? 'Merci la forêt !' : 'Génial !');
   btn.type = 'button';
   card.append(btn);
   overlay.append(card);
@@ -508,7 +543,7 @@ function renderPrizeList(plan) {
     <div class="prizes-grid">
       ${[...rare, ...common].map(p => `
         <div class="prize-chip ${p.weight <= 2 ? 'prize-epic' : p.weight <= 8 ? 'prize-rare' : ''}">
-          <span class="prize-icon">${p.icon}</span>
+          <span class="prize-icon">${bwrIconFor(p.icon)}</span>
           <span class="prize-label">${p.label}</span>
           ${p.weight <= 2 ? '<span class="prize-rarity">Épique</span>' : p.weight <= 8 ? '<span class="prize-rarity">Rare</span>' : ''}
         </div>

@@ -121,9 +121,9 @@
       if (barBox) {
         const rows = [
           { label: 'Gratuit',  n: counts.free, color: '#9ca3af' },
-          { label: 'Pro ⭐',     n: payPro,      color: '#22c55e' },
+          { label: 'Pro <i class="ic" data-ic="star"></i>',     n: payPro,      color: '#22c55e' },
         ];
-        if (compedTot) rows.push({ label: '🎁 Offerts', n: compedTot, color: '#c4b5fd', note: 'hors décompte' });
+        if (compedTot) rows.push({ label: '<i class="ic" data-ic="gift"></i> Offerts', n: compedTot, color: '#c4b5fd', note: 'hors décompte' });
         const max = Math.max(1, total);
         barBox.innerHTML = rows.map(r => `
           <div class="pro-bar-row">

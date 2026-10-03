@@ -40,6 +40,7 @@
   <link rel="stylesheet" href="css/mobile.css" />
   <script src="js/theme.js"></script>
   <style>
+  <script src="js/icons.js"></script>
     html, body { height: auto !important; overflow: auto !important; }
     body { background: var(--surface-1, #fafbf7); }
 
@@ -152,14 +153,14 @@
 
   <div class="wrap">
     <div class="tabs">
-      <button class="tab active" data-scope="daily">☀️ Du jour</button>
-      <button class="tab" data-scope="weekly">📆 De la semaine</button>
-      <button class="tab" data-scope="monthly">📅 Du mois</button>
-      <button class="tab" data-scope="oneTime">🏆 Hauts faits</button>
+      <button class="tab active" data-scope="daily"><i class="ic" data-ic="sun"></i> Du jour</button>
+      <button class="tab" data-scope="weekly"><i class="ic" data-ic="calendar"></i> De la semaine</button>
+      <button class="tab" data-scope="monthly"><i class="ic" data-ic="calendar"></i> Du mois</button>
+      <button class="tab" data-scope="oneTime"><i class="ic" data-ic="trophy"></i> Hauts faits</button>
     </div>
     <div class="subtitle" id="subtitle"></div>
     <div id="hallHint" class="hall-hint" style="display:none">
-      🏅 Les hauts faits se débloquent <strong>automatiquement</strong> quand votre total atteint l'objectif. La récompense (Pro, badge) est alors <strong>créditée aussitôt</strong> sur votre compte et un message de confirmation arrive dans votre boîte de réception.
+      <i class="ic" data-ic="medal"></i> Les hauts faits se débloquent <strong>automatiquement</strong> quand votre total atteint l'objectif. La récompense (Pro, badge) est alors <strong>créditée aussitôt</strong> sur votre compte et un message de confirmation arrive dans votre boîte de réception.
     </div>
     <div class="quest-grid" id="questGrid"></div>
   </div>

@@ -205,7 +205,7 @@
           if (!res.ok) { note.textContent = (res.d && (res.d.error || res.d.message)) || 'Une erreur est survenue.'; submit.disabled = false; return; }
           summary = { avg: res.d.avg, count: res.d.count, dist: res.d.dist };
           mine = res.d.mine || { stars: picked, comment: comment.value };
-          note.textContent = 'Merci pour votre avis ! 🌲';
+          note.textContent = 'Merci pour votre avis ! ';
           renderFooter();
           setTimeout(close, 900);
         })

@@ -100,17 +100,17 @@
       var done = state.loggedIn && cur >= q.target;
       var pct = Math.max(0, Math.min(100, (cur / q.target) * 100));
       var reward = q.reward
-        ? '<span class="q-reward perk">🎁 ' + esc(q.reward) + '</span>'
+        ? '<span class="q-reward perk"><i class="ic" data-ic="gift"></i> ' + esc(q.reward) + '</span>'
         : '<span class="q-reward xp">+' + q.xp + ' XP</span>';
 
       var progress = state.loggedIn
         ? '<div class="q-progress"><div class="q-bar"><div class="q-fill" style="width:' + pct + '%"></div></div>'
           + '<span class="q-prog-txt">' + esc(fmt(cur, q.unit)) + ' / ' + esc(fmt(q.target, q.unit)) + '</span></div>'
-        : '<div class="q-progress q-locked">🔒 Connectez-vous pour suivre votre progression</div>';
+        : '<div class="q-progress q-locked"><i class="ic" data-ic="lock"></i> Connectez-vous pour suivre votre progression</div>';
 
       html += '<div class="quest' + (done ? ' collected' : '') + '" data-id="' + q.id + '">'
         + '<div class="q-check">' + (done ? '✓' : '') + '</div>'
-        + '<div class="q-emoji">' + q.emoji + '</div>'
+        + '<div class="q-emoji">' + bwrIconFor(q.emoji) + '</div>'
         + '<div class="q-body">'
         + '<div class="q-title">' + esc(q.title) + '</div>'
         + '<div class="q-desc">' + esc(q.description) + '</div>'
@@ -187,7 +187,7 @@
       el.className = 'reward-toast';
       document.body.appendChild(el);
     }
-    el.innerHTML = '🎉 <strong>' + esc(q.title) + '</strong> — récompense créditée : '
+    el.innerHTML = '<i class="ic" data-ic="party"></i> <strong>' + esc(q.title) + '</strong> — récompense créditée : '
       + esc(res.reward || q.reward || '');
     el.classList.add('show');
     clearTimeout(el._t);

@@ -76,12 +76,16 @@
     if (typeof s.lat !== 'number' || typeof s.lng !== 'number') return;
     latlngs.push([s.lat, s.lng]);
 
-    // Emoji pin as a divIcon — no external marker image needed (keeps CSP img-src simple).
-    var emoji = s.emoji || '📍';
+    // Line-icon pin as a divIcon — no external marker image needed (keeps CSP
+    // img-src simple). `s.emoji` is an icon name (or a legacy emoji, mapped by
+    // js/icons.js).
+    var glyph = (window.bwrIconFor && bwrIconFor(s.emoji || 'pin')) || '';
+    if (!/data-ic=/.test(glyph)) glyph = '<i class="ic" data-ic="pin"></i>';
     var icon = L.divIcon({
       className: 'bwr-blog-pin',
-      html: '<div style="font-size:26px;line-height:26px;text-align:center;'
-          + 'filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));cursor:pointer">' + emoji + '</div>',
+      html: '<div style="width:28px;height:28px;border-radius:50%;background:#fff;color:#14532d;'
+          + 'display:flex;align-items:center;justify-content:center;font-size:16px;'
+          + 'border:2px solid #14532d;box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:pointer">' + glyph + '</div>',
       iconSize: [30, 30],
       iconAnchor: [15, 28],
       popupAnchor: [0, -26],

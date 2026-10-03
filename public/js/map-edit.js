@@ -152,7 +152,7 @@ function openNewPathPopupUser(coords, name, latlng) {
           renderPaths();
           clearOsmEditLayers();
           await loadOsmEditPaths();
-          showToast(`✅ "${name}" enregistré !`);
+          showToast(`"${name}" enregistré !`);
         } else {
           showToast('Erreur lors de l\'enregistrement.');
         }
@@ -199,7 +199,8 @@ function showEditModeBar(text) {
     bar.className = 'edit-mode-bar';
     document.getElementById('map').appendChild(bar);
   }
-  bar.textContent = '✎ ' + (text || 'Mode modification');
+  bar.innerHTML = '<i class="ic" data-ic="pencil"></i> ';
+  bar.append(text || 'Mode modification');
 }
 
 function hideEditModeBar() {
@@ -248,10 +249,10 @@ function openDifficultyPopup(path, latlng) {
             if (idx !== -1) allPaths[idx].status = newStatus;
             renderPaths();
             map.closePopup();
-            showToast(`✅ Difficulté mise à jour : ${STATUS_LABELS[newStatus]}`);
+            showToast(`Difficulté mise à jour : ${STATUS_LABELS[newStatus]}`);
           } else if (res.status === 403) {
             const data = await res.json().catch(() => ({}));
-            showToast(`🔒 ${data.error || 'Notation non autorisée.'}`);
+            showToast(`${data.error || 'Notation non autorisée.'}`);
           } else {
             showToast('Erreur lors de la mise à jour.');
           }
@@ -285,12 +286,12 @@ function openReportPopup(path, latlng, defaultType = 'fallen_tree') {
     .setLatLng(latlng)
     .setContent(`
       <div class="popup">
-        <strong>⚠️ Signaler un problème</strong>
+        <strong><i class="ic" data-ic="alert"></i> Signaler un problème</strong>
         <p class="popup-report-path">${where}</p>
         <div class="rtype-inline-grid" id="rtypes-${pid}">${types}</div>
         <textarea class="popup-report-note" id="rnote-${pid}" placeholder="Détails (optionnel)..." rows="2"></textarea>
         <label class="photo-upload-label" id="photoLabel-${pid}">
-          📷 Ajouter une photo
+          <i class="ic" data-ic="camera"></i> Ajouter une photo
           <input type="file" id="rphoto-${pid}" accept="image/*" capture="environment" style="display:none">
         </label>
         <img id="rphoto-preview-${pid}" class="report-photo-preview hidden" alt="preview">
@@ -340,7 +341,7 @@ function openReportPopup(path, latlng, defaultType = 'fallen_tree') {
       const preview = $(`#rphoto-preview-${pid}`);
       if (preview) { preview.src = photoData; preview.classList.remove('hidden'); }
       const label = $(`#photoLabel-${pid}`);
-      if (label) label.textContent = '✅ Photo ajoutée';
+      if (label) label.textContent = 'Photo ajoutée';
     });
 
     $(`#rsubmit-${pid}`)?.addEventListener('click', async ev => {
@@ -361,7 +362,7 @@ async function submitReport(path, type, note, photo = null, latlng = null) {
   const payload = { pathId: path?.id, type, note, photo, lat: latlng?.lat, lon: latlng?.lng };
   if (!navigator.onLine) {
     queueMapReport(payload);
-    showToast('📶 Hors-ligne — signalement enregistré, envoi à la reconnexion.');
+    showToast('Hors-ligne — signalement enregistré, envoi à la reconnexion.');
     return;
   }
   try {
@@ -377,16 +378,16 @@ async function submitReport(path, type, note, photo = null, latlng = null) {
       // Feed the new report into the clustered report layer (map-sync.js) so it
       // groups with its neighbours like every other pin, then re-render.
       if (typeof addReportToMap === 'function') addReportToMap(report, path?.coordinates);
-      showToast('✅ Signalement envoyé — merci !');
+      showToast('Signalement envoyé — merci !');
     } else if (res.status === 503) {
       queueMapReport(payload);
-      showToast('📶 Hors-ligne — signalement enregistré, envoi à la reconnexion.');
+      showToast('Hors-ligne — signalement enregistré, envoi à la reconnexion.');
     } else {
       showToast('Erreur lors du signalement.');
     }
   } catch {
     queueMapReport(payload);
-    showToast('📶 Hors-ligne — signalement enregistré, envoi à la reconnexion.');
+    showToast('Hors-ligne — signalement enregistré, envoi à la reconnexion.');
   }
 }
 
@@ -395,7 +396,7 @@ function placeReportMarker(report, coords) {
     ? [report.lat, report.lon]
     : coords ? coords[Math.floor(coords.length / 2)] : null;
   if (!mid) return null;
-  const icon  = REPORT_ICONS[report.type]  || '⚠️';
+  const icon  = REPORT_ICONS[report.type]  || '<i class="ic" data-ic="alert"></i>';
   const label = REPORT_LABELS[report.type] || report.type;
   const photoSrc = report.photo || (report.hasPhoto ? `${API_URL}/api/photos/${report.id}` : null);
   // Returns the marker WITHOUT adding it to the map — the caller decides where it

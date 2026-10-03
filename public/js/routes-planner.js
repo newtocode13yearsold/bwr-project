@@ -46,7 +46,7 @@ function initQuickStart() {
   document.getElementById('btnQuickLoop')?.addEventListener('click', quickLoopFromLocation);
 }
 
-// One smart CTA: a loop with no start yet shows "📍 Boucle depuis ma position"
+// One smart CTA: a loop with no start yet shows "Boucle depuis ma position"
 // (locate + generate in one tap); as soon as a start exists it becomes the
 // regular "Calculer le trajet". Called whenever mode or points change.
 function syncCta() {
@@ -83,9 +83,9 @@ function quickLoopFromLocation() {
     const loopCard = document.querySelector('.mode-card[data-mode="loop"]');
     if (loopCard && !loopCard.classList.contains('locked-feature')) loopCard.click();
   }
-  const original = btn.textContent;
+  const original = btn.innerHTML;
   btn.disabled = true;
-  btn.textContent = '⏳ Localisation…';
+  btn.innerHTML = '<i class="ic" data-ic="hourglass"></i> Localisation…';
   navigator.geolocation.getCurrentPosition(
     pos => {
       const { latitude: lat, longitude: lng } = pos.coords;
@@ -94,20 +94,20 @@ function quickLoopFromLocation() {
       pickingPoint = 'start';
       onMapClick({ latlng: { lat, lng } });   // places start marker + enables generate
       btn.disabled = false;
-      btn.textContent = original;
+      btn.innerHTML = original;
       const gen = document.getElementById('btnGenerate');
       if (gen && !gen.disabled) gen.click();    // generate immediately
     },
     () => {
       btn.disabled = false;
-      btn.textContent = original;
+      btn.innerHTML = original;
       showToast('Position introuvable — autorisez la localisation ou cliquez sur la carte.');
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
   );
 }
 
-// ── ✨ AI planner — natural language → planner controls → auto-generate ────────
+// ── AI planner — natural language → planner controls → auto-generate ────────
 function initAiPlanner() {
   const input = document.getElementById('aiInput');
   const submit = document.getElementById('aiSubmit');
@@ -141,7 +141,7 @@ async function runAiPlan(text) {
   const submit = document.getElementById('aiSubmit');
   submit.disabled = true;
   submit.classList.add('loading');
-  setAiFeedback('loading', '🧠 Je réfléchis à votre trajet…');
+  setAiFeedback('loading', '<i class="ic" data-ic="lightbulb"></i> Je réfléchis à votre trajet…');
 
   let intent;
   try {
@@ -158,7 +158,7 @@ async function runAiPlan(text) {
     // Off-topic / unclear request: the assistant replies conversationally
     // instead of forcing a route. Show its message and stop here.
     if (data.understood === false) {
-      setAiFeedback('info', data.reply || 'Dites-moi plutôt la distance ou l\'ambiance de balade que vous cherchez 🌲');
+      setAiFeedback('info', data.reply || 'Dites-moi plutôt la distance ou l\'ambiance de balade que vous cherchez <i class="ic" data-ic="tree"></i>');
       return;
     }
     intent = data.plan;
@@ -230,7 +230,7 @@ async function applyAiIntent(intent) {
   }
 
   // 4. Resolve and drop the start point.
-  setAiFeedback('loading', '📍 Je localise ' + (intent.startPlace || 'le départ') + '…');
+  setAiFeedback('loading', '<i class="ic" data-ic="pin"></i> Je localise ' + (intent.startPlace || 'le départ') + '…');
   let start = await resolvePlace(intent.startPlace);
   let placeNote = '';
   if (!start) {
@@ -319,7 +319,7 @@ function markCardLocked(el, tier, featureLabel) {
   if (!el.querySelector('.lock-badge')) {
     const badge = document.createElement('span');
     badge.className = `lock-badge tier-${tier}`;
-    badge.textContent = BWR.PRO_ONLY_LABEL;
+    badge.innerHTML = BWR.PRO_ONLY_LABEL;
     el.appendChild(badge);
   }
   el.dataset.featureLabel = featureLabel;
@@ -341,7 +341,7 @@ function interceptLocked(e) {
 
 function showUpgradeModal(tier, featureLabel) {
   const planLabel = BWR.TIER_LABEL[tier] || 'Pro';
-  const icon      = BWR.TIER_ICON[tier]  || '⭐';
+  const icon      = BWR.TIER_ICON[tier]  || '<i class="ic" data-ic="star"></i>';
   const existing = document.getElementById('upgradeModal');
   if (existing) existing.remove();
   const m = document.createElement('div');
@@ -594,9 +594,9 @@ function renderWaypoints() {
         <span class="cb-stop-num">${idx + 1}</span>
         <span class="cb-stop-name">${escapeHtml(wp.name || `Point (${wp.lat.toFixed(4)}, ${wp.lng.toFixed(4)})`)}</span>
         <span class="cb-stop-actions">
-          <button type="button" class="cb-stop-btn" data-act="up" data-i="${idx}" title="Monter" ${idx === 0 ? 'disabled' : ''}>↑</button>
-          <button type="button" class="cb-stop-btn" data-act="down" data-i="${idx}" title="Descendre" ${idx === waypoints.length - 1 ? 'disabled' : ''}>↓</button>
-          <button type="button" class="cb-stop-btn cb-stop-del" data-act="del" data-i="${idx}" title="Supprimer">✕</button>
+          <button type="button" class="cb-stop-btn" data-act="up" data-i="${idx}" title="Monter" ${idx === 0 ? 'disabled' : ''}><i class="ic" data-ic="arrow-up"></i></button>
+          <button type="button" class="cb-stop-btn" data-act="down" data-i="${idx}" title="Descendre" ${idx === waypoints.length - 1 ? 'disabled' : ''}><i class="ic" data-ic="arrow-down"></i></button>
+          <button type="button" class="cb-stop-btn cb-stop-del" data-act="del" data-i="${idx}" title="Supprimer"><i class="ic" data-ic="x"></i></button>
         </span>
       </li>`).join('');
     listEl.querySelectorAll('.cb-stop-btn').forEach(btn => {
@@ -691,9 +691,9 @@ function renderLoopVias() {
         <span class="cb-stop-num cb-stop-num-via">${idx + 1}</span>
         <span class="cb-stop-name">${escapeHtml(v.name || `Point (${v.lat.toFixed(4)}, ${v.lng.toFixed(4)})`)}</span>
         <span class="cb-stop-actions">
-          <button type="button" class="cb-stop-btn" data-act="up" data-i="${idx}" title="Monter" ${idx === 0 ? 'disabled' : ''}>↑</button>
-          <button type="button" class="cb-stop-btn" data-act="down" data-i="${idx}" title="Descendre" ${idx === loopVias.length - 1 ? 'disabled' : ''}>↓</button>
-          <button type="button" class="cb-stop-btn cb-stop-del" data-act="del" data-i="${idx}" title="Supprimer">✕</button>
+          <button type="button" class="cb-stop-btn" data-act="up" data-i="${idx}" title="Monter" ${idx === 0 ? 'disabled' : ''}><i class="ic" data-ic="arrow-up"></i></button>
+          <button type="button" class="cb-stop-btn" data-act="down" data-i="${idx}" title="Descendre" ${idx === loopVias.length - 1 ? 'disabled' : ''}><i class="ic" data-ic="arrow-down"></i></button>
+          <button type="button" class="cb-stop-btn cb-stop-del" data-act="del" data-i="${idx}" title="Supprimer"><i class="ic" data-ic="x"></i></button>
         </span>
       </li>`).join('');
     listEl.querySelectorAll('.cb-stop-btn').forEach(btn => {
@@ -715,19 +715,19 @@ function clearLoopVias() {
   if (listEl) listEl.innerHTML = '';
 }
 
-// "＋ Ajouter sur la carte" toggle: arm/disarm map clicks to drop via-points.
+// "Ajouter sur la carte" toggle: arm/disarm map clicks to drop via-points.
 function toggleAddViaOnMap() {
   const btn = document.getElementById('btnAddViaMap');
   if (pickingPoint === 'via') {
     pickingPoint = null;
     map.getContainer().style.cursor = '';
     btn?.classList.remove('active');
-    if (btn) btn.textContent = '＋ Ajouter sur la carte';
+    if (btn) btn.innerHTML = '<i class="ic" data-ic="plus"></i> Ajouter sur la carte';
   } else {
     pickingPoint = 'via';
     map.getContainer().style.cursor = 'crosshair';
     btn?.classList.add('active');
-    if (btn) btn.textContent = '✓ Cliquez sur la carte…';
+    if (btn) btn.innerHTML = '<i class="ic" data-ic="check"></i> Cliquez sur la carte…';
   }
 }
 
@@ -772,12 +772,12 @@ function updatePointStatus() {
   const el = document.getElementById('pointStatus');
   if (mode === 'loop') {
     el.innerHTML = startMarker
-      ? `<div class="point-tag set">✓ Départ placé</div>`
-      : `<div class="point-tag waiting">○ En attente...</div>`;
+      ? `<div class="point-tag set"><i class="ic" data-ic="check"></i> Départ placé</div>`
+      : `<div class="point-tag waiting"><i class="ic" data-ic="circle"></i> En attente...</div>`;
   } else {
     el.innerHTML = `
-      <div class="point-tag ${startMarker ? 'set' : 'waiting'}">${startMarker ? '✓' : '○'} Point A — Départ</div>
-      <div class="point-tag ${endMarker ? 'set' : 'waiting'}">${endMarker ? '✓' : '○'} Point B — Arrivée</div>
+      <div class="point-tag ${startMarker ? 'set' : 'waiting'}">${startMarker ? '<i class="ic" data-ic="check"></i>' : '<i class="ic" data-ic="circle"></i>'} Point A — Départ</div>
+      <div class="point-tag ${endMarker ? 'set' : 'waiting'}">${endMarker ? '<i class="ic" data-ic="check"></i>' : '<i class="ic" data-ic="circle"></i>'} Point B — Arrivée</div>
     `;
   }
 }
@@ -796,7 +796,7 @@ function resetPoints() {
   if (loopVias.length) clearLoopVias();
   if (pickingPoint === 'via') { pickingPoint = null; map.getContainer().style.cursor = ''; }
   const btnAddVia = document.getElementById('btnAddViaMap');
-  if (btnAddVia) { btnAddVia.classList.remove('active'); btnAddVia.textContent = '＋ Ajouter sur la carte'; }
+  if (btnAddVia) { btnAddVia.classList.remove('active'); btnAddVia.innerHTML = '<i class="ic" data-ic="plus"></i> Ajouter sur la carte'; }
   document.getElementById('loopPersonalize')?.classList.add('hidden');
   document.getElementById('pointStatus').innerHTML = '';
   document.getElementById('routeResult').classList.add('hidden');
@@ -1060,8 +1060,8 @@ function initGpxImport() {
 
 async function handleGpxFile(file) {
   const btn = document.getElementById('btnImportGpx');
-  const original = btn ? btn.textContent : '';
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Lecture…'; }
+  const original = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ic" data-ic="hourglass"></i> Lecture…'; }
   try {
     const text = await file.text();
     const { coords, name } = parseGPX(text);
@@ -1083,7 +1083,7 @@ async function handleGpxFile(file) {
     console.error('GPX import error:', err);
     showToast(err && err.message ? err.message : 'Impossible de lire ce fichier GPX.', 3200);
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = original; }
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
   }
 }
 
@@ -1136,12 +1136,12 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
 
   // Badges
   const badgeDiff = { easy: 'Facile', medium: 'Moyen', hard: 'Difficile' }[difficulty];
-  const badgeTypeMap = { foot: '🌲 Forestier', bike: '🚴 Cyclable', champs: '🌾 Champs', mix: '🗺️ Mix' };
+  const badgeTypeMap = { foot: '<i class="ic" data-ic="tree"></i> Forestier', bike: '<i class="ic" data-ic="bike"></i> Cyclable', champs: '<i class="ic" data-ic="sprout"></i> Champs', mix: '<i class="ic" data-ic="map"></i> Mix' };
   const badgeCssMap  = { foot: 'foot', bike: 'bike', champs: 'foot', mix: 'foot' };
-  const badgeMode    = mode === 'loop' ? '🔄 Boucle'
-    : mode === 'custom' ? `🧭 Sur mesure · ${waypoints.length} étapes`
-    : mode === 'import' ? '📥 Importé'
-    : '➡️ A → B';
+  const badgeMode    = mode === 'loop' ? '<i class="ic" data-ic="refresh"></i> Boucle'
+    : mode === 'custom' ? `<i class="ic" data-ic="compass"></i> Sur mesure · ${waypoints.length} étapes`
+    : mode === 'import' ? '<i class="ic" data-ic="download"></i> Importé'
+    : '<i class="ic" data-ic="arrow-right"></i> A → B';
   document.getElementById('resultBadges').innerHTML = `
     <span class="badge ${difficulty}">${badgeDiff}</span>
     <span class="badge ${badgeCssMap[pathType]}">${badgeTypeMap[pathType]}</span>
@@ -1181,7 +1181,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
         ? 'Tracé importé depuis votre fichier GPX (Strava, Garmin…), affiché sur la carte BWR.'
         : 'Le trajet relie votre point de départ à votre point d\'arrivée.';
   resumeEl.innerHTML = `
-    <p><strong>📋 Résumé</strong></p>
+    <p><strong><i class="ic" data-ic="clipboard"></i> Résumé</strong></p>
     <p>
       ${modeLabel} de <strong>${distLabel}</strong>
       en <strong>${typeLabel}</strong>, niveau <strong>${diffLabel}</strong>.
@@ -1201,8 +1201,8 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
       const asked  = requestedKm.toFixed(1);
       const diffKm = (Math.abs(diff) / 1000).toFixed(1);
       const dir    = diff > 0 ? 'plus long' : 'plus court';
-      warningEl.textContent =
-        `⚠️ Désolé, l'itinéraire le plus proche trouvé fait ${actual} km — soit ${diffKm} km ${dir} que les ${asked} km demandés. Aucun chemin plus adapté n'existe dans cette zone.`;
+      warningEl.innerHTML =
+        `<i class="ic" data-ic="alert"></i> Désolé, l'itinéraire le plus proche trouvé fait ${actual} km — soit ${diffKm} km ${dir} que les ${asked} km demandés. Aucun chemin plus adapté n'existe dans cette zone.`;
       warningEl.classList.remove('hidden');
     }
   }
@@ -1318,7 +1318,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
       wrap.classList.remove('hidden');
       wrap.innerHTML = `
         <div class="elevation-locked">
-          <span class="el-icon">⛰️</span>
+          <span class="el-icon"><i class="ic" data-ic="mountain"></i></span>
           <strong>Profil altimétrique ${BWR.proOnlyTag()}</strong>
           <p>Voyez le dénivelé, l'altitude min/max et la pente — disponibles à partir du plan Pro.</p>
           <a href="plans" class="el-cta">Débloquer avec Pro →</a>
@@ -1326,7 +1326,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
       `;
     }
     // Short form: the full "Pro uniquement" pill doesn't fit the narrow stat cell.
-    document.getElementById('statAscent').innerHTML = '<span class="pro-only-tag">🔒 Pro</span>';
+    document.getElementById('statAscent').innerHTML = '<span class="pro-only-tag"><i class="ic" data-ic="lock"></i> Pro</span>';
   }
 }
 
@@ -1340,17 +1340,17 @@ function showQuotaExceededModal(quota) {
   m.innerHTML = `
     <div class="upgrade-modal-card quota-card">
       <button class="um-close" aria-label="Fermer">×</button>
-      <div class="um-icon">🌿</div>
+      <div class="um-icon"><i class="ic" data-ic="leaf"></i></div>
       <h3>Vous avez atteint la limite hebdomadaire</h3>
       <p><strong>${quota.used} / ${quota.limit}</strong> trajets utilisés cette semaine.</p>
       <div class="qm-comparison">
         <div class="qm-tier qm-free">
-          <strong>🌿 Gratuit</strong>
+          <strong><i class="ic" data-ic="leaf"></i> Gratuit</strong>
           <span>10 trajets / semaine</span>
         </div>
         <div class="qm-arrow">→</div>
         <div class="qm-tier qm-pro">
-          <strong>⭐ Pro</strong>
+          <strong><i class="ic" data-ic="star"></i> Pro</strong>
           <span>Illimité · 2,99€/mois</span>
         </div>
       </div>
@@ -1379,17 +1379,17 @@ function showLoopQuotaModal(quota) {
   m.innerHTML = `
     <div class="upgrade-modal-card quota-card">
       <button class="um-close" aria-label="Fermer">×</button>
-      <div class="um-icon">🔄</div>
+      <div class="um-icon"><i class="ic" data-ic="refresh"></i></div>
       <h3>Vous avez utilisé vos boucles gratuites</h3>
       <p><strong>${quota.used} / ${quota.limit}</strong> boucles utilisées cette semaine.</p>
       <div class="qm-comparison">
         <div class="qm-tier qm-free">
-          <strong>🌿 Gratuit</strong>
+          <strong><i class="ic" data-ic="leaf"></i> Gratuit</strong>
           <span>${quota.limit} boucles / semaine</span>
         </div>
         <div class="qm-arrow">→</div>
         <div class="qm-tier qm-pro">
-          <strong>⭐ Pro</strong>
+          <strong><i class="ic" data-ic="star"></i> Pro</strong>
           <span>Boucles illimitées · 2,99€/mois</span>
         </div>
       </div>

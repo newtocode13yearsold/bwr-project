@@ -8,43 +8,43 @@
 
 const BADGES = [
   // Free tier badges
-  { id: 'first_route',  icon: '🌱', label: 'Première sortie',  tier: 'free',   desc: 'Complétez votre première balade en forêt',   test: s => s.routes >= 1 },
-  { id: 'hiker',        icon: '🥾', label: 'Randonneur',       tier: 'free',   desc: 'Effectue 5 balades',                     test: s => s.routes >= 5 },
-  { id: 'explorer',     icon: '🌲', label: 'Explorateur',      tier: 'free',   desc: 'Effectue 10 balades',                    test: s => s.routes >= 10 },
-  { id: 'forest_friend',icon: '🦌', label: 'Ami forêt',        tier: 'free',   desc: 'Effectue 25 balades',                    test: s => s.routes >= 25 },
-  { id: 'marathoner',   icon: '🏃', label: 'Marathonien',      tier: 'free',   desc: 'Parcours 25 km au total',                test: s => s.km >= 25 },
-  { id: 'adventurer',   icon: '🗻', label: 'Aventurier',       tier: 'free',   desc: 'Parcours 50 km au total',                test: s => s.km >= 50 },
-  { id: 'legend',       icon: '🏆', label: 'Légende',          tier: 'free',   desc: 'Parcours 100 km au total',               test: s => s.km >= 100 },
-  { id: 'champion',     icon: '👑', label: 'Champion',         tier: 'free',   desc: 'Parcours 250 km au total',               test: s => s.km >= 250 },
+  { id: 'first_route',  icon: 'sprout', label: 'Première sortie',  tier: 'free',   desc: 'Complétez votre première balade en forêt',   test: s => s.routes >= 1 },
+  { id: 'hiker',        icon: 'footprints', label: 'Randonneur',       tier: 'free',   desc: 'Effectue 5 balades',                     test: s => s.routes >= 5 },
+  { id: 'explorer',     icon: 'tree', label: 'Explorateur',      tier: 'free',   desc: 'Effectue 10 balades',                    test: s => s.routes >= 10 },
+  { id: 'forest_friend',icon: 'deer', label: 'Ami forêt',        tier: 'free',   desc: 'Effectue 25 balades',                    test: s => s.routes >= 25 },
+  { id: 'marathoner',   icon: 'run', label: 'Marathonien',      tier: 'free',   desc: 'Parcours 25 km au total',                test: s => s.km >= 25 },
+  { id: 'adventurer',   icon: 'mountain', label: 'Aventurier',       tier: 'free',   desc: 'Parcours 50 km au total',                test: s => s.km >= 50 },
+  { id: 'legend',       icon: 'trophy', label: 'Légende',          tier: 'free',   desc: 'Parcours 100 km au total',               test: s => s.km >= 100 },
+  { id: 'champion',     icon: 'crown', label: 'Champion',         tier: 'free',   desc: 'Parcours 250 km au total',               test: s => s.km >= 250 },
   // Pro tier badges (the old Argent + Or badges, now one tier)
-  { id: 'tree_lover',   icon: '🌳', label: 'Amoureux arbres',  tier: 'pro',    desc: 'Effectue 50 balades',                    test: s => s.routes >= 50 },
-  { id: 'compass',      icon: '🧭', label: 'Boussole',         tier: 'pro',    desc: 'Effectue 75 balades',                    test: s => s.routes >= 75 },
-  { id: 'tent',         icon: '⛺', label: 'Campeur',          tier: 'pro',    desc: 'Parcours 150 km au total',               test: s => s.km >= 150 },
-  { id: 'mountain',     icon: '⛰️', label: 'Sommet',           tier: 'pro',    desc: 'Parcours 200 km au total',               test: s => s.km >= 200 },
-  { id: 'leaf',         icon: '🍃', label: 'Naturaliste',      tier: 'pro',    desc: 'Effectue 100 balades',                   test: s => s.routes >= 100 },
-  { id: 'mushroom',     icon: '🍄', label: 'Cueilleur',        tier: 'pro',    desc: 'Effectue 30 balades',                    test: s => s.routes >= 30 },
-  { id: 'fire',         icon: '🔥', label: 'Endurance',        tier: 'pro',    desc: 'Parcours 75 km au total',                test: s => s.km >= 75 },
-  { id: 'star',         icon: '⭐', label: 'Étoile montante',  tier: 'pro',    desc: 'Effectue 15 balades',                    test: s => s.routes >= 15 },
-  { id: 'compass2',     icon: '🎯', label: 'Précision',        tier: 'pro',    desc: 'Effectue 40 balades',                    test: s => s.routes >= 40 },
-  { id: 'sunrise',      icon: '🌅', label: 'Aube',             tier: 'pro',    desc: 'Effectue 20 balades',                    test: s => s.routes >= 20 },
-  { id: 'fox',          icon: '🦊', label: 'Rusé renard',      tier: 'pro',    desc: 'Parcours 125 km au total',               test: s => s.km >= 125 },
-  { id: 'rabbit',       icon: '🐇', label: 'Rapide',           tier: 'pro',    desc: 'Effectue 60 balades',                    test: s => s.routes >= 60 },
-  { id: 'owl',          icon: '🦉', label: 'Sage chouette',    tier: 'pro',    desc: 'Parcours 175 km au total',               test: s => s.km >= 175 },
-  { id: 'crown',        icon: '👑', label: 'Couronne d\'or',   tier: 'pro',    desc: 'Parcours 500 km au total',               test: s => s.km >= 500 },
-  { id: 'medal',        icon: '🏅', label: 'Médaillé',         tier: 'pro',    desc: 'Effectue 150 balades',                   test: s => s.routes >= 150 },
-  { id: 'rocket',       icon: '🚀', label: 'Fusée',            tier: 'pro',    desc: 'Parcours 300 km au total',               test: s => s.km >= 300 },
-  { id: 'diamond',      icon: '💎', label: 'Diamant',          tier: 'pro',    desc: 'Parcours 1 000 km au total',             test: s => s.km >= 1000 },
-  { id: 'dragon',       icon: '🐉', label: 'Dragon',           tier: 'pro',    desc: 'Effectue 200 balades',                   test: s => s.routes >= 200 },
-  { id: 'phoenix',      icon: '🔥', label: 'Phénix',           tier: 'pro',    desc: 'Parcours 750 km au total',               test: s => s.km >= 750 },
-  { id: 'wolf',         icon: '🐺', label: 'Loup alpha',       tier: 'pro',    desc: 'Effectue 250 balades',                   test: s => s.routes >= 250 },
-  { id: 'eagle',        icon: '🦅', label: 'Aigle royal',      tier: 'pro',    desc: 'Parcours 400 km au total',               test: s => s.km >= 400 },
+  { id: 'tree_lover',   icon: 'tree-round', label: 'Amoureux arbres',  tier: 'pro',    desc: 'Effectue 50 balades',                    test: s => s.routes >= 50 },
+  { id: 'compass',      icon: 'compass', label: 'Boussole',         tier: 'pro',    desc: 'Effectue 75 balades',                    test: s => s.routes >= 75 },
+  { id: 'tent',         icon: 'tent', label: 'Campeur',          tier: 'pro',    desc: 'Parcours 150 km au total',               test: s => s.km >= 150 },
+  { id: 'mountain',     icon: 'mountain', label: 'Sommet',           tier: 'pro',    desc: 'Parcours 200 km au total',               test: s => s.km >= 200 },
+  { id: 'leaf',         icon: 'leaf', label: 'Naturaliste',      tier: 'pro',    desc: 'Effectue 100 balades',                   test: s => s.routes >= 100 },
+  { id: 'mushroom',     icon: 'mushroom', label: 'Cueilleur',        tier: 'pro',    desc: 'Effectue 30 balades',                    test: s => s.routes >= 30 },
+  { id: 'fire',         icon: 'flame', label: 'Endurance',        tier: 'pro',    desc: 'Parcours 75 km au total',                test: s => s.km >= 75 },
+  { id: 'star',         icon: 'star', label: 'Étoile montante',  tier: 'pro',    desc: 'Effectue 15 balades',                    test: s => s.routes >= 15 },
+  { id: 'compass2',     icon: 'target', label: 'Précision',        tier: 'pro',    desc: 'Effectue 40 balades',                    test: s => s.routes >= 40 },
+  { id: 'sunrise',      icon: 'sunrise', label: 'Aube',             tier: 'pro',    desc: 'Effectue 20 balades',                    test: s => s.routes >= 20 },
+  { id: 'fox',          icon: 'fox', label: 'Rusé renard',      tier: 'pro',    desc: 'Parcours 125 km au total',               test: s => s.km >= 125 },
+  { id: 'rabbit',       icon: 'rabbit', label: 'Rapide',           tier: 'pro',    desc: 'Effectue 60 balades',                    test: s => s.routes >= 60 },
+  { id: 'owl',          icon: 'owl', label: 'Sage chouette',    tier: 'pro',    desc: 'Parcours 175 km au total',               test: s => s.km >= 175 },
+  { id: 'crown',        icon: 'crown', label: 'Couronne d\'or',   tier: 'pro',    desc: 'Parcours 500 km au total',               test: s => s.km >= 500 },
+  { id: 'medal',        icon: 'medal', label: 'Médaillé',         tier: 'pro',    desc: 'Effectue 150 balades',                   test: s => s.routes >= 150 },
+  { id: 'rocket',       icon: 'rocket', label: 'Fusée',            tier: 'pro',    desc: 'Parcours 300 km au total',               test: s => s.km >= 300 },
+  { id: 'diamond',      icon: 'gem', label: 'Diamant',          tier: 'pro',    desc: 'Parcours 1 000 km au total',             test: s => s.km >= 1000 },
+  { id: 'dragon',       icon: 'swords', label: 'Dragon',           tier: 'pro',    desc: 'Effectue 200 balades',                   test: s => s.routes >= 200 },
+  { id: 'phoenix',      icon: 'flame', label: 'Phénix',           tier: 'pro',    desc: 'Parcours 750 km au total',               test: s => s.km >= 750 },
+  { id: 'wolf',         icon: 'paw', label: 'Loup alpha',       tier: 'pro',    desc: 'Effectue 250 balades',                   test: s => s.routes >= 250 },
+  { id: 'eagle',        icon: 'feather', label: 'Aigle royal',      tier: 'pro',    desc: 'Parcours 400 km au total',               test: s => s.km >= 400 },
   // Streak badges
-  { id: 'streak_3',  icon: '🔥', label: '3 jours de suite',   tier: 'free',   desc: 'Effectue une balade 3 jours consécutifs',   test: s => s.streak >= 3 },
-  { id: 'streak_7',  icon: '⚡', label: '7 jours de suite',   tier: 'pro',    desc: 'Effectue une balade 7 jours consécutifs',   test: s => s.streak >= 7 },
-  { id: 'streak_30', icon: '💫', label: '30 jours de suite',  tier: 'pro',    desc: 'Effectue une balade 30 jours consécutifs',  test: s => s.streak >= 30 },
+  { id: 'streak_3',  icon: 'flame', label: '3 jours de suite',   tier: 'free',   desc: 'Effectue une balade 3 jours consécutifs',   test: s => s.streak >= 3 },
+  { id: 'streak_7',  icon: 'zap', label: '7 jours de suite',   tier: 'pro',    desc: 'Effectue une balade 7 jours consécutifs',   test: s => s.streak >= 7 },
+  { id: 'streak_30', icon: 'sparkles', label: '30 jours de suite',  tier: 'pro',    desc: 'Effectue une balade 30 jours consécutifs',  test: s => s.streak >= 30 },
   // Roue de la chance — badges exclusifs
-  { id: 'lucky_badge',    icon: '🍀', label: 'Badge Chanceux',    tier: 'free',   desc: 'Remporté en tournant la roue de la chance',   test: () => localStorage.getItem('bwr_lucky_badge') === '1' },
-  { id: 'exclusive_badge', icon: '✨', label: 'Badge Exclusif', tier: 'pro',    desc: 'Badge animé exclusif gagné à la roue de la chance', test: () => localStorage.getItem('bwr_exclusive_badge') === '1' },
+  { id: 'lucky_badge',    icon: 'clover', label: 'Badge Chanceux',    tier: 'free',   desc: 'Remporté en tournant la roue de la chance',   test: () => localStorage.getItem('bwr_lucky_badge') === '1' },
+  { id: 'exclusive_badge', icon: 'sparkles', label: 'Badge Exclusif', tier: 'pro',    desc: 'Badge animé exclusif gagné à la roue de la chance', test: () => localStorage.getItem('bwr_exclusive_badge') === '1' },
   // Roue de la chance — collection de badges nature (COLLECTIBLE_BADGES vient de profile-wheel.js, chargé avant)
   ...(typeof COLLECTIBLE_BADGES !== 'undefined' ? COLLECTIBLE_BADGES : []).map(b => ({
     id: b.id, icon: b.icon, label: b.label, tier: 'free',
@@ -58,9 +58,9 @@ function populatePage(user) {
   document.getElementById('inputName').value       = user.name;
   document.getElementById('inputEmail').value      = user.email;
 
-  const roleMap = { admin: '👑 Administrateur', free: '🌲 Membre' };
+  const roleMap = { admin: '<i class="ic" data-ic="crown"></i> Administrateur', free: '<i class="ic" data-ic="tree"></i> Membre' };
   const roleEl  = document.getElementById('roleBadge');
-  roleEl.textContent  = roleMap[user.role] || user.role;
+  roleEl.innerHTML    = roleMap[user.role] || escapeHtml(user.role);
   roleEl.className    = `role-badge role-${user.role}`;
 
   const since = user.createdAt
@@ -74,12 +74,12 @@ function populatePage(user) {
 function renderPlanAndProgress(user) {
   const plan = BWR.normalisePlan(user.plan);
   const planMap = {
-    free: { label: '🌿 Gratuit', cls: 'plan-free' },
-    pro:  { label: '⭐ Pro',        cls: 'plan-pro' },
+    free: { label: '<i class="ic" data-ic="leaf"></i> Gratuit', cls: 'plan-free' },
+    pro:  { label: '<i class="ic" data-ic="star"></i> Pro',        cls: 'plan-pro' },
   };
   const p = planMap[plan] || planMap.free;
   const pill = document.getElementById('planPill');
-  pill.textContent = p.label;
+  pill.innerHTML   = p.label;
   pill.className   = `plan-pill ${p.cls}`;
   if (plan !== 'free') document.getElementById('planUpgradeLink').style.display = 'none';
 
@@ -166,7 +166,7 @@ function renderPlanAndProgress(user) {
     if (!accessible) {
       // locked silhouette with tier badge for upsell
       return `<div class="badge-item tier-${b.tier} badge-tier-locked" title="Disponible avec Pro">
-        <span class="badge-icon">🔒</span>
+        <span class="badge-icon"><i class="ic" data-ic="lock"></i></span>
         ${BWR.proOnlyTag()}
       </div>`;
     }
@@ -177,7 +177,7 @@ function renderPlanAndProgress(user) {
       : null;
     const extraClass = b.id === 'exclusive_badge' ? ' badge-exclusive' : '';
     return `<div class="badge-item ${earned ? 'earned' : 'locked'} tier-${b.tier}${extraClass}" title="${b.label}">
-      <span class="badge-icon">${b.icon}</span>
+      <span class="badge-icon">${bwrIconFor(b.icon)}</span>
       <span class="badge-label">${b.label}</span>
       <span class="badge-desc">${b.desc}</span>
       ${dateStr ? `<span class="badge-date">Obtenu le ${dateStr}</span>` : ''}
@@ -193,7 +193,7 @@ function renderPlanAndProgress(user) {
         ? new Date(b.earnedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
         : null;
       return `<div class="badge-item earned tier-pro badge-exclusive" title="${b.label}">
-        <span class="badge-icon">${b.icon}</span>
+        <span class="badge-icon">${bwrIconFor(b.icon)}</span>
         <span class="badge-label">${b.label}</span>
         <span class="badge-desc">Haut fait — récompense de quête</span>
         ${d ? `<span class="badge-date">Obtenu le ${d}</span>` : ''}
@@ -204,7 +204,7 @@ function renderPlanAndProgress(user) {
   // Title carries the earned count; a long list collapses behind a toggle so it
   // no longer scrolls forever.
   const badgesTitle = document.getElementById('badgesTitle');
-  if (badgesTitle) badgesTitle.innerHTML = `🏅 Mes badges <span class="badges-count">${nowEarned.size} / ${BADGES.length}</span>`;
+  if (badgesTitle) badgesTitle.innerHTML = `<i class="ic" data-ic="medal"></i> Mes badges <span class="badges-count">${nowEarned.size} / ${BADGES.length}</span>`;
 
   const badgesToggle = document.getElementById('badgesToggle');
   if (badgesToggle) {
@@ -229,7 +229,7 @@ function renderPlanAndProgress(user) {
   if (plan === 'free') {
     const proCount = BADGES.filter(b => b.tier === 'pro').length;
     lockedHint.innerHTML =
-      `🔒 <strong>${proCount} badges supplémentaires</strong> à débloquer · <a href="plans">Voir le plan Pro →</a>`;
+      `<i class="ic" data-ic="lock"></i> <strong>${proCount} badges supplémentaires</strong> à débloquer · <a href="plans">Voir le plan Pro →</a>`;
     lockedHint.style.display = '';
   } else {
     lockedHint.style.display = 'none';
@@ -243,7 +243,7 @@ function renderPlanAndProgress(user) {
     const upgLink = document.getElementById('planUpgradeLink');
     if (upgLink) {
       upgLink.style.display = '';
-      upgLink.textContent = `⏳ Expire le ${expDate}`;
+      upgLink.textContent = `Expire le ${expDate}`;
       upgLink.style.color = '#f97316';
       upgLink.removeAttribute('href');
     }
@@ -308,7 +308,7 @@ function renderPlanAndProgress(user) {
 // re-renders with the unlocked premium sections.
 async function startProTrial(e) {
   const btn = e.currentTarget;
-  const original = btn.textContent;
+  const original = btn.innerHTML;
   btn.disabled = true;
   btn.textContent = 'Activation…';
   try {
@@ -323,11 +323,11 @@ async function startProTrial(e) {
       setSession(localStorage.getItem('bwr_token'),
         { ...cached, plan: 'pro', planExpiresAt: data.planExpiresAt, proTrialUsed: true });
     }
-    alert('🎉 Essai Pro activé ! Vous profitez de toutes les fonctionnalités pendant 7 jours.');
+    alert('Essai Pro activé ! Vous profitez de toutes les fonctionnalités pendant 7 jours.');
     location.reload();
   } catch (err) {
     btn.disabled = false;
-    btn.textContent = original;
+    btn.innerHTML = original;
     alert('Impossible d\'activer l\'essai : ' + err.message);
   }
 }
@@ -343,7 +343,7 @@ async function cancelPlan(user) {
     : 'Résilier votre abonnement ? Votre compte repasse immédiatement en plan Gratuit.';
   if (!confirm(confirmMsg)) return;
 
-  const original = btn.textContent;
+  const original = btn.innerHTML;
   btn.disabled = true;
   btn.textContent = 'Résiliation…';
   try {
@@ -371,7 +371,7 @@ async function cancelPlan(user) {
     location.reload();
   } catch (err) {
     btn.disabled = false;
-    btn.textContent = original;
+    btn.innerHTML = original;
     alert('Impossible de résilier : ' + err.message);
   }
 }
@@ -396,11 +396,11 @@ function renderQuotaStrip(plan, level, stats) {
   strip.className = `profile-quota-strip ${overLimit ? 'is-full' : ''}`;
   strip.innerHTML = `
     <div class="pqs-row">
-      <span class="pqs-icon">${overLimit ? '🔒' : '⏳'}</span>
+      <span class="pqs-icon">${overLimit ? '<i class="ic" data-ic="lock"></i>' : '<i class="ic" data-ic="hourglass"></i>'}</span>
       <div class="pqs-text">
         <strong>${count} / ${limit}</strong> trajets cette semaine
         <span>${overLimit ? 'Limite atteinte · réinitialisation lundi' : `${remaining} restant${remaining > 1 ? 's' : ''}`}</span>
-        ${isFinite(loopLimit) ? `<span>🔁 ${Math.min(loops, loopLimit)} / ${loopLimit} boucles cette semaine</span>` : ''}
+        ${isFinite(loopLimit) ? `<span><i class="ic" data-ic="repeat"></i> ${Math.min(loops, loopLimit)} / ${loopLimit} boucles cette semaine</span>` : ''}
       </div>
       <a href="plans" class="pqs-cta">Passer à illimité →</a>
     </div>
@@ -418,10 +418,10 @@ function renderRewardLadder(level, prog) {
     const next = BWR.nextReward(level);
     if (next) {
       nextEl.innerHTML =
-        `Prochain palier : <strong>${next.icon} ${next.label}</strong> (niveau ${next.level})`;
+        `Prochain palier : <strong>${bwrIconFor(next.icon)} ${next.label}</strong> (niveau ${next.level})`;
       nextEl.style.display = '';
     } else {
-      nextEl.innerHTML = '🏆 Tous les paliers débloqués — bravo, vous êtes une légende !';
+      nextEl.innerHTML = '<i class="ic" data-ic="trophy"></i> Tous les paliers débloqués — bravo, vous êtes une légende !';
       nextEl.style.display = '';
     }
   }
@@ -429,7 +429,7 @@ function renderRewardLadder(level, prog) {
   // Vertical stepper — every palier is listed top-to-bottom so nothing is hidden
   // behind a horizontal scroll: the ones already unlocked (Débloqué), the one
   // currently being worked toward (En cours, with an XP bar), and the ones still
-  // to come (🔒).
+  // to come (<i class="ic" data-ic="lock"></i>).
   const track = document.getElementById('rewardsTrack');
   if (track) track.innerHTML = ''; // legacy container — stepper below carries progress now
 
@@ -444,14 +444,14 @@ function renderRewardLadder(level, prog) {
       ? '<span class="pl-tag pl-tag-done">Débloqué</span>'
       : isNext
         ? '<span class="pl-tag pl-tag-next">En cours</span>'
-        : '<span class="pl-tag pl-tag-lock">🔒</span>';
+        : '<span class="pl-tag pl-tag-lock"><i class="ic" data-ic="lock"></i></span>';
     const progress = isNext
       ? `<div class="pl-prog"><div class="pl-prog-bar"><i style="width:${Math.round(prog.pct)}%"></i></div><span class="pl-prog-txt">Plus que ${prog.xpToNext} XP</span></div>`
       : '';
     return `<div class="pl-row ${state}${frame}" title="Niv. ${r.level} — ${r.label} · ${r.desc}">
-      <span class="pl-dot">${done ? r.icon : '🔒'}</span>
+      <span class="pl-dot">${bwrIconFor(done ? r.icon : 'lock')}</span>
       <div class="pl-card">
-        <span class="pl-ic">${done ? r.icon : '🔒'}</span>
+        <span class="pl-ic">${bwrIconFor(done ? r.icon : 'lock')}</span>
         <div class="pl-meta">
           <div class="pl-lv">Niveau ${r.level}</div>
           <div class="pl-name">${r.label}</div>
@@ -503,11 +503,11 @@ async function renderPushAlerts() {
 
   function render() {
     if (st.subscribed) {
-      status.innerHTML = `<span style="color:#16a34a;font-weight:600">🔔 Alertes activées</span>`;
-      btn.textContent = '🔕 Désactiver les alertes';
+      status.innerHTML = `<span style="color:#16a34a;font-weight:600"><i class="ic" data-ic="bell"></i> Alertes activées</span>`;
+      btn.textContent = 'Désactiver les alertes';
     } else {
       status.innerHTML = `<span style="color:#6b7280">Alertes désactivées</span>`;
-      btn.textContent = '🔔 Activer les alertes';
+      btn.textContent = 'Activer les alertes';
     }
   }
 
@@ -546,11 +546,11 @@ async function renderEmailNotif() {
 
   function render() {
     if (enabled) {
-      status.innerHTML = `<span style="color:#16a34a;font-weight:600">✉️ Emails activés</span>`;
-      btn.textContent = '🔕 Désactiver les emails';
+      status.innerHTML = `<span style="color:#16a34a;font-weight:600"><i class="ic" data-ic="mail"></i> Emails activés</span>`;
+      btn.textContent = 'Désactiver les emails';
     } else {
       status.innerHTML = `<span style="color:#6b7280">Emails désactivés</span>`;
-      btn.textContent = '✉️ Activer les emails';
+      btn.textContent = 'Activer les emails';
     }
   }
   render();
@@ -607,7 +607,7 @@ function renderNextBadge(stats, plan) {
   const fmtVal = v => best.metric === 'km' ? fmtKm(v) : best.metric === 'streak' ? `${v} j` : `${v}`;
   box.style.display = '';
   box.innerHTML = `
-    <span class="nb-icon">${best.badge.icon}</span>
+    <span class="nb-icon">${bwrIconFor(best.badge.icon)}</span>
     <div class="nb-body">
       <div class="nb-top">
         <span class="nb-label">Prochain badge · <strong>${escapeHtml(best.badge.label)}</strong></span>

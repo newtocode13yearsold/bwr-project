@@ -1052,6 +1052,7 @@
 .win-icon {
   position: relative;
   font-size: 3.6rem; line-height: 1;
+  color: var(--forest-700, #15803d);
   margin-bottom: 10px;
   animation: win-icon-in 0.8s cubic-bezier(.2, 1.4, .4, 1) 0.15s both, win-bob 2.4s ease-in-out 1s infinite;
 }
@@ -1104,6 +1105,7 @@
 .win-particle {
   position: absolute; left: 50%; top: 50%;
   font-size: 1.4rem;
+  color: #c8a04a;
   pointer-events: none;
   animation: win-burst 1.4s cubic-bezier(.1, .8, .3, 1) both;
 }

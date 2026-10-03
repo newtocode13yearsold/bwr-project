@@ -393,7 +393,7 @@ function _rpBuildDoc(route, meta) {
     : _rpBuildMapSvg(coords, hits, meta.contextPaths, { color, isLoop: meta.isLoop });
 
   const dirs = computeDirections(coords, hits);
-  const TURN_ARROW = { 'tout droit': '↑', 'à gauche': '←', 'à droite': '→', 'demi-tour': '↩' };
+  const TURN_ARROW = { 'tout droit': '↑', 'à gauche': '←', 'à droite': '→', 'demi-tour': '<i class="ic" data-ic="undo"></i>' };
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
   const endName = meta.isLoop ? 'le point de départ' : 'l\'arrivée';
 
@@ -418,7 +418,7 @@ function _rpBuildDoc(route, meta) {
 
   const endKm = 'km ' + (route.meters / 1000).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const endRow = `<tr class="rp-return">
-      <td class="rp-c-num">🏁</td>
+      <td class="rp-c-num"><i class="ic" data-ic="flag"></i></td>
       <td class="rp-c-name">${meta.isLoop ? 'Retour au point de départ' : 'Arrivée'}</td>
       <td class="rp-c-dir">—</td>
       <td class="rp-c-km">${endKm}</td>
@@ -439,6 +439,8 @@ function _rpBuildDoc(route, meta) {
 <title>${_rpEsc(meta.title)} — BWR</title>
 <style>
   :root { --green:#166534; --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; }
+  .ic { display:inline-block; width:1.1em; height:1.1em; vertical-align:-0.18em; }
+  .ic svg { width:100%; height:100%; display:block; }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
@@ -481,7 +483,7 @@ function _rpBuildDoc(route, meta) {
 </style>
 </head><body>
   <div class="rp-page">
-    <div class="rp-hint">🖨️ Utilisez la boîte d'impression pour imprimer, ou « Enregistrer au format PDF ». Astuce : gardez ce feuillet dans votre poche — il reste lisible sans réseau. (Ctrl/Cmd + P pour réimprimer.)</div>
+    <div class="rp-hint"><i class="ic" data-ic="printer"></i> Utilisez la boîte d'impression pour imprimer, ou « Enregistrer au format PDF ». Astuce : gardez ce feuillet dans votre poche — il reste lisible sans réseau. (Ctrl/Cmd + P pour réimprimer.)</div>
     <div class="rp-head">
       <div>
         <h1 class="rp-title">${_rpEsc(meta.title)}</h1>
@@ -490,13 +492,13 @@ function _rpBuildDoc(route, meta) {
       <div class="rp-brand"><strong>BWR</strong>Forêt de Compiègne<br>bwrmaps.com</div>
     </div>
     <div class="rp-stats">
-      <span>📏 <b>${_rpFmtKm(route.meters)}</b></span>
-      <span>⏱️ <b>${_rpFmtDuration(route.seconds)}</b></span>
-      <span>📅 ${today}</span>
-      <span>🧭 ${hits.length} carrefour${hits.length > 1 ? 's' : ''}</span>
+      <span><i class="ic" data-ic="ruler"></i> <b>${_rpFmtKm(route.meters)}</b></span>
+      <span><i class="ic" data-ic="timer"></i> <b>${_rpFmtDuration(route.seconds)}</b></span>
+      <span><i class="ic" data-ic="calendar"></i> ${today}</span>
+      <span><i class="ic" data-ic="compass"></i> ${hits.length} carrefour${hits.length > 1 ? 's' : ''}</span>
     </div>
     <div class="rp-map">${svg}</div>
-    <h2 class="rp-section">📖 Feuille de route</h2>
+    <h2 class="rp-section"><i class="ic" data-ic="book"></i> Feuille de route</h2>
     ${roadbook}
     <div class="rp-foot">
       <span>Généré par BWR — Balades en forêt de Compiègne</span>
@@ -557,7 +559,10 @@ function printRouteData(route, opts = {}) {
     });
     try {
       w.document.open();
-      w.document.write(html);
+      // The pop-up has no js/icons.js: inline the line icons right here.
+      w.document.write(typeof bwrIcon === 'function'
+        ? html.replace(/<i class="ic" data-ic="([^"]+)"><\/i>/g, (m, n) => `<i class="ic">${bwrIcon(n)}</i>`)
+        : html);
       w.document.close();
       w.focus();
     } catch (_) { return; }
