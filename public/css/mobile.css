@@ -281,23 +281,13 @@
   }
 
   /* Footer / inline navigation links read as buttons on a phone. */
-  .footer-links a,
-  .footer-nav a,
-  .blog-footer-links a,
-  .news-footer-links a,
-  .act-footer a,
-  .forum-footer a,
-  .inbox-footer a,
-  .lg-toc a,
-  .legal-footer a {
+  .site-footer-links a,
+  .lg-toc a {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
   }
-  .footer-links,
-  .footer-nav,
-  .blog-footer-links,
-  .news-footer-links {
+  .site-footer-links {
     row-gap: 0;
   }
 
@@ -312,7 +302,7 @@
      card. These read as buttons, so they get button-sized targets. Links that
      sit inside a run of prose are deliberately left alone. */
   a.logo,
-  .lg-logo, .cl-logo, .nf-logo, .blog-nav-logo, .footer-logo, .pf-logo,
+  .lg-logo, .cl-logo, .nf-logo, .blog-nav-logo, .site-footer-logo,
   .back-link, .lg-back, .cl-back, .nf-back,
   .card-header-link,
   .plan-upgrade-link,
@@ -323,7 +313,6 @@
   .btn-app,
   .guide-topbar-cta,
   .bwr-tut-btn,
-  .pf-links a,
   .lg-toc a,
   .guide-topbar a,
   .auth-back a,
@@ -350,8 +339,6 @@
   td a,
   dd a,
   footer a,
-  .footer a,
-  .footer-tagline a,
   .feature-desc a,
   .article-body a,
   .lg-block a,
@@ -391,10 +378,7 @@
 
   /* Footer navigation links: already 44px tall, but a 4-letter word is only
      ~30px wide. Pad them out so the target is square. */
-  .footer-links a,
-  .blog-footer-links a,
-  .pf-links a,
-  .news-footer-links a {
+  .site-footer-links a {
     min-width: 44px;
     justify-content: center;
     padding-left: 4px;
@@ -421,15 +405,12 @@
 /* ── 4. Fixed bottom nav: keep content clear of it ────────────────────────── */
 /* Every page that renders `.bottom-nav` reserves room for it. The map and the
    route planner manage their own layout (the map shrinks, the planner sidebar
-   pads itself), so they are excluded. */
+   pads itself), so they are excluded — and so are pages with the shared site
+   footer, which runs down behind the bar itself (css/footer.css). Padding the
+   body there would leave an empty band of page background under the footer. */
 @media (max-width: 768px) {
-  body:has(> .bottom-nav):not(.map-body):not(.routes-body) {
+  body:has(> .bottom-nav):not(:has(> .site-footer)):not(.map-body):not(.routes-body) {
     padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 16px);
-  }
-
-  /* Page footers sit above the nav — give the last one a little extra air. */
-  body:has(> .bottom-nav):not(.map-body):not(.routes-body) > footer:last-of-type {
-    margin-bottom: 8px;
   }
 
   /* Floating pieces that are positioned from the bottom edge must clear it. */
@@ -529,10 +510,6 @@
 
 /* ── 8. Plans ─────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* "Tout voir" sat right on top of the bottom nav at the end of the page. */
-  .plans-body {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 32px);
-  }
   .pc-toggle {
     min-height: 44px;
   }

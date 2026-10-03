@@ -99,7 +99,7 @@
   }
 
   function renderFooter() {
-    var host = document.querySelector('.footer-inner, .blog-footer');
+    var host = document.querySelector('.site-footer-inner');
     if (!host) return;
     var block = document.getElementById('bwr-footer-rating');
     if (!block) {
@@ -314,7 +314,7 @@
 
   // ── Boot ─────────────────────────────────────────────────────────────────
   function boot() {
-    var hasFooter = !!document.querySelector('.footer-inner, .blog-footer');
+    var hasFooter = !!document.querySelector('.site-footer-inner');
     if (!hasFooter && !token()) return; // no footer and can't rate → nothing to do
     injectStyles();
     var headers = {};

@@ -36,6 +36,7 @@
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/changelog.css" />
   <link rel="stylesheet" href="css/header.css" />
+  <link rel="stylesheet" href="css/footer.css" />
   <link rel="stylesheet" href="css/mobile.css" />
   <script src="js/theme.js"></script>
   <script src="js/errors.js"></script>
@@ -93,6 +94,26 @@
       </div>
     </section>
     ─────────────────────────────────────────────────────────────────────────── -->
+
+    <section class="cl-release">
+      <div class="cl-release-header">
+        <div class="cl-dot">⭐</div>
+        <div class="cl-release-meta">
+          <span class="cl-version">v0.01.63</span>
+          <span class="cl-date">3 octobre 2026</span>
+        </div>
+      </div>
+      <div class="cl-entries">
+        <div class="cl-entry">
+          <span class="cl-tag fix">fix</span>
+          <p class="cl-entry-text"><strong>Le pied de page reste en bas</strong> — Sur les pages courtes (Messagerie, Mes sorties, Actualités, Communauté), le pied de page flottait au milieu de l'écran avec une bande vide en dessous. Il est maintenant toujours collé en bas, et sur mobile il descend jusqu'à la barre d'onglets, sans espace vide.</p>
+        </div>
+        <div class="cl-entry">
+          <span class="cl-tag fix">fix</span>
+          <p class="cl-entry-text"><strong>Un seul pied de page partout</strong> — Il y avait plusieurs pieds de page différents selon les pages. Il n'y en a plus qu'un : logo BWR, Carte · Planifier · Balades · Blog · Tarifs · Guide · Contact · Mentions légales, et la note des membres.</p>
+        </div>
+      </div>
+    </section>
 
     <section class="cl-release">
       <div class="cl-release-header">
@@ -2975,6 +2996,26 @@
     </section>
 
   </main>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="site-footer-brand">
+        <a href="/" class="site-footer-logo">BWR</a>
+        <span class="site-footer-tagline">Balades en forêt de Compiègne</span>
+      </div>
+      <nav class="site-footer-links" aria-label="Liens du site">
+        <a href="/map">Carte</a>
+        <a href="/map?plan=1">Planifier</a>
+        <a href="/best-tours">Balades</a>
+        <a href="/blog">Blog</a>
+        <a href="/plans">Tarifs</a>
+        <a href="/guide">Guide</a>
+        <a href="mailto:thomaslegros71@gmail.com">Contact</a>
+        <a href="/legal">Mentions légales</a>
+      </nav>
+      <p class="site-footer-copy">© 2026 <a href="/">BWR</a> · Thomas Legros</p>
+    </div>
+  </footer>
 
   <script defer src="js/ui-shared.js"></script>
 </body>

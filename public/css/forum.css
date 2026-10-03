@@ -193,7 +193,5 @@
 .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
 .btn-save:hover:not(:disabled) { opacity: 0.88; }
 
-.forum-footer { background: #0b2410; color: rgba(255,255,255,0.55); text-align: center; padding: 32px 24px; font-size: 0.85rem; }
-.forum-footer a { color: #a3e635; text-decoration: none; }
 
 @media (max-width: 600px) { .topic-card, .post { padding: 18px 16px; } .modal-box { padding: 26px 20px; } }

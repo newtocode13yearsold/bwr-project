@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/header.css" />
+  <link rel="stylesheet" href="css/footer.css" />
   <link rel="stylesheet" href="css/home.css" />
   <link rel="stylesheet" href="css/mobile.css" />
   <script src="js/theme.js"></script>
@@ -121,11 +122,8 @@
     .sent-delete { background: #fee2e2; color: #b91c1c; border: none; border-radius: 8px; padding: 6px 12px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; flex-shrink: 0; }
     .sent-delete:hover { opacity: 0.75; }
 
-    .inbox-footer { background: #0b2410; color: rgba(255,255,255,0.55); text-align: center; padding: 32px 24px; font-size: 0.85rem; }
-    .inbox-footer a { color: #a3e635; text-decoration: none; }
 
     @media (max-width: 600px) { .msg-card, .compose-card { padding: 16px; } }
-    @media (max-width: 768px) { body { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); } }
   </style>
   <link rel="stylesheet" href="css/dark.css" />
 </head>
@@ -203,9 +201,24 @@
   </section>
 
   <!-- ── Footer ── -->
-  <footer class="inbox-footer">
-    <p>© 2026 <a href="/">BWR</a> · Carte interactive de l'Oise ·
-       <a href="mailto:thomaslegros71@gmail.com">Contact</a></p>
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="site-footer-brand">
+        <a href="/" class="site-footer-logo">BWR</a>
+        <span class="site-footer-tagline">Balades en forêt de Compiègne</span>
+      </div>
+      <nav class="site-footer-links" aria-label="Liens du site">
+        <a href="/map">Carte</a>
+        <a href="/map?plan=1">Planifier</a>
+        <a href="/best-tours">Balades</a>
+        <a href="/blog">Blog</a>
+        <a href="/plans">Tarifs</a>
+        <a href="/guide">Guide</a>
+        <a href="mailto:thomaslegros71@gmail.com">Contact</a>
+        <a href="/legal">Mentions légales</a>
+      </nav>
+      <p class="site-footer-copy">© 2026 <a href="/">BWR</a> · Thomas Legros</p>
+    </div>
   </footer>
 
   <nav class="bottom-nav" aria-label="Navigation principale">

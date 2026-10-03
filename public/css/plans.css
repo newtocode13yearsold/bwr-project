@@ -918,50 +918,6 @@
   color: rgba(255, 255, 255, 0.45);
 }
 
-/* ── Footer ──────────────────────────────────────────────────────────────── */
-.plans-footer {
-  background: var(--surface-2);
-  border-top: 1px solid var(--border-soft);
-  margin-top: 64px;
-}
-.pf-inner {
-  max-width: var(--container);
-  margin: 0 auto;
-  padding: 32px 28px;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 14px;
-}
-.pf-logo {
-  font-weight: 900;
-  font-size: 1rem;
-  color: var(--forest-900);
-}
-.pf-tag {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-.pf-links {
-  margin-left: auto;
-  display: flex;
-  gap: 22px;
-}
-.pf-links a {
-  color: var(--text);
-  text-decoration: none;
-  font-size: 0.86rem;
-  font-weight: 500;
-}
-.pf-links a:hover { color: var(--forest-700); }
-.pf-copy {
-  color: var(--text-faint);
-  font-size: 0.78rem;
-  width: 100%;
-  padding-top: 14px;
-  border-top: 1px solid var(--border-soft);
-}
-
 /* ── Activation modal ────────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
@@ -1535,10 +1491,6 @@
   .fc-actions { flex-direction: column; gap: 10px; }
   .btn-cta-primary, .btn-cta-secondary { width: 100%; padding: 16px 24px; font-size: 1rem; }
 
-  /* Footer */
-  .pf-inner { padding: 24px 16px; }
-  .pf-links { margin-left: 0; gap: 16px; flex-wrap: wrap; }
-
   /* ARF section */
   .arf-inner { padding: 28px 16px 24px; }
   .arf-prob-card { flex-direction: column; align-items: center; gap: 16px; }
@@ -1552,10 +1504,6 @@
   .arf-kpis { grid-template-columns: 1fr; }
 }
 
-/* ── Bottom nav clearance (matches nav visibility breakpoint) ── */
-@media (max-width: 768px) {
-  .plans-body { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 20px); }
-}
 
 /* ── Dark mode ───────────────────────────────────────────────────────────────
  * tokens.css remaps surfaces + generic text for [data-theme="dark"] but leaves
@@ -1574,7 +1522,6 @@
 :root[data-theme="dark"] .testimonial blockquote,
 :root[data-theme="dark"] .testimonial figcaption strong,
 :root[data-theme="dark"] .faq-item summary,
-:root[data-theme="dark"] .pf-logo,
 :root[data-theme="dark"] .pf.yes.hl {
   color: var(--text-strong);
 }

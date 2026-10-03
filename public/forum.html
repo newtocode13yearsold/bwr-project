@@ -37,6 +37,7 @@
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/header.css" />
+  <link rel="stylesheet" href="css/footer.css" />
   <link rel="stylesheet" href="css/home.css" />
   <link rel="stylesheet" href="css/mobile.css" />
   <link rel="stylesheet" href="css/forum.css" />
@@ -82,7 +83,6 @@
     }
     .page-hero p { color: rgba(255,255,255,0.72); font-size: 1.02rem; max-width: 540px; margin: 0 auto; }
 
-    @media (max-width: 768px) { body { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); } }
   </style>
   <link rel="stylesheet" href="css/dark.css" />
 </head>
@@ -205,9 +205,24 @@
   </div>
 
   <!-- ── Footer ── -->
-  <footer class="forum-footer">
-    <p>© 2026 <a href="/">BWR</a> · Carte interactive de l'Oise ·
-       <a href="mailto:thomaslegros71@gmail.com">Contact</a></p>
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="site-footer-brand">
+        <a href="/" class="site-footer-logo">BWR</a>
+        <span class="site-footer-tagline">Balades en forêt de Compiègne</span>
+      </div>
+      <nav class="site-footer-links" aria-label="Liens du site">
+        <a href="/map">Carte</a>
+        <a href="/map?plan=1">Planifier</a>
+        <a href="/best-tours">Balades</a>
+        <a href="/blog">Blog</a>
+        <a href="/plans">Tarifs</a>
+        <a href="/guide">Guide</a>
+        <a href="mailto:thomaslegros71@gmail.com">Contact</a>
+        <a href="/legal">Mentions légales</a>
+      </nav>
+      <p class="site-footer-copy">© 2026 <a href="/">BWR</a> · Thomas Legros</p>
+    </div>
   </footer>
 
   <nav class="bottom-nav" aria-label="Navigation principale">

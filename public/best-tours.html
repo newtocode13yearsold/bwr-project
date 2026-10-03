@@ -37,6 +37,7 @@
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/header.css" />
+  <link rel="stylesheet" href="css/footer.css" />
   <link rel="stylesheet" href="css/login.css" />
   <link rel="stylesheet" href="css/home.css" />
   <link rel="stylesheet" href="css/mobile.css" />
@@ -454,24 +455,12 @@
     .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-save:hover:not(:disabled) { opacity: 0.88; }
 
-    /* ── Footer ── */
-    .page-footer {
-      background: #0b2410;
-      color: rgba(255,255,255,0.55);
-      text-align: center;
-      padding: 32px 24px;
-      font-size: 0.85rem;
-    }
-    .page-footer a { color: #a3e635; text-decoration: none; }
-    .page-footer a:hover { text-decoration: underline; }
-
     @media (max-width: 600px) {
       .tour-card-body { padding: 20px 18px 18px; }
       .modal-box { padding: 28px 20px; }
       .form-group-row { grid-template-columns: 1fr; }
     }
     @media (max-width: 768px) {
-      body { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
       #fabAdd { bottom: max(80px, calc(66px + env(safe-area-inset-bottom, 0px))); right: 20px; }
     }
   </style>
@@ -586,8 +575,24 @@
   </section>
 
   <!-- Footer -->
-  <footer class="page-footer">
-    <p>© 2026 BWR · <a href="legal">Mentions légales</a> · <a href="/">Accueil</a></p>
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="site-footer-brand">
+        <a href="/" class="site-footer-logo">BWR</a>
+        <span class="site-footer-tagline">Balades en forêt de Compiègne</span>
+      </div>
+      <nav class="site-footer-links" aria-label="Liens du site">
+        <a href="/map">Carte</a>
+        <a href="/map?plan=1">Planifier</a>
+        <a href="/best-tours">Balades</a>
+        <a href="/blog">Blog</a>
+        <a href="/plans">Tarifs</a>
+        <a href="/guide">Guide</a>
+        <a href="mailto:thomaslegros71@gmail.com">Contact</a>
+        <a href="/legal">Mentions légales</a>
+      </nav>
+      <p class="site-footer-copy">© 2026 <a href="/">BWR</a> · Thomas Legros</p>
+    </div>
   </footer>
 
   <!-- FAB (admin only) -->

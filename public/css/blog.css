@@ -441,23 +441,7 @@
   line-height: 1.3;
 }
 
-/* Footer */
-.blog-footer {
-  background: var(--forest-900);
-  color: rgba(255,255,255,0.55);
-  text-align: center;
-  padding: 40px 24px;
-  font-size: 0.85rem;
-}
-.blog-footer a { color: var(--lime-500); text-decoration: none; }
-.blog-footer a:hover { text-decoration: underline; }
-.blog-footer-links {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
+/* Footer → css/footer.css (shared by every page) */
 
 @media (max-width: 600px) {
   .article-wrap { padding: 40px 18px 72px; }

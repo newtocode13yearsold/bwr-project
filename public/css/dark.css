@@ -185,7 +185,6 @@
 [data-theme="dark"] .section-eyebrow { background: rgba(163, 230, 53, 0.12); color: var(--lime-400); }
 [data-theme="dark"] .ct-rec-badge { border-color: var(--border); }
 [data-theme="dark"] .btn-cta-secondary { border-color: var(--border); }
-[data-theme="dark"] .pf-links a:hover { color: var(--lime-400); }
 [data-theme="dark"] .modal-activation h3 { color: var(--text-strong); }
 [data-theme="dark"] .arf-trend.up { border-color: hsla(83, 55%, 50%, 0.4); }
 
