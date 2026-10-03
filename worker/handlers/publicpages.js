@@ -20,6 +20,8 @@ const TYPE_LABEL = { foot: 'Pédestre', bike: 'Vélo', mix: 'Mixte', champs: 'Ch
 // Line icons (public/js/icons.js fills <i class="ic" data-ic="…">): the site
 // uses one icon style everywhere, no emoji.
 const TYPE_ICON = { foot: 'tree', bike: 'bike', mix: 'map', champs: 'sprout' };
+// Drawn cover used when a curated trail has no photo (public/img/blog/*.svg).
+const TYPE_ART = { foot: 'balade', bike: 'top-5-boucles-vtt', mix: 'carrefours-foret', champs: 'petite-randonnee-facile' };
 const ic = (name) => `<i class="ic" data-ic="${name}"></i>`;
 
 /** Escape text for safe interpolation into HTML. */
@@ -284,7 +286,7 @@ function renderTrail(tour) {
 
   const heroImg = image
     ? `<div class="article-hero-img" style="padding:0;overflow:hidden"><img src="${esc(image)}" alt="${esc(tour.name)}" style="width:100%;height:100%;object-fit:cover" /></div>`
-    : `<div class="article-hero-img" style="background:linear-gradient(135deg,#133b18,#3f7a2a)">${ic(TYPE_ICON[tour.type] || 'tree')}</div>`;
+    : `<div class="article-hero-img"><img src="/img/blog/${TYPE_ART[tour.type] || 'balade'}.svg" alt="" width="1200" height="600" /></div>`;
 
   const pills =
     (km ? statPill(km, 'Distance') : '') +

@@ -40,6 +40,7 @@
   <link rel="stylesheet" href="css/footer.css" />
   <link rel="stylesheet" href="css/login.css" />
   <link rel="stylesheet" href="css/home.css" />
+  <link rel="stylesheet" href="css/page-hero.css" />
   <link rel="stylesheet" href="css/mobile.css" />
   <!-- Données structurées : sélection de balades en forêt de Compiègne -->
   <script type="application/ld+json">
@@ -55,45 +56,12 @@
   }
   </script>
   <script src="js/theme.js"></script>
-  <style>
   <script src="js/icons.js"></script>
+  <style>
     html, body { height: auto !important; overflow: auto !important; }
-    body { background: var(--surface-1, #fafbf7); }
+    body { background: var(--surface-1, var(--forest-50)); }
 
     /* ── Hero ── */
-    .page-hero {
-      padding: 64px 24px 56px;
-      text-align: center;
-      background: linear-gradient(160deg, #0b2410 0%, #1e4d14 55%, #2d6b1f 100%);
-      color: #fff;
-    }
-    .page-hero-badge {
-      display: inline-block;
-      background: rgba(163,230,53,0.18);
-      color: #a3e635;
-      border: 1px solid rgba(163,230,53,0.35);
-      border-radius: 999px;
-      padding: 4px 16px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      margin-bottom: 20px;
-    }
-    .page-hero h1 {
-      font-family: var(--font-display);
-      font-size: clamp(2rem, 5vw, 3.2rem);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 16px;
-      line-height: 1.15;
-    }
-    .page-hero p {
-      color: rgba(255,255,255,0.72);
-      font-size: 1.05rem;
-      max-width: 520px;
-      margin: 0 auto;
-    }
 
     /* ── Filters ── */
     .filters-bar {
@@ -110,25 +78,25 @@
       align-items: center;
       gap: 6px;
       background: var(--surface-0, #fff);
-      border: 1.5px solid var(--border, #e2e8da);
+      border: 1.5px solid var(--border);
       border-radius: 999px;
       padding: 7px 16px;
       font-size: 0.875rem;
       font-weight: 600;
-      color: var(--text, #1f2937);
+      color: var(--text, var(--gray-800));
       cursor: pointer;
       transition: background 0.15s, border-color 0.15s, color 0.15s;
     }
-    .filter-btn:hover { border-color: var(--forest-400, #6fb356); }
+    .filter-btn:hover { border-color: var(--forest-500); }
     .filter-btn.active {
-      background: var(--forest-700, #1e4d14);
-      border-color: var(--forest-700, #1e4d14);
-      color: #a3e635;
+      background: var(--forest-700);
+      border-color: var(--forest-700);
+      color: var(--lime-500);
     }
     .filter-sep {
       width: 1px;
       height: 24px;
-      background: var(--border-soft, #ebeee5);
+      background: var(--border-soft, var(--forest-100));
       margin: 0 4px;
     }
 
@@ -139,9 +107,8 @@
       padding: 32px 24px 96px;
     }
     .tours-count {
-      color: rgba(236, 252, 203, 0.92);
       font-size: 0.85rem;
-      color: var(--text-muted, #6b7280);
+      color: var(--text-muted, var(--gray-500));
       margin-bottom: 24px;
       font-weight: 500;
     }
@@ -149,7 +116,7 @@
     /* ── Tour card ── */
     .tour-card {
       background: #fff;
-      border: 1px solid var(--border-soft, #ebeee5);
+      border: 1px solid var(--border-soft, var(--forest-100));
       border-radius: 20px;
       margin-bottom: 24px;
       box-shadow: 0 2px 8px -4px rgba(11,36,16,0.08);
@@ -167,11 +134,12 @@
     .tour-card-img-placeholder {
       width: 100%;
       height: 160px;
-      background: linear-gradient(135deg, #0b2410 0%, #1e4d14 60%, #2d6b1f 100%);
+      background: linear-gradient(135deg, var(--forest-900) 0%, var(--forest-700) 60%, var(--forest-600) 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 3rem;
+      color: rgba(236, 252, 203, 0.92);
     }
 
     .tour-card-body { padding: 28px 28px 24px; }
@@ -184,8 +152,8 @@
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: var(--forest-700, #1e4d14);
-      color: #a3e635;
+      background: var(--forest-700);
+      color: var(--lime-500);
       font-size: 0.85rem;
       font-weight: 800;
       float: right;
@@ -208,18 +176,18 @@
       font-weight: 700;
       letter-spacing: 0.03em;
     }
-    .tour-badge-easy    { background: #dcfce7; color: #15803d; }
-    .tour-badge-medium  { background: #ffedd5; color: #c2410c; }
-    .tour-badge-hard    { background: #fee2e2; color: #b91c1c; }
-    .tour-badge-type    { background: var(--forest-100, #f0f7ec); color: var(--forest-700, #1e4d14); border: 1px solid var(--forest-200, #d4edbc); }
-    .tour-badge-dist    { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+    .tour-badge-easy    { background: var(--green-100); color: var(--green-700); }
+    .tour-badge-medium  { background: var(--orange-100); color: var(--orange-700); }
+    .tour-badge-hard    { background: var(--red-100); color: var(--red-700); }
+    .tour-badge-type    { background: var(--forest-100); color: var(--forest-700); border: 1px solid var(--forest-200); }
+    .tour-badge-dist    { background: var(--blue-50); color: var(--sky-700); border: 1px solid #bae6fd; }
 
     .tour-name {
       font-family: var(--font-display);
       font-size: clamp(1.15rem, 3vw, 1.5rem);
       font-weight: 700;
-      color: var(--text-strong, #0b2410);
-      letter-spacing: -0.02em;
+      color: var(--text-strong, var(--forest-900));
+      letter-spacing: -0.01em;
       line-height: 1.25;
       margin-bottom: 10px;
     }
@@ -228,7 +196,7 @@
     .tour-card-imglink { display: block; text-decoration: none; }
     .tour-start {
       font-size: 0.85rem;
-      color: var(--text-muted, #6b7280);
+      color: var(--text-muted, var(--gray-500));
       margin-bottom: 14px;
       display: flex;
       align-items: center;
@@ -236,7 +204,7 @@
     }
     .tour-description {
       font-size: 0.97rem;
-      color: var(--text, #1f2937);
+      color: var(--text, var(--gray-800));
       line-height: 1.7;
       margin-bottom: 20px;
       white-space: pre-line;
@@ -252,8 +220,8 @@
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      background: var(--forest-700, #1e4d14);
-      color: #a3e635;
+      background: var(--forest-700);
+      color: var(--lime-500);
       border: none;
       border-radius: 999px;
       padding: 9px 22px;
@@ -268,9 +236,9 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: var(--forest-100, #f0f7ec);
-      color: var(--forest-700, #1e4d14);
-      border: 1px solid var(--forest-300, #b9d8a4);
+      background: var(--forest-100);
+      color: var(--forest-700);
+      border: 1px solid var(--forest-300);
       border-radius: 999px;
       padding: 8px 18px;
       font-size: 0.875rem;
@@ -278,7 +246,7 @@
       text-decoration: none;
       transition: background 0.15s, transform 0.15s;
     }
-    .btn-external:hover { background: var(--forest-200, #d4edbc); transform: translateY(-1px); }
+    .btn-external:hover { background: var(--forest-200); transform: translateY(-1px); }
 
     /* admin controls */
     .tour-admin-row {
@@ -286,7 +254,7 @@
       gap: 10px;
       margin-top: 16px;
       padding-top: 16px;
-      border-top: 1px solid var(--border-soft, #ebeee5);
+      border-top: 1px solid var(--border-soft, var(--forest-100));
     }
     .tour-btn-edit, .tour-btn-delete {
       border: none;
@@ -297,14 +265,14 @@
       cursor: pointer;
       transition: opacity 0.15s;
     }
-    .tour-btn-edit   { background: #e0f2fe; color: #0369a1; }
-    .tour-btn-delete { background: #fee2e2; color: #b91c1c; }
+    .tour-btn-edit   { background: var(--blue-50); color: var(--sky-700); }
+    .tour-btn-delete { background: var(--red-100); color: var(--red-700); }
     .tour-btn-edit:hover, .tour-btn-delete:hover { opacity: 0.75; }
 
     /* ── Empty / loading ── */
     .tours-loading, .tours-empty {
       text-align: center;
-      color: var(--text-muted, #6b7280);
+      color: var(--text-muted, var(--gray-500));
       padding: 64px 0;
       font-size: 1rem;
     }
@@ -318,8 +286,8 @@
       width: 56px;
       height: 56px;
       border-radius: 50%;
-      background: var(--forest-700, #1e4d14);
-      color: #a3e635;
+      background: var(--forest-700);
+      color: var(--lime-500);
       border: none;
       font-size: 1.6rem;
       line-height: 1;
@@ -371,18 +339,18 @@
       font-family: var(--font-display);
       font-size: 1.35rem;
       font-weight: 700;
-      color: var(--text-strong, #0b2410);
+      color: var(--text-strong, var(--forest-900));
     }
     .modal-close {
       background: none;
       border: none;
       font-size: 1.4rem;
-      color: var(--text-muted, #6b7280);
+      color: var(--text-muted, var(--gray-500));
       cursor: pointer;
       line-height: 1;
       padding: 4px;
     }
-    .modal-close:hover { color: var(--text, #1f2937); }
+    .modal-close:hover { color: var(--text, var(--gray-800)); }
 
     .form-group { margin-bottom: 18px; }
     .form-group-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
@@ -390,7 +358,7 @@
       display: block;
       font-size: 0.82rem;
       font-weight: 600;
-      color: var(--text-strong, #0b2410);
+      color: var(--text-strong, var(--forest-900));
       margin-bottom: 6px;
       letter-spacing: 0.03em;
       text-transform: uppercase;
@@ -398,41 +366,41 @@
     .form-label span { color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
     .form-input, .form-textarea, .form-select {
       width: 100%;
-      border: 1.5px solid var(--border, #e2e8da);
+      border: 1.5px solid var(--border);
       border-radius: 10px;
       padding: 10px 14px;
       font-size: 0.97rem;
       font-family: var(--font-sans);
-      color: var(--text, #1f2937);
+      color: var(--text, var(--gray-800));
       background: #fff;
       outline: none;
       transition: border-color 0.15s;
       appearance: none;
     }
-    .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--forest-600, #2d6b1f); }
+    .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--forest-600); }
     .form-textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
 
     .img-upload-area {
-      border: 2px dashed var(--border, #e2e8da);
+      border: 2px dashed var(--border);
       border-radius: 10px;
       padding: 20px;
       text-align: center;
       cursor: pointer;
       transition: border-color 0.15s, background 0.15s;
-      background: #fafbf7;
+      background: var(--forest-50);
       position: relative;
     }
-    .img-upload-area:hover { border-color: var(--forest-600, #2d6b1f); background: #f0f7ec; }
+    .img-upload-area:hover { border-color: var(--forest-600); background: var(--forest-100); }
     .img-upload-area input[type="file"] {
       position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
     }
-    .img-upload-label { font-size: 0.9rem; color: var(--text-muted, #6b7280); pointer-events: none; }
-    .img-upload-label strong { color: var(--forest-700, #1e4d14); }
+    .img-upload-label { font-size: 0.9rem; color: var(--text-muted, var(--gray-500)); pointer-events: none; }
+    .img-upload-label strong { color: var(--forest-700); }
     .img-preview-wrap { margin-top: 12px; position: relative; display: inline-block; }
     .img-preview-wrap img { max-height: 140px; border-radius: 8px; display: block; }
     .img-remove-btn {
       position: absolute; top: -8px; right: -8px;
-      background: #b91c1c; color: #fff;
+      background: var(--red-700); color: #fff;
       border: none; border-radius: 50%;
       width: 22px; height: 22px;
       font-size: 0.75rem; font-weight: 700;
@@ -440,17 +408,17 @@
       display: flex; align-items: center; justify-content: center;
     }
 
-    .modal-error { color: #b91c1c; font-size: 0.875rem; margin-bottom: 12px; min-height: 20px; }
+    .modal-error { color: var(--red-700); font-size: 0.875rem; margin-bottom: 12px; min-height: 20px; }
     .modal-actions {
       display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px;
     }
     .btn-cancel {
-      background: var(--surface-2, #f3f4f0); color: var(--text, #1f2937);
+      background: var(--surface-2, var(--forest-50)); color: var(--text, var(--gray-800));
       border: none; border-radius: 10px; padding: 10px 22px;
       font-size: 0.9rem; font-weight: 600; cursor: pointer;
     }
     .btn-save {
-      background: var(--forest-700, #1e4d14); color: #a3e635;
+      background: var(--forest-700); color: var(--lime-500);
       border: none; border-radius: 10px; padding: 10px 28px;
       font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
     }

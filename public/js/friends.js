@@ -93,10 +93,11 @@
     const feed = data.feed || [];
     if (!feed.length) {
       content.innerHTML = `
-        <div class="fr-empty">
-          <h2>Votre fil est encore vide</h2>
-          <p>Suivez des randonneurs dans l'onglet <a href="#" data-goto="discover">Découvrir</a>,
-          ou partagez vos propres sorties depuis <a href="activities">Mes sorties</a>.</p>
+        <div class="empty-state">
+          <div class="empty-state-icon"><i class="ic" data-ic="users"></i></div>
+          <h2 class="empty-state-title">Votre fil est encore vide</h2>
+          <p class="empty-state-text">Suivez d'autres randonneurs, ou partagez vos propres sorties depuis <a href="/activities">Mes sorties</a> : elles apparaîtront ici.</p>
+          <a class="empty-state-btn" href="#" data-goto="discover"><i class="ic" data-ic="search"></i> Trouver des randonneurs</a>
         </div>`;
       return;
     }

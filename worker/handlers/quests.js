@@ -63,12 +63,12 @@ function grantPlanReward(user, plan, days) {
 async function sendQuestInbox(env, user, def, planApplied) {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
-  let body = `Félicitations ! Tu as débloqué le haut fait « ${def.title} » et remporté : ${def.label}.`;
+  let body = `Félicitations ! Vous avez débloqué le haut fait « ${def.title} » et remporté : ${def.label}.`;
   if (planApplied) {
     const until = new Date(planApplied.planExpiresAt).toLocaleDateString('fr-FR');
     body += ` Ton abonnement Pro est actif jusqu'au ${until}.`;
   }
-  if (def.badge) body += ` Le badge « ${def.badge.label} » a été ajouté à ton profil.`;
+  if (def.badge) body += ` Le badge « ${def.badge.label} » a été ajouté à votre profil.`;
   const message = {
     id,
     createdAt: now,

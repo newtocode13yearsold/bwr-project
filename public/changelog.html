@@ -74,6 +74,14 @@
   <!-- ── Timeline ── -->
   <main class="cl-timeline" id="timeline">
 
+    <!-- Only the 10 latest releases show by default; this CSS-only toggle
+         (checkbox + label, no JS) reveals the older ones. See changelog.css. -->
+    <input type="checkbox" id="clShowAll" class="cl-showall-input" />
+    <label for="clShowAll" class="cl-showall">
+      <span class="cl-showall-more">Voir les versions précédentes</span>
+      <span class="cl-showall-less">Masquer les anciennes versions</span>
+    </label>
+
     <!-- ─ Example release block — duplicate this pattern for each version ─
     <section class="cl-release">
       <div class="cl-release-header">
@@ -85,16 +93,60 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Titre du bug</strong> — Description courte de ce qui était cassé et comment c'est réparé.</p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Nouvelle fonctionnalité</strong> — Ce qui a été ajouté et pourquoi.</p>
         </div>
       </div>
     </section>
     ─────────────────────────────────────────────────────────────────────────── -->
+
+    <section class="cl-release">
+      <div class="cl-release-header">
+        <div class="cl-dot"><i class="ic" data-ic="palette"></i></div>
+        <div class="cl-release-meta">
+          <span class="cl-version">v0.01.67</span>
+          <span class="cl-date">3 octobre 2026</span>
+        </div>
+      </div>
+      <div class="cl-entries">
+        <div class="cl-entry">
+          <span class="cl-tag improved">Amélioré</span>
+          <p class="cl-entry-text"><strong>Des titres qui respirent</strong> — Les grands titres en police Fraunces étaient si serrés que certaines lettres se touchaient («&nbsp;Choisissez jusqu'où&nbsp;», «&nbsp;Questions fréquentes&nbsp;»), et les petits titres devenaient difficiles à lire. L'espacement et le dessin des lettres s'adaptent maintenant à la taille du titre.</p>
+        </div>
+        <div class="cl-entry">
+          <span class="cl-tag improved">Amélioré</span>
+          <p class="cl-entry-text"><strong>Un seul nuancier pour tout le site</strong> — Plus de 1&nbsp;300 couleurs tapées à la main ont été reliées à la palette officielle de BWR, et l'accueil comme la page Tarifs n'utilisent plus qu'une quinzaine de tailles de texte au lieu d'une trentaine. Le site est plus homogène d'une page à l'autre.</p>
+        </div>
+        <div class="cl-entry">
+          <span class="cl-tag improved">Amélioré</span>
+          <p class="cl-entry-text"><strong>Le Classement rejoint les autres pages</strong> — Même bande verte, même titre et mêmes onglets que Mes sorties, Communauté ou Quêtes.</p>
+        </div>
+        <div class="cl-entry">
+          <span class="cl-tag new">Nouveau</span>
+          <p class="cl-entry-text"><strong>Des illustrations pour le blog</strong> — Chaque guide a maintenant son propre dessin de forêt à la place d'une simple icône&nbsp;: étang, pluie, feuilles d'automne, piste de VTT, poteau de carrefour, château de Chantilly, mer de sable d'Ermenonville…</p>
+        </div>
+        <div class="cl-entry">
+          <span class="cl-tag improved">Amélioré</span>
+          <p class="cl-entry-text"><strong>Le même ton partout</strong> — Les quêtes, les badges, les messages d'erreur, les emails de notification et l'assistant IA vous vouvoient désormais, comme le reste du site.</p>
+        </div>
+        <div class="cl-entry">
+          <span class="cl-tag improved">Amélioré</span>
+          <p class="cl-entry-text"><strong>Plus lisible</strong> — Textes gris légèrement plus foncés, pied de page, étoiles d'avis, étiquettes «&nbsp;Pro&nbsp;» et barre du bas plus faciles à lire&nbsp;; dans le guide, «&nbsp;vert = facile&nbsp;» etc. s'écrit dans une teinte lisible avec une pastille de la vraie couleur. En mode sombre, trois textes de l'accueil qui étaient invisibles réapparaissent.</p>
+        </div>
+        <div class="cl-entry">
+          <span class="cl-tag fixed">Corrigé</span>
+          <p class="cl-entry-text"><strong>Mises en page qui rétrécissaient</strong> — Depuis le nouveau pied de page, plusieurs pages se tassaient au centre&nbsp;: onglets du forum sur deux lignes, titre de la messagerie décalé, grille du blog réduite. Tout retrouve sa pleine largeur. Corrigés aussi&nbsp;: l'étiquette de catégorie du blog étirée, le sommaire des mentions légales collé au texte, les boutons soulignés du guide, les intitulés centrés de la connexion et les cartes floues du carrousel de l'accueil (les 4 fonctionnalités s'affichent côte à côte sur ordinateur).</p>
+        </div>
+        <div class="cl-entry">
+          <span class="cl-tag improved">Amélioré</span>
+          <p class="cl-entry-text"><strong>Finitions</strong> — Prix écrits «&nbsp;2,99&nbsp;€&nbsp;», nombre de badges cohérent partout (40), deux libellés seulement pour s'abonner («&nbsp;Passer à Pro&nbsp;», «&nbsp;Voir le plan Pro&nbsp;»), pages vides avec une explication et un bouton, faux témoignages retirés de la page Tarifs. Ce changelog n'affiche plus que les 10 dernières versions (les autres d'un clic) et ses étiquettes sont en français.</p>
+        </div>
+      </div>
+    </section>
 
     <section class="cl-release">
       <div class="cl-release-header">
@@ -122,7 +174,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>La carte ne tombe plus en panne en fin de journée</strong> — Charger la liste des chemins lisait chaque chemin un par un dans la base de données, soit plus de 440 lectures à chaque fois. Les jours de forte affluence, on dépassait la limite quotidienne de lectures et la carte cessait de répondre jusqu'au lendemain. La liste complète est maintenant gardée en un seul bloc : une seule lecture au lieu de 440, toujours à jour après chaque modification ou notation d'un chemin.</p>
         </div>
       </div>
@@ -138,7 +190,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Un seul style d'icônes</strong> — L'accueil utilisait des icônes dessinées au trait, l'appli des émojis et la carte des caractères de texte. Les émojis changent d'apparence selon le téléphone (iPhone, Samsung, Windows). Tout le site utilise maintenant les mêmes icônes au trait : carte, planificateur, profil, badges, roue du jour, quêtes, communauté, blog et panneau admin. Elles s'affichent pareil partout et prennent la couleur du texte, en thème clair comme en sombre.</p>
         </div>
       </div>
@@ -154,11 +206,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Le pied de page reste en bas</strong> — Sur les pages courtes (Messagerie, Mes sorties, Actualités, Communauté), le pied de page flottait au milieu de l'écran avec une bande vide en dessous. Il est maintenant toujours collé en bas, et sur mobile il descend jusqu'à la barre d'onglets, sans espace vide.</p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Un seul pied de page partout</strong> — Il y avait plusieurs pieds de page différents selon les pages. Il n'y en a plus qu'un : logo BWR, Carte · Planifier · Balades · Blog · Tarifs · Guide · Contact · Mentions légales, et la note des membres.</p>
         </div>
       </div>
@@ -174,11 +226,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Le même en-tête sur toutes les pages</strong> — L'accueil, la carte, le profil, le classement, les quêtes, le blog, le guide, les mentions légales et ce changelog avaient chacun leur propre barre du haut (couleurs, polices, liens et boutons différents). Il n'y en a plus qu'une : logo BWR, Carte · Actualités · Blog · Plan, le bouton Menu et votre avatar — ou «&nbsp;Connexion&nbsp;» si vous n'êtes pas connecté.</p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Le blog vous reconnaît</strong> — Les pages du blog affichaient «&nbsp;Connexion&nbsp;» même quand vous étiez connecté. Elles montrent maintenant votre avatar, comme partout ailleurs. Le mode sombre se règle depuis le Menu, sur toutes les pages.</p>
         </div>
       </div>
@@ -194,11 +246,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Boutons de la carte qui ne se chevauchent plus</strong> — Sur mobile, le bouton rond des outils cachait le bouton «&nbsp;Points&nbsp;» : celui-ci est maintenant posé juste au-dessus. Le bouton avatar en haut fait désormais la même taille que les autres, qui sont bien alignés.</p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>De vraies icônes dans l'en-tête</strong> — Les boutons Menu, Modifier et Carte affichaient des caractères de texte (☰ ✎ ⋮). Ils utilisent maintenant les mêmes icônes dessinées que le reste du site, sur toutes les pages.</p>
         </div>
       </div>
@@ -214,7 +266,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fixed">fixed</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Bulle «&nbsp;Vous aimez BWR&nbsp;?&nbsp;» plus discrète</strong> — Elle ne s'ouvre plus dès l'arrivée : seulement après quelques jours d'utilisation et une minute sur la page, au plus deux fois, et jamais sur la carte. Sur mobile, elle tient sur une seule ligne juste au-dessus de la barre du bas, le «&nbsp;?&nbsp;» ne part plus seul à la ligne, la croix est assez grande pour un doigt et le cadre bleu autour a disparu.</p>
         </div>
       </div>
@@ -230,7 +282,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Un seul look pour le plan Pro</strong> — Sur la page Tarifs, la carte Pro portait encore les couleurs dorées de l'ancien plan « Or ». Elle reprend maintenant le vert forêt et le bouton citron de l'accueil, et ne vous éblouit plus en thème sombre. Le classement ne parle plus non plus de « membres Or » : la carte des chemins parcourus est réservée aux membres Pro.</p>
         </div>
       </div>
@@ -246,7 +298,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Barre du bas identique partout</strong> — Sur mobile, la barre de navigation affiche désormais les mêmes cinq boutons, au même endroit, sur toutes les pages : Carte · Trajets · Sorties · Amis · Profil. Plus besoin de chercher un bouton qui change de place. La messagerie reste accessible depuis le menu ☰.</p>
         </div>
       </div>
@@ -262,7 +314,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Planificateur plus aéré</strong> — Le panneau « Planifier » respire : plus d'espace, des champs et des boutons plus grands, des étapes numérotées comme un balisage de sentier (① départ, ② distance, ③ options), de nouvelles icônes Boucle / A → B / Sur mesure et un bouton « Boucle depuis ma position » qui flotte. Sur mobile, le compteur de trajets tient sur une seule ligne.</p>
         </div>
       </div>
@@ -278,7 +330,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Pages légales à jour</strong> — Les CGU et la politique de confidentialité décrivent désormais tout ce que fait l'appli : l'espace Communauté (abonnements, balades partagées, kudos), le planificateur IA, les liens de partage publics, l'essai Pro de 7 jours, la carte IGN et le journal des erreurs techniques. La liste des services tiers et les durées de conservation ont aussi été complétées.</p>
         </div>
       </div>
@@ -294,7 +346,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Actualités de l'automne</strong> — La page Actualités fait peau neuve : les anciens articles de l'été laissent place aux rendez-vous à venir (Rallye des Ancêtres, Fête de la mobilité douce, expo « Dans la peau des arbres », 11 Novembre, marché de Noël) et aux conseils de saison (brame du cerf, chasse, champignons, heure d'hiver). Chaque article renvoie vers sa source.</p>
         </div>
       </div>
@@ -310,11 +362,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Nouveau look du planificateur</strong> — Le panneau « Planifier » passe à un design épuré : les modes Boucle / A → B / Sur mesure deviennent des onglets, la distance tient sur une seule ligne, et le bouton principal occupe toute la largeur. Les résultats (distance, durée, dénivelé) sont plus compacts et les options secondaires se replient proprement.</p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Fonctions Pro bien signalées</strong> — Chaque fonction réservée au plan Pro affiche clairement son étiquette, même dans les sections repliées (export, passage par des carrefours) et dans les petits boutons, sans jamais déborder du panneau.</p>
         </div>
       </div>
@@ -330,7 +382,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fixed">fixed</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Niveau lisible sur le profil</strong> — En thème clair, la barre de niveau en haut du profil s'affichait en blanc sur blanc. Elle est de nouveau lisible.</p>
         </div>
       </div>
@@ -346,7 +398,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Profil simplifié</strong> — La page profil est désormais rangée en trois onglets : <em>Activité</em> (statistiques, calendrier, derniers trajets), <em>Récompenses</em> (défi du mois, badges, tirage du jour) et <em>Compte</em> (réglages sous forme de liste, qui ne s'ouvrent qu'au clic). La météo et l'état des chemins ont quitté le profil.</p>
         </div>
       </div>
@@ -362,7 +414,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Page d'accueil allégée</strong> — Le lien «&nbsp;Planifier&nbsp;» a été retiré du menu du haut de la page d'accueil : le planificateur s'ouvre directement depuis la Carte.</p>
         </div>
       </div>
@@ -378,7 +430,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Une barre du haut identique partout</strong> — La cloche des événements <i class="ic" data-ic="bell"></i> et votre menu (avatar, profil, déconnexion) apparaissent maintenant sur toutes les pages, y compris Mes sorties, Forum, Communauté, Quêtes, Actualités et Plans. Le bouton «&nbsp;Installer&nbsp;» est désormais rangé dans le menu ☰.</p>
         </div>
       </div>
@@ -394,7 +446,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Pas de recalcul inutile</strong> — Une fois votre trajet calculé, le bouton affiche «&nbsp;✓ Trajet à jour&nbsp;» et reste inactif tant que vous ne changez rien (point, distance, difficulté, type de chemin…). Fini les trajets gratuits de la semaine consommés pour obtenir exactement le même itinéraire.</p>
         </div>
       </div>
@@ -410,7 +462,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Cloche discrète</strong> — La cloche <i class="ic" data-ic="bell"></i> n&rsquo;apparaît plus que lorsqu&rsquo;un nouvel événement vous attend. Une fois lu, elle disparaît jusqu&rsquo;à la prochaine nouveauté.</p>
         </div>
       </div>
@@ -426,7 +478,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>«&nbsp;Pro uniquement&nbsp;» partout</strong> — Pour les comptes gratuits, chaque fonctionnalité Pro affiche désormais la même étiquette claire «&nbsp;<i class="ic" data-ic="lock"></i> Pro uniquement&nbsp;», sur toutes les pages&nbsp;: planificateur (Sur mesure, Difficile, Satellite, exports, sauvegarde, profil altimétrique), carte, forum et badges du profil.</p>
         </div>
       </div>
@@ -442,7 +494,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Le planificateur s&rsquo;ouvre directement sur la carte</strong> — Plus besoin de changer de page&nbsp;: sur la Carte, cliquez sur l&rsquo;onglet «&nbsp;<i class="ic" data-ic="compass"></i> Planifier&nbsp;» (ou «&nbsp;Trajets&nbsp;» sur téléphone) et tout le planificateur glisse sur le côté — IA, boucle rapide, A→B, sur mesure, export GPX, trajets sauvegardés. Fermez-le avec ✕ et vous retrouvez la carte à l&rsquo;endroit où vous étiez. Les anciens liens «&nbsp;Planifier&nbsp;» continuent de fonctionner. <i class="ic" data-ic="compass"></i></p>
         </div>
       </div>
@@ -458,7 +510,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fixed">fixed</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Compteur hebdomadaire du profil</strong> — Les trajets et boucles créés cette semaine s&rsquo;affichent enfin correctement sur votre profil (ils restaient à 0 à cause d&rsquo;un décalage de fuseau horaire). Le nombre de boucles utilisées est désormais visible aussi. <i class="ic" data-ic="repeat"></i></p>
         </div>
       </div>
@@ -474,11 +526,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>La roue fête vos gains</strong> — Quand la roue du jour s&rsquo;arrête, votre lot apparaît dans une fenêtre animée, avec une pluie de feuilles et d&rsquo;étincelles. <i class="ic" data-ic="party"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Des conseils qui parlent</strong> — Un «&nbsp;Conseil sentier&nbsp;» vous est désormais confié par un habitant de la forêt&nbsp;: une chouette, un renard, un sanglier bougon… Le conseil s&rsquo;écrit tout seul sur un petit parchemin. <i class="ic" data-ic="owl"></i></p>
         </div>
       </div>
@@ -494,7 +546,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fixed">fixed</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Fini la médaille d&rsquo;argent</strong> — Quelques icônes <i class="ic ic-silver" data-ic="medal"></i> de l&rsquo;ancien plan Argent traînaient encore sur votre profil (carte Pro, essai gratuit) et sur les articles réservés des actualités. Elles affichent désormais l&rsquo;étoile du plan Pro <i class="ic" data-ic="star"></i>.</p>
         </div>
       </div>
@@ -510,11 +562,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Mode sombre partout</strong> — Toutes les pages passent désormais en sombre&nbsp;: planificateur, connexion, forum, communauté, messagerie, guide, blog, pages de balades… ainsi que les fenêtres qui s&rsquo;ouvrent, comme les infos d&rsquo;un chemin sur la carte ou la fenêtre pour noter BWR. Plus aucun écran blanc qui éblouit le soir. <i class="ic" data-ic="moon"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Avis plus lisible</strong> — La bulle «&nbsp;Vous aimez BWR&nbsp;?&nbsp;» restait blanche en mode sombre, et les étoiles vides étaient presque invisibles. C&rsquo;est corrigé.</p>
         </div>
       </div>
@@ -530,7 +582,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Carte plus dégagée</strong> — Le bouton «&nbsp;<i class="ic" data-ic="mail"></i> Contact&nbsp;» flottant a été retiré de la carte pour laisser plus de place aux sentiers. <i class="ic" data-ic="map"></i></p>
         </div>
       </div>
@@ -546,7 +598,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>En-tête plus épuré</strong> — Le bouton «&nbsp;Thème&nbsp;» a été retiré du haut des pages. Le mode sombre / clair se règle désormais depuis le menu ☰, sur toutes les pages. Votre choix reste mémorisé. <i class="ic" data-ic="moon"></i></p>
         </div>
       </div>
@@ -562,7 +614,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Menu de la carte allégé</strong> — L&rsquo;entrée «&nbsp;Cartes hors-ligne&nbsp;» a été retirée du menu. La carte hors-ligne continue de fonctionner&nbsp;: votre forêt se télécharge toujours automatiquement en arrière-plan. <i class="ic" data-ic="eraser"></i></p>
         </div>
       </div>
@@ -578,7 +630,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Le forum rejoint la Communauté</strong> — Le forum a désormais son propre onglet «&nbsp;<i class="ic" data-ic="message"></i> Forum&nbsp;» dans la page Communauté, à côté du fil d&rsquo;actu, de Découvrir et de Mon réseau. Discussions, amis et sorties partagées sont réunis au même endroit. <i class="ic" data-ic="message"></i></p>
         </div>
       </div>
@@ -594,7 +646,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Menu simplifié</strong> — L&rsquo;entrée «&nbsp;Messagerie&nbsp;» a été retirée du menu pour le garder plus léger. <i class="ic" data-ic="inbox"></i></p>
         </div>
       </div>
@@ -610,7 +662,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">improved</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Planificateur épuré</strong> — L&rsquo;adresse e-mail personnelle affichée dans le panneau du planificateur a été retirée. Pour nous écrire, le lien «&nbsp;Contact&nbsp;» reste disponible en bas des pages. <i class="ic" data-ic="mail"></i></p>
         </div>
       </div>
@@ -626,11 +678,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Nouvelle page d'accueil</strong> — «&nbsp;Planifiez. Explorez. Aventurez-vous.&nbsp;», une mini-carte IGN qui montre vraiment les sentiers notés, les forêts de l'Oise qui défilent et les fonctionnalités qui tournent toutes seules. <i class="ic" data-ic="tree"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Accueil mieux aligné</strong> — Les cartes avaient perdu leur bordure, les tarifs étaient décalés et la date de vérification débordait de son cadre&nbsp;: tout est remis d'aplomb.</p>
         </div>
       </div>
@@ -646,7 +698,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Inscription plus claire</strong> — Une fois votre compte créé, le formulaire se referme et ne laisse que le message &laquo;&nbsp;email envoyé&nbsp;&raquo;&nbsp;: plus de risque de le remplir une deuxième fois par erreur. <i class="ic" data-ic="mail"></i></p>
         </div>
       </div>
@@ -662,7 +714,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Direction la carte dès l&rsquo;inscription</strong> — Après avoir créé votre compte, votre première connexion vous amène directement sur la carte (avec la visite guidée de bienvenue), au lieu de la page d&rsquo;accueil. <i class="ic" data-ic="map"></i></p>
         </div>
       </div>
@@ -678,19 +730,19 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Le compte administrateur est bien mieux protégé</strong> — C&rsquo;est le compte qui peut tout faire sur BWR&nbsp;: modifier les chemins, gérer les abonnements, accéder aux données. Il est désormais protégé par <strong>deux mots de passe</strong> au lieu d&rsquo;un&nbsp;: connaître le premier ne suffit plus pour entrer. <i class="ic" data-ic="shield"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Alerte à chaque connexion administrateur</strong> — Toute connexion au compte admin, réussie <em>ou</em> ratée, déclenche immédiatement une notification et un email. Si quelqu&rsquo;un tentait d&rsquo;y accéder, ça se verrait en quelques secondes. <i class="ic" data-ic="bell"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Connexion plus résistante aux attaques</strong> — Les tentatives de connexion sont maintenant limitées par ordinateur d&rsquo;origine, et plus seulement par adresse email. Quelqu&rsquo;un qui essaierait un même mot de passe sur des centaines de comptes est bloqué bien plus tôt. <i class="ic" data-ic="construction"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Export de vos données&nbsp;: vérification supplémentaire</strong> — L&rsquo;export RGPD ne contenait déjà aucun mot de passe&nbsp;; des tests automatiques vérifient désormais, à chaque mise en ligne, qu&rsquo;aucune empreinte de mot de passe ne puisse s&rsquo;y glisser. <i class="ic" data-ic="lock"></i></p>
         </div>
       </div>
@@ -706,7 +758,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Des tests plus fiables avant chaque mise en ligne</strong> — Deux tests automatiques du forum et du suivi d’erreurs se trompaient de temps en temps, non pas à cause d’un vrai bug mais parce qu’ils dépendaient de la milliseconde à laquelle ils s’exécutaient. C’est corrigé&nbsp;: le filet de sécurité qui vérifie l’application avant chaque mise en ligne est de nouveau vert à 100&nbsp;%. <i class="ic" data-ic="flask"></i></p>
         </div>
       </div>
@@ -722,7 +774,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>On parle d’un plan, plus « des plans »</strong> — Tout le site a été réécrit au singulier : le menu affiche « Plan », la page s’intitule « Choisir son plan » et les boutons renvoient vers « le plan Pro ». Plus cohérent maintenant qu’il n’y a qu’un seul abonnement. <i class="ic" data-ic="pencil"></i></p>
         </div>
       </div>
@@ -738,11 +790,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Deux plans, c’est tout : Gratuit et Pro</strong> — Fini le choix impossible entre Visiteur, Argent et Or. Il n’y a plus que le plan <strong>Gratuit</strong>, pour tester l’application, et le plan <strong>Pro à 2,99 €/mois</strong>, qui donne accès à <em>toutes</em> les fonctionnalités : trajets illimités, export GPX/KML, cartes hors-ligne, profil altimétrique, météo, satellite, forum et les 24 badges exclusifs. <i class="ic" data-ic="star"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Vos anciens plans restent valables</strong> — Les comptes Argent, Or ou Visiteur basculent automatiquement en <strong>Pro</strong>, sans rien perdre ni rien à faire. Vos badges, vos trajets et votre progression sont conservés.</p>
         </div>
       </div>
@@ -758,15 +810,15 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Le fond de carte passe à l’IGN</strong> — Toutes les cartes de BWR s’affichent désormais sur le <strong>Plan IGN</strong>, la cartographie officielle française&nbsp;: les chemins forestiers, les courbes de niveau et les noms de carrefours y sont bien plus lisibles qu’avant. L’IGN est le premier bouton de la carte, OpenStreetMap reste disponible en second, et le style topographique reste accessible en option. <i class="ic" data-ic="map"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Le Plan IGN pour tout le monde</strong> — Le fond IGN n’est plus réservé aux abonnés&nbsp;: il est désormais la carte par défaut de tous les comptes, y compris gratuits. La vue satellite reste réservée aux plans Argent et supérieurs.</p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Moins de carrés gris</strong> — Les tuiles de carte passent par notre propre serveur, qui les garde en cache 30&nbsp;jours&nbsp;: la carte se charge plus vite, tient la charge, et les zones grises dues aux limitations du fournisseur précédent disparaissent. Les cartes hors-ligne déjà téléchargées se retéléchargent une fois pour passer au nouveau fond.</p>
         </div>
       </div>
@@ -782,11 +834,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Résiliation en un clic, vraiment</strong> — La page des plans promettait « annulable en 1 clic » sans qu'aucun bouton n'existe. C'est désormais réel&nbsp;: depuis votre profil, section « Mon abonnement », un bouton « Résilier mon abonnement » repasse votre compte en Gratuit — tout de suite s'il n'y a pas d'échéance, ou à la fin de la période déjà payée, sans renouvellement. Conforme à l'obligation de résiliation en ligne (art. L215-1-1). <i class="ic" data-ic="check-circle"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Mentions légales plus claires</strong> — Ajout de la clause de résiliation en ligne, et les informations encore en préparation (SIRET, adresse, médiateur de la consommation) sont désormais présentées honnêtement comme « en cours » plutôt que sous forme de cases à remplir.</p>
         </div>
       </div>
@@ -802,15 +854,15 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Date de vérification toujours à jour</strong> — La FAQ de l'accueil affichait « juin 2026 » en dur, alors que le chiffre en haut de page se mettait à jour tout seul. Les deux affichent désormais le mois courant, sans contradiction.</p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Meilleure accessibilité</strong> — Chaque page a maintenant un vrai titre principal pour les lecteurs d'écran et Google, et les champs des formulaires de contact et de recherche annoncent clairement leur rôle. <i class="ic" data-ic="paw"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Nettoyage côté admin</strong> — Suppression d'un appel réseau inutile qui partait à chaque ouverture du panneau d'administration.</p>
         </div>
       </div>
@@ -826,7 +878,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Moins de fausses alertes techniques</strong> — Sur iPhone, quand le réseau faiblit une fraction de seconde au chargement, Safari signalait tout seul un « échec » du composant hors-ligne&nbsp;: une alerte sans conséquence, car l'appli se recharge normalement à la visite suivante. Ce bruit est désormais filtré, pour ne garder que les vraies pannes à corriger. <i class="ic" data-ic="bug"></i></p>
         </div>
       </div>
@@ -842,7 +894,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Connexion plus accessible</strong> — Sur la page de connexion et d'inscription, chaque libellé est désormais relié à son champ (utile pour les lecteurs d'écran) et les champs indiquent leur type (email, mot de passe…). Les gestionnaires de mots de passe remplissent donc la connexion automatiquement et proposent de générer un mot de passe à l'inscription.</p>
         </div>
       </div>
@@ -858,7 +910,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Page « Mentions légales » référençable</strong> — La page légale était marquée « ne pas indexer » et absente du plan du site : elle est désormais indexable par Google et listée dans le sitemap.</p>
         </div>
       </div>
@@ -874,7 +926,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Mode sombre plus lisible</strong> — Plusieurs éléments restaient en couleurs claires en mode sombre : les libellés « Email / Mot de passe » et les onglets « Se connecter / S'inscrire » de la connexion, les filtres des Meilleures balades, les onglets des Quêtes et les petits titres de section de l'accueil sont désormais bien contrastés.</p>
         </div>
       </div>
@@ -890,7 +942,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Descriptions Google manquantes</strong> — Plusieurs pages de l'application (planificateur de trajet, carte admin, panneau admin) n'avaient aucune description pour les moteurs de recherche. Chacune a désormais une description claire et distincte.</p>
         </div>
       </div>
@@ -906,7 +958,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Titres de page distincts (SEO)</strong> — Les pages « Accueil » et « Carte » partageaient exactement le même titre, empêchant Google de les distinguer. La page Carte a désormais son propre titre « Carte interactive des sentiers ».</p>
         </div>
       </div>
@@ -922,7 +974,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Suivi des visites complété</strong> — Plusieurs pages (accueil du blog, mentions légales, changelog, réinitialisation et vérification d'email) n'étaient pas comptabilisées dans les statistiques de visite. Le script de mesure y est désormais chargé comme sur le reste du site.</p>
         </div>
       </div>
@@ -938,7 +990,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Barre de menu du haut unifiée</strong> — La barre de liens en haut de page avait dérivé en 7 versions différentes selon la page. Elle est désormais identique partout (Carte · Planifier · Actualités · Plans) et pilotée depuis un seul endroit.</p>
         </div>
       </div>
@@ -954,7 +1006,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Date de vérification terrain automatique</strong> — L'accueil affichait une date figée (« juin 2026 »), ce qui donnait une impression de site abandonné. Elle se met désormais à jour toute seule sur le mois en cours.</p>
         </div>
       </div>
@@ -970,7 +1022,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Année du copyright uniformisée</strong> — La page « Plus belles balades » affichait encore « © 2025 » en bas de page alors que toutes les autres pages affichaient « © 2026 ». Elle est maintenant alignée sur le reste du site.</p>
         </div>
       </div>
@@ -986,7 +1038,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Page Mentions légales : plus de débordement sur téléphone</strong> — Les grands tableaux (données collectées, services tiers…) étaient trop larges pour un écran de téléphone et poussaient toute la page sur le côté, coupant une colonne. Chaque tableau défile désormais horizontalement dans son propre cadre, et la page reste bien calée à la largeur de l'écran.</p>
         </div>
       </div>
@@ -1002,8 +1054,8 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
-          <p class="cl-entry-text"><strong>Page Plans lisible en mode sombre</strong> — Le grand titre, les noms de plan (« Gratuit ») et les prix (0€, 0,99€…) s'affichaient en vert très foncé sur fond noir, donc quasi invisibles pour les visiteurs dont le téléphone est en thème sombre. Tous ces textes passent désormais en clair, tout en gardant la carte Or sur son fond crème.</p>
+          <span class="cl-tag fixed">Corrigé</span>
+          <p class="cl-entry-text"><strong>Page Plans lisible en mode sombre</strong> — Le grand titre, les noms de plan (« Gratuit ») et les prix (0&nbsp;€, 0,99&nbsp;€…) s'affichaient en vert très foncé sur fond noir, donc quasi invisibles pour les visiteurs dont le téléphone est en thème sombre. Tous ces textes passent désormais en clair, tout en gardant la carte Or sur son fond crème.</p>
         </div>
       </div>
     </section>
@@ -1018,7 +1070,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Blog : le bloc d'inscription en bas de page redevient lisible en mode sombre</strong> — En bas du blog, l'encart « Planifiez votre sortie sur BWR » restait sur fond blanc quand le reste de la page passait en sombre, avec un texte vert pâle illisible. Il suit désormais le thème sombre comme le reste de la page.</p>
         </div>
       </div>
@@ -1034,7 +1086,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Blog : compte connecté à nouveau reconnu</strong> — Sur les articles et la page blog, le bouton affichait toujours « Connexion » même quand vous étiez déjà connecté, comme si votre compte avait été déconnecté. Il affiche désormais votre prénom et mène directement à votre profil. Votre session n'était en réalité jamais perdue : seul l'affichage du bouton était en cause.</p>
         </div>
       </div>
@@ -1050,7 +1102,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Mode sombre sur les articles de blog</strong> — Les 17 articles n'appliquaient pas le thème sombre : en navigation de nuit, ouvrir un article provoquait un flash blanc. Ils chargent désormais le thème dès le premier affichage, comme le reste du site.</p>
         </div>
       </div>
@@ -1066,7 +1118,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">corrigé</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Pages promo réparées</strong> — Les 5 pages de démonstration (promo, défis, démo, hype, offline) étaient bloquées par la sécurité du site : le bouton « <i class="ic" data-ic="play"></i> Lancer le reel » ne réagissait pas. Leur code a été déplacé dans des fichiers externes, comme le reste du site, et les animations fonctionnent à nouveau.</p>
         </div>
       </div>
@@ -1082,7 +1134,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Cartes d'articles de blog personnalisées</strong> — Chaque repère affiche désormais son nom directement sur la carte, sans avoir à cliquer. L'article « Quand il pleut » montre en plus de vraies allées stabilisées (en vert) et un secteur boueux à éviter (en rouge), tirés des données réelles de la forêt.</p>
         </div>
       </div>
@@ -1098,7 +1150,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Blog ajouté au menu</strong> — Le blog existait déjà mais n'était accessible depuis aucun menu ; il apparaît maintenant dans "À propos & aide".</p>
         </div>
       </div>
@@ -1114,11 +1166,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Signalements dissociés du compte à sa suppression</strong> — Vos signalements d'obstacles restent utiles à la communauté après la suppression de votre compte, mais ne sont plus reliés à votre identité. Ils sont aussi désormais inclus dans votre export de données.</p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Alerte pluie réservée aux plans Argent et Or</strong> — L'alerte météo au démarrage d'un suivi GPS suit maintenant la même règle que le widget météo, au lieu de s'appliquer à tous les comptes.</p>
         </div>
       </div>
@@ -1134,7 +1186,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Notifications de la carte plus claires</strong> — La bannière d'activation précise désormais que vous serez aussi prévenu quand la météo tourne pendant votre balade, et rappelle qu'il s'agit uniquement d'infos utiles sur la forêt — jamais de publicité. <i class="ic" data-ic="rain"></i></p>
         </div>
       </div>
@@ -1150,7 +1202,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Activer les notifications en un geste</strong> — À votre première visite, une bannière vous propose d'activer les alertes pour être prévenu si un obstacle (arbre tombé, inondation…) est signalé sur l'un de vos trajets enregistrés. Vous pourrez changer ce choix à tout moment depuis votre profil. <i class="ic" data-ic="bell"></i></p>
         </div>
       </div>
@@ -1166,7 +1218,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Distance du Suivi GPS beaucoup plus précise</strong> — Le compteur de distance utilise désormais un filtre intelligent (comme Strava ou Garmin) qui ignore le «&nbsp;tremblement&nbsp;» normal du signal GPS sous les arbres. Avant, une marche d'1&nbsp;km pouvait s'afficher à 3–5&nbsp;km et rester immobile ajoutait des kilomètres fantômes&nbsp;; désormais la distance colle à la réalité (à ~1–2&nbsp;% près). <i class="ic" data-ic="globe"></i></p>
         </div>
       </div>
@@ -1182,7 +1234,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Mesurer une distance sur la carte</strong> — Faites un <strong>clic droit</strong> (ou un appui long sur mobile) n'importe où sur la carte, puis «&nbsp;Mesurer une distance&nbsp;»&nbsp;: chaque clic ajoute un point et la distance totale s'affiche en direct, comme sur Google Maps. Les points sont déplaçables, un double-clic ou la touche Échap termine la mesure. Idéal pour estimer une boucle avant de partir. <i class="ic" data-ic="ruler"></i></p>
         </div>
       </div>
@@ -1198,7 +1250,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Retélécharger un itinéraire sauvegardé</strong> — Un nouveau bouton <i class="ic" data-ic="download"></i> apparaît sur chacun de vos trajets sauvegardés, aussi bien <strong>sur votre profil</strong> («&nbsp;Mes derniers trajets&nbsp;») que dans l'historique du planificateur. Un clic récupère exactement le même itinéraire — celui d'hier ou d'il y a un mois — au format <strong>GPX</strong>, prêt à ouvrir dans Garmin, Strava, Komoot ou votre appli GPS. <i class="ic" data-ic="compass"></i></p>
         </div>
       </div>
@@ -1214,11 +1266,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Jours actifs mieux comptés</strong> — Vos vraies balades enregistrées au GPS comptent maintenant pour votre «&nbsp;Série actuelle&nbsp;», pas seulement les trajets planifiés&nbsp;: une sortie qui colorait déjà la carte d'activité fait désormais aussi avancer votre série. <i class="ic" data-ic="flame"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Fin des séries fantômes</strong> — Le profil affichait parfois une ancienne série (ex.&nbsp;«&nbsp;5&nbsp;j&nbsp;») alors qu'elle était en réalité rompue. Le compteur retombe désormais à zéro dès qu'un jour est manqué. <i class="ic" data-ic="check-circle"></i></p>
         </div>
       </div>
@@ -1234,11 +1286,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Export GPX avec le dénivelé</strong> — Les fichiers GPX exportés contiennent désormais l'altitude de chaque point&nbsp;: vos montées et descentes sont conservées à l'import dans Garmin, Strava ou Komoot. <i class="ic" data-ic="mountain"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Bouton Strava débloqué</strong> — La page d'envoi Strava était souvent bloquée par le navigateur (fenêtre pop-up). Elle s'ouvre maintenant correctement au clic, en même temps que le téléchargement du GPX. <i class="ic" data-ic="arrow-up-right"></i></p>
         </div>
       </div>
@@ -1254,7 +1306,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>«&nbsp;Continuer en gratuit&nbsp;» mène à l'inscription</strong> — Sur la page des plans, le bouton du plan gratuit ouvrait la carte sans jamais proposer de créer un compte. Il ouvre maintenant le <strong>formulaire d'inscription</strong>, comme les autres boutons «&nbsp;Commencer gratuitement&nbsp;». <i class="ic" data-ic="target"></i></p>
         </div>
       </div>
@@ -1270,15 +1322,15 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Le planificateur invite à s'inscrire, pas à se connecter</strong> — Quand un visiteur sans compte ouvre le planificateur (ou une autre page réservée aux membres), il arrive maintenant directement sur le <strong>formulaire d'inscription</strong> au lieu de la connexion. <i class="ic" data-ic="target"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag improved">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Une carte plus lisible</strong> — Les chemins sont désormais plus <strong>fins quand on est dézoomé</strong> (fini l'effet «&nbsp;plat de spaghettis&nbsp;») et s'épaississent à mesure qu'on zoome. Les <strong>signalements qui se chevauchaient</strong> se regroupent en pastilles numérotées qui se séparent au zoom. <i class="ic" data-ic="map"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Visite guidée pour les visiteurs</strong> — La petite visite de bienvenue s'affiche aussi pour les personnes <strong>non connectées</strong> (une seule fois, au premier contact avec la carte). À la fin, deux boutons&nbsp;: <strong>créer un compte gratuit</strong> ou se connecter. <i class="ic" data-ic="hand"></i></p>
         </div>
       </div>
@@ -1294,7 +1346,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Le bouton «&nbsp;Commencer gratuitement&nbsp;» mène enfin à l'inscription</strong> — Il ouvrait la carte sans jamais proposer de créer un compte&nbsp;: désormais il conduit directement au <strong>formulaire d'inscription</strong> (onglet «&nbsp;S'inscrire&nbsp;» déjà ouvert), pour que les nouveaux visiteurs puissent rejoindre BWR en un clic. <i class="ic" data-ic="target"></i></p>
         </div>
       </div>
@@ -1310,7 +1362,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag improved">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>La visite guidée des nouveaux membres, revue</strong> — Le petit tutoriel de bienvenue ne s'ouvre plus tout seul&nbsp;: il démarre uniquement quand le nouveau membre <strong>touche la carte</strong> pour la première fois, et n'avance que lorsqu'on clique. Sa dernière étape <strong>ouvre le vrai menu</strong> et explique chaque rubrique (profil, mes sorties, communauté, forum, quêtes, classement…). La visite a aussi été enrichie&nbsp;: une étape sur le <strong>suivi GPS</strong> (enregistrer et sauvegarder ses balades) fait désormais partie du tour. Toujours affichée une seule fois par compte. <i class="ic" data-ic="compass"></i></p>
         </div>
       </div>
@@ -1326,11 +1378,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Vue admin «&nbsp;Nouveau&nbsp;»&nbsp;: visites par mois</strong> — La vue d'ensemble exécutive gagne un graphique <strong>«&nbsp;Visites par mois&nbsp;»</strong> (visiteurs uniques des 12 derniers mois). <i class="ic" data-ic="trending"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag improved">amélioré</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Abonnements offerts hors décompte</strong> — Dans la répartition des plans, les abonnements Argent et Or <strong>offerts</strong> ne sont plus comptés comme payants&nbsp;: ils apparaissent sur une ligne «&nbsp;<i class="ic" data-ic="gift"></i>&nbsp;Offerts&nbsp;» distincte, cohérente avec le MRR. <i class="ic" data-ic="gift"></i></p>
         </div>
       </div>
@@ -1346,7 +1398,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Panneau admin plus pro — vue «&nbsp;Nouveau&nbsp;»</strong> — Un petit sélecteur «&nbsp;Ancien / Nouveau&nbsp;» en haut du panneau admin bascule entre le tableau de bord habituel (inchangé) et une nouvelle <strong>vue d'ensemble exécutive</strong>&nbsp;: un bandeau d'indicateurs clés (membres, MRR, abonnés payants, visites, chemins), une <strong>courbe de croissance cumulée</strong> des membres sur 12&nbsp;mois, la répartition des plans et un aperçu de l'état de la plateforme. Le choix est mémorisé. <i class="ic" data-ic="chart"></i></p>
         </div>
       </div>
@@ -1362,7 +1414,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>5 nouveaux guides pour la forêt de Compiègne</strong> — Cinq articles de blog répondent aux questions que les randonneurs tapent le plus souvent sur Google&nbsp;: où se garer, se promener avec un chien, quels chemins rester praticables quand il pleut, une petite balade facile (~5&nbsp;km), et les plus beaux endroits de la forêt. Chaque guide embarque une <strong>carte interactive</strong> avec les parkings et points d'intérêt (coordonnées vérifiées), et un lien «&nbsp;Planifier cette balade&nbsp;» qui ouvre l'itinéraire directement dans le planificateur. De quoi attirer de nouveaux visiteurs depuis les moteurs de recherche. <i class="ic" data-ic="tree"></i></p>
         </div>
       </div>
@@ -1378,7 +1430,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Donner son avis sur BWR devient plus simple</strong> — Le bloc «&nbsp;avis&nbsp;» était caché tout en bas des pages, et n'apparaissait pas du tout dans l'appli (carte, planificateur, profil…). Désormais, une petite invitation «&nbsp;Vous aimez BWR&nbsp;? — Noter&nbsp;» apparaît discrètement en bas de l'écran pour les membres connectés qui n'ont pas encore laissé d'avis. Elle ne s'affiche qu'une seule fois, après un petit moment sur la page, et disparaît définitivement dès qu'on la ferme ou qu'on a noté&nbsp;: aucune insistance. De quoi recueillir bien plus d'avis, là où les randonneurs les plus actifs se trouvent. <i class="ic" data-ic="star"></i></p>
         </div>
       </div>
@@ -1394,7 +1446,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">correction</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Les visites venues de Google sont enfin comptées</strong> — Les pages de balades publiques (celles qui apparaissent dans les résultats de recherche&nbsp;: <em>/balade/…</em> et les liens de parcours partagés <em>/r/…</em>) n'incluaient pas le compteur de visites. Résultat&nbsp;: les randonneurs arrivant depuis Google étaient invisibles dans le panneau «&nbsp;Activité&nbsp;», ce qui faisait paraître la fréquentation plus faible qu'elle ne l'était. Le suivi anonyme est désormais présent sur ces pages, en toute sécurité (même origine, aucune donnée personnelle). <i class="ic" data-ic="trending"></i></p>
         </div>
       </div>
@@ -1410,7 +1462,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>La durée estimée tient enfin compte du dénivelé (Argent &amp; Or)</strong> — Jusqu'ici, la durée d'un parcours ne regardait que la distance&nbsp;: 5&nbsp;km de montée et 5&nbsp;km de descente affichaient le même temps. Désormais, dès que le profil altimétrique se charge, l'appli recalcule la durée à partir de la vraie pente de chaque tronçon&nbsp;— les montées rallongent le temps, les descentes douces le raccourcissent — pour une estimation bien plus proche de la réalité, à pied comme à vélo. Sur terrain plat, l'estimation ne change pas. La mention «&nbsp;dénivelé inclus&nbsp;» apparaît sous la durée. <i class="ic" data-ic="footprints"></i></p>
         </div>
       </div>
@@ -1426,7 +1478,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>La carte se télécharge toute seule pour l'usage hors-ligne (Argent &amp; Or)</strong> — Plus besoin de penser à télécharger votre forêt avant de partir&nbsp;: dès que vous ouvrez la carte, l'appli enregistre discrètement en arrière-plan la forêt la plus proche de vous, pour que «&nbsp;fonctionne hors-ligne&nbsp;» soit une vraie promesse et non un espoir. Un petit bandeau indique la progression et vous pouvez annuler à tout moment (l'appli ne vous le reproposera plus pour cette forêt). Une forêt déjà enregistrée n'est pas retéléchargée. <i class="ic" data-ic="tree"></i></p>
         </div>
       </div>
@@ -1442,7 +1494,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>L'appli ne reste plus bloquée quand le réseau faiblit en forêt</strong> — Avec une seule barre de réseau, les pages, la carte et les sentiers pouvaient tourner dans le vide très longtemps, alors qu'une copie était déjà enregistrée sur le téléphone. Désormais, si le réseau met plus de 1,5 à 2,5&nbsp;secondes à répondre, l'appli affiche tout de suite la dernière version enregistrée, puis se met à jour discrètement en arrière-plan. Un mauvais réseau est enfin aussi rapide qu'une absence totale de réseau. <i class="ic" data-ic="tree"></i></p>
         </div>
       </div>
@@ -1458,23 +1510,23 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Votre profil s'affiche enfin en entier sur téléphone</strong> — L'en-tête du profil (photo, pseudo, badge d'abonnement et choix de la couleur d'avatar) était écrasé en une fine bande verte de quelques millimètres sur mobile. Tout est de nouveau visible et utilisable. <i class="ic" data-ic="user"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Plus aucun bouton coupé ni caché sur téléphone</strong> — Passage au peigne fin des 26 pages de l'appli en 320, 375 et 414&nbsp;px&nbsp;: plus rien ne dépasse de l'écran, plus rien ne se cache derrière la barre de navigation du bas, et tous les boutons respectent la taille minimale recommandée pour le tactile (44&nbsp;px). <i class="ic" data-ic="smartphone"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Fini le zoom intempestif sur les formulaires (iPhone)</strong> — Safari agrandissait la page dès qu'on touchait un champ de saisie. Connexion, inscription, signalement, profil&nbsp;: on tape désormais sans que l'écran bouge. <i class="ic" data-ic="keyboard"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Panneau admin utilisable au téléphone</strong> — Le tableau de bord s'étalait sur plus de 1000&nbsp;px et tout ce qui dépassait de l'écran était définitivement inaccessible&nbsp;: liste des membres, onglets revenus, formulaire de défi, gestion des erreurs. Il s'empile maintenant proprement en une colonne. <i class="ic" data-ic="wrench"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Carte admin&nbsp;: barre d'outils et boutons repositionnés</strong> — Les pastilles «&nbsp;Ma position&nbsp;», «&nbsp;Mon point&nbsp;» et «&nbsp;Suivi GPS&nbsp;» débordaient des deux côtés de l'écran et chevauchaient la légende. Elles s'empilent désormais en bas à gauche, et la barre d'outils tient sur une seule rangée. <i class="ic" data-ic="map"></i></p>
         </div>
       </div>
@@ -1490,11 +1542,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Des pages publiques pour vos balades et trajets</strong> — Chaque balade recommandée a désormais sa propre page web accessible sans connexion (par exemple <code>/balade/boucle-des-beaux-monts</code>), et les trajets partagés s'ouvrent sur une belle page avec carte plutôt qu'un écran de connexion. Google peut enfin les lire et les proposer dans ses résultats de recherche — plus de visiteurs pour l'appli, gratuitement. <i class="ic" data-ic="search"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Liens de partage permanents</strong> — Un trajet partagé reste accessible indéfiniment (au lieu d'expirer après quelques mois), tant que vous ne le supprimez pas. <i class="ic" data-ic="link"></i></p>
         </div>
       </div>
@@ -1510,7 +1562,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Importer un GPX dans votre journal</strong> — Vous arrivez de Strava, Garmin ou Komoot&nbsp;? Déposez un fichier <code>.gpx</code> dans <em>Mes sorties</em> et il devient une sortie à part entière&nbsp;: distance, durée, dénivelé et tracé — à rejouer, partager et ré-exporter comme une balade enregistrée dans l'appli. <i class="ic" data-ic="download"></i></p>
         </div>
       </div>
@@ -1537,7 +1589,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Bouton « Tout voir » des derniers trajets</strong> — Depuis le profil, « Tout voir&nbsp;» renvoyait simplement vers le planificateur sans rien montrer. Il ouvre désormais directement la liste complète de vos trajets sauvegardés et défile jusqu'à elle. <i class="ic" data-ic="compass"></i></p>
         </div>
       </div>
@@ -1553,7 +1605,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Page profil plus professionnelle</strong> — Rafraîchissement visuel de tout le profil&nbsp;: cartes avec bordures fines et ombres douces harmonisées, en-têtes de section avec icône dans une pastille verte, bannière d'en-tête au dégradé forêt plus soigné, tuiles de statistiques épurées et boutons affinés. Rendu plus sobre et cohérent, en clair comme en sombre. <i class="ic" data-ic="sparkles"></i></p>
         </div>
       </div>
@@ -1569,7 +1621,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Tirage quotidien redessiné</strong> — La roue du profil adopte un rendu plus sobre et professionnel&nbsp;: palette forêt et parchemin deux tons avec liserés dorés à la place des couleurs arc-en-ciel, séparations fines, moyeu élégant et libellés lisibles sur chaque quartier. <i class="ic" data-ic="gift"></i></p>
         </div>
       </div>
@@ -1585,7 +1637,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Clic sur un chemin réparé</strong> — Sur la carte, cliquer sur un chemin ne faisait plus rien à cause d'une erreur interne restée après le retrait de la bulle d'aide. La bulle d'infos et la notation de difficulté d'un chemin s'ouvrent à nouveau au clic. <i class="ic" data-ic="bug"></i></p>
         </div>
       </div>
@@ -1601,7 +1653,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Courbes de niveau sur la feuille d'impression</strong> — Nouvelle option «&nbsp;Carte topo (courbes de niveau)&nbsp;» à côté du bouton Imprimer&nbsp;: elle affiche votre itinéraire sur le fond de carte topographique (courbes de niveau, reliefs, noms de lieux), comme une vraie carte de randonnée. Décochée, on garde la carte claire habituelle. Le choix est mémorisé et s'applique aussi aux trajets sauvegardés. <i class="ic" data-ic="mountain"></i></p>
         </div>
       </div>
@@ -1617,7 +1669,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Carte d'impression comme la vraie carte</strong> — La feuille à imprimer affiche désormais tout le réseau de chemins autour de votre itinéraire, comme sur la carte de l'application&nbsp;: on voit les sentiers voisins et les intersections, pas seulement votre tracé. Plus facile de se repérer et de reconnaître le terrain une fois sur place. <i class="ic" data-ic="tree"></i></p>
         </div>
       </div>
@@ -1633,7 +1685,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Feuille de route en couleur, carrefour par carrefour</strong> — La carte de la feuille imprimable est désormais en couleur (fond forêt, tracé coloré, carrefours nommés), et chaque étape indique vers quel carrefour se diriger&nbsp;: «&nbsp;au Carrefour des Princes, tout droit vers le Carrefour des Sécnaux&nbsp;», avec le cap et la distance. On suit son itinéraire d'un carrefour au suivant, comme sur les panneaux de la forêt. <i class="ic" data-ic="map"></i></p>
         </div>
       </div>
@@ -1649,7 +1701,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Feuille de route détaillée sur l'impression</strong> — La feuille A4 imprimable liste désormais, pour chaque carrefour traversé, la direction à suivre&nbsp;: tout droit, à gauche, à droite ou demi-tour, avec le cap (Nord, Nord-Est, …) et la distance cumulée. Un vrai carnet de route à suivre carrefour par carrefour, du départ jusqu'au retour. <i class="ic" data-ic="compass"></i></p>
         </div>
       </div>
@@ -1665,7 +1717,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Carte plus dégagée</strong> — La bulle d'aide «&nbsp;Cliquez sur un chemin pour modifier sa difficulté&nbsp;» qui s'affichait par-dessus la carte a été retirée&nbsp;: elle masquait la vue. On note toujours la difficulté d'un chemin de la même façon, en cliquant simplement dessus. <i class="ic" data-ic="map"></i></p>
         </div>
       </div>
@@ -1681,7 +1733,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Imprimer un itinéraire (feuille de route papier)</strong> — Nouveau bouton «&nbsp;Imprimer / PDF&nbsp;» sur le planificateur (et une icône <i class="ic" data-ic="printer"></i> sur chaque trajet sauvegardé), gratuit pour tous. Il génère une feuille A4 pensée pour la forêt, là où il n'y a pas de réseau&nbsp;: une carte nette (vecteur, jamais floue même dézoomée ou photocopiée) avec le nom des carrefours affiché directement dessus, plus une «&nbsp;feuille de route&nbsp;» qui liste chaque carrefour dans l'ordre avec la distance cumulée. Gardez-la dans votre poche&nbsp;: elle reste lisible sans connexion. <i class="ic" data-ic="tree"></i></p>
         </div>
       </div>
@@ -1697,7 +1749,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Barre du haut allégée sur mobile</strong> — Sur la carte, le bouton thème clair/sombre encombrait une barre déjà chargée. Il a été déplacé dans le menu (☰), où il apparaît désormais sur toutes les pages. La barre du haut est plus aérée sur téléphone&nbsp;; sur ordinateur, le bouton thème reste à sa place. <i class="ic" data-ic="moon"></i></p>
         </div>
       </div>
@@ -1713,7 +1765,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Menu rangé par sections sur l'accueil</strong> — La page d'accueil était la seule à afficher encore l'ancien menu en une longue liste à plat. Elle utilise désormais le même menu que les autres pages, regroupé en sections claires — <strong>Explorer</strong>, <strong>Ma progression</strong>, <strong>Communauté</strong> et <strong>À propos&nbsp;&amp; aide</strong>. <i class="ic" data-ic="compass"></i></p>
         </div>
       </div>
@@ -1729,19 +1781,19 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Blocages permanents supprimés</strong> — Après avoir atteint une limite (formulaire de contact, création de sujets ou de réponses sur le forum, conseil du jour, inscription), le compteur ne se réinitialisait jamais&nbsp;: on restait bloqué «&nbsp;pour toujours&nbsp;». Les limites se remettent maintenant à zéro au bout de leur durée, comme prévu. <i class="ic" data-ic="timer"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Erreurs serveur plus lisibles</strong> — Lorsqu'une requête mal formée faisait planter le serveur, le navigateur affichait un «&nbsp;échec du chargement&nbsp;» opaque et un chargement sans fin. Les erreurs renvoient désormais un message clair avec les bons en-têtes. <i class="ic" data-ic="alert"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Mode hors-ligne dès l'accueil</strong> — Le mode hors-ligne et l'installation de l'app ne s'activaient qu'après avoir visité une page profonde&nbsp;; ils fonctionnent maintenant dès la page d'accueil et la page de connexion. <i class="ic" data-ic="smartphone"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Profil altimétrique plus robuste</strong> — Une panne du service d'altitude n'est plus signalée à tort comme un bug&nbsp;; le profil se masque simplement en cas d'indisponibilité. <i class="ic" data-ic="mountain"></i></p>
         </div>
       </div>
@@ -1757,7 +1809,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Menu rangé par sections</strong> — Le menu était devenu une longue liste de 15&nbsp;liens tous au même niveau. Il est maintenant regroupé en sections claires — <strong>Explorer</strong>, <strong>Ma progression</strong>, <strong>Communauté</strong> et <strong>À propos&nbsp;&amp; aide</strong> — pour retrouver ce qu'on cherche d'un coup d'œil. Aucune page n'a disparu&nbsp;; tout est simplement mieux organisé. <i class="ic" data-ic="compass"></i></p>
         </div>
       </div>
@@ -1773,7 +1825,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Communauté&nbsp;: voir les sorties publiques d'une personne</strong> — Dans la Communauté, touchez une personne (dans «&nbsp;Découvrir&nbsp;» ou l'auteur d'une sortie dans le fil) pour ouvrir son profil&nbsp;: ses abonnés/abonnements, ses kilomètres et surtout la liste de ses <strong>sorties publiques</strong>, que vous pouvez rejouer sur la carte — et la suivre/vous en désabonner directement depuis là. Plus besoin d'attendre qu'elle apparaisse dans votre fil pour découvrir ses balades. <i class="ic" data-ic="users"></i></p>
         </div>
       </div>
@@ -1789,7 +1841,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Chemins notés d'un membre&nbsp;: vue carte</strong> — Depuis la liste «&nbsp;<i class="ic" data-ic="palette"></i> Chemins notés&nbsp;» d'un membre (panneau admin), on peut maintenant les voir directement sur la carte&nbsp;: un clic sur un chemin ouvre la carte admin centrée dessus, et un bouton «&nbsp;Voir tous sur la carte&nbsp;» met en surbrillance tous ses chemins d'un coup. <i class="ic" data-ic="map"></i></p>
         </div>
       </div>
@@ -1805,7 +1857,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">correctif</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>«&nbsp;Communauté&nbsp;» dans le menu</strong> — La page Communauté existait mais n'apparaissait dans aucun menu&nbsp;: impossible de la trouver sans connaître l'adresse. Elle est désormais accessible depuis le menu de navigation de toutes les pages, juste sous «&nbsp;Forum&nbsp;». <i class="ic" data-ic="compass"></i></p>
         </div>
       </div>
@@ -1821,7 +1873,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Admin&nbsp;: chemins notés par un membre</strong> — Dans le panneau admin, chaque membre a désormais un bouton «&nbsp;<i class="ic" data-ic="palette"></i> Chemins notés&nbsp;» qui ouvre la liste des chemins qu'il a notés, avec la difficulté et la date. Pratique pour suivre les contributions de chacun. <i class="ic" data-ic="palette"></i></p>
         </div>
       </div>
@@ -1837,7 +1889,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Communauté &amp; fil d'actu</strong> — Vous pouvez désormais suivre d'autres randonneurs&nbsp;: partagez vos sorties enregistrées et retrouvez celles de vos abonnements dans un fil d'actu, avec un onglet «&nbsp;Découvrir&nbsp;» pour trouver qui suivre. Applaudissez <i class="ic" data-ic="hand"></i> les plus belles balades et rejouez leur tracé sur la carte. Une nouvelle page «&nbsp;Communauté&nbsp;» réunit le fil, l'annuaire et votre réseau (abonnements/abonnés). Vos sorties restent privées tant que vous ne les partagez pas. <i class="ic" data-ic="tree"></i></p>
         </div>
       </div>
@@ -1853,7 +1905,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Petite visite guidée à la première connexion</strong> — Juste après votre inscription, un accueil rapide vous présente l'essentiel de BWR et met en lumière les boutons clés de la carte. Elle n'apparaît qu'une seule fois, au tout début&nbsp;: de quoi prendre l'app en main en 30&nbsp;secondes, sans jamais gêner ensuite. <i class="ic" data-ic="hand"></i></p>
         </div>
       </div>
@@ -1869,7 +1921,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Réaction plus rapide aux bugs</strong> — Dans la foulée de la détection automatique des erreurs, l'équipe est maintenant prévenue immédiatement par e-mail et directement dans l'application dès qu'un nouveau plantage touche un utilisateur. Concrètement&nbsp;: moins de temps entre un souci qui apparaît et sa correction. <i class="ic" data-ic="bell"></i></p>
         </div>
       </div>
@@ -1885,7 +1937,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Détection automatique des bugs</strong> — Si l'application plante sur votre téléphone (même en pleine forêt), l'erreur nous est désormais signalée automatiquement, avec l'endroit exact du problème. Résultat&nbsp;: on repère et on corrige les bugs plus vite, sans que vous ayez à nous écrire. Une appli plus fiable pour tout le monde. <i class="ic" data-ic="bug"></i></p>
         </div>
       </div>
@@ -1901,7 +1953,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Mode guidage « Suivre l'itinéraire »</strong> — Après avoir généré un trajet, un bouton lance un vrai guidage GPS en temps réel : l'app suit votre position sur le tracé, vous prévient à voix haute avant chaque virage (« Dans 130&nbsp;m, tournez à gauche ») et vous alerte dès que vous vous éloignez du chemin — avec la direction pour y revenir. Distance restante, temps d'arrivée et progression en direct, l'écran reste allumé, et tout fonctionne <strong>hors-ligne en forêt</strong>. <i class="ic" data-ic="compass"></i></p>
         </div>
       </div>
@@ -1917,7 +1969,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Téléchargement hors-ligne plus rapide</strong> — Le téléchargement d'une forêt pour la carte hors-ligne était bridé (3 tuiles à la fois, avec une pause après chaque lot). Il s'adapte désormais : il télécharge en parallèle à pleine vitesse tant que le serveur suit, et ne ralentit que s'il commence vraiment à limiter — les forêts les plus demandées, déjà en cache, se téléchargent quasi instantanément. <i class="ic" data-ic="zap"></i></p>
         </div>
       </div>
@@ -1933,7 +1985,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">admin</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Courbe de croissance cumulée</strong> — Le panneau admin garde son graphique d'activité (visiteurs et reconnexions par période) et ajoute une seconde courbe verte cumulée : le total des visiteurs + nouveaux comptes, qui ne fait que monter. Les deux se règlent avec les mêmes onglets (jour / semaine / mois / an / tout). <i class="ic" data-ic="trending"></i></p>
         </div>
       </div>
@@ -1949,7 +2001,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">sécurité</span>
+          <span class="cl-tag sec">Sécurité</span>
           <p class="cl-entry-text"><strong>Changement d'adresse email sécurisé</strong> — Modifier l'email de votre compte demande désormais votre mot de passe actuel, puis une confirmation : un lien est envoyé à la nouvelle adresse et le changement ne prend effet qu'une fois ce lien cliqué. Votre ancienne adresse reste active jusque-là. Le changement de nom, lui, reste immédiat. <i class="ic" data-ic="mail"></i></p>
         </div>
       </div>
@@ -1965,7 +2017,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Qui a noté la difficulté</strong> — Chaque chemin retient désormais qui a défini sa difficulté actuelle. L'administrateur voit « Difficulté notée par … » dans la fiche du chemin, pour repérer d'un coup d'œil qui note quoi. Cette information reste réservée à l'administration : elle n'apparaît pas pour les autres membres. <i class="ic" data-ic="palette"></i></p>
         </div>
       </div>
@@ -1981,7 +2033,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">sécurité</span>
+          <span class="cl-tag sec">Sécurité</span>
           <p class="cl-entry-text"><strong>Lots de la roue sécurisés</strong> — La durée des abonnements gagnés à la roue de la chance est désormais fixée côté serveur : le navigateur n'envoie plus que l'identifiant du lot, le serveur lit lui-même la récompense dans sa propre table. <i class="ic" data-ic="wheel"></i></p>
         </div>
       </div>
@@ -1997,7 +2049,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">mise à jour</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Pages légales à jour</strong> — Les mentions légales, CGU et la politique de confidentialité couvrent désormais l'ensemble des fonctionnalités récentes (forum, avis, points d'intérêt, journal d'activités, messagerie, notifications, mesure d'audience anonyme) et intègrent les mentions liées aux abonnements payants : conditions d'abonnement, droit de rétractation et médiation de la consommation. <i class="ic" data-ic="scale"></i></p>
         </div>
       </div>
@@ -2013,11 +2065,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Avis sur les chemins</strong> — Vous pouvez désormais noter un chemin (de 1 à 5 étoiles) et laisser un commentaire, directement depuis sa fiche sur la carte. Les avis sont publics : avant de partir, lisez ce que les autres randonneurs ont pensé du sentier. Un avis par compte et par chemin, modifiable à tout moment. <i class="ic" data-ic="star"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Points d'intérêt sur la carte</strong> — Une nouvelle couche affiche les infos les plus utiles en forêt : parkings <i class="ic" data-ic="parking"></i>, points d'eau <i class="ic" data-ic="droplet"></i>, aires de pique-nique <i class="ic" data-ic="utensils"></i>, points de vue <i class="ic" data-ic="eye"></i> et toilettes <i class="ic" data-ic="toilet"></i>. Affichez-la ou masquez-la d'un bouton ; les membres Argent et Or peuvent en ajouter d'un simple clic sur la carte. <i class="ic" data-ic="pin"></i></p>
         </div>
       </div>
@@ -2033,7 +2085,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Rechercher dans le forum et le blog</strong> — Une barre de recherche apparaît sur le forum (recherche par titre et contenu des sujets, insensible aux accents) et sur le blog (filtre instantané des guides). Plus besoin de faire défiler : tapez un mot-clé et retrouvez le bon sujet ou le bon guide en un instant. <i class="ic" data-ic="search"></i></p>
         </div>
       </div>
@@ -2049,7 +2101,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Un ton homogène sur tout le site</strong> — Les quelques écrans qui vous tutoyaient encore (connexion, carte, profil, quêtes, planificateur…) emploient désormais le vouvoiement, comme le reste du site. Plus cohérent, du premier écran jusqu'au moindre message. <i class="ic" data-ic="message"></i></p>
         </div>
       </div>
@@ -2065,7 +2117,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Nouvelle adresse de contact</strong> — L'adresse e-mail de contact du site a été mise à jour. Vos messages, demandes de support et questions RGPD arrivent désormais dans la bonne boîte de réception. <i class="ic" data-ic="mail"></i></p>
         </div>
       </div>
@@ -2082,7 +2134,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Le bas de la carte respire enfin sur mobile</strong> — Les trois boutons « Ma position / Mon point / Suivi GPS » se replient maintenant derrière un seul bouton rond, en bas à gauche : le centre de la carte reste dégagé et ne cache plus les signalements. La légende est passée dans le coin opposé et le bandeau d'aide se referme tout seul. <i class="ic" data-ic="smartphone"></i></p>
         </div>
       </div>
@@ -2098,7 +2150,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Des icônes plus nettes sur la page d'accueil</strong> — Les petites images des fonctionnalités (carte, planificateur, export, dénivelé, météo…) sont désormais de vraies icônes vectorielles, toujours nettes et identiques d'un appareil à l'autre, au lieu des emojis qui changeaient d'aspect selon le téléphone. <i class="ic" data-ic="palette"></i></p>
         </div>
       </div>
@@ -2114,7 +2166,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">correction</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Le mode sombre s'applique partout, sans clignotement</strong> — Le thème choisi (ou celui de votre système) est maintenant appliqué sur toutes les pages dès leur chargement, avant le premier affichage. Fini les pages qui restaient claires alors que d'autres passaient en sombre : quand le mode sombre est activé, tout le site est bien sombre. <i class="ic" data-ic="moon"></i></p>
         </div>
       </div>
@@ -2130,7 +2182,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">correction</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Le sélecteur de chemins fonctionne à nouveau (et instantanément)</strong> — L'outil admin « Sélectionner un chemin » restait bloqué ou revenait vide car il interrogeait OpenStreetMap en direct. Il s'appuie désormais sur la carte des sentiers pré-chargée : la sélection est immédiate, disponible hors-ligne et partout dans toute la forêt. <i class="ic" data-ic="zap"></i></p>
         </div>
       </div>
@@ -2146,11 +2198,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">nouveauté</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Les pistes cyclables sont maintenant en violet</strong> — Sur la carte, les chemins de type vélo ressortent en <strong>violet</strong> pour se distinguer d'un coup d'œil des sentiers à pied. Les pistes déjà enregistrées changent aussi de couleur automatiquement. <i class="ic" data-ic="bike"></i><i class="ic" data-ic="heart"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">correction</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Les « chemins de champs » sont enfin sauvegardés</strong> — En traçant un chemin, choisir le type « champs » l'enregistrait en réalité comme un chemin forestier. Le type choisi est désormais bien conservé. <i class="ic" data-ic="sprout"></i></p>
         </div>
       </div>
@@ -2166,7 +2218,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>La carte se charge beaucoup plus vite — fini le fond gris</strong> — Le fond topographique était servi par un serveur lent qui bloquait une partie des tuiles au chargement (d'où les zones grises). Il passe maintenant par notre propre serveur qui met les tuiles en cache : après le premier passage, la carte s'affiche quasi instantanément. Le tracé des chemins est aussi plus fluide au zoom et au déplacement. <i class="ic" data-ic="map"></i><i class="ic" data-ic="zap"></i></p>
         </div>
       </div>
@@ -2182,7 +2234,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">nouveauté</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Les récompenses de quêtes sont enfin créditées automatiquement</strong> — Quand vous débloquez un haut fait (200 chemins notés, 500 km, 100 itinéraires…), la récompense (mois de Gold, semaine d'Argent, badge exclusif) est <strong>créditée aussitôt sur votre compte</strong>, une seule fois, et un message de confirmation arrive dans votre boîte de réception. Fini l'attente d'un crédit manuel. <i class="ic" data-ic="party"></i></p>
         </div>
       </div>
@@ -2198,7 +2250,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Génération de trajet quasi instantanée</strong> — Toute la carte des chemins de la forêt est maintenant embarquée dans l'app (chargée une seule fois, puis gardée hors-ligne). Plus besoin d'interroger un serveur de cartes à chaque boucle : le calcul se fait directement sur votre appareil, en une fraction de seconde, même sans réseau. <i class="ic" data-ic="tree"></i></p>
         </div>
       </div>
@@ -2214,7 +2266,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">correction</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Boucles encore plus réactives</strong> — L'app n'attend plus une seconde avant de charger les chemins directement depuis votre navigateur : elle le fait presque tout de suite sur une nouvelle zone. <i class="ic" data-ic="zap"></i></p>
         </div>
       </div>
@@ -2230,7 +2282,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">correction</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Génération de boucle beaucoup plus rapide</strong> — Sur une nouvelle zone, le calcul pouvait prendre plus de 20 secondes : le serveur de cartes bridait notre serveur. L'app charge maintenant les chemins directement depuis votre navigateur quand c'est plus rapide, et retombe en général à quelques secondes. <i class="ic" data-ic="rocket"></i></p>
         </div>
       </div>
@@ -2246,7 +2298,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Boucles générées plus vite</strong> — Le chargement des chemins interroge désormais les serveurs de cartes en parallèle et garde le plus rapide, au lieu de les essayer un par un. Le bouton indique aussi l'étape en cours pendant le calcul. <i class="ic" data-ic="zap"></i></p>
         </div>
       </div>
@@ -2262,7 +2314,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Classement plus compact</strong> — Le classement n'affiche que le top 5 par défaut ; un bouton « Voir les autres » déplie le reste du tableau d'un clic. <i class="ic" data-ic="medal"></i></p>
         </div>
       </div>
@@ -2278,7 +2330,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">correction</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Barème de points corrigé</strong> — La légende du classement affichait un barème inversé. C'est bien <strong>1 pt par signalement</strong> et <strong>2 pts par chemin noté</strong>, comme dans le calcul réel des points. <i class="ic" data-ic="trophy"></i></p>
         </div>
       </div>
@@ -2294,7 +2346,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>« Mon point » vise juste</strong> — Le bouton sélectionne maintenant le chemin sur lequel vous marchez vraiment, et non le plus proche : il tient compte de votre direction de marche pour ne plus accrocher un chemin voisin ou perpendiculaire à un carrefour. <i class="ic" data-ic="target"></i></p>
         </div>
       </div>
@@ -2310,11 +2362,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Nom d'utilisateur à l'inscription</strong> — Choisissez un pseudo unique (3 à 20 caractères) en créant votre compte. <i class="ic" data-ic="user"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">amélioration</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Calcul de trajet plus rapide</strong> — La carte des chemins se pré-charge dès que vous placez votre point de départ, donc le trajet s'affiche quasi instantanément. <i class="ic" data-ic="zap"></i></p>
         </div>
       </div>
@@ -2330,7 +2382,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">correction</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Trajet plus lisible sur la carte</strong> — Le trajet que vous générez s'affiche désormais avec un liseré blanc et des pointillés le long du chemin, pour ne plus le confondre avec les sentiers notés. <i class="ic" data-ic="compass"></i></p>
         </div>
       </div>
@@ -2346,7 +2398,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Messagerie intégrée</strong> — Une boîte de réception dans l'app : l'équipe BWR peut vous envoyer un message, à vous seul ou à tous les membres. Retrouvez-les dans « Messagerie », avec le suivi des messages lus. <i class="ic" data-ic="inbox"></i></p>
         </div>
       </div>
@@ -2362,7 +2414,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Le passe Visiteur 7 jours débloque enfin tout</strong> — Le passe donnait accès à peine plus que le plan Gratuit : satellite, météo, objectifs, couleurs personnalisées et itinéraires sur mesure restaient verrouillés. Il ouvre désormais l'expérience Argent complète pendant 7 jours, comme promis. <i class="ic" data-ic="ticket"></i></p>
         </div>
       </div>
@@ -2378,7 +2430,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Points de contribution rééquilibrés</strong> — Noter un chemin rapporte désormais 2 points (au lieu d'un seul) et signaler un obstacle en rapporte 1. Les niveaux et le classement récompensent mieux l'effort de terrain. <i class="ic" data-ic="star"></i></p>
         </div>
       </div>
@@ -2394,15 +2446,15 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Les alertes obstacles fonctionnent enfin</strong> — Les membres Argent et Or peuvent activer les notifications depuis leur profil et reçoivent désormais vraiment une alerte quand un obstacle est signalé près d'un de leurs itinéraires enregistrés. <i class="ic" data-ic="bell"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Modifs hors-ligne plus fiables</strong> — Un changement de difficulté fait hors connexion garde votre position du moment (pour la notation « sur place ») et n'est plus renvoyé indéfiniment s'il est refusé au retour du réseau : vous êtes prévenu clairement. <i class="ic" data-ic="wifi"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Statistiques admin — exclure son réseau</strong> — L'administrateur peut retirer un visiteur de la liste (« c'est moi ») et exclure sa connexion maison, pour que ses propres visites de test ne faussent plus les chiffres. <i class="ic" data-ic="chart"></i></p>
         </div>
       </div>
@@ -2418,7 +2470,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>« Commencer gratuitement » ouvre la carte</strong> — Le bouton menait vers la page de connexion ; il vous emmène désormais directement sur la carte, consultable sans compte. <i class="ic" data-ic="map"></i></p>
         </div>
       </div>
@@ -2434,7 +2486,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Suppression de compte plus complète</strong> — Supprimer son compte efface désormais aussi l'avis laissé sur le site et les abonnements aux notifications push, en plus des itinéraires, liens de partage et sessions. Rien ne reste. <i class="ic" data-ic="lock"></i></p>
         </div>
       </div>
@@ -2450,11 +2502,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Roue de la chance — fini les lots XP fantômes</strong> — Les lots « Double XP » et « +XP bonus » ne faisaient rien (ou faussaient vos kilomètres) : ils sont retirés. <i class="ic" data-ic="medal"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Collection de badges nature</strong> — À la place, la roue offre désormais une collection de badges à débloquer (Vieux Chêne, Cerf, Renard, Chouette, Champignon, Sanglier), affichés dans votre profil. <i class="ic" data-ic="deer"></i></p>
         </div>
       </div>
@@ -2470,7 +2522,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag new">nouveau</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Les autres forêts de l'Oise</strong> — Cinq nouveaux articles de blog explorent les forêts voisines de Compiègne : Laigue, Halatte, Chantilly, Ermenonville et Hez-Froidmont. Chacune avec ses paysages, ses randonnées et ses points d'intérêt. <i class="ic" data-ic="tree"></i></p>
         </div>
       </div>
@@ -2486,7 +2538,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Statistiques de visite plus justes</strong> — Les visites de l'administrateur ne sont plus comptées, même depuis un navigateur ou un aperçu où il n'était jamais connecté : le serveur reconnaît désormais la session admin et écarte la visite. Les chiffres reflètent mieux les vrais visiteurs. <i class="ic" data-ic="chart"></i></p>
         </div>
       </div>
@@ -2502,7 +2554,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Notez les chemins sur place, sans limite</strong> — Activez votre localisation : tant que vous êtes à moins de 2 km d'un chemin, les membres gratuits peuvent en noter la difficulté autant qu'ils veulent. À distance, la limite de 5 notations reste (ou parcourez le chemin pour le noter plus tard sans limite). Les membres Argent et Or notent sans aucune limite. <i class="ic" data-ic="pin"></i></p>
         </div>
       </div>
@@ -2518,7 +2570,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Carte simplifiée</strong> — Le filtre des chemins par difficulté a été retiré : tous les sentiers s'affichent désormais en permanence. Le bouton « Filtres » devient « Carte » et ne sert plus qu'à choisir le fond (Plan, IGN, Satellite). <i class="ic" data-ic="map"></i></p>
         </div>
       </div>
@@ -2534,7 +2586,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Aidez à noter les chemins</strong> — À la première ouverture de la carte ou du planificateur, une bannière invite à noter la difficulté des chemins que vous connaissez, avec un lien vers un nouveau guide « Comment noter un chemin ». <i class="ic" data-ic="palette"></i></p>
         </div>
       </div>
@@ -2550,7 +2602,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Analyse IA : toutes les pages visitées</strong> — L'analyse IA globale prend désormais en compte jusqu'à 25 pages visitées du mois (au lieu de 6), pour un bilan de trafic plus complet. <i class="ic" data-ic="file"></i></p>
         </div>
       </div>
@@ -2566,7 +2618,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Analyse IA globale du panneau admin</strong> — Un nouveau bouton lit d'un coup toutes les statistiques du tableau de bord (membres, revenus, trafic, avis, contenu, messages, défi du mois) et renvoie un bilan structuré avec les points forts, les points de vigilance et 3 actions prioritaires. <i class="ic" data-ic="lightbulb"></i></p>
         </div>
       </div>
@@ -2582,7 +2634,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Page « Meilleures balades » qui restait bloquée</strong> — La liste restait figée sur « Chargement… » pour tout le monde : le script de la page était bloqué par la politique de sécurité du site. Il a été déplacé dans un fichier dédié, et les balades s'affichent désormais correctement. <i class="ic" data-ic="footprints"></i></p>
         </div>
       </div>
@@ -2598,7 +2650,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Forêt de Retz</strong> — La forêt de Retz (Villers-Cotterêts, Aisne) rejoint les zones couvertes : disponible en carte hors-ligne et intégrée aux pages du site. <i class="ic" data-ic="tree-round"></i></p>
         </div>
       </div>
@@ -2614,7 +2666,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Statistiques de visite plus justes</strong> — Le navigateur de l'administrateur n'est plus compté dans la liste des visiteurs, même après déconnexion, pour que les chiffres reflètent les vrais visiteurs. <i class="ic" data-ic="eye-off"></i></p>
         </div>
       </div>
@@ -2630,11 +2682,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Aperçu illustré quand on partage un lien</strong> — En partageant une page de BWR (WhatsApp, Messenger, Facebook, Discord, X…), une belle vignette de marque s'affiche désormais avec le logo, le slogan et l'adresse du site, au lieu d'un lien nu. <i class="ic" data-ic="link"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Meilleur référencement</strong> — Les pages publiques (meilleures balades, plans, guide, actualités, forum, classement) sont ajoutées au plan du site pour Google, et les zones privées (admin, API) en sont explicitement exclues.</p>
         </div>
       </div>
@@ -2650,7 +2702,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Graphique d'activité dans le panneau admin</strong> — L'onglet « Activité » affiche désormais un graphique en courbes : en rouge les visiteurs sans compte, en bleu les reconnexions de comptes. Cinq onglets pour choisir la période : 1 jour, 1 semaine, 1 mois, 1 an et Tout. <i class="ic" data-ic="trending"></i></p>
         </div>
       </div>
@@ -2666,7 +2718,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Bouton « Donner mon avis » de nouveau visible</strong> — Sur le fond vert foncé du pied de page, le bouton d'avis et la note s'affichaient en texte sombre, donc quasi invisibles. Ils sont désormais en clair et bien lisibles. <i class="ic" data-ic="eye"></i></p>
         </div>
       </div>
@@ -2682,7 +2734,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Référencement « forêt de Compiègne »</strong> — Les titres, descriptions et données structurées de l'accueil et de la carte ciblent désormais explicitement la forêt de Compiègne et les autres forêts de l'Oise (Laigue, Halatte, Chantilly, Ermenonville), pour mieux apparaître sur Google.</p>
         </div>
       </div>
@@ -2698,7 +2750,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Donnez votre avis sur BWR</strong> — Un nouveau bloc « avis » façon Google apparaît en bas des pages&nbsp;: la note moyenne du site en étoiles et le nombre d'avis sont visibles par tout le monde, et chacun peut laisser sa propre note de 1 à 5&nbsp;étoiles avec un commentaire (modifiable à tout moment). Les commentaires détaillés ne sont visibles que par l'équipe, dans le panneau d'administration. <i class="ic" data-ic="star"></i></p>
         </div>
       </div>
@@ -2714,7 +2766,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Statistiques de visite par page</strong> — Le panneau admin affiche maintenant, pour chaque visiteur, le temps total passé sur le site à la seconde près. En <strong>cliquant sur une personne</strong>, on déplie la liste de <em>toutes</em> les pages qu'elle a visitées (Carte, Itinéraires, Profil…) avec le temps passé sur chacune. Le temps n'est compté que lorsque l'onglet est visible, et un visiteur n'apparaît qu'à partir de 10&nbsp;secondes de présence pour exclure les rebonds et les robots. <i class="ic" data-ic="chart"></i></p>
         </div>
       </div>
@@ -2730,7 +2782,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">design</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Page des plans allégée</strong> — Fini le mur d'informations : chaque plan n'affiche plus que ses fonctions essentielles, avec un bouton <em>« Tout voir »</em> pour dérouler le détail si besoin. Le grand tableau comparatif se replie désormais dans un menu déroulant. On voit l'essentiel d'un coup d'œil, tout le reste reste accessible en un clic. <i class="ic" data-ic="palette"></i></p>
         </div>
       </div>
@@ -2746,7 +2798,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">perf</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Images mises en cache plus longtemps</strong> — Les images et icônes de l'app sont maintenant gardées en mémoire par le navigateur pendant 30&nbsp;jours au lieu d'être re-téléchargées à chaque visite. Les pages se chargent un peu plus vite sur les visites répétées, sans rien changer d'autre. <i class="ic" data-ic="zap"></i></p>
         </div>
       </div>
@@ -2762,7 +2814,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">perf</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Signalements plus rapides</strong> — La liste des signalements (arbres tombés, inondations…) est maintenant mise en cache à la périphérie du réseau Cloudflare, comme les chemins. Elle s'affiche plus vite sur la carte au lieu d'être rechargée depuis la base à chaque ouverture, et se rafraîchit automatiquement dès qu'un signalement est ajouté ou supprimé. <i class="ic" data-ic="zap"></i></p>
         </div>
       </div>
@@ -2778,7 +2830,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">perf</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Chemins affichés instantanément</strong> — La carte réaffiche maintenant les chemins notés immédiatement à partir de la dernière version enregistrée sur l'appareil, puis se met à jour en arrière-plan si quelque chose a changé. Résultat&nbsp;: les chemins apparaissent en même temps que la carte, et restent visibles même hors connexion. <i class="ic" data-ic="zap"></i></p>
         </div>
       </div>
@@ -2794,7 +2846,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">perf</span>
+          <span class="cl-tag improved">Amélioré</span>
           <p class="cl-entry-text"><strong>Chemins notés plus rapides</strong> — La liste des chemins est maintenant mise en cache à la périphérie du réseau Cloudflare&nbsp;: elle s'affiche presque aussi vite que la carte, au lieu de recharger chaque chemin depuis la base à chaque ouverture. Le cache se rafraîchit automatiquement dès qu'un chemin est ajouté ou modifié. <i class="ic" data-ic="zap"></i></p>
         </div>
       </div>
@@ -2810,11 +2862,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Liste des visiteurs (admin)</strong> — L'onglet «&nbsp;Activité&nbsp;» du Panneau admin affiche maintenant chaque vraie personne venue ce mois-ci&nbsp;: drapeau du pays, ville, appareil (ex.&nbsp;«&nbsp;Chrome&nbsp;·&nbsp;Windows&nbsp;»), nombre de visites et dernière activité — le tout 100&nbsp;% anonyme (aucune IP ni donnée personnelle). <i class="ic" data-ic="globe"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Comptage plus réactif</strong> — Un visiteur est désormais compté après 30&nbsp;s de présence (au lieu d'une minute), avec en plus un filtre anti-robots côté serveur pour ne garder que les vraies visites.</p>
         </div>
       </div>
@@ -2830,7 +2882,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Paliers en liste verticale</strong> — La section «&nbsp;Paliers&nbsp;» de votre profil affiche désormais tous les niveaux les uns sous les autres&nbsp;: ceux déjà débloqués, celui en cours (avec sa barre d'XP et «&nbsp;plus que X&nbsp;XP&nbsp;») et ceux à venir. Plus lisible et sans défilement latéral qu'avec l'ancienne frise horizontale. <i class="ic" data-ic="trending"></i></p>
         </div>
       </div>
@@ -2846,19 +2898,19 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Espace admin en deux pages</strong> — L'admin est désormais séparé en « Carte admin » (la carte pour gérer les chemins et les signalements) et « Panneau admin » (le tableau de bord&nbsp;: messages, membres, revenus, défis du mois). Chaque page est plus légère et va droit au but. <i class="ic" data-ic="wrench"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Menu d'accueil enrichi</strong> — Le menu de la page d'accueil propose maintenant « Installer l'application » (avec guide iOS) et un accès direct aux « Cartes hors-ligne », et affiche les raccourcis admin pour les comptes admin. <i class="ic" data-ic="smartphone"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Badges repliables</strong> — La liste des badges affiche le nombre obtenu (ex.&nbsp;: 8&nbsp;/&nbsp;20) et se replie derrière un bouton « Voir tous les badges » pour ne plus dérouler à l'infini. <i class="ic" data-ic="medal"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Échelle de récompenses en frise</strong> — Les paliers de récompense sont réunis en une seule frise horizontale qui se remplit jusqu'à votre niveau, à la place de l'ancien double affichage (rail de pastilles + grille). <i class="ic" data-ic="medal"></i></p>
         </div>
       </div>
@@ -2874,7 +2926,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Barre d'XP en total cumulé</strong> — La barre de progression affiche maintenant votre XP total sur le nombre d'XP nécessaire pour atteindre le prochain palier (ex.&nbsp;: 405&nbsp;/&nbsp;450&nbsp;XP), pour voir d'un coup d'œil combien il vous reste à parcourir. <i class="ic" data-ic="target"></i></p>
         </div>
       </div>
@@ -2890,19 +2942,19 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Paliers &amp; récompenses</strong> — Votre niveau progresse en contribuant (signalements, notation des chemins) et débloque désormais de vraies récompenses&nbsp;: titres de profil, cadres bronze/argent/or et, pour les comptes gratuits, des trajets hebdomadaires en bonus (+1 dès le niveau&nbsp;4, +2 dès le niveau&nbsp;7). Le tout indépendant de l'abonnement. <i class="ic" data-ic="gift"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Barre de progression des paliers</strong> — Une barre jalonnée en haut de la section «&nbsp;Paliers&nbsp;» de votre profil montre d'un coup d'œil où vous en êtes&nbsp;: un point par palier, rempli jusqu'à votre niveau actuel, avec le prochain palier mis en évidence. <i class="ic" data-ic="compass"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Progression plus gratifiante</strong> — La barre d'XP suit maintenant une courbe progressive&nbsp;: chaque niveau demande un peu plus d'efforts que le précédent, avec un aperçu du prochain palier à atteindre juste sous la barre. <i class="ic" data-ic="trending"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Ouverture sur l'accueil</strong> — L'application installée s'ouvre désormais sur la page d'accueil plutôt que directement sur la carte, pour retrouver plus facilement toutes les fonctionnalités. <i class="ic" data-ic="home"></i></p>
         </div>
       </div>
@@ -2918,15 +2970,15 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Emails de notification</strong> — Recevez un email quand quelqu'un répond à l'un de vos sujets du forum, ou qu'un obstacle est signalé près d'un de vos trajets enregistrés (Argent+). Activez ou coupez le tout depuis votre profil, et chaque email a son lien de désinscription en un clic. <i class="ic" data-ic="mail"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Articles «&nbsp;Voir tout&nbsp;»</strong> — Les longs articles d'actualité s'affichent repliés avec un dégradé&nbsp;: un clic sur «&nbsp;Voir tout&nbsp;» déroule le texte, un autre le replie. Le fil reste léger à parcourir. <i class="ic" data-ic="newspaper"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Aperçu de carte plus joli</strong> — La carte de la page d'accueil affiche désormais un fond forestier le temps que les tuiles chargent&nbsp;: fini le gris qui clignote sur connexion lente. <i class="ic" data-ic="leaf"></i></p>
         </div>
       </div>
@@ -2942,11 +2994,11 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Plus de signalements en double</strong> — Le formulaire de signalement ne peut plus être envoyé deux fois d'un coup, et le sélecteur de photo n'ouvre plus qu'une seule fenêtre. Fini les doublons quand la caméra reprend le focus. <i class="ic" data-ic="camera"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Bouton «&nbsp;Supprimer ce chemin&nbsp;» plus clair</strong> — Il n'apparaît désormais que pour les administrateurs, qui sont les seuls à pouvoir supprimer un chemin&nbsp;: plus de bouton qui refuse l'action.</p>
         </div>
       </div>
@@ -2962,15 +3014,15 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Alertes obstacles sur mes trajets (Argent)</strong> — Activez les notifications depuis votre profil et recevez une alerte dès qu'un obstacle (arbre tombé, chemin inondé…) est signalé à proximité de l'un de vos trajets sauvegardés. Vous savez avant de partir&nbsp;! <i class="ic" data-ic="bell"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Importer un GPX</strong> — Amenez votre tracé Strava, Garmin ou Komoot directement sur la carte BWR&nbsp;: un fichier <code>.gpx</code> et votre parcours s'affiche avec sa distance et son dénivelé. Ouvert à tout le monde&nbsp;! <i class="ic" data-ic="download"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Signalements hors-ligne plus fiables</strong> — Les signalements faits sans réseau sont désormais mis en file et renvoyés automatiquement dès que la connexion revient, même si vous avez fermé l'appli entre-temps. <i class="ic" data-ic="radio"></i></p>
         </div>
       </div>
@@ -2986,15 +3038,15 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Itinéraire «&nbsp;Sur mesure&nbsp;» (Argent)</strong> — Un nouveau mode où vous composez votre balade vous-même&nbsp;: ajoutez vos carrefours étape par étape (en cherchant leur nom ou en cliquant sur la carte), avec l'option de revenir au point de départ pour former une boucle. <i class="ic" data-ic="compass"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Personnaliser une boucle (Argent)</strong> — Après avoir généré une boucle, choisissez les carrefours qu'elle doit obligatoirement traverser, puis regénérez-la pour qu'elle passe par vos coins préférés.</p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Détail des types de chemins &amp; revêtements</strong> — Chaque itinéraire calculé affiche désormais la répartition des distances par type de chemin (sentier, chemin forestier, piste cyclable…) et par revêtement (asphalte, terre, herbe…). Vous savez à quoi vous attendre avant de partir&nbsp;! <i class="ic" data-ic="footprints"></i></p>
         </div>
       </div>
@@ -3010,19 +3062,19 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Ouvrir une balade dans le planificateur</strong> — Chaque itinéraire des articles du blog (rando, VTT, trail, familles…) affiche désormais un bouton qui pré-remplit le planificateur avec le bon départ, la distance, le type et la difficulté. Un clic et c'est parti&nbsp;! <i class="ic" data-ic="compass"></i></p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>La difficulté est relative à la région</strong> — La légende de la carte rappelle qu'un chemin «&nbsp;facile&nbsp;» en montagne peut être plus dur qu'un «&nbsp;difficile&nbsp;» en forêt&nbsp;: pensez à vérifier distance et dénivelé avant de partir.</p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Profils d'altitude à nouveau fiables</strong> — Correction de l'appel au service d'altitude (format des coordonnées) qui empêchait l'affichage du dénivelé sur certains parcours.</p>
         </div>
         <div class="cl-entry">
-          <span class="cl-tag fix">fix</span>
+          <span class="cl-tag fixed">Corrigé</span>
           <p class="cl-entry-text"><strong>Itinéraires mieux calibrés en difficulté</strong> — Le générateur d'itinéraires privilégie plus fortement les chemins correspondant à la difficulté choisie, pour des boucles plus cohérentes.</p>
         </div>
       </div>
@@ -3038,7 +3090,7 @@
       </div>
       <div class="cl-entries">
         <div class="cl-entry">
-          <span class="cl-tag feat">feat</span>
+          <span class="cl-tag new">Nouveau</span>
           <p class="cl-entry-text"><strong>Première génération de BWR</strong> — Le tout premier lancement des <em>Balades en Forêt de Compiègne</em> : carte interactive des sentiers, planificateur d'itinéraires, signalements de problèmes, forum communautaire et badges. Bienvenue ! <i class="ic" data-ic="tree"></i></p>
         </div>
       </div>

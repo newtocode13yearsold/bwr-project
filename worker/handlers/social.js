@@ -148,7 +148,7 @@ export async function handleSocial(request, env, { pathname, url, json, fail }) 
     const level = plan === 'pro' ? 'expérimenté' : 'débutant';
 
     const prompt = `Tu es un guide de randonnée expert des forêts de l'Oise en France.
-Génère UN conseil de randonnée personnalisé et motivant en français (1-2 phrases, 20-35 mots max).
+Génère UN conseil de randonnée personnalisé et motivant en français (1-2 phrases, 20-35 mots max), en vouvoyant le lecteur (jamais de tutoiement).
 Le conseil doit être concret, spécifique aux forêts de l'Oise (Compiègne, Chantilly, Halatte, Laigue…), et adapté à ce profil :
 - Kilomètres parcourus au total : ${km} km
 - Nombre de sorties effectuées : ${routes}
@@ -172,7 +172,7 @@ Réponds uniquement avec le texte du conseil, sans guillemets ni explication.`;
       });
       if (!aiRes.ok) throw new Error('AI error');
       const aiData = await aiRes.json();
-      const tip = aiData.content?.[0]?.text?.trim() || 'Profite de la forêt aujourd\'hui !';
+      const tip = aiData.content?.[0]?.text?.trim() || 'Profitez de la forêt aujourd\'hui !';
       return json({ tip });
     } catch {
       return json({ tip: 'La forêt t\'attend — sors et découvre un nouveau sentier !' });
@@ -189,7 +189,7 @@ Réponds uniquement avec le texte du conseil, sans guillemets ni explication.`;
 
     const body = await request.json().catch(() => ({}));
     const text = String(body.text || '').slice(0, 300).trim();
-    if (text.length < 3) return fail('Décris ta balade en quelques mots.', 400);
+    if (text.length < 3) return fail('Décrivez votre balade en quelques mots.', 400);
 
     if (!env.AI && !env.ANTHROPIC_API_KEY) return fail('Le planificateur IA est momentanément indisponible.', 503);
 
@@ -199,8 +199,8 @@ Réponds uniquement avec le texte du conseil, sans guillemets ni explication.`;
     const allowed = await checkRateLimit(env, 'aiplan', user.id, limit, window);
     if (!allowed) {
       return fail(plan === 'free'
-        ? 'Tu as utilisé tes 2 demandes IA gratuites. Passe à Pro pour des balades IA illimitées.'
-        : 'Limite de demandes IA atteinte pour aujourd\'hui. Réessaie demain.', 429);
+        ? 'Vous avez utilisé vos 2 demandes IA gratuites. Passez à Pro pour des balades IA illimitées.'
+        : 'Limite de demandes IA atteinte pour aujourd\'hui. Réessayez demain.', 429);
     }
 
     const prompt = `Tu es l'assistant de randonnée de BWR, une appli de balades dans la Forêt de Compiègne (Oise, France). Tu parles français de façon naturelle et chaleureuse, comme un guide local sympathique. L'utilisateur te décrit librement la balade qu'il a envie de faire — parfois précisément, souvent en quelques mots vagues — et tu remplis les réglages d'un planificateur de trajet.
@@ -219,7 +219,7 @@ Règles de remplissage :
 - startPlace : le lieu de départ OU un lieu à traverser/"passer par" (ex : "les étangs Saint-Pierre", "carrefour de la Faisanderie", "Pierrefonds"). Omets si aucun lieu cité (le départ sera alors le centre de la forêt).
 - endPlace : le lieu d'arrivée, uniquement en mode "atob". Omets sinon.
 - summary : une phrase courte qui résume le trajet retenu (ex : "Boucle forestière facile de 8 km").
-- reply : une réponse conversationnelle, courte et naturelle (1 phrase, comme un humain). Si understood=true, confirme avec entrain ce que tu prépares. Si understood=false, réponds gentiment et ramène la personne vers une balade (ex : "Je m'occupe surtout de tes balades en forêt ! Dis-moi plutôt la distance ou l'ambiance que tu cherches 🌲").
+- reply : une réponse conversationnelle, courte et naturelle (1 phrase, comme un humain), en VOUVOYANT toujours l'utilisateur (jamais de tutoiement). Si understood=true, confirme avec entrain ce que tu prépares. Si understood=false, réponds gentiment et ramène la personne vers une balade (ex : "Je m'occupe surtout de vos balades en forêt ! Dites-moi plutôt la distance ou l'ambiance que vous cherchez.").
 
 Réponds UNIQUEMENT avec un objet JSON valide (sans texte autour, sans balises Markdown) ayant exactement ces clés : understood (booléen), mode ("loop" ou "atob"), distanceKm (nombre 1-100, ou null), transport ("foot" ou "bike"), pathType ("foot"/"bike"/"champs"/"mix"), difficulty ("easy"/"medium"/"hard"), startPlace (texte ou null), endPlace (texte ou null), summary (texte), reply (texte).`;
 
@@ -346,7 +346,7 @@ Réponds UNIQUEMENT avec un objet JSON valide (sans texte autour, sans balises M
       console.log('ai-plan ok', JSON.stringify({ text, understood, startPlace: clean.startPlace, endPlace: clean.endPlace, distanceKm: clean.distanceKm, mode: clean.mode }));
       return json({ plan: clean, understood, reply });
     } catch {
-      return fail('Petit souci de mon côté, je n\'ai pas pu préparer ton trajet. Réessaie dans un instant 🙏', 502);
+      return fail('Petit souci de mon côté, je n\'ai pas pu préparer votre trajet. Réessayez dans un instant.', 502);
     }
   }
 

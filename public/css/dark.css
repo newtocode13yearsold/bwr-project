@@ -54,7 +54,7 @@
 [data-theme="dark"] .leaflet-control-attribution a { color: var(--lime-500); }
 
 /* Area behind tiles while they load (default is light grey) */
-[data-theme="dark"] .leaflet-container { background: #1a241d; }
+[data-theme="dark"] .leaflet-container { background: var(--surface-0); }
 
 /* ══ 2. Per-stylesheet overrides ═════════════════════════════════════════ */
 
@@ -64,10 +64,6 @@
 
 /* ── changelog.css ───────────────────────────────────────────────────────── */
 [data-theme="dark"] .cl-eyebrow { color: var(--lime-500); }
-[data-theme="dark"] .cl-tag.fix { background: var(--surface-1); color: hsl(0, 80%, 76%); border-color: hsla(0, 55%, 50%, 0.4); }
-[data-theme="dark"] .cl-tag.feat { background: var(--surface-1); color: hsl(142, 80%, 76%); border-color: hsla(141, 55%, 50%, 0.4); }
-[data-theme="dark"] .cl-tag.ux { background: hsla(214, 65%, 50%, 0.16); color: hsl(224, 80%, 76%); border-color: hsla(213, 55%, 50%, 0.4); }
-[data-theme="dark"] .cl-tag.perf { background: hsla(55, 65%, 50%, 0.16); border-color: hsla(53, 55%, 50%, 0.4); }
 [data-theme="dark"] .cl-tag.sec { background: var(--surface-1); color: hsl(272, 80%, 76%); border-color: hsla(269, 55%, 50%, 0.4); }
 
 /* ── forum.css ───────────────────────────────────────────────────────────── */
@@ -95,7 +91,7 @@
 [data-theme="dark"] .guide-eyebrow { color: var(--lime-500); background: rgba(163, 230, 53, 0.12); }
 [data-theme="dark"] .guide-section-icon { background: rgba(163, 230, 53, 0.12); }
 [data-theme="dark"] .guide-tip { background: rgba(163, 230, 53, 0.18); color: var(--text-strong); }
-[data-theme="dark"] .guide-tier.pro { background: rgba(251, 191, 36, 0.14); color: #fcd34d; }
+[data-theme="dark"] .guide-tier.pro { background: rgba(251, 191, 36, 0.14); color: var(--gold-300); }
 [data-theme="dark"] .guide-faq summary::after { color: var(--lime-500); }
 
 /* ── home.css ────────────────────────────────────────────────────────────── */
@@ -307,7 +303,7 @@
 [data-theme="dark"] .qm-tier strong { color: var(--text-strong); }
 [data-theme="dark"] .qm-free { background: rgba(163, 230, 53, 0.12); }
 [data-theme="dark"] .qm-pro { background: rgba(251, 191, 36, 0.14); }
-[data-theme="dark"] .qm-pro strong { color: #fcd34d; }
+[data-theme="dark"] .qm-pro strong { color: var(--gold-300); }
 [data-theme="dark"] .quota-strip.qs-warn { background: var(--surface-1); }
 [data-theme="dark"] .quota-strip.qs-danger { background: var(--surface-1); }
 [data-theme="dark"] .quota-strip .qs-count { color: var(--text-strong); }

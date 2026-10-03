@@ -15,8 +15,8 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: linear-gradient(135deg, #1e4d14, #2f7d32);
-  color: #f0fdf4;
+  background: linear-gradient(135deg, var(--forest-700), #2f7d32);
+  color: var(--green-50);
   border-radius: 14px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
   font-family: 'Inter', system-ui, sans-serif;

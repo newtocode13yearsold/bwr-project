@@ -58,7 +58,11 @@ async function render() {
   html += `</div>`;
 
   if (!messages.length) {
-    html += `<div class="inbox-empty">Aucun message pour l'instant.</div>`;
+    html += `<div class="empty-state">
+      <div class="empty-state-icon"><i class="ic" data-ic="inbox"></i></div>
+      <h2 class="empty-state-title">Aucun message pour l'instant</h2>
+      <p class="empty-state-text">Les annonces de l'équipe BWR et vos récompenses de quêtes arriveront ici.</p>
+    </div>`;
   } else {
     html += messages.map(msgCard).join('');
   }

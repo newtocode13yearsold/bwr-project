@@ -59,8 +59,8 @@
   /* ── Text ── */
   --text-strong:   #0b2410;
   --text:          #1f2937;
-  --text-muted:    #6b7280;
-  --text-faint:    #6f7581;  /* was #9ca3af (2.6:1) — lifted to 4.6:1 on white for WCAG AA */
+  --text-muted:    #5f6673;  /* ≥ 5.2:1 on every light surface (was #6b7280: 4.38 on surface-2 tab bars) */
+  --text-faint:    #666d79;  /* ≥ 4.7:1 on every light surface (was #6f7581, #9ca3af before that) */
   --text-inverse:  #ffffff;
   --text-on-gold:  var(--gold-text);
 
@@ -82,11 +82,80 @@
   --success:        #16a34a;
   --info:           #2563eb;
 
+  /* ── Raw colour scales ──
+     Fixed swatches (they do NOT flip in dark mode) for the tinted chips,
+     alerts and badges that need a specific hue. Use these instead of typing a
+     new hex: every colour on the site should come from this file.
+     Prefer the semantic tokens above (--text, --surface-*, --border…) for
+     plain text / backgrounds, because those adapt to dark mode. */
+  --gray-50:  #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  --green-50:  #f0fdf4;
+  --green-100: #dcfce7;
+  --green-200: #bbf7d0;
+  --green-300: #86efac;
+  --green-400: #4ade80;
+  --green-500: #22c55e;
+  --green-700: #15803d;
+  --green-800: #166534;
+  --green-900: #14532d;
+
+  --forest-200: #d4edbc;
+  --lime-700:   #84cc16;
+
+  --red-50:  #fef2f2;
+  --red-100: #fee2e2;
+  --red-200: #fecaca;
+  --red-300: #fca5a5;
+  --red-500: #ef4444;
+  --red-700: #b91c1c;
+  --red-800: #991b1b;
+
+  --gold-100: #fef3c7;
+  --gold-300: #fcd34d;
+  --gold-800: #92400e;
+
+  --orange-50:  #fff7ed;
+  --orange-100: #ffedd5;
+  --orange-500: #f97316;
+  --orange-700: #c2410c;
+
+  --blue-50:  #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-200: #bfdbfe;
+  --blue-300: #93c5fd;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+  --sky-700:  #0369a1;
+
+  --violet-50:  #eef2ff;
+  --violet-100: #ede9fe;
+  --violet-600: #7c3aed;
+  --violet-700: #6d28d9;
+  --violet-800: #4338ca;
+
+  /* Deep tints used behind chips/alerts in dark mode. */
+  --tint-green-dark: #16301f;
+  --tint-red-dark:   #3d1515;
+  --tint-gold-dark:  #3d2a00;
+
   /* ── Typography ── */
   --font-sans:    "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-display: "Fraunces", "Playfair Display", Georgia, serif;
   --font-mono:    ui-monospace, SFMono-Regular, Menlo, monospace;
 
+  --fs-2xs:  0.75rem;  /* smallest text on the site: tags, pills (12 px) */
   --fs-xs:   0.78rem;
   --fs-sm:   0.875rem;
   --fs-base: 1rem;
@@ -172,17 +241,17 @@ body {
 .display,
 .display * {
   font-family: var(--font-display);
+  /* Let the browser pick Fraunces' optical size from the real font-size:
+     forcing a display "opsz" squeezed small headings until letters touched. */
   font-optical-sizing: auto;
-  font-variation-settings: "opsz" 144, "SOFT" 50;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 /* h1 and h2 get Fraunces by default — editorial weight across all pages */
 h1, h2 {
   font-family: var(--font-display);
   font-optical-sizing: auto;
-  font-variation-settings: "opsz" 72, "SOFT" 40;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 /* ── Reusable utility classes ─────────────────────────────────────────────── */
@@ -227,7 +296,7 @@ h1, h2 {
   background: var(--gold-grad-soft);
   color: var(--gold-text);
   border: 1px solid var(--gold-200);
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1.5;
@@ -240,7 +309,7 @@ h1, h2 {
   display: flex;
   width: fit-content;
   margin: 3px auto 0;
-  font-size: 0.58rem;
+  font-size: 0.66rem;
   padding: 0 6px;
 }
 .badge-item .pro-only-tag {
@@ -261,7 +330,7 @@ h1, h2 {
   z-index: 2;
   margin: 0;
   padding: 0 6px;
-  font-size: 0.55rem;
+  font-size: 0.64rem;
 }
 
 .lock-overlay {

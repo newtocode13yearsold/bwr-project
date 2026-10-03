@@ -10,7 +10,7 @@
   z-index: 4000;
   display: flex;
   flex-direction: column;
-  background: #0b1220;
+  background: var(--gray-900);
   color: #fff;
   font-family: 'Inter', system-ui, sans-serif;
   /* Respect notches / home indicators on phones. */
@@ -23,12 +23,12 @@
   align-items: center;
   gap: 14px;
   padding: 16px 18px;
-  background: #16a34a;
+  background: var(--success);
   box-shadow: 0 2px 12px rgba(0, 0, 0, .35);
   transition: background .25s ease;
 }
-.rf-banner.off      { background: #dc2626; }
-.rf-banner.arrived  { background: #2563eb; }
+.rf-banner.off      { background: var(--danger); }
+.rf-banner.arrived  { background: var(--info); }
 
 .rf-arrow {
   font-size: 40px;
@@ -40,7 +40,7 @@
 .rf-instr-dist {
   font-size: 26px;
   font-weight: 800;
-  letter-spacing: -.5px;
+  letter-spacing: -0.01em;
 }
 .rf-instr-text {
   font-size: 15px;
@@ -56,9 +56,9 @@
 .rf-map {
   flex: 1;
   min-height: 0;
-  background: #1a2433;
+  background: var(--gray-800);
 }
-.rf-map .leaflet-container { background: #1a2433; }
+.rf-map .leaflet-container { background: var(--gray-800); }
 
 .rf-acc {
   position: absolute;
@@ -66,13 +66,13 @@
   left: 12px;
   font-size: 12px;
   font-weight: 600;
-  color: #cbd5e1;
+  color: var(--gray-300);
   background: rgba(11, 18, 32, .7);
   padding: 3px 8px;
   border-radius: 999px;
   z-index: 4100;
 }
-.rf-acc.poor { color: #fca5a5; }
+.rf-acc.poor { color: var(--red-300); }
 
 .rf-recenter {
   position: absolute;
@@ -97,20 +97,20 @@
 /* ── Bottom dashboard ── */
 .rf-bottom {
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-  background: #0b1220;
+  background: var(--gray-900);
   box-shadow: 0 -2px 14px rgba(0, 0, 0, .5);
 }
 .rf-progress {
   height: 6px;
   border-radius: 999px;
-  background: #1e293b;
+  background: var(--gray-800);
   overflow: hidden;
   margin-bottom: 12px;
 }
 .rf-progress-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #22c55e, #4ade80);
+  background: linear-gradient(90deg, var(--green-500), var(--green-400));
   border-radius: 999px;
   transition: width .35s ease;
 }
@@ -129,7 +129,7 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .5px;
-  color: #94a3b8;
+  color: var(--silver-400);
 }
 .rf-actions { display: flex; gap: 10px; }
 .rf-btn {
@@ -141,14 +141,14 @@
   font-weight: 700;
   cursor: pointer;
 }
-.rf-voice { background: #1e293b; color: #fff; }
-.rf-voice.off { color: #94a3b8; }
-.rf-quit  { background: #ef4444; color: #fff; }
+.rf-voice { background: var(--gray-800); color: #fff; }
+.rf-voice.off { color: var(--silver-400); }
+.rf-quit  { background: var(--red-500); color: #fff; }
 .rf-btn:active { transform: scale(.97); }
 
 @media (min-width: 900px) {
   /* Keep the HUD phone-width and centred on desktop — it's a mobile-first tool. */
-  .rf-overlay { max-width: 480px; margin: 0 auto; border-left: 1px solid #1e293b; border-right: 1px solid #1e293b; }
+  .rf-overlay { max-width: 480px; margin: 0 auto; border-left: 1px solid var(--gray-800); border-right: 1px solid var(--gray-800); }
 }
 
 /* ── "Suivre l'itinéraire" launch button on the result panel ── */
@@ -159,7 +159,7 @@
   padding: 15px;
   border: none;
   border-radius: 14px;
-  background: linear-gradient(135deg, #16a34a, #22c55e);
+  background: linear-gradient(135deg, var(--success), var(--green-500));
   color: #fff;
   font-size: 16px;
   font-weight: 800;

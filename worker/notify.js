@@ -50,7 +50,7 @@ function shell({ heading, intro, quote, ctaUrl, ctaLabel, unsubUrl }) {
   </p>
   <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0 12px">
   <p style="font-size:12px;color:#9ca3af;line-height:1.5;margin:0">
-    Tu reçois cet email parce que tu es membre de BWR — Balades en Forêt de Compiègne.<br>
+    Vous recevez cet email parce que vous êtes membre de BWR — Balades en Forêt de Compiègne.<br>
     <a href="${unsubUrl}" style="color:#9ca3af">Se désabonner de ces notifications</a>
   </p>
 </div>`;
@@ -84,8 +84,8 @@ export async function notifyForumReply(env, { topic, reply }) {
 
     const snippet = String(reply.body || '').replace(/\s+/g, ' ').trim().slice(0, 240);
     const html = shell({
-      heading: 'Quelqu\'un a répondu à ton sujet 💬',
-      intro: `<strong>${esc(reply.authorName || 'Un membre')}</strong> a répondu à ton sujet « ${esc(topic.title)} » sur le forum BWR.`,
+      heading: 'Quelqu\'un a répondu à votre sujet 💬',
+      intro: `<strong>${esc(reply.authorName || 'Un membre')}</strong> a répondu à votre sujet « ${esc(topic.title)} » sur le forum BWR.`,
       quote: snippet ? esc(snippet) : '',
       ctaUrl: topicUrl,
       ctaLabel: 'Voir la réponse',
@@ -122,8 +122,8 @@ export async function notifyRouteHazardEmail(env, user, routeName, report) {
     const label = TYPE_LABELS[report.type] || TYPE_LABELS.other;
 
     const html = shell({
-      heading: '🌲 Nouvel obstacle sur ton trajet',
-      intro: `<strong>${esc(label)}</strong> vient d'être signalé près de ton trajet enregistré « ${esc(routeName)} ». Vérifie avant de partir.`,
+      heading: '🌲 Nouvel obstacle sur votre trajet',
+      intro: `<strong>${esc(label)}</strong> vient d'être signalé près de votre trajet enregistré « ${esc(routeName)} ». Vérifiez avant de partir.`,
       quote: report.note ? esc(String(report.note).slice(0, 240)) : '',
       ctaUrl: mapUrl,
       ctaLabel: 'Voir sur la carte',

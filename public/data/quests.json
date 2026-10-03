@@ -1,32 +1,32 @@
 {
   "note": "Quêtes BWR auto-détectées depuis user.stats (aucune validation manuelle). metric = champ évalué côté client ; target = seuil ; unit 'km' ou 'count'.",
   "daily": [
-    { "id": "d1", "emoji": "tree", "title": "Sors en forêt aujourd'hui", "description": "Enregistre au moins une sortie aujourd'hui.", "metric": "active_today", "target": 1, "unit": "count", "xp": 2 },
-    { "id": "d2", "emoji": "footprints", "title": "Marche 2 km aujourd'hui",   "description": "Cumule 2 km sur la journée.",                "metric": "km_today", "target": 2, "unit": "km", "xp": 3 },
-    { "id": "d3", "emoji": "bike", "title": "Fais 5 km aujourd'hui",     "description": "Cumule 5 km sur la journée.",                "metric": "km_today", "target": 5, "unit": "km", "xp": 5 },
-    { "id": "d4", "emoji": "flame", "title": "Grosse sortie : 8 km",      "description": "Cumule 8 km sur la journée.",                "metric": "km_today", "target": 8, "unit": "km", "xp": 8 }
+    { "id": "d1", "emoji": "tree", "title": "Sortez en forêt aujourd'hui", "description": "Enregistrez au moins une sortie aujourd'hui.", "metric": "active_today", "target": 1, "unit": "count", "xp": 2 },
+    { "id": "d2", "emoji": "footprints", "title": "Marchez 2 km aujourd'hui",   "description": "Cumulez 2 km sur la journée.",                "metric": "km_today", "target": 2, "unit": "km", "xp": 3 },
+    { "id": "d3", "emoji": "bike", "title": "Faites 5 km aujourd'hui",     "description": "Cumulez 5 km sur la journée.",                "metric": "km_today", "target": 5, "unit": "km", "xp": 5 },
+    { "id": "d4", "emoji": "flame", "title": "Grosse sortie : 8 km",      "description": "Cumulez 8 km sur la journée.",                "metric": "km_today", "target": 8, "unit": "km", "xp": 8 }
   ],
   "weekly": [
-    { "id": "w1", "emoji": "footprints", "title": "10 km cette semaine",   "description": "Cumule 10 km depuis lundi.",              "metric": "km_week",          "target": 10, "unit": "km",    "xp": 10 },
-    { "id": "w2", "emoji": "run", "title": "20 km cette semaine",   "description": "Cumule 20 km depuis lundi.",              "metric": "km_week",          "target": 20, "unit": "km",    "xp": 15 },
-    { "id": "w3", "emoji": "bike", "title": "35 km cette semaine",   "description": "Cumule 35 km depuis lundi.",              "metric": "km_week",          "target": 35, "unit": "km",    "xp": 20 },
-    { "id": "w4", "emoji": "map", "title": "3 itinéraires générés", "description": "Génère 3 itinéraires cette semaine.",     "metric": "routes_week",      "target": 3,  "unit": "count", "xp": 10 },
-    { "id": "w5", "emoji": "compass", "title": "6 itinéraires générés", "description": "Génère 6 itinéraires cette semaine.",     "metric": "routes_week",      "target": 6,  "unit": "count", "xp": 15 },
-    { "id": "w6", "emoji": "calendar", "title": "3 jours actifs",        "description": "Sors 3 jours différents cette semaine.",  "metric": "active_days_week", "target": 3,  "unit": "count", "xp": 10 },
-    { "id": "w7", "emoji": "zap", "title": "5 jours actifs",        "description": "Sors 5 jours différents cette semaine.",  "metric": "active_days_week", "target": 5,  "unit": "count", "xp": 18 }
+    { "id": "w1", "emoji": "footprints", "title": "10 km cette semaine",   "description": "Cumulez 10 km depuis lundi.",              "metric": "km_week",          "target": 10, "unit": "km",    "xp": 10 },
+    { "id": "w2", "emoji": "run", "title": "20 km cette semaine",   "description": "Cumulez 20 km depuis lundi.",              "metric": "km_week",          "target": 20, "unit": "km",    "xp": 15 },
+    { "id": "w3", "emoji": "bike", "title": "35 km cette semaine",   "description": "Cumulez 35 km depuis lundi.",              "metric": "km_week",          "target": 35, "unit": "km",    "xp": 20 },
+    { "id": "w4", "emoji": "map", "title": "3 itinéraires générés", "description": "Générez 3 itinéraires cette semaine.",     "metric": "routes_week",      "target": 3,  "unit": "count", "xp": 10 },
+    { "id": "w5", "emoji": "compass", "title": "6 itinéraires générés", "description": "Générez 6 itinéraires cette semaine.",     "metric": "routes_week",      "target": 6,  "unit": "count", "xp": 15 },
+    { "id": "w6", "emoji": "calendar", "title": "3 jours actifs",        "description": "Sortez 3 jours différents cette semaine.",  "metric": "active_days_week", "target": 3,  "unit": "count", "xp": 10 },
+    { "id": "w7", "emoji": "zap", "title": "5 jours actifs",        "description": "Sortez 5 jours différents cette semaine.",  "metric": "active_days_week", "target": 5,  "unit": "count", "xp": 18 }
   ],
   "monthly": [
-    { "id": "m1", "emoji": "footprints", "title": "50 km dans le mois",   "description": "Cumule 50 km sur le mois en cours.",      "metric": "km_month",          "target": 50,  "unit": "km",    "xp": 40 },
-    { "id": "m2", "emoji": "mountain", "title": "80 km dans le mois",   "description": "Cumule 80 km sur le mois en cours.",      "metric": "km_month",          "target": 80,  "unit": "km",    "xp": 55 },
-    { "id": "m3", "emoji": "rocket", "title": "120 km dans le mois",  "description": "Cumule 120 km sur le mois en cours.",     "metric": "km_month",          "target": 120, "unit": "km",    "xp": 70 },
-    { "id": "m4", "emoji": "calendar", "title": "12 jours actifs",      "description": "Sors 12 jours différents ce mois-ci.",    "metric": "active_days_month", "target": 12,  "unit": "count", "xp": 45 },
-    { "id": "m5", "emoji": "flame", "title": "Série de 15 jours",    "description": "Atteins une série de 15 jours d'affilée.", "metric": "streak",            "target": 15,  "unit": "count", "xp": 50 }
+    { "id": "m1", "emoji": "footprints", "title": "50 km dans le mois",   "description": "Cumulez 50 km sur le mois en cours.",      "metric": "km_month",          "target": 50,  "unit": "km",    "xp": 40 },
+    { "id": "m2", "emoji": "mountain", "title": "80 km dans le mois",   "description": "Cumulez 80 km sur le mois en cours.",      "metric": "km_month",          "target": 80,  "unit": "km",    "xp": 55 },
+    { "id": "m3", "emoji": "rocket", "title": "120 km dans le mois",  "description": "Cumulez 120 km sur le mois en cours.",     "metric": "km_month",          "target": 120, "unit": "km",    "xp": 70 },
+    { "id": "m4", "emoji": "calendar", "title": "12 jours actifs",      "description": "Sortez 12 jours différents ce mois-ci.",    "metric": "active_days_month", "target": 12,  "unit": "count", "xp": 45 },
+    { "id": "m5", "emoji": "flame", "title": "Série de 15 jours",    "description": "Atteignez une série de 15 jours d'affilée.", "metric": "streak",            "target": 15,  "unit": "count", "xp": 50 }
   ],
   "oneTime": [
-    { "id": "o1", "emoji": "pencil", "title": "Grand cartographe",    "description": "Note 200 chemins au total.",              "metric": "grades_total",  "target": 200, "unit": "count", "reward": "1 mois de Pro offert" },
-    { "id": "o2", "emoji": "construction", "title": "Gardien de la forêt",  "description": "Atteins 100 signalements au total.",      "metric": "reports_total", "target": 100, "unit": "count", "reward": "1 semaine de Pro + badge" },
-    { "id": "o3", "emoji": "footprints", "title": "Marcheur infatigable", "description": "Parcours 500 km au total.",               "metric": "km_total",      "target": 500, "unit": "km",    "reward": "Badge exclusif" },
-    { "id": "o4", "emoji": "compass", "title": "Explorateur assidu",   "description": "Génère 100 itinéraires au total.",        "metric": "routes_total",  "target": 100, "unit": "count", "reward": "Badge Explorateur" },
-    { "id": "o5", "emoji": "flame", "title": "Assidu légendaire",    "description": "Enchaîne 30 jours actifs d'affilée.",     "metric": "best_streak",   "target": 30,  "unit": "count", "reward": "2 semaines de Pro offertes" }
+    { "id": "o1", "emoji": "pencil", "title": "Grand cartographe",    "description": "Notez 200 chemins au total.",              "metric": "grades_total",  "target": 200, "unit": "count", "reward": "1 mois de Pro offert" },
+    { "id": "o2", "emoji": "construction", "title": "Gardien de la forêt",  "description": "Atteignez 100 signalements au total.",      "metric": "reports_total", "target": 100, "unit": "count", "reward": "1 semaine de Pro + badge" },
+    { "id": "o3", "emoji": "footprints", "title": "Marcheur infatigable", "description": "Parcourez 500 km au total.",               "metric": "km_total",      "target": 500, "unit": "km",    "reward": "Badge exclusif" },
+    { "id": "o4", "emoji": "compass", "title": "Explorateur assidu",   "description": "Générez 100 itinéraires au total.",        "metric": "routes_total",  "target": 100, "unit": "count", "reward": "Badge Explorateur" },
+    { "id": "o5", "emoji": "flame", "title": "Assidu légendaire",    "description": "Enchaînez 30 jours actifs d'affilée.",     "metric": "best_streak",   "target": 30,  "unit": "count", "reward": "2 semaines de Pro offertes" }
   ]
 }

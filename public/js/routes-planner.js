@@ -1321,7 +1321,7 @@ function displayRoute({ coords, meters, seconds }, requestedKm = null) {
           <span class="el-icon"><i class="ic" data-ic="mountain"></i></span>
           <strong>Profil altimétrique ${BWR.proOnlyTag()}</strong>
           <p>Voyez le dénivelé, l'altitude min/max et la pente — disponibles à partir du plan Pro.</p>
-          <a href="plans" class="el-cta">Débloquer avec Pro →</a>
+          <a href="plans" class="el-cta">Passer à Pro →</a>
         </div>
       `;
     }
@@ -1351,7 +1351,7 @@ function showQuotaExceededModal(quota) {
         <div class="qm-arrow">→</div>
         <div class="qm-tier qm-pro">
           <strong><i class="ic" data-ic="star"></i> Pro</strong>
-          <span>Illimité · 2,99€/mois</span>
+          <span>Illimité · 2,99 €/mois</span>
         </div>
       </div>
       <p class="qm-perks">+ Boucles illimitées, profil altimétrique, export GPX, cartes hors-ligne…</p>
@@ -1390,7 +1390,7 @@ function showLoopQuotaModal(quota) {
         <div class="qm-arrow">→</div>
         <div class="qm-tier qm-pro">
           <strong><i class="ic" data-ic="star"></i> Pro</strong>
-          <span>Boucles illimitées · 2,99€/mois</span>
+          <span>Boucles illimitées · 2,99 €/mois</span>
         </div>
       </div>
       <p class="qm-perks">Les trajets A → B restent disponibles. + profil altimétrique, export GPX, cartes hors-ligne…</p>

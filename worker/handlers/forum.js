@@ -104,7 +104,7 @@ export async function handleForum(request, env, { pathname, url, json, fail, wai
       return fail('La création de sujets est réservée aux membres Pro.', 403);
 
     if (!await checkRateLimit(env, 'forumtopic', user.id, 10, 3600))
-      return fail('Trop de sujets créés. Réessaie dans une heure.', 429);
+      return fail('Trop de sujets créés. Réessayez dans une heure.', 429);
 
     const body = await request.json().catch(() => ({}));
     const title = String(body.title || '').trim();
@@ -170,7 +170,7 @@ export async function handleForum(request, env, { pathname, url, json, fail, wai
     if (!raw) return fail('Sujet introuvable.', 404);
     const topic = JSON.parse(raw);
     if (user.role !== 'admin' && topic.userId !== user.id)
-      return fail('Tu ne peux modifier que tes propres sujets.', 403);
+      return fail('Vous ne pouvez modifier que vos propres sujets.', 403);
 
     const body = await request.json().catch(() => ({}));
     const title = String(body.title || '').trim();
@@ -194,7 +194,7 @@ export async function handleForum(request, env, { pathname, url, json, fail, wai
     if (!raw) return fail('Sujet introuvable.', 404);
     const topic = JSON.parse(raw);
     if (user.role !== 'admin' && topic.userId !== user.id)
-      return fail('Tu ne peux supprimer que tes propres sujets.', 403);
+      return fail('Vous ne pouvez supprimer que vos propres sujets.', 403);
 
     const replyKeys = await listKeys(env, `forum:reply:${id}:`);
     await Promise.all([
@@ -215,7 +215,7 @@ export async function handleForum(request, env, { pathname, url, json, fail, wai
       return fail('Répondre est réservé aux membres Pro.', 403);
 
     if (!await checkRateLimit(env, 'forumreply', user.id, 30, 3600))
-      return fail('Trop de réponses. Réessaie dans un moment.', 429);
+      return fail('Trop de réponses. Réessayez dans un moment.', 429);
 
     const raw = await env.BWR_KV.get(`forum:topic:${topicId}`);
     if (!raw) return fail('Sujet introuvable.', 404);
@@ -267,7 +267,7 @@ export async function handleForum(request, env, { pathname, url, json, fail, wai
 
     const reply = JSON.parse(await env.BWR_KV.get(key.name));
     if (user.role !== 'admin' && reply.userId !== user.id)
-      return fail('Tu ne peux modifier que tes propres réponses.', 403);
+      return fail('Vous ne pouvez modifier que vos propres réponses.', 403);
 
     const body = await request.json().catch(() => ({}));
     const text = String(body.body || '').trim();
@@ -291,7 +291,7 @@ export async function handleForum(request, env, { pathname, url, json, fail, wai
 
     const reply = JSON.parse(await env.BWR_KV.get(key.name));
     if (user.role !== 'admin' && reply.userId !== user.id)
-      return fail('Tu ne peux supprimer que tes propres réponses.', 403);
+      return fail('Vous ne pouvez supprimer que vos propres réponses.', 403);
 
     await env.BWR_KV.delete(key.name);
 

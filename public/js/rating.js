@@ -66,7 +66,7 @@
       + 'box-shadow:0 12px 32px -12px rgba(11,36,16,.35);font-size:.88rem;line-height:1.35;'
       + 'transform:translateY(140%);opacity:0;transition:transform .28s ease,opacity .28s ease}'
       + '.bwr-rating-fab.show{transform:translateY(0);opacity:1}'
-      + '.bwr-rating-fab__stars{color:#f59e0b;letter-spacing:1px;font-size:1rem;white-space:nowrap}'
+      + '.bwr-rating-fab__stars{color:#d97706;letter-spacing:1px;font-size:1rem;white-space:nowrap}'
       + '.bwr-rating-fab__txt{flex:1;min-width:0}'
       + '.bwr-rating-fab__txt strong{display:block;color:var(--text-strong,#0b2410);font-size:.92rem;white-space:nowrap}'
       + '.bwr-rating-fab__cta{border:none;background:var(--forest-600,#2d6b1f);color:#fff;border-radius:999px;'

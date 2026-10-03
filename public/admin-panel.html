@@ -74,14 +74,14 @@
       color: var(--text-strong);
     }
     .admin-card.danger { border-color: rgba(220,38,38,0.35); }
-    .admin-card.danger h2 { color: #dc2626; }
+    .admin-card.danger h2 { color: var(--danger); }
 
     /* ── Vue toggle : Nouveau / Ancien ───────────────────────────────────── */
     .admin-view-toggle {
       display: inline-flex;
       gap: 2px;
       padding: 4px;
-      background: var(--surface-1, #f1f5f9);
+      background: var(--surface-1, var(--gray-100));
       border: 1px solid var(--border);
       border-radius: 12px;
       margin-bottom: 14px;
@@ -111,7 +111,7 @@
     /* ── Pro executive view ──────────────────────────────────────────────── */
     .admin-pro { padding: 0 !important; border: none !important; background: transparent !important; box-shadow: none !important; }
     .pro-hero {
-      background: linear-gradient(135deg, #0a1f0d, #1e4d14);
+      background: linear-gradient(135deg, var(--forest-900), var(--forest-700));
       border-radius: 18px;
       padding: 24px 26px;
       margin-bottom: 20px;
@@ -161,11 +161,11 @@
     .pro-panel .p-sub { margin: 0 0 16px; font-size: 0.8rem; color: var(--text-muted); }
     .pro-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
     .pro-bar-row .b-label { flex: 0 0 90px; font-size: 0.82rem; font-weight: 600; color: var(--text-strong); }
-    .pro-bar-track { flex: 1; height: 22px; background: var(--surface-1, #f1f5f9); border-radius: 999px; overflow: hidden; }
+    .pro-bar-track { flex: 1; height: 22px; background: var(--surface-1, var(--gray-100)); border-radius: 999px; overflow: hidden; }
     .pro-bar-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
     .pro-bar-row .b-val { flex: 0 0 auto; font-size: 0.82rem; font-weight: 800; color: var(--text-strong); }
     .pro-snap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .pro-snap-tile { background: var(--surface-1, #f9fafb); border: 1px solid var(--border); border-radius: 12px; padding: 13px; }
+    .pro-snap-tile { background: var(--surface-1, var(--gray-50)); border: 1px solid var(--border); border-radius: 12px; padding: 13px; }
     .pro-snap-tile .s-val { font-size: 1.35rem; font-weight: 800; color: var(--text-strong); line-height: 1; }
     .pro-snap-tile .s-lab { font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; font-weight: 500; }
   </style>

@@ -27,7 +27,7 @@
   font-weight: 700;
   color: var(--text-strong);
   line-height: 1.15;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.01em;
   margin: 0 0 var(--space-4);
 }
 .cl-subtitle {
@@ -121,20 +121,63 @@
 }
 .cl-tag {
   flex-shrink: 0;
-  font-size: 10px;
+  min-width: 86px;          /* same width for every label so entry text lines up */
+  text-align: center;
+  font-size: var(--fs-2xs);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   margin-top: 2px;
-  line-height: 1.6;
 }
-.cl-tag.fix    { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-.cl-tag.feat   { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
-.cl-tag.ux     { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-.cl-tag.perf   { background: #fefce8; color: #a16207; border: 1px solid #fef08a; }
-.cl-tag.sec    { background: #fdf4ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+/* Four kinds only: Nouveau / Amélioré / Corrigé / Sécurité. */
+.cl-tag.new      { background: var(--green-50);  color: var(--green-800); border: 1px solid var(--green-200); }
+.cl-tag.improved { background: var(--blue-50);   color: var(--blue-800);  border: 1px solid var(--blue-200); }
+.cl-tag.fixed    { background: var(--orange-50); color: #9a3412;          border: 1px solid #fed7aa; }
+.cl-tag.sec      { background: var(--violet-50); color: var(--violet-700); border: 1px solid var(--violet-100); }
+[data-theme="dark"] .cl-tag.new      { background: var(--tint-green-dark); color: var(--green-300); border-color: #1f4a2e; }
+[data-theme="dark"] .cl-tag.improved { background: #16263a; color: var(--blue-200); border-color: #24406a; }
+[data-theme="dark"] .cl-tag.fixed    { background: #3a2210; color: #fdba74; border-color: #6a3a14; }
+[data-theme="dark"] .cl-tag.sec      { background: #2a1f45; color: #ddd6fe; border-color: #45337a; }
+
+/* ── "Voir les versions précédentes" — CSS-only fold ──
+   The timeline is a flex column: the 10 newest releases come first, then the
+   toggle label, then (once checked) every older release. */
+.cl-timeline { display: flex; flex-direction: column; }
+.cl-release { order: 0; }
+.cl-release:nth-of-type(n+11) { order: 2; }
+.cl-showall-input:not(:checked) ~ .cl-release:nth-of-type(n+11) { display: none; }
+.cl-showall-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px; height: 1px;
+  pointer-events: none;
+}
+.cl-showall {
+  order: 1;
+  align-self: center;
+  margin: 0 0 var(--space-12);
+  padding: 10px 22px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-0);
+  color: var(--text-strong);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  box-shadow: var(--shadow-xs);
+}
+.cl-showall:hover { border-color: var(--forest-600); }
+.cl-showall-input:focus-visible + .cl-showall { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.cl-showall-less { display: none; }
+.cl-showall-input:checked + .cl-showall .cl-showall-more { display: none; }
+.cl-showall-input:checked + .cl-showall .cl-showall-less { display: inline; }
+/* Once open, the "hide" button moves to the end of the list. */
+.cl-showall-input:checked + .cl-showall { order: 3; }
+
 .cl-entry-text {
   font-size: var(--fs-sm);
   color: var(--text);

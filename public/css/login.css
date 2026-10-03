@@ -2,7 +2,7 @@
 .login-page {
   overflow-y: auto;
   overflow-x: hidden;
-  background: linear-gradient(135deg, #14532d 0%, #166534 40%, #15803d 100%);
+  background: linear-gradient(160deg, var(--forest-900) 0%, var(--forest-700) 55%, var(--forest-600) 100%);  /* same forest green as the page heroes */
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -54,9 +54,9 @@
 
 /* ── Redirect notice ── */
 .login-notice {
-  background: var(--forest-50, #eef6ea);
+  background: var(--forest-50, var(--forest-100));
   border: 1px solid var(--forest-200, #cfe6c2);
-  color: var(--forest-700, #2d6b1f);
+  color: var(--forest-700, var(--forest-600));
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 0.85rem;
@@ -68,7 +68,7 @@
 /* ── Tabs ── */
 .tabs {
   display: flex;
-  background: #f3f4f6;
+  background: var(--gray-100);
   border-radius: 10px;
   padding: 4px;
   gap: 4px;
@@ -104,12 +104,13 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+  text-align: left;  /* the card is centred; labels must sit above their field */
 }
 
 .field label {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #374151;
+  color: var(--gray-700);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -132,7 +133,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--gray-400);
   padding: 4px;
   display: flex;
   align-items: center;
@@ -140,7 +141,7 @@
   border-radius: 4px;
   transition: color 0.15s;
 }
-.pw-eye:hover { color: #374151; }
+.pw-eye:hover { color: var(--gray-700); }
 
 .eye-icon {
   width: 18px;
@@ -153,16 +154,16 @@
 .pw-eye.visible .eye-hide { display: block; }
 
 .form-error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--red-100);
+  color: var(--red-800);
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 0.85rem;
 }
 
 .form-success {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--green-100);
+  color: var(--green-800);
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 0.85rem;
@@ -222,18 +223,18 @@
   background: none;
   border: none;
   font-size: 0.9rem;
-  color: #374151;
+  color: var(--gray-700);
   text-decoration: none;
   cursor: pointer;
   transition: background 0.15s;
 }
 .user-dropdown a:hover,
-.user-dropdown button:hover { background: #f3f4f6; }
+.user-dropdown button:hover { background: var(--gray-100); }
 
 .user-dropdown .dropdown-name {
   font-weight: 700;
   color: var(--forest-700);
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--gray-200);
 }
 
 .user-dropdown .dropdown-logout { color: var(--danger); }

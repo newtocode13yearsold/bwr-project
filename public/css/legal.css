@@ -9,8 +9,12 @@
 /* ── Table of contents ── */
 .lg-toc {
   max-width: 860px;
+  width: 100%;
+  box-sizing: border-box;  /* same box as .lg-header / .lg-content so edges line up */
   margin: 0 auto;
-  padding: var(--space-10) var(--space-6) 0;
+  /* Space BELOW the summary card (it used to touch "Section 1"), none above:
+     the page header already ends with its own bottom padding. */
+  padding: 0 var(--space-6) var(--space-12);
 }
 .lg-toc-card {
   background: var(--surface-0);
@@ -28,6 +32,8 @@
 }
 .lg-toc-links {
   list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 8px 24px;
@@ -65,12 +71,13 @@
   font-weight: 700;
   color: var(--text-strong);
   line-height: 1.15;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.01em;
   margin: 0 0 var(--space-3);
 }
 .lg-subtitle {
   font-size: var(--fs-md);
   color: var(--text-muted);
+  line-height: 1.5;
   margin: 0;
 }
 .lg-updated {
@@ -96,7 +103,7 @@
   font-size: clamp(1.25rem, 2.5vw, 1.6rem);
   font-weight: 700;
   color: var(--text-strong);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   padding-bottom: var(--space-3);
   border-bottom: 2px solid var(--forest-100);
   margin-bottom: var(--space-6);
@@ -126,7 +133,7 @@
 .lg-block p,
 .lg-block li {
   font-size: var(--fs-sm);
-  color: var(--text-body);
+  color: var(--text);
   line-height: 1.7;
 }
 
@@ -150,7 +157,7 @@
   border-radius: 0 8px 8px 0;
   padding: var(--space-4) var(--space-5);
   font-size: var(--fs-sm);
-  color: var(--text-body);
+  color: var(--text);
   line-height: 1.6;
 }
 .lg-info-box strong { color: var(--forest-700); }
@@ -175,7 +182,7 @@
 .lg-table td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--border-soft);
-  color: var(--text-body);
+  color: var(--text);
   vertical-align: top;
 }
 .lg-table tr:last-child td { border-bottom: none; }

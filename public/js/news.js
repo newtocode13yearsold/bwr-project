@@ -76,7 +76,12 @@ function renderFeed() {
   const feed = document.getElementById('newsFeed');
   renderFilters();
   if (!allNews.length) {
-    feed.innerHTML = '<div class="news-empty">Aucune actualité pour l\'instant.</div>';
+    feed.innerHTML = '<div class="empty-state">'
+      + '<div class="empty-state-icon"><i class="ic" data-ic="newspaper"></i></div>'
+      + '<h2 class="empty-state-title">Aucune actualité pour l\'instant</h2>'
+      + '<p class="empty-state-text">Les rendez-vous et conseils de saison des forêts de l\'Oise apparaîtront ici. En attendant, nos guides vous attendent sur le blog.</p>'
+      + '<a class="empty-state-btn" href="/blog"><i class="ic" data-ic="book"></i> Lire le blog</a>'
+      + '</div>';
     return;
   }
   const items = activeFilter === 'all' ? allNews : allNews.filter(n => catOf(n) === activeFilter);

@@ -143,7 +143,7 @@ function fillTopicList(data, q) {
     html += `<div class="upsell-banner">
       <p><i class="ic" data-ic="lock"></i> ${lockedCount} autre${lockedCount > 1 ? 's' : ''} sujet${lockedCount > 1 ? 's' : ''} ${lockedCount > 1 ? 'sont réservés' : 'est réservé'} aux membres Pro.<br>
       Passe à un abonnement pour lire tout le forum et participer aux discussions.</p>
-      <a href="plans">Voir les abonnements →</a>
+      <a href="plans">Voir le plan Pro →</a>
     </div>`;
   }
   listEl.innerHTML = html;
@@ -175,7 +175,7 @@ function emptyState(canPost) {
     ${illustration}
     <h3>Aucune discussion pour l'instant</h3>
     <p>Le forum se remplit bientôt. Passez au plan Pro pour lancer la première discussion.</p>
-    <a class="btn-new" href="plans">Voir les abonnements →</a>
+    <a class="btn-new" href="plans">Voir le plan Pro →</a>
   </div>`;
 }
 
@@ -183,7 +183,7 @@ function topicCard(t) {
   if (t.locked) {
     return `<div class="topic-card locked">
       <div class="topic-card-title">${escHtml(t.title)} ${PRO_ONLY_TAG}</div>
-      <a class="lock-pill" href="plans"><i class="ic" data-ic="star"></i> Débloquer avec Pro</a>
+      <a class="lock-pill" href="plans"><i class="ic" data-ic="star"></i> Passer à Pro</a>
     </div>`;
   }
   const replies = t.replyCount || 0;
@@ -208,7 +208,7 @@ async function renderDetail(id) {
     const locked = err.status === 403;
     root().innerHTML = `<button class="detail-back">← Retour</button>
       <div class="forum-empty">${locked
-        ? '<i class="ic" data-ic="lock"></i> Ce sujet est réservé aux membres Pro.<br><br><a class="lock-pill" href="plans">Voir les abonnements →</a>'
+        ? '<i class="ic" data-ic="lock"></i> Ce sujet est réservé aux membres Pro.<br><br><a class="lock-pill" href="plans">Voir le plan Pro →</a>'
         : 'Sujet introuvable.'}</div>`;
     return;
   }
@@ -231,7 +231,7 @@ async function renderDetail(id) {
          <div class="composer-actions"><button class="btn-save" id="btnReply">Répondre</button></div>
        </div>`
     : `<div class="composer"><div class="composer-locked">
-         Répondre ${PRO_ONLY_TAG} <a href="plans">Voir les abonnements →</a>
+         Répondre ${PRO_ONLY_TAG} <a href="plans">Voir le plan Pro →</a>
        </div></div>`;
 
   root().innerHTML = `

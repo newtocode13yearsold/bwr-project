@@ -1,0 +1,121 @@
+/* ── BWR page hero ────────────────────────────────────────────────────────────
+ *
+ * The green band at the top of the content pages (Mes sorties, Communauté,
+ * Messagerie, Actualités, Quêtes, Classement, Meilleures balades, Forum):
+ * a small lime pill, a Fraunces title and one line of intro text.
+ *
+ * It used to be copy-pasted into a <style> block on every page, each copy
+ * drifting a little (padding 52 / 56 / 64 px, title 3 / 3.2 rem…). This is now
+ * the one shared definition — pages only add their own extras (buttons, tabs).
+ * ────────────────────────────────────────────────────────────────────────── */
+
+.page-hero {
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+  background: linear-gradient(160deg, var(--forest-900) 0%, var(--forest-700) 55%, var(--forest-600) 100%);
+  color: var(--text-inverse, #fff);
+}
+/* --text-inverse flips dark in dark mode; the band stays green, so pin white. */
+[data-theme="dark"] .page-hero { color: #fff; }
+
+.page-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(163, 230, 53, 0.18);
+  color: var(--lime-500);
+  border: 1px solid rgba(163, 230, 53, 0.35);
+  border-radius: var(--radius-pill);
+  padding: 4px 16px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-4);
+}
+
+.page-hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  margin: 0 0 var(--space-3);
+  color: #fff;
+}
+
+.page-hero p {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: var(--fs-md);
+  line-height: 1.55;
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  .page-hero { padding: var(--space-10) var(--space-5) var(--space-8); }
+  .page-hero p { font-size: var(--fs-base); }
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────────
+ * "Nothing here yet" blocks (Mes sorties, Messagerie, Actualités…): an icon,
+ * a title, one line saying what will show up here, and — when there is
+ * something to do — a button that does it.
+ *
+ *   <div class="empty-state">
+ *     <div class="empty-state-icon"><i class="ic" data-ic="footprints"></i></div>
+ *     <h2 class="empty-state-title">…</h2>
+ *     <p class="empty-state-text">…</p>
+ *     <a class="empty-state-btn" href="/map">…</a>
+ *   </div>
+ * ────────────────────────────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: var(--space-12) var(--space-4);
+  max-width: 520px;
+  margin: 0 auto;
+}
+.empty-state-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--space-4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--forest-100);
+  color: var(--forest-700);
+  font-size: 1.6rem;
+}
+[data-theme="dark"] .empty-state-icon { background: var(--tint-green-dark); color: var(--lime-400); }
+.empty-state-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: 0 0 var(--space-2);
+}
+.empty-state-text {
+  color: var(--text-muted);
+  font-size: var(--fs-base);
+  line-height: 1.6;
+  margin: 0;
+}
+.empty-state-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--space-6);
+  padding: 12px 24px;
+  border-radius: var(--radius-pill);
+  background: var(--forest-700);
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  text-decoration: none;
+  transition: background var(--dur-fast, 0.15s);
+}
+.empty-state-btn:hover { background: var(--forest-600); }
+[data-theme="dark"] .empty-state-btn { background: var(--lime-500); color: var(--forest-900); }
+.empty-state-text a { color: var(--forest-700); font-weight: 700; }
+[data-theme="dark"] .empty-state-text a { color: var(--lime-400); }

@@ -40,6 +40,7 @@
   <link rel="stylesheet" href="css/footer.css" />
   <link rel="stylesheet" href="css/login.css" />
   <link rel="stylesheet" href="css/home.css" />
+  <link rel="stylesheet" href="css/page-hero.css" />
   <link rel="stylesheet" href="css/mobile.css" />
   <!-- Données structurées : page d'actualités des forêts de l'Oise -->
   <script type="application/ld+json">
@@ -54,45 +55,12 @@
   }
   </script>
   <script src="js/theme.js"></script>
-  <style>
   <script src="js/icons.js"></script>
+  <style>
     /* ── Page-specific styles ── */
     html, body { height: auto !important; overflow: auto !important; }
-    body { background: var(--surface-1, #fafbf7); }
+    body { background: var(--surface-1, var(--forest-50)); }
 
-    .page-hero {
-      padding: 64px 24px 64px;
-      text-align: center;
-      background: linear-gradient(160deg, #0b2410 0%, #1e4d14 55%, #2d6b1f 100%);
-      color: #fff;
-    }
-    .page-hero-badge {
-      display: inline-block;
-      background: rgba(163, 230, 53, 0.18);
-      color: #a3e635;
-      border: 1px solid rgba(163, 230, 53, 0.35);
-      border-radius: 999px;
-      padding: 4px 16px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      margin-bottom: 20px;
-    }
-    .page-hero h1 {
-      font-family: var(--font-display);
-      font-size: clamp(2rem, 5vw, 3.2rem);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 16px;
-      line-height: 1.15;
-    }
-    .page-hero p {
-      color: rgba(255,255,255,0.72);
-      font-size: 1.05rem;
-      max-width: 520px;
-      margin: 0 auto;
-    }
 
     /* ── Feed ── */
     .news-section {
@@ -103,7 +71,7 @@
 
     .news-card {
       background: var(--surface-0, #fff);
-      border: 1px solid var(--border-soft, #ebeee5);
+      border: 1px solid var(--border-soft, var(--forest-100));
       border-radius: 16px;
       padding: 32px;
       margin-bottom: 24px;
@@ -135,29 +103,29 @@
       align-items: center;
       gap: 6px;
       background: var(--surface-0, #fff);
-      border: 1.5px solid var(--border-soft, #ebeee5);
+      border: 1.5px solid var(--border-soft, var(--forest-100));
       border-radius: 999px;
       padding: 7px 15px;
       font-size: 0.85rem;
       font-weight: 600;
-      color: var(--text, #1f2937);
+      color: var(--text, var(--gray-800));
       cursor: pointer;
       transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s;
       user-select: none;
     }
-    .news-chip:hover { transform: translateY(-1px); border-color: var(--forest-300, #b9d8a4); }
+    .news-chip:hover { transform: translateY(-1px); border-color: var(--forest-300); }
     .news-chip.active {
-      background: var(--forest-700, #1e4d14);
-      border-color: var(--forest-700, #1e4d14);
+      background: var(--forest-700);
+      border-color: var(--forest-700);
       color: #fff;
     }
     .news-cat-badge {
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      background: var(--forest-100, #f0f7ec);
-      color: var(--forest-700, #1e4d14);
-      border: 1px solid var(--forest-300, #b9d8a4);
+      background: var(--forest-100);
+      color: var(--forest-700);
+      border: 1px solid var(--forest-300);
       border-radius: 999px;
       padding: 3px 11px;
       font-size: 0.72rem;
@@ -168,7 +136,7 @@
     .news-date {
       font-size: 0.8rem;
       font-weight: 600;
-      color: var(--forest-500, #4a8a32);
+      color: var(--forest-500);
       text-transform: uppercase;
       letter-spacing: 0.07em;
     }
@@ -176,14 +144,14 @@
       font-family: var(--font-display);
       font-size: clamp(1.2rem, 3vw, 1.6rem);
       font-weight: 700;
-      color: var(--text-strong, #0b2410);
-      letter-spacing: -0.02em;
+      color: var(--text-strong, var(--forest-900));
+      letter-spacing: -0.01em;
       line-height: 1.25;
       margin-bottom: 14px;
     }
     .news-content {
       font-size: 0.97rem;
-      color: var(--text, #1f2937);
+      color: var(--text, var(--gray-800));
       line-height: 1.7;
       margin-bottom: 18px;
       white-space: pre-line;
@@ -208,7 +176,7 @@
       font-family: inherit;
       font-size: 0.9rem;
       font-weight: 600;
-      color: var(--forest-700, #1e4d14);
+      color: var(--forest-700);
     }
     .news-readmore:hover { text-decoration: underline; }
     .news-readmore .chev { transition: transform 0.2s; }
@@ -217,9 +185,9 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: var(--forest-100, #f0f7ec);
-      color: var(--forest-700, #1e4d14);
-      border: 1px solid var(--forest-300, #b9d8a4);
+      background: var(--forest-100);
+      color: var(--forest-700);
+      border: 1px solid var(--forest-300);
       border-radius: 999px;
       padding: 7px 18px;
       font-size: 0.875rem;
@@ -228,18 +196,18 @@
       transition: background 0.15s, transform 0.15s;
     }
     .news-link:hover {
-      background: var(--forest-700, #1e4d14);
+      background: var(--forest-700);
       color: #fff;
       transform: translateY(-1px);
     }
     .news-link-locked {
-      background: var(--silver-grad-soft, linear-gradient(135deg,#f1f5f9,#e2e8f0));
-      color: var(--silver-600, #475569);
-      border-color: var(--silver-200, #e2e8f0);
+      background: var(--silver-grad-soft, linear-gradient(135deg,var(--gray-100),var(--gray-200)));
+      color: var(--silver-600);
+      border-color: var(--silver-200, var(--gray-200));
       cursor: not-allowed;
       opacity: 0.82;
     }
-    .news-link-locked:hover { background: var(--silver-grad-soft, linear-gradient(135deg,#f1f5f9,#e2e8f0)); color: var(--silver-600, #475569); transform: none; }
+    .news-link-locked:hover { background: var(--silver-grad-soft, linear-gradient(135deg,var(--gray-100),var(--gray-200))); color: var(--silver-600); transform: none; }
 
     /* ── Reactions (like / dislike) ── */
     .news-reactions {
@@ -251,13 +219,13 @@
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      background: var(--surface-2, #f3f4f0);
-      border: 1.5px solid var(--border-soft, #ebeee5);
+      background: var(--surface-2, var(--forest-50));
+      border: 1.5px solid var(--border-soft, var(--forest-100));
       border-radius: 999px;
       padding: 6px 15px;
       font-size: 0.9rem;
       font-weight: 600;
-      color: var(--text, #1f2937);
+      color: var(--text, var(--gray-800));
       cursor: pointer;
       transition: background 0.15s, border-color 0.15s, transform 0.1s;
       user-select: none;
@@ -271,14 +239,14 @@
       text-align: center;
     }
     .news-like.active {
-      background: var(--forest-100, #f0f7ec);
-      border-color: var(--forest-300, #b9d8a4);
-      color: var(--forest-700, #1e4d14);
+      background: var(--forest-100);
+      border-color: var(--forest-300);
+      color: var(--forest-700);
     }
     .news-dislike.active {
-      background: #fef2f2;
-      border-color: #fecaca;
-      color: #b91c1c;
+      background: var(--red-50);
+      border-color: var(--red-200);
+      color: var(--red-700);
     }
 
     /* ── Admin controls ── */
@@ -287,7 +255,7 @@
       gap: 10px;
       margin-top: 18px;
       padding-top: 16px;
-      border-top: 1px solid var(--border-soft, #ebeee5);
+      border-top: 1px solid var(--border-soft, var(--forest-100));
     }
     .news-btn-edit,
     .news-btn-delete {
@@ -299,15 +267,15 @@
       cursor: pointer;
       transition: opacity 0.15s;
     }
-    .news-btn-edit   { background: #e0f2fe; color: #0369a1; }
-    .news-btn-delete { background: #fee2e2; color: #b91c1c; }
+    .news-btn-edit   { background: var(--blue-50); color: var(--sky-700); }
+    .news-btn-delete { background: var(--red-100); color: var(--red-700); }
     .news-btn-edit:hover, .news-btn-delete:hover { opacity: 0.75; }
 
     /* ── Loading / empty ── */
     .news-loading,
     .news-empty {
       text-align: center;
-      color: var(--text-muted, #6b7280);
+      color: var(--text-muted, var(--gray-500));
       padding: 64px 0;
       font-size: 1rem;
     }
@@ -320,8 +288,8 @@
       width: 56px;
       height: 56px;
       border-radius: 50%;
-      background: var(--forest-700, #1e4d14);
-      color: #a3e635;
+      background: var(--forest-700);
+      color: var(--lime-500);
       border: none;
       font-size: 1.6rem;
       line-height: 1;
@@ -373,25 +341,25 @@
       font-family: var(--font-display);
       font-size: 1.35rem;
       font-weight: 700;
-      color: var(--text-strong, #0b2410);
+      color: var(--text-strong, var(--forest-900));
     }
     .modal-close {
       background: none;
       border: none;
       font-size: 1.4rem;
-      color: var(--text-muted, #6b7280);
+      color: var(--text-muted, var(--gray-500));
       cursor: pointer;
       line-height: 1;
       padding: 4px;
     }
-    .modal-close:hover { color: var(--text, #1f2937); }
+    .modal-close:hover { color: var(--text, var(--gray-800)); }
 
     .form-group { margin-bottom: 18px; }
     .form-label {
       display: block;
       font-size: 0.82rem;
       font-weight: 600;
-      color: var(--text-strong, #0b2410);
+      color: var(--text-strong, var(--forest-900));
       margin-bottom: 6px;
       letter-spacing: 0.03em;
       text-transform: uppercase;
@@ -401,24 +369,24 @@
     .form-textarea,
     .form-select {
       width: 100%;
-      border: 1.5px solid var(--border, #e2e8da);
+      border: 1.5px solid var(--border);
       border-radius: 10px;
       padding: 10px 14px;
       font-size: 0.97rem;
       font-family: var(--font-sans);
-      color: var(--text, #1f2937);
+      color: var(--text, var(--gray-800));
       background: var(--surface-0, #fff);
       outline: none;
       transition: border-color 0.15s;
     }
     .form-input:focus,
     .form-textarea:focus,
-    .form-select:focus { border-color: var(--forest-600, #2d6b1f); }
+    .form-select:focus { border-color: var(--forest-600); }
     .form-textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
     .form-select { cursor: pointer; }
 
     .modal-error {
-      color: #b91c1c;
+      color: var(--red-700);
       font-size: 0.875rem;
       margin-bottom: 12px;
       min-height: 20px;
@@ -431,8 +399,8 @@
       margin-top: 8px;
     }
     .btn-cancel {
-      background: var(--surface-2, #f3f4f0);
-      color: var(--text, #1f2937);
+      background: var(--surface-2, var(--forest-50));
+      color: var(--text, var(--gray-800));
       border: none;
       border-radius: 10px;
       padding: 10px 22px;
@@ -441,9 +409,8 @@
       cursor: pointer;
     }
     .btn-save {
-      color: rgba(236, 252, 203, 0.92);
-      background: var(--forest-700, #1e4d14);
-      color: #a3e635;
+      background: var(--forest-700);
+      color: var(--lime-500);
       border: none;
       border-radius: 10px;
       padding: 10px 28px;
@@ -469,41 +436,42 @@
       height: 180px;
       border-radius: 10px;
       margin-bottom: 20px;
-      background: linear-gradient(135deg, #0b2410 0%, #1e4d14 50%, #2d6b1f 100%);
+      background: linear-gradient(135deg, var(--forest-900) 0%, var(--forest-700) 50%, var(--forest-600) 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 3rem;
+      color: rgba(236, 252, 203, 0.92);
       opacity: 0.82;
     }
 
     /* ── Image upload in modal ── */
     .img-upload-area {
-      border: 2px dashed var(--border, #e2e8da);
+      border: 2px dashed var(--border);
       border-radius: 10px;
       padding: 20px;
       text-align: center;
       cursor: pointer;
       transition: border-color 0.15s, background 0.15s;
-      background: var(--surface-1, #fafbf7);
+      background: var(--surface-1, var(--forest-50));
       position: relative;
     }
-    .img-upload-area:hover { border-color: var(--forest-600, #2d6b1f); background: var(--forest-100, #f0f7ec); }
+    .img-upload-area:hover { border-color: var(--forest-600); background: var(--forest-100); }
     .img-upload-area input[type="file"] {
       position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
     }
     .img-upload-label {
       font-size: 0.9rem;
-      color: var(--text-muted, #6b7280);
+      color: var(--text-muted, var(--gray-500));
       pointer-events: none;
     }
-    .img-upload-label strong { color: var(--forest-700, #1e4d14); }
+    .img-upload-label strong { color: var(--forest-700); }
     .img-preview-wrap { margin-top: 12px; position: relative; display: inline-block; }
     .img-preview-wrap img { max-height: 140px; border-radius: 8px; display: block; }
     .img-remove-btn {
       position: absolute;
       top: -8px; right: -8px;
-      background: #b91c1c; color: #fff;
+      background: var(--red-700); color: #fff;
       border: none; border-radius: 50%;
       width: 22px; height: 22px;
       font-size: 0.75rem; font-weight: 700;

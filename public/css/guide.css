@@ -6,9 +6,9 @@
 .guide-body {
   margin: 0; /* full-bleed shared header */
   background:
-    radial-gradient(1200px 600px at 50% -200px, var(--forest-100, var(--forest-100)), transparent 70%),
-    var(--surface-1, var(--surface-1));
-  color: var(--text, var(--text));
+    radial-gradient(1200px 600px at 50% -200px, var(--forest-100), transparent 70%),
+    var(--surface-1);
+  color: var(--text);
   min-height: 100vh;
 }
 
@@ -25,8 +25,8 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--forest-600, var(--forest-600));
-  background: var(--forest-100, var(--forest-100));
+  color: var(--forest-600);
+  background: var(--forest-100);
   padding: 6px 14px;
   border-radius: var(--radius-pill, 999px);
   margin-bottom: var(--space-4, 16px);
@@ -38,29 +38,40 @@
 }
 .guide-hero p {
   font-size: var(--fs-md, 1.125rem);
-  color: var(--text-muted, var(--text-muted));
+  color: var(--text-muted);
   line-height: 1.6;
   margin: 0 auto var(--space-6, 24px);
   max-width: 540px;
 }
 .guide-hero-actions { display: flex; gap: var(--space-3, 12px); justify-content: center; flex-wrap: wrap; }
+/* The secondary action is a real outlined button, not a grey underlined link. */
+.guide-hero-actions .bwr-tut-btn-ghost {
+  padding: 12px 22px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-0);
+  color: var(--text-strong);
+}
 
 /* ── Table of contents ── */
 .guide-toc {
   max-width: var(--container-sm, 720px);
   margin: 0 auto var(--space-10, 40px);
   padding: 0 var(--space-5, 20px);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  /* Flex + centred wrap: 7 shortcuts make a 4 + 3 grid whose last row is
+     centred instead of leaving an empty hole on the right. */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: var(--space-3, 12px);
 }
+.guide-toc > a { flex: 0 1 calc((100% - 3 * var(--space-3, 12px)) / 4); min-width: 150px; }
 .guide-toc a {
   display: flex;
   align-items: center;
   gap: var(--space-3, 12px);
   padding: var(--space-3, 12px) var(--space-4, 16px);
   background: var(--surface-0, #fff);
-  border: 1px solid var(--border, var(--border));
+  border: 1px solid var(--border);
   border-radius: var(--radius-md, 14px);
   text-decoration: none;
   color: var(--text-strong, var(--forest-900));
@@ -69,7 +80,7 @@
   box-shadow: var(--shadow-xs, 0 1px 2px rgba(11,36,16,.06));
   transition: transform var(--dur-fast, 140ms) var(--ease-out, ease), border-color var(--dur-fast, 140ms) ease;
 }
-.guide-toc a:hover { transform: translateY(-2px); border-color: var(--forest-500, var(--forest-500)); }
+.guide-toc a:hover { transform: translateY(-2px); border-color: var(--forest-500); }
 .guide-toc .toc-emoji { font-size: 22px; }
 
 /* ── Sections ── */
@@ -80,7 +91,7 @@
 }
 .guide-section {
   background: var(--surface-0, #fff);
-  border: 1px solid var(--border-soft, var(--border-soft));
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg, 20px);
   padding: var(--space-6, 24px);
   margin-bottom: var(--space-5, 20px);
@@ -99,14 +110,14 @@
   display: grid; place-items: center;
   font-size: 24px;
   border-radius: var(--radius-md, 14px);
-  background: var(--forest-100, var(--forest-100));
+  background: var(--forest-100);
 }
 .guide-section h2 {
   font-size: var(--fs-xl, 1.5rem);
   margin: 0;
   color: var(--text-strong, var(--forest-900));
 }
-.guide-section p { line-height: 1.65; margin: 0 0 var(--space-3, 12px); color: var(--text, var(--text)); }
+.guide-section p { line-height: 1.65; margin: 0 0 var(--space-3, 12px); color: var(--text); }
 .guide-section p:last-child { margin-bottom: 0; }
 
 .guide-steps {
@@ -137,8 +148,8 @@
   width: 26px; height: 26px;
   display: grid; place-items: center;
   border-radius: 50%;
-  background: var(--forest-700, var(--forest-700));
-  color: var(--lime-300, var(--lime-300));
+  background: var(--forest-700);
+  color: var(--lime-300);
   font-weight: 700;
   font-size: var(--fs-xs, 0.78rem);
 }
@@ -146,8 +157,8 @@
 .guide-tip {
   display: flex;
   gap: var(--space-3, 12px);
-  background: var(--lime-300, var(--lime-300));
-  color: var(--forest-900, var(--forest-900));
+  background: var(--lime-300);
+  color: var(--forest-900);
   border-radius: var(--radius-md, 14px);
   padding: var(--space-3, 12px) var(--space-4, 16px);
   font-size: var(--fs-sm, 0.875rem);
@@ -171,7 +182,7 @@
 
 /* ── FAQ ── */
 .guide-faq details {
-  border-bottom: 1px solid var(--border-soft, var(--border-soft));
+  border-bottom: 1px solid var(--border-soft);
   padding: var(--space-3, 12px) 0;
 }
 .guide-faq details:last-child { border-bottom: none; }
@@ -185,19 +196,44 @@
   gap: var(--space-3, 12px);
 }
 .guide-faq summary::-webkit-details-marker { display: none; }
-.guide-faq summary::after { content: "+"; color: var(--forest-600, var(--forest-600)); font-weight: 700; }
+.guide-faq summary::after { content: "+"; color: var(--forest-600); font-weight: 700; }
 .guide-faq details[open] summary::after { content: "−"; }
-.guide-faq .guide-faq-a { padding-top: var(--space-2, 8px); color: var(--text-muted, var(--text-muted)); line-height: 1.6; font-size: var(--fs-sm, 0.9rem); }
+.guide-faq .guide-faq-a { padding-top: var(--space-2, 8px); color: var(--text-muted); line-height: 1.6; font-size: var(--fs-sm, 0.9rem); }
 
 /* ── Closing CTA ── */
 .guide-cta {
   text-align: center;
-  background: linear-gradient(135deg, var(--forest-800, var(--forest-800)), var(--forest-600, var(--forest-600)));
+  background: linear-gradient(135deg, var(--forest-800), var(--forest-600));
   color: #fff;
   border-radius: var(--radius-lg, 20px);
   padding: var(--space-10, 40px) var(--space-6, 24px);
   margin-top: var(--space-8, 32px);
 }
 .guide-cta h2 { color: #fff; font-size: var(--fs-2xl, 1.875rem); margin: 0 0 var(--space-3, 12px); }
-.guide-cta p { color: var(--lime-300, var(--lime-300)); margin: 0 0 var(--space-5, 20px); }
+.guide-cta p { color: var(--lime-300); margin: 0 0 var(--space-5, 20px); }
 
+
+/* "vert = facile", "orange = moyen"… — the map's difficulty colours are too
+   light to be read as text (2.3:1 for the green), so the word uses a darker
+   shade of the same hue and a dot shows the exact map colour. */
+.diff-word { white-space: nowrap; }
+.diff-word::before {
+  content: "";
+  display: inline-block;
+  width: 0.62em; height: 0.62em;
+  border-radius: 50%;
+  margin-right: 0.3em;
+  vertical-align: 0.05em;
+  background: currentColor;
+}
+.diff-word.easy    { color: var(--green-700); }
+.diff-word.medium  { color: var(--orange-700); }
+.diff-word.hard    { color: var(--red-700); }
+.diff-word.blocked { color: var(--text-muted); }
+.diff-word.easy::before    { background: var(--status-easy); }
+.diff-word.medium::before  { background: var(--status-medium); }
+.diff-word.hard::before    { background: var(--status-hard); }
+.diff-word.blocked::before { background: var(--status-blocked); }
+[data-theme="dark"] .diff-word.easy   { color: var(--green-300); }
+[data-theme="dark"] .diff-word.medium { color: #fdba74; }
+[data-theme="dark"] .diff-word.hard   { color: var(--red-300); }

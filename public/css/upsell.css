@@ -201,11 +201,11 @@
 .quota-strip.hidden { display: none; }
 /* Urgency states */
 .quota-strip.qs-warn {
-  background: linear-gradient(135deg, #fff7ed 0%, var(--surface-0) 100%);
+  background: linear-gradient(135deg, var(--orange-50) 0%, var(--surface-0) 100%);
   border-color: var(--warning, var(--status-medium));
 }
 .quota-strip.qs-danger {
-  background: linear-gradient(135deg, #fef2f2 0%, var(--surface-0) 100%);
+  background: linear-gradient(135deg, var(--red-50) 0%, var(--surface-0) 100%);
   border-color: var(--danger, var(--status-hard));
 }
 .quota-strip .qs-header {
@@ -216,8 +216,8 @@
 }
 .quota-strip .qs-label { color: var(--text-muted); font-size: 0.78rem; }
 .quota-strip .qs-count { color: var(--forest-900); font-size: 0.95rem; font-weight: 700; }
-.quota-strip.qs-warn  .qs-count { color: #c2410c; }
-.quota-strip.qs-danger .qs-count { color: #b91c1c; }
+.quota-strip.qs-warn  .qs-count { color: var(--orange-700); }
+.quota-strip.qs-danger .qs-count { color: var(--red-700); }
 .quota-strip .qs-remaining {
   font-size: 0.78rem;
   font-weight: 600;
@@ -227,8 +227,8 @@
   color: var(--text-muted);
   white-space: nowrap;
 }
-.quota-strip.qs-warn  .qs-remaining { background: #ffedd5; color: #c2410c; }
-.quota-strip.qs-danger .qs-remaining { background: #fee2e2; color: #b91c1c; }
+.quota-strip.qs-warn  .qs-remaining { background: var(--orange-100); color: var(--orange-700); }
+.quota-strip.qs-danger .qs-remaining { background: var(--red-100); color: var(--red-700); }
 .quota-strip .qs-bar {
   height: 6px;
   background: var(--surface-3);
@@ -251,8 +251,8 @@
   font-size: 0.82rem;
   text-decoration: none;
 }
-.quota-strip.qs-warn  .qs-cta { color: #c2410c; }
-.quota-strip.qs-danger .qs-cta { color: #b91c1c; }
+.quota-strip.qs-warn  .qs-cta { color: var(--orange-700); }
+.quota-strip.qs-danger .qs-cta { color: var(--red-700); }
 .quota-strip .qs-cta:hover { text-decoration: underline; }
 
 /* ── Profile-page quota strip ────────────────────────────────────────────── */

@@ -108,7 +108,7 @@ document.getElementById('activationForm').addEventListener('submit', async e => 
   btn.textContent = 'Envoi…';
   btn.disabled = true;
 
-  const planLabel   = 'Pro (2,99€/mois)';
+  const planLabel   = 'Pro (2,99 €/mois)';
   const periodLabel = period === 'annual' ? 'annuel (-25 %)' : 'mensuel';
   const formatted = `=== Demande d'activation BWR ===
 Plan : ${planLabel}
@@ -200,7 +200,7 @@ if (plansNav) {
 const io = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: 0.12 });
-document.querySelectorAll('.plan-card, .testimonial, .faq-item, .trust-item, .compare-table-wrap').forEach(el => {
+document.querySelectorAll('.plan-card, .faq-item, .trust-item, .compare-table-wrap').forEach(el => {
   el.classList.add('fade-up');
   io.observe(el);
 });

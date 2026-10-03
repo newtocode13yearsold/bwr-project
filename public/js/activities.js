@@ -42,10 +42,11 @@
   // ── rendering ────────────────────────────────────────────────────────────────
   function renderEmpty() {
     root.innerHTML = `
-      <div class="act-empty">
-        <h2>Aucune sortie enregistrée pour l'instant</h2>
-        <p>Ouvrez la <a href="map">carte</a>, appuyez sur <b><i class="ic" data-ic="play"></i> Suivi GPS</b> et partez marcher.<br>
-        À la fin, gardez votre balade ici — distance, durée, dénivelé et tracé, tout est sauvegardé.</p>
+      <div class="empty-state">
+        <div class="empty-state-icon"><i class="ic" data-ic="footprints"></i></div>
+        <h2 class="empty-state-title">Aucune sortie enregistrée pour l'instant</h2>
+        <p class="empty-state-text">Sur la carte, appuyez sur <b>Suivi GPS</b> et partez marcher. À la fin, gardez votre balade ici : distance, durée, dénivelé et tracé.</p>
+        <a class="empty-state-btn" href="/map"><i class="ic" data-ic="map"></i> Ouvrir la carte</a>
       </div>`;
   }
 

@@ -44,7 +44,7 @@ export async function handleNotify(request, env, { pathname, url, cors }) {
 
   return page(
     'Désabonnement confirmé',
-    'Tu ne recevras plus d\'emails de notification (réponses au forum et obstacles sur tes trajets). Tu peux les réactiver à tout moment depuis ton profil.',
+    'Vous ne recevrez plus d\'emails de notification (réponses au forum et obstacles sur vos trajets). Vous pouvez les réactiver à tout moment depuis votre profil.',
     cors,
   );
 }

@@ -71,7 +71,7 @@ window.addForestBoundaries = function (map) {
         html: `<div style="
           transform: rotate(${angle.toFixed(1)}deg);
           transform-origin: center center;
-          font-size: 0.58rem;
+          font-size: 0.66rem;
           font-weight: 700;
           color: #15803d;
           letter-spacing: 0.09em;
@@ -79,8 +79,8 @@ window.addForestBoundaries = function (map) {
           line-height: 1;
           text-shadow: 0 0 4px rgba(255,255,255,0.98), 0 0 8px rgba(255,255,255,0.85);
         ">section déployée</div>`,
-        iconSize:   [115, 12],
-        iconAnchor: [57, 6],
+        iconSize:   [130, 13],
+        iconAnchor: [65, 6],
       }),
       interactive: false,
       zIndexOffset: 500,
