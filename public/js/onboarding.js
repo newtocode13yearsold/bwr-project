@@ -33,9 +33,9 @@
       placement: 'bottom'
     },
     {
-      target: '#toggleFilters',
+      target: '#mapLayers',
       title: 'Changez de carte',
-      body: 'Basculez entre le plan OpenStreetMap, la carte IGN topographique et la vue satellite.',
+      body: 'Basculez entre la carte IGN, le plan OpenStreetMap et la vue satellite.',
       placement: 'bottom'
     },
     {

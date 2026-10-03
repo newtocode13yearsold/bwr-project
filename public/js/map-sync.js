@@ -140,8 +140,8 @@ window.addEventListener('online', async () => {
   await replayMapReports();
 });
 
-// Shared tile-layer switch, driven by both the Filtres radios and the floating
-// .layer-btn buttons on the map. Keeps both UIs in sync and gates satellite.
+// Tile-layer switch, driven by the floating .layer-btn buttons on the map
+// (IGN / OSM / Satellite). Gates satellite behind Pro.
 function switchTileLayer(wanted) {
   if (wanted === currentLayer || !TILE_LAYERS[wanted]) { syncLayerControls(); return; }
   // Gate satellite — show upsell instead of switching.
@@ -193,10 +193,6 @@ function showUpgradeToast(featureLabel, tier) {
   const planLabel = BWR.TIER_LABEL[tier] || 'Pro';
   showToast(`${featureLabel} est disponible avec le plan ${planLabel} — voir la page Plan`);
 }
-
-document.getElementById('toggleFilters').addEventListener('click', () => {
-  document.getElementById('filterPanel').classList.toggle('hidden');
-});
 
 // ── Reports overlay (clustered) ───────────────────────────────────────────────
 // Report pins used to pile directly on the map and overlap into unreadable heaps
