@@ -217,7 +217,6 @@
         '<span class="dropdown-name">' + escHtml(user.name) + '</span>' +
         '<a href="/"><i class="ic" data-ic="home"></i> Accueil</a>' +
         '<a href="/map"><i class="ic" data-ic="map"></i> Voir la carte</a>' +
-        '<a href="/map?plan=1"><i class="ic" data-ic="compass"></i> Planifier un trajet</a>' +
         '<a href="/profile"><i class="ic" data-ic="user"></i> Mon profil</a>' +
         (user.role === 'admin' ? '<a href="/admin"><i class="ic" data-ic="map"></i> Carte admin</a><a href="/admin-panel"><i class="ic" data-ic="gear"></i> Panneau admin</a>' : '') +
         '<button class="dropdown-logout" id="btnLogout">Se déconnecter</button>' +
