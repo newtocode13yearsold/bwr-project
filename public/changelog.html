@@ -98,6 +98,22 @@
 
     <section class="cl-release">
       <div class="cl-release-header">
+        <div class="cl-dot"><i class="ic" data-ic="map"></i></div>
+        <div class="cl-release-meta">
+          <span class="cl-version">v0.01.65</span>
+          <span class="cl-date">3 octobre 2026</span>
+        </div>
+      </div>
+      <div class="cl-entries">
+        <div class="cl-entry">
+          <span class="cl-tag fix">fix</span>
+          <p class="cl-entry-text"><strong>La carte ne tombe plus en panne en fin de journée</strong> — Charger la liste des chemins lisait chaque chemin un par un dans la base de données, soit plus de 440 lectures à chaque fois. Les jours de forte affluence, on dépassait la limite quotidienne de lectures et la carte cessait de répondre jusqu'au lendemain. La liste complète est maintenant gardée en un seul bloc : une seule lecture au lieu de 440, toujours à jour après chaque modification ou notation d'un chemin.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cl-release">
+      <div class="cl-release-header">
         <div class="cl-dot"><i class="ic" data-ic="palette"></i></div>
         <div class="cl-release-meta">
           <span class="cl-version">v0.01.64</span>
