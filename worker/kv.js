@@ -81,8 +81,58 @@ export async function getPath(env, id) {
   return raw ? JSON.parse(raw) : null;
 }
 
+// ── Path-list snapshot ────────────────────────────────────────────────────────
+// Rebuilding the full path list costs one KV get PER PATH (~450 today), and
+// /api/paths needs it on every edge-cache miss — that alone blew through the
+// free tier's 100 000 daily gets. So the whole list is also kept as ONE blob,
+// read with a single get. path:{id} stays the source of truth: every write
+// patches the snapshot in place, and the TTL rebuilds it from scratch a few
+// times a day so a rare lost update (two writes racing from different colos)
+// heals itself. The key is deliberately not prefixed "path:" so
+// listKeys('path:') never counts it as a path.
+export const PATHS_SNAPSHOT_KEY = 'cache:paths';
+const PATHS_SNAPSHOT_TTL = 6 * 3600;
+
+/** Every path object, served from the one-get snapshot (rebuilt on a miss). */
+export async function listPaths(env) {
+  const raw = await env.BWR_KV.get(PATHS_SNAPSHOT_KEY);
+  if (raw) {
+    try { return JSON.parse(raw); } catch { /* corrupt → rebuild below */ }
+  }
+  const paths = await listItems(env, 'path:');
+  await env.BWR_KV.put(PATHS_SNAPSHOT_KEY, JSON.stringify(paths), { expirationTtl: PATHS_SNAPSHOT_TTL });
+  return paths;
+}
+
+/**
+ * Applies `change` (array → array) to the snapshot if one exists. No snapshot
+ * means nothing to keep in sync — the next listPaths() rebuilds it fresh.
+ */
+async function patchPathsSnapshot(env, change) {
+  const raw = await env.BWR_KV.get(PATHS_SNAPSHOT_KEY);
+  if (!raw) return;
+  let paths;
+  try { paths = JSON.parse(raw); } catch { await env.BWR_KV.delete(PATHS_SNAPSHOT_KEY); return; }
+  await env.BWR_KV.put(PATHS_SNAPSHOT_KEY, JSON.stringify(change(paths)), { expirationTtl: PATHS_SNAPSHOT_TTL });
+}
+
+/** Drops the snapshot so the next read rebuilds it (for bulk writes). */
+export async function invalidatePathsSnapshot(env) {
+  await env.BWR_KV.delete(PATHS_SNAPSHOT_KEY);
+}
+
 export async function putPath(env, path) {
   await env.BWR_KV.put(`path:${path.id}`, JSON.stringify(path));
+  await patchPathsSnapshot(env, paths => {
+    const i = paths.findIndex(p => p.id === path.id);
+    if (i >= 0) paths[i] = path; else paths.push(path);
+    return paths;
+  });
+}
+
+export async function deletePath(env, id) {
+  await env.BWR_KV.delete(`path:${id}`);
+  await patchPathsSnapshot(env, paths => paths.filter(p => p.id !== id));
 }
 
 export async function putReport(env, report) {

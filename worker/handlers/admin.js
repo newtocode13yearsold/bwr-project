@@ -1,4 +1,4 @@
-import { listItems, listKeys, putUser, getUser, normalisePlan } from '../kv.js';
+import { listItems, listKeys, putUser, getUser, normalisePlan, invalidatePathsSnapshot } from '../kv.js';
 import { getUserFromToken, hashPassword } from '../auth-utils.js';
 
 // ── Visitor-tracking helpers ───────────────────────────────────────────────────
@@ -80,6 +80,7 @@ export async function handleAdmin(request, env, { pathname, json, fail }) {
     if (pathsRaw) {
       const paths = JSON.parse(pathsRaw);
       await Promise.all(paths.map(p => env.BWR_KV.put(`path:${p.id}`, JSON.stringify(p))));
+      await invalidatePathsSnapshot(env);
       results.paths = paths.length;
     }
 

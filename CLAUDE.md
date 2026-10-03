@@ -14,7 +14,7 @@ Start local dev server (runs on http://localhost:8787):
 Deploy to Cloudflare Workers (requires authentication):
   npm run deploy:worker
 
-Run all automated tests (647 tests, ~7 s):
+Run all automated tests (650 tests, ~7 s):
   npm test
 
 Run tests in watch mode (re-runs on file save):
@@ -72,6 +72,7 @@ Storage: Cloudflare KV with granular per-item keys (no shared arrays):
 - pemail:{email} — token string (pending-registration email index, 24-hour TTL)
 - pname:{username} — token string (pending-registration lowercased-username index, 24-hour TTL; reserves a username while its email is unverified, deleted on verify)
 - path:{id} — JSON path object
+- cache:paths — JSON array of EVERY path object, 6-hour TTL. One-get snapshot behind GET /api/paths (`listPaths` in `worker/kv.js`): rebuilding the list from `path:` keys costs one KV get per path (~450), which on edge-cache misses blew the free tier's 100 000 daily gets. `putPath`/`deletePath` patch it in place — **always write paths through those helpers, never `env.BWR_KV.put('path:…')` directly** (bulk writers call `invalidatePathsSnapshot`). Deliberately not prefixed `path:` so `listKeys('path:')` never counts it.
 - report:{id} — JSON report object
 - photo:{reportId} — data-URI string, 90-day TTL
 - contact:{id} — JSON contact message
@@ -276,7 +277,7 @@ Cloudflare Config (wrangler.jsonc):
 
 ## Testing Notes
 
-Automated test suite: **647 tests, ~7 s** (`npm test`). Test files:
+Automated test suite: **650 tests, ~7 s** (`npm test`). Test files:
 
 | File | What it covers | Style |
 |------|---------------|-------|

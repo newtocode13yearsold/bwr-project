@@ -350,3 +350,54 @@ describe('DELETE /api/paths/:id', () => {
     assert.ok(!kv.store.has('path:p-del'));
   });
 });
+
+// ── Path-list snapshot (KV read budget) ───────────────────────────────────────
+// Listing every path used to cost one KV get per path on each cache miss, which
+// exhausted the free tier's 100 000 daily gets. The list now lives in one
+// `cache:paths` blob that every write keeps in sync.
+
+describe('path-list snapshot', () => {
+  const countGets = kv => {
+    let n = 0;
+    const get = kv.get.bind(kv);
+    kv.get = async key => { n++; return get(key); };
+    return () => n;
+  };
+
+  test('a warm list costs a single KV get, however many paths exist', async () => {
+    const { env, kv } = freshEnv();
+    for (let i = 0; i < 50; i++) {
+      kv.store.set(`path:p${i}`, JSON.stringify({ id: `p${i}`, status: 'easy', coordinates: sampleCoords }));
+    }
+    await worker.fetch(r('GET', '/api/paths'), env); // builds the snapshot
+    assert.ok(kv.store.has('cache:paths'));
+    const gets = countGets(kv);
+    const res = await worker.fetch(r('GET', '/api/paths'), env);
+    assert.equal((await res.json()).length, 50);
+    assert.equal(gets(), 1);
+  });
+
+  test('create, grade and delete keep the snapshot in sync', async () => {
+    const { env, kv, token } = freshEnv('admin', 'pro');
+    kv.store.set('path:p1', JSON.stringify({ id: 'p1', status: 'easy', coordinates: sampleCoords }));
+    await worker.fetch(r('GET', '/api/paths'), env); // warm snapshot
+
+    const created = await (await worker.fetch(
+      authed('POST', '/api/paths', token, { name: 'Neuf', coordinates: sampleCoords }), env)).json();
+    await worker.fetch(authed('PATCH', '/api/paths/p1', token, { status: 'medium' }), env);
+    await worker.fetch(authed('DELETE', `/api/paths/${created.id}`, token), env);
+    await worker.fetch(authed('POST', '/api/paths', token, { name: 'Reste', coordinates: sampleCoords }), env);
+
+    const snap = JSON.parse(kv.store.get('cache:paths'));
+    assert.deepEqual(snap.map(p => p.name || p.id).sort(), ['Reste', 'p1']);
+    assert.equal(snap.find(p => p.id === 'p1').status, 'medium');
+  });
+
+  test('the snapshot is never counted as a path', async () => {
+    const { env, kv } = freshEnv();
+    kv.store.set('path:p1', JSON.stringify({ id: 'p1', status: 'easy', coordinates: sampleCoords }));
+    await worker.fetch(r('GET', '/api/paths'), env);
+    const pathKeys = [...kv.store.keys()].filter(k => k.startsWith('path:'));
+    assert.deepEqual(pathKeys, ['path:p1']);
+  });
+});

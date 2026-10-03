@@ -1,4 +1,4 @@
-import { listItems, getPath, putPath, putUser, getUser, effectivePlan, patchLeaderboardCache, addPeriodXp } from '../kv.js';
+import { listItems, listPaths, deletePath, getPath, putPath, putUser, getUser, effectivePlan, patchLeaderboardCache, addPeriodXp } from '../kv.js';
 import { getUserFromToken } from '../auth-utils.js';
 import { distanceToPolylineMeters } from '../geo.js';
 
@@ -60,7 +60,7 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
     if (request.headers.get('Authorization')) {
       const requester = await getUserFromToken(env, request);
       if (requester?.role === 'admin') {
-        return new Response(JSON.stringify(await listItems(env, 'path:')), {
+        return new Response(JSON.stringify(await listPaths(env)), {
           headers: { ...cors, 'Content-Type': 'application/json', 'X-Cache': 'BYPASS-ADMIN' },
         });
       }
@@ -82,7 +82,7 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
     }
 
     // Strip grader fields from the public list (kept in KV, hidden from non-admins).
-    const publicPaths = (await listItems(env, 'path:')).map(({ gradedBy, gradedByName, gradedAt, ...p }) => p);
+    const publicPaths = (await listPaths(env)).map(({ gradedBy, gradedByName, gradedAt, ...p }) => p);
     const body = JSON.stringify(publicPaths);
 
     if (cache) {
@@ -282,7 +282,7 @@ export async function handlePaths(request, env, { pathname, json, fail, cors, wa
     if (!user || user.role !== 'admin') return fail('Accès refusé.', 403);
 
     const id = pathname.split('/')[3];
-    await env.BWR_KV.delete(`path:${id}`);
+    await deletePath(env, id);
 
     const gradePrefix = `pathgrade:${id}:`;
     const gradePage = await env.BWR_KV.list({ prefix: gradePrefix, limit: 1000 });
