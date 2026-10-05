@@ -403,7 +403,9 @@ body {
 .marquee-track {
   display: flex;
   width: max-content;
-  animation: marquee 40s linear infinite;
+  /* 4 identical copies of the list: sliding by -50% (= 2 copies) loops
+     seamlessly and still fills a 2560px-wide screen with no gap. */
+  animation: marquee 80s linear infinite;
 }
 .marquee-track span {
   font-family: var(--font-display);
@@ -422,11 +424,9 @@ body {
   background: var(--lime-500);
   margin: 0 30px;
 }
-.forest-marquee:hover .marquee-track { animation-play-state: paused; }
 @keyframes marquee { to { transform: translateX(-50%); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .marquee-track,
   .hero-chip, .stat-live-dot, .hero-content, .hero-visual { animation: none; }
   .hero-squiggle path { animation: none; stroke-dashoffset: 0; }
 }
