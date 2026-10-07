@@ -35,10 +35,16 @@
   var MIN_SECONDS = 3; // don't report a blink (mis-click / instant bounce)
 
   // Persistent, non-identifying browser id (used only for per-month dedup).
+  // Renewed every 13 months — the CNIL's max lifetime for an exempt tracker.
+  var VID_MAX_MS = 395 * 24 * 3600 * 1000;
   var vid = null;
   try {
     vid = localStorage.getItem('bwr_vid');
+    var vidT = Number(localStorage.getItem('bwr_vid_t'));
+    if (vid && !vidT) localStorage.setItem('bwr_vid_t', String(Date.now())); // legacy id: start its clock now
+    else if (vid && Date.now() - vidT > VID_MAX_MS) vid = null;               // expired: issue a fresh one
     if (!vid) {
+      localStorage.setItem('bwr_vid_t', String(Date.now()));
       vid = (window.crypto && crypto.randomUUID)
         ? crypto.randomUUID()
         : String(Date.now()) + '-' + Math.random().toString(36).slice(2);
