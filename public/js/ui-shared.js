@@ -15,7 +15,7 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').then(function (reg) {
       // Proactively check for a newer worker on every load.
-      if (reg && reg.update) { try { reg.update(); } catch (e) {} }
+      if (reg && reg.update) { try { Promise.resolve(reg.update()).catch(function () {}); } catch (e) {} }
     }).catch(function () {});
   }
 

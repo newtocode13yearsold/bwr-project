@@ -107,10 +107,25 @@
 
   window.addEventListener('unhandledrejection', function (e) {
     var r = e && e.reason;
-    var message, stack;
-    if (r instanceof Error) { message = r.message; stack = r.stack; }
-    else if (typeof r === 'string') { message = r; }
-    else { try { message = JSON.stringify(r); } catch (_) { message = String(r); } }
-    report({ kind: 'unhandledrejection', message: message || 'Promesse rejetée', stack: stack });
+    report({ kind: 'unhandledrejection', message: describeReason(r) || 'Promesse rejetée', stack: r && r.stack });
   });
+
+  // Turn a rejection reason into a readable line. `instanceof Error` misses
+  // DOMExceptions on some Safari versions and errors from another frame, and
+  // JSON.stringify of those (or of an Event) gives a useless "{}" — so
+  // duck-type name/message and fall back to the object's type.
+  function describeReason(r) {
+    try {
+      if (r == null) return String(r);
+      if (typeof r !== 'object') return String(r);
+      if (r instanceof Error) return r.message;   // unchanged, keeps existing error groups
+      if (r.message || r.name) return (r.name ? r.name + ': ' : '') + (r.message || '');
+      var type = Object.prototype.toString.call(r).slice(8, -1);   // "Event", "Object"…
+      if (r.type) type += ' (' + r.type + ')';                      // Event type, e.g. "error"
+      var json = '';
+      try { json = JSON.stringify(r); } catch (_) {}
+      return (json && json !== '{}') ? type + ' ' + json : type;
+    } catch (_) { return ''; }
+  }
+
 })();
