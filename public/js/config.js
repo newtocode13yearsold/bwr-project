@@ -28,7 +28,7 @@ const STATUS_COLORS = {
   medium:      '#f97316',
   hard:        '#ef4444',
   not_passable:'#9ca3af',
-  no_bike:     '#6366f1',
+  no_bike:     '#0ea5e9', // sky blue — kept clear of the purple bike-path colour
 };
 
 const STATUS_LABELS = {

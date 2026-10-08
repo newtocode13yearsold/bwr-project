@@ -185,7 +185,7 @@ body {
 .dot.medium       { background: var(--status-medium); }
 .dot.hard         { background: var(--status-hard); }
 .dot.not_passable { background: var(--text-faint); }
-.dot.no_bike      { background: #6366f1; }
+.dot.no_bike      { background: #0ea5e9; }
 
 /* ── Filter panel ── */
 .filter-panel {
@@ -1987,6 +1987,14 @@ body {
 .legend-dash.deployed-dash {
   border-top: 2.5px dashed var(--success);
   height: 0;
+}
+/* Bike paths: purple line with white dots, same look as on the map (map-paths.js) */
+.legend-dash.bike-dash {
+  height: 5px;
+  border-radius: 3px;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.9) 0 1px, transparent 1.5px) 0 50% / 6px 5px repeat-x,
+    #a855f7; /* = BIKE_PATH_COLOR in config.js */
 }
 .legend-dash.nearby-dash {
   border-top: 1.5px dashed #78716c;

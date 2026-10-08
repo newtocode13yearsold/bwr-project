@@ -2137,7 +2137,7 @@ const GRADE_STATUS_LABEL = {
 };
 const GRADE_STATUS_COLOR = {
   easy: '#22c55e', medium: '#f97316', hard: '#ef4444',
-  not_passable: '#9ca3af', no_bike: '#6b7280',
+  not_passable: '#9ca3af', no_bike: '#0ea5e9',
 };
 async function showUserGrades(userId, name) {
   const overlay = document.createElement('div');
