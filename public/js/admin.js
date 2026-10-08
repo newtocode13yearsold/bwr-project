@@ -304,7 +304,16 @@ function updatePathWeights() {
   const w = pathWeight();
   Object.values(pathLayers).forEach(layers => {
     // pathLayers stores [visibleLine, hitTarget] arrays
-    if (Array.isArray(layers)) layers[0].setStyle({ weight: w });
+    if (Array.isArray(layers)) {
+      layers[0].setStyle({ weight: w });
+      // Bike-path white dots rescale with the line (keep their own opacity).
+      layers.forEach(l => {
+        if (l.options.bwrDots) {
+          const { opacity, ...style } = bikeDotStyle(w);
+          l.setStyle(style);
+        }
+      });
+    }
     else layers.setStyle({ weight: w });
   });
 }
@@ -1031,6 +1040,19 @@ function renderPaths() {
     line.on('click', clickHandler);
     line.addTo(map);
 
+    // Bike paths: white dots on top of the purple line, like on the public map.
+    // Skipped in offline-select mode, where the line is already dashed.
+    let dots = null;
+    if (path.pathType === 'bike' && !offlineSelectMode) {
+      dots = L.polyline(path.coordinates, {
+        ...bikeDotStyle(line.options.weight),
+        opacity: dim ? 0.25 : 1,
+        interactive: false,
+        bwrDots: true,
+      });
+      dots.addTo(map);
+    }
+
     // Invisible wide hit-target so thin/gray lines are always easy to click
     const hitTarget = L.polyline(path.coordinates, {
       color: 'transparent',
@@ -1042,7 +1064,7 @@ function renderPaths() {
     hitTarget.addTo(map);
 
     // Keep any halo already pushed above so it's cleaned up on the next render.
-    pathLayers[path.id] = [...(pathLayers[path.id] || []), line, hitTarget];
+    pathLayers[path.id] = [...(pathLayers[path.id] || []), line, hitTarget, ...(dots ? [dots] : [])];
   });
 }
 

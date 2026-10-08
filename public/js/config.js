@@ -44,6 +44,17 @@ const STATUS_LABELS = {
 // paths too, since rendering keys off pathType.
 const BIKE_PATH_COLOR = '#a855f7';
 
+// Style of the white-dot overlay drawn on top of a bike path's purple line,
+// scaled to the current path weight `w`. Shared by the map and admin map.
+function bikeDotStyle(w) {
+  return {
+    color: 'rgba(255,255,255,0.85)',
+    weight: Math.max(1, w * 0.38),
+    opacity: 1, lineCap: 'round', lineJoin: 'round',
+    dashArray: `1 ${Math.max(6, w * 2)}`,
+  };
+}
+
 // The colour a curated path should be drawn in: purple for bike paths, otherwise
 // the difficulty (status) colour. Global helper — config.js loads on every page.
 function colorForPath(path) {

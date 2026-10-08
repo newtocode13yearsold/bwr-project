@@ -66,12 +66,7 @@ function renderPaths() {
       color, weight: w, opacity: 0.85, lineCap: 'round', lineJoin: 'round',
     }).addTo(pathLayer);
     if (path.pathType === 'bike') {
-      L.polyline(path.coordinates, {
-        color: 'rgba(255,255,255,0.85)',
-        weight: Math.max(1, w * 0.38),
-        opacity: 1, lineCap: 'round', lineJoin: 'round',
-        dashArray: `1 ${Math.max(6, w * 2)}`,
-      }).addTo(pathLayer);
+      L.polyline(path.coordinates, bikeDotStyle(w)).addTo(pathLayer);
     }
   });
 }
