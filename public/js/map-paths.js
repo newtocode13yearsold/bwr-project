@@ -133,15 +133,20 @@ async function loadWalkedOverlay() {
   } catch {}
 }
 
-function renderWalkedOverlay(walkedIds) {
+let _walkedIds = new Set();
+
+function renderWalkedOverlay(walkedIds = _walkedIds) {
+  _walkedIds = walkedIds;
   if (walkedPathLayer) { walkedPathLayer.remove(); walkedPathLayer = null; }
   if (!walkedIds.size) return;
   walkedPathLayer = L.layerGroup();
+  // Same width as the regular path lines so every trail reads at one thickness.
+  const w = pathWeight();
   allPaths.forEach(path => {
     if (!walkedIds.has(path.id) || !path.coordinates || path.coordinates.length < 2) return;
     L.polyline(path.coordinates, {
       color: '#22c55e',
-      weight: 7,
+      weight: w,
       opacity: 0.45,
       lineCap: 'round',
       lineJoin: 'round',

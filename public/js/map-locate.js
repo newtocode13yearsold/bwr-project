@@ -383,7 +383,11 @@ function updateCarrefourVisibility() {
   }
 }
 
-map.on('zoomend', () => { renderPaths(); updateCarrefourVisibility(); });
+map.on('zoomend', () => {
+  renderPaths();
+  if (walkedPathLayer) renderWalkedOverlay();
+  updateCarrefourVisibility();
+});
 updateCarrefourVisibility();
 
 // ── Bottom-tools speed dial (mobile) ────────────────────────────────────────────
