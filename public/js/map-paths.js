@@ -8,6 +8,11 @@
 // ── Path layer ─────────────────────────────────────────────────────────────────
 const pathLayer = L.layerGroup().addTo(map);
 
+// Walked-path halo sits in its own pane just BELOW the path lines (overlayPane
+// is z 400), so the green glow peeks out around a trail without tinting its
+// difficulty colour (orange + translucent green on top used to read as olive).
+map.createPane('walkedPane').style.zIndex = 390;
+
 function pathWeight() {
   // Thinner lines when zoomed out so the whole-forest overview reads as a calm
   // network instead of green spaghetti; they thicken back up as you zoom in to a
@@ -69,6 +74,8 @@ function renderPaths() {
       L.polyline(path.coordinates, bikeDotStyle(w)).addTo(pathLayer);
     }
   });
+  // Keep the walked halo in step (zoom width, re-graded colour, filters).
+  if (walkedPathLayer) renderWalkedOverlay();
 }
 
 // ── Passive walked-path tracking ─────────────────────────────────────────────
@@ -135,17 +142,16 @@ function renderWalkedOverlay(walkedIds = _walkedIds) {
   if (walkedPathLayer) { walkedPathLayer.remove(); walkedPathLayer = null; }
   if (!walkedIds.size) return;
   walkedPathLayer = L.layerGroup();
-  // Same width as the regular path lines so every trail reads at one thickness.
+  // A green rim drawn UNDER the path (see walkedPane), plus a solid core in the
+  // path's own colour so the green can't bleed through the 0.85-opacity line on
+  // top: the trail keeps its normal width and true difficulty colour.
   const w = pathWeight();
+  const base = { pane: 'walkedPane', interactive: false, lineCap: 'round', lineJoin: 'round' };
   allPaths.forEach(path => {
-    if (!walkedIds.has(path.id) || !path.coordinates || path.coordinates.length < 2) return;
-    L.polyline(path.coordinates, {
-      color: '#22c55e',
-      weight: w,
-      opacity: 0.45,
-      lineCap: 'round',
-      lineJoin: 'round',
-    }).addTo(walkedPathLayer);
+    if (!walkedIds.has(path.id) || !activeFilters.has(path.status)) return;
+    if (!path.coordinates || path.coordinates.length < 2) return;
+    L.polyline(path.coordinates, { ...base, color: '#22c55e', weight: w + 4, opacity: 0.5 }).addTo(walkedPathLayer);
+    L.polyline(path.coordinates, { ...base, color: colorForPath(path), weight: w, opacity: 1 }).addTo(walkedPathLayer);
   });
   walkedPathLayer.addTo(map);
 }

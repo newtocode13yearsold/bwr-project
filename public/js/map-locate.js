@@ -384,8 +384,7 @@ function updateCarrefourVisibility() {
 }
 
 map.on('zoomend', () => {
-  renderPaths();
-  if (walkedPathLayer) renderWalkedOverlay();
+  renderPaths(); // also redraws the walked-path halo
   updateCarrefourVisibility();
 });
 updateCarrefourVisibility();
