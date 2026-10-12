@@ -61,6 +61,13 @@
   table {
     max-width: 100%;
   }
+  /* …except Leaflet's own canvas. Every map uses preferCanvas, so the paths are
+     drawn on a canvas inside a 0-px-wide pane: capping it at 100% squashed it to
+     nothing and the trails vanished on phones. Leaflet exempts its own img/svg
+     the same way in leaflet.css, but not the canvas. */
+  .leaflet-container canvas {
+    max-width: none !important;
+  }
   pre,
   code {
     max-width: 100%;
