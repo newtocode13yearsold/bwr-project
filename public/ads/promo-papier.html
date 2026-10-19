@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BWR — Reel · Mamie avait raison</title>
+<meta name="robots" content="noindex" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&family=Fraunces:opsz,wght@9..144,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reel2.css">
+<link rel="stylesheet" href="reel-simple.css">
+<style>
+  #s1 .col{top:20cqh}
+  #s2{background:radial-gradient(110% 80% at 50% 40%,#1d4a22,#0b2410 60%,#050d07)}
+  #s2 .col{top:24cqh;gap:3cqh}
+  .paper{font:900 4.6cqh/1.18 Inter;color:var(--ink);background:#fffbea;padding:3cqh 3.4cqh;border-radius:1.4cqh;
+    box-shadow:0 2cqh 5cqh rgba(0,0,0,.5)}
+  #s3{background:var(--lime);display:grid;place-items:center}
+  #s3 .big{color:var(--ink);text-shadow:none;font-size:10.5cqh;text-align:center}
+  #s4 .bg{filter:brightness(.35) blur(.4cqh) saturate(.8)}
+  #s4 .col{top:6.5cqh}
+  /* the REAL printable roadbook (scripts/promo/capture-print.mjs), scrolling map → carrefours */
+  .sheet{position:absolute;left:6%;right:6%;top:13cqh;height:51cqh;overflow:hidden;background:#fff;border-radius:1cqh;z-index:3;
+    box-shadow:0 3cqh 7cqh rgba(0,0,0,.6);transform:translateY(70cqh) rotate(8deg);transition:transform .8s cubic-bezier(.2,1.2,.35,1)}
+  #s4.in .sheet{transform:rotate(-2deg)}
+  .sheet img{display:block;width:100%;transition:transform 2.6s cubic-bezier(.45,0,.25,1)}
+  .sheet.scroll img{transform:translateY(-43%)}
+  #s4 .lbls{bottom:20cqh}
+  #s5{background:#050d07;display:grid;place-items:center}
+  #s5 .stack{display:flex;flex-direction:column;align-items:center;gap:1.4cqh}
+  #s5 .big{font-size:6.6cqh;white-space:nowrap}
+  #s5 .big em{text-shadow:0 0 5cqh rgba(163,230,53,.55)}
+</style>
+</head>
+<body>
+<div id="page">
+  <div id="stage">
+    <div id="prog"></div>
+
+    <div class="scene" id="s1">
+      <div class="bg dim" style="background-image:url(img/broll/p10.jpg)"></div>
+      <div class="shade"></div>
+      <div class="col">
+        <div class="chip red pp" id="c1">BATTERIE : 3 %</div>
+        <div class="big pp" id="h1">Pleine forêt.<br><em>Zéro réseau.</em></div>
+      </div>
+    </div>
+
+    <div class="scene" id="s2">
+      <div class="col">
+        <div class="big pp" id="h2">Mamie :</div>
+        <div class="paper pp" id="p2" style="--r:-2deg">« De mon temps,<br>on avait une<br>carte papier. »</div>
+      </div>
+    </div>
+
+    <div class="scene" id="s3"><div class="big pp" id="h3">Mamie<br>avait raison.</div></div>
+
+    <div class="scene" id="s4">
+      <div class="bg" style="background-image:url(img/broll/p01.jpg)"></div>
+      <div class="col"><div class="chip lime pp" id="c4">Imprime ta boucle · gratuit</div></div>
+      <div class="sheet" id="sheet"><img src="img/print-sheet.png" alt=""></div>
+      <div class="lbls">
+        <div class="lbl pp" id="k1" style="--r:-1.5deg">Les carrefours, dans l'ordre</div>
+        <div class="lbl w pp" id="k2" style="--r:1.5deg">Lisible sans réseau</div>
+      </div>
+    </div>
+
+    <div class="scene" id="s5">
+      <div class="stack">
+        <div class="big pp" id="w1">Batterie&nbsp;:&nbsp;0&nbsp;%.</div>
+        <div class="big pp" id="w2">Balade&nbsp;:&nbsp;<em>100&nbsp;%</em>.</div>
+      </div>
+    </div>
+
+    <div id="flash"></div>
+    <canvas id="confetti"></canvas>
+
+    <div id="cta">
+      <div class="logo">B<b>W</b>R</div>
+      <div class="tag">Ta boucle en forêt.<br>Même sur papier.</div>
+      <div class="btn">Essaie gratuitement →</div>
+      <div class="url">bwrmaps.com</div>
+    </div>
+
+    <div id="gate">
+      <div class="logo">B<b>W</b>R</div>
+      <button id="playBtn">▶ Lancer le reel</button>
+      <p>Musique incluse — monte le volume.</p>
+    </div>
+  </div>
+  <div id="controls"><button id="replay">↻ Rejouer</button><button id="fs">⛶ Plein écran</button></div>
+</div>
+<script src="js/reel-kit.js"></script>
+<script src="js/reel-simple.js"></script>
+<script src="js/reel-papier.js"></script>
+<script src="../js/track.js"></script>
+</body>
+</html>

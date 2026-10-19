@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BWR — Reel · Le raccourci</title>
+<meta name="robots" content="noindex" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&family=Fraunces:opsz,wght@9..144,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reel2.css">
+<link rel="stylesheet" href="reel-simple.css">
+<style>
+  #s1 .col{top:20cqh}
+  #s2 .bg{filter:grayscale(.85) brightness(.45) contrast(1.15)}
+  #s2::after{content:"";position:absolute;inset:0;background:rgba(127,29,29,.28);pointer-events:none}
+  #s2 .col{top:13cqh;z-index:3}
+  .ln{font:900 5cqh/1.08 Inter;color:#fff;background:rgba(10,10,18,.82);padding:1.6cqh 2.6cqh;border-radius:1.6cqh;
+    border-left:1cqh solid #ef4444;box-shadow:0 1.4cqh 3cqh rgba(0,0,0,.5)}
+  .ln small{display:block;font:800 2.4cqh/1.2 Inter;color:rgba(255,255,255,.65);margin-top:.6cqh}
+  #s3{background:var(--lime);display:grid;place-items:center}
+  #s3 .big{color:var(--ink);text-shadow:none;font-size:10.5cqh;text-align:center}
+  #s3 .big span{display:block;font-size:.45em;letter-spacing:.02em;margin-bottom:.25em}
+  #s4 .col{top:10cqh}
+  /* labels on the right half, clear of the route that runs down the left */
+  #s4 .lbls{bottom:auto;top:30cqh;left:auto;right:5%;width:48%;align-items:flex-end}
+  #s4 .lbl{text-align:right}
+</style>
+</head>
+<body>
+<div id="page">
+  <div id="stage">
+    <div id="prog"></div>
+
+    <div class="scene" id="s1">
+      <div class="bg dim" style="background-image:url(img/broll/p09.jpg)"></div>
+      <div class="shade"></div>
+      <div class="col">
+        <div class="chip pp" id="c1">TON POTE, SÛR DE LUI</div>
+        <div class="big pp" id="h1">« T'inquiète,<br>je connais<br>un <em>raccourci</em>.&nbsp;»</div>
+      </div>
+    </div>
+
+    <div class="scene" id="s2">
+      <div class="bg" style="background-image:url(img/broll/p08.jpg)"></div>
+      <div class="col">
+        <div class="chip red pp" id="c2">2 H PLUS TARD</div>
+        <div class="ln pp" id="l1" style="--r:-2deg">+ 6 km<small>pour un « raccourci »</small></div>
+        <div class="ln pp" id="l2" style="--r:1.5deg">Le même arbre.<br>3 fois.</div>
+        <div class="ln pp" id="l3" style="--r:-1deg">« Bizarre, c'était<br>là avant…&nbsp;»</div>
+      </div>
+    </div>
+
+    <div class="scene" id="s3">
+      <div class="big pp" id="h3"><span>Le vrai raccourci</span>c'est<br>BWR.</div>
+    </div>
+
+    <!-- the real A→B route from the BWR graph router on the real forest -->
+    <div class="scene" id="s4" style="--x:62%;--y:74%">
+      <div class="bg reveal" style="background-image:url(img/route-ab.png)"></div>
+      <div class="ping"></div>
+      <div class="col"><div class="chip lime pp" id="c4">A → B · le plus court</div></div>
+      <div class="lbls">
+        <div class="lbl pp" id="k1" style="--r:-2deg">Que des chemins<br>de forêt</div>
+        <div class="lbl w pp" id="k2" style="--r:1.5deg">Km et durée<br>exacts</div>
+        <div class="lbl pp" id="k3" style="--r:-1deg">Ton pote :<br>vexé</div>
+      </div>
+    </div>
+
+    <div id="flash"></div>
+    <canvas id="confetti"></canvas>
+
+    <div id="cta">
+      <div class="logo">B<b>W</b>R</div>
+      <div class="tag">Les raccourcis,<br>c'est nous.</div>
+      <div class="btn">Essaie gratuitement →</div>
+      <div class="url">bwrmaps.com</div>
+    </div>
+
+    <div id="gate">
+      <div class="logo">B<b>W</b>R</div>
+      <button id="playBtn">▶ Lancer le reel</button>
+      <p>Musique incluse — monte le volume.</p>
+    </div>
+  </div>
+  <div id="controls"><button id="replay">↻ Rejouer</button><button id="fs">⛶ Plein écran</button></div>
+</div>
+<script src="js/reel-kit.js"></script>
+<script src="js/reel-simple.js"></script>
+<script src="js/reel-raccourci.js"></script>
+<script src="../js/track.js"></script>
+</body>
+</html>

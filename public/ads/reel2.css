@@ -1,0 +1,45 @@
+/* Shared frame for the "série 2" reels (promo-chat / types / replay / kinetic). */
+:root{
+  --lime:#a3e635; --lime-400:#bef264; --cream:#f4f7ee; --ink:#0a0a12;
+  --forest:#0b2410; --forest-2:#12351a; --moss:#2f6b25; --pop:#ffe14d;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:#07070c;overflow:hidden;font-family:Inter,system-ui,sans-serif}
+#page{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px}
+#stage{position:relative;width:calc(100vh * 9 / 16);max-width:96vw;aspect-ratio:9/16;
+  border-radius:22px;overflow:hidden;background:var(--forest);container-type:size;
+  box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+#prog{position:absolute;top:0;left:0;height:5px;width:0;z-index:95;border-radius:0 4px 4px 0;
+  background:linear-gradient(90deg,#fff,var(--lime));box-shadow:0 0 14px var(--lime)}
+#confetti{position:absolute;inset:0;width:100%;height:100%;z-index:70;pointer-events:none}
+
+/* end card */
+#cta{position:absolute;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:0 9% 12cqh;opacity:0;pointer-events:none;transition:opacity .45s ease;
+  background:radial-gradient(120% 80% at 50% 35%,#1d4a22 0%,#0b2410 55%,#050d07 100%)}
+#cta.in{opacity:1;pointer-events:auto}
+#cta .logo{font:900 17cqh/1 Fraunces,serif;color:#fff;letter-spacing:.02em;text-shadow:0 8px 40px rgba(0,0,0,.6);
+  transform:scale(.7);transition:transform .7s cubic-bezier(.2,1.6,.35,1)}
+#cta.in .logo{transform:none}
+.logo b{color:var(--lime)}
+#cta .tag{font:800 3.5cqh/1.25 Inter;color:#fff;margin-top:2.2cqh;max-width:18ch}
+#cta .btn{margin-top:3.4cqh;font:900 3.1cqh/1 Inter;color:var(--ink);background:var(--lime);border-radius:999px;
+  padding:2.1cqh 4.6cqh;box-shadow:0 14px 40px rgba(163,230,53,.35);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.05)}}
+#cta .url{margin-top:2.4cqh;font:800 2.5cqh/1 Inter;color:var(--lime);letter-spacing:.06em}
+#cta .sub{margin-top:1.4cqh;font:700 2cqh/1.3 Inter;color:rgba(255,255,255,.7)}
+
+/* play gate + controls (hidden in bare/capture mode) */
+#gate{position:absolute;inset:0;z-index:700;background:rgba(7,7,12,.94);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;text-align:center;padding:0 10%}
+#gate .logo{font:900 13cqh/1 Fraunces,serif;color:#fff}
+#gate p{color:#e6f6d6;font:600 2.2cqh/1.45 Inter;max-width:32ch}
+#gate button{cursor:pointer;border:none;font:900 3.4cqh/1 Inter;color:var(--ink);
+  background:linear-gradient(120deg,var(--lime),var(--lime-400));border-radius:999px;padding:2cqh 4cqh}
+#controls{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+#controls button,#controls a{cursor:pointer;border:1px solid rgba(163,230,53,.3);background:rgba(163,230,53,.08);
+  color:#d8efc7;border-radius:10px;padding:9px 14px;font:700 13px Inter;text-decoration:none}
+
+body.bare #page{padding:0;gap:0;height:100vh}
+body.bare #stage{width:100vw;height:100vh;max-width:none;aspect-ratio:auto;border-radius:0;box-shadow:none}
+body.bare #controls,body.bare #gate{display:none!important}

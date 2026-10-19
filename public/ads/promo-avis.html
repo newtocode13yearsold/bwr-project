@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BWR — Reel · Les avis des chemins</title>
+<meta name="robots" content="noindex" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&family=Fraunces:opsz,wght@9..144,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reel2.css">
+<link rel="stylesheet" href="reel-simple.css">
+<style>
+  #s0 .col{top:20cqh}
+  #s1 .bg{filter:brightness(.42) saturate(.9)}
+  #s1 .col{top:9cqh;gap:2cqh}
+  /* a trail-review card, like the one in the map path popup */
+  .rv{width:100%;box-sizing:border-box;background:#fff;border-radius:2cqh;padding:2.2cqh 2.6cqh;text-align:left;
+    box-shadow:0 1.6cqh 4cqh rgba(0,0,0,.5)}
+  .rv .st{font:900 3.6cqh/1 Inter;letter-spacing:.08em;color:#f59e0b}
+  .rv .st i{font-style:normal;color:#d6d3d1}
+  .rv .q{font:800 3.3cqh/1.2 Inter;color:var(--ink);margin-top:1.1cqh}
+  .rv .who{font:800 2.1cqh/1 Inter;color:#6b7280;margin-top:1.2cqh;display:flex;align-items:center;gap:1cqh}
+  .rv .dot{width:1.6cqh;height:1.6cqh;border-radius:50%}
+  .note{position:absolute;left:0;right:0;bottom:15cqh;text-align:center;font:800 1.9cqh/1 Inter;color:rgba(255,255,255,.6);z-index:3}
+  #s2{background:var(--lime);display:grid;place-items:center}
+  #s2 .big{color:var(--ink);text-shadow:none;font-size:10cqh;text-align:center}
+  #s3 .col{top:10cqh}
+  #s3 .lbl .d{display:inline-block;width:2.2cqh;height:2.2cqh;border-radius:50%;margin:0 .4cqh 0 1.2cqh;vertical-align:-.2cqh}
+</style>
+</head>
+<body>
+<div id="page">
+  <div id="stage">
+    <div id="prog"></div>
+
+    <div class="scene" id="s0">
+      <div class="bg dim" style="background-image:url(img/broll/p11.jpg)"></div>
+      <div class="shade"></div>
+      <div class="col">
+        <div class="chip lime pp" id="c0">FORÊT DE COMPIÈGNE</div>
+        <div class="big pp" id="h0">Les chemins<br>ont des <em>avis</em>.<br>Et ils sont cash.</div>
+      </div>
+    </div>
+
+    <div class="scene" id="s1">
+      <div class="bg" style="background-image:url(img/grades-zoom.png)"></div>
+      <div class="col">
+        <div class="rv pp" id="r1" style="--r:-1.5deg">
+          <div class="st">★★★★★</div>
+          <div class="q">« Magnifique. Mon chien a adoré. Moi aussi.&nbsp;»</div>
+          <div class="who"><span class="dot" style="background:#22c55e"></span>Martine · chemin facile</div>
+        </div>
+        <div class="rv pp" id="r2" style="--r:1.5deg">
+          <div class="st">★★<i>★★★</i></div>
+          <div class="q">« Boue jusqu'aux genoux. Perdu une chaussure.&nbsp;»</div>
+          <div class="who"><span class="dot" style="background:#f97316"></span>Kevin · chemin moyen</div>
+        </div>
+        <div class="rv pp" id="r3" style="--r:-1deg">
+          <div class="st">★★★★<i>★</i></div>
+          <div class="q">« Ça grimpe sévère. Mais la vue vaut le coup.&nbsp;»</div>
+          <div class="who"><span class="dot" style="background:#ef4444"></span>Sophie · chemin difficile</div>
+        </div>
+      </div>
+      <div class="note pp" id="fn">avis pour rire · chemins et couleurs réels</div>
+    </div>
+
+    <div class="scene" id="s2"><div class="big pp" id="h2">Avant d'y aller,<br>tu sais.</div></div>
+
+    <!-- the real graded map: every path coloured by its real status -->
+    <div class="scene" id="s3" style="--x:50%;--y:50%">
+      <div class="bg reveal" style="background-image:url(img/grades-all.png)"></div>
+      <div class="col"><div class="chip lime pp" id="c3">446 chemins notés</div></div>
+      <div class="lbls">
+        <div class="lbl w pp" id="k1" style="--r:-1.5deg"><span class="d" style="background:#22c55e;margin-left:0"></span>facile<span class="d" style="background:#f97316"></span>moyen<span class="d" style="background:#ef4444"></span>dur</div>
+        <div class="lbl pp" id="k2" style="--r:1.5deg">Les avis de ceux<br>qui y sont allés</div>
+      </div>
+    </div>
+
+    <div id="flash"></div>
+    <canvas id="confetti"></canvas>
+
+    <div id="cta">
+      <div class="logo">B<b>W</b>R</div>
+      <div class="tag">Lis les avis.<br>Choisis ton chemin.</div>
+      <div class="btn">Essaie gratuitement →</div>
+      <div class="url">bwrmaps.com</div>
+    </div>
+
+    <div id="gate">
+      <div class="logo">B<b>W</b>R</div>
+      <button id="playBtn">▶ Lancer le reel</button>
+      <p>Musique incluse — monte le volume.</p>
+    </div>
+  </div>
+  <div id="controls"><button id="replay">↻ Rejouer</button><button id="fs">⛶ Plein écran</button></div>
+</div>
+<script src="js/reel-kit.js"></script>
+<script src="js/reel-simple.js"></script>
+<script src="js/reel-avis.js"></script>
+<script src="../js/track.js"></script>
+</body>
+</html>

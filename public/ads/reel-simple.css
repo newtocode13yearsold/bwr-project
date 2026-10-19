@@ -1,0 +1,50 @@
+/* Shared bits for the "série 3 — simple" reels (attente / devine / doigt / excuses).
+   Loaded after reel2.css. One idea per reel: a scene is a full-bleed .scene, every
+   element that should "pop" carries .pp and gets .in from the timeline. */
+#stage{background:#050d07}
+.scene{position:absolute;inset:0;z-index:5;visibility:hidden;overflow:hidden}
+.scene.in{visibility:visible}
+
+/* full-bleed photo / real-map background with a slow push-in */
+.bg{position:absolute;inset:0;background:center/cover no-repeat;transform:scale(1.14);
+  transition:transform 3.2s cubic-bezier(.2,.6,.3,1)}
+.scene.in .bg{transform:scale(1.02)}
+.bg.dim{filter:brightness(.55) saturate(.8)}
+.shade{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,0) 38%,rgba(0,0,0,0) 58%,rgba(0,0,0,.65))}
+
+/* things that pop in on cue */
+.pp{opacity:0;transform:scale(.4) rotate(var(--r,0deg))}
+.pp.in{animation:pp .42s cubic-bezier(.2,1.7,.35,1) forwards}
+@keyframes pp{to{opacity:1;transform:rotate(var(--r,0deg))}}
+
+/* centred column of text */
+.col{position:absolute;left:7%;right:7%;top:15cqh;display:flex;flex-direction:column;align-items:center;gap:2.4cqh;text-align:center;z-index:3}
+.chip{font:900 2.5cqh/1 Inter;letter-spacing:.14em;padding:1.3cqh 2.2cqh;border-radius:99px;background:#fff;color:var(--ink);
+  box-shadow:0 1cqh 3cqh rgba(0,0,0,.35)}
+.chip.red{background:#ef4444;color:#fff}
+.chip.lime{background:var(--lime)}
+.big{font:900 7.6cqh/1 Inter;color:#fff;letter-spacing:-.03em;text-shadow:0 .6cqh 3cqh rgba(0,0,0,.6)}
+.big em{font-style:normal;color:var(--lime)}
+.big.xl{font-size:10cqh}
+
+/* labels stacked above the IG safe zone (bottom ~20%) */
+.lbls{position:absolute;left:6%;right:6%;bottom:22cqh;display:flex;flex-direction:column;align-items:center;gap:1.5cqh;z-index:3}
+.lbl{font:900 3.4cqh/1.1 Inter;color:var(--ink);background:var(--lime);padding:1.5cqh 2.4cqh;border-radius:1.6cqh;
+  box-shadow:0 1.4cqh 3.6cqh rgba(0,0,0,.5);text-align:center}
+.lbl.w{background:#fff}
+
+/* map reveal: a circle that opens from the start pin (--x/--y in % of the stage) */
+.reveal{clip-path:circle(0% at var(--x) var(--y));transition:clip-path 1.5s cubic-bezier(.5,0,.2,1)}
+.scene.in .reveal{clip-path:circle(150% at var(--x) var(--y))}
+.ping{position:absolute;left:var(--x);top:var(--y);width:14cqh;height:14cqh;margin:-7cqh 0 0 -7cqh;border-radius:50%;
+  border:.6cqh solid var(--lime);z-index:4;opacity:0}
+.scene.in .ping{animation:ping 1.1s ease-out 3}
+@keyframes ping{from{transform:scale(.2);opacity:1}to{transform:scale(2.2);opacity:0}}
+
+#flash{position:absolute;inset:0;z-index:60;background:#fff;opacity:0;pointer-events:none}
+#flash.in{animation:flash .35s ease-out}
+@keyframes flash{from{opacity:.85}to{opacity:0}}
+.shake{animation:shake .45s ease-in-out}
+@keyframes shake{20%{transform:translate(-1.2cqh,.4cqh) rotate(-1deg)}40%{transform:translate(1.2cqh,-.4cqh) rotate(1deg)}
+  60%{transform:translate(-.8cqh,.2cqh)}80%{transform:translate(.6cqh,0)}}

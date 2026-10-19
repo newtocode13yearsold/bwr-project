@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BWR — Reel · Le classement de la forêt</title>
+<meta name="robots" content="noindex" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&family=Fraunces:opsz,wght@9..144,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reel2.css">
+<link rel="stylesheet" href="reel-simple.css">
+<style>
+  #s1 .col{top:19cqh}
+  #s1 .big{font-size:6cqh}
+  #s2{background:radial-gradient(110% 80% at 50% 40%,#1d4a22,#0b2410 60%,#050d07);display:grid;place-items:center}
+  #s2 .big{font-size:6.4cqh;text-align:center;padding:0 7%}
+  #s3 .bg{filter:brightness(.38) saturate(.85)}
+  #s3 .col{top:8cqh}
+  /* the weekly leaderboard (leaderboard.html, "Semaine" tab) */
+  .board{position:absolute;left:7%;right:7%;top:16cqh;height:44cqh;z-index:3}
+  .row{position:absolute;left:0;right:0;top:calc(var(--i) * 8.6cqh);height:7.4cqh;box-sizing:border-box;
+    display:flex;align-items:center;gap:1.8cqh;padding:0 2.4cqh;border-radius:1.6cqh;background:rgba(255,255,255,.95);
+    font:900 3cqh/1 Inter;color:var(--ink);box-shadow:0 1cqh 3cqh rgba(0,0,0,.4);transition:top .7s cubic-bezier(.3,1.3,.4,1)}
+  .row .rk{width:4.6cqh;height:4.6cqh;border-radius:50%;display:grid;place-items:center;background:#e5e7eb;font-size:2.4cqh}
+  .row .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .pt{font-size:2.6cqh;color:#4b5563}
+  .row.bf{outline:.5cqh solid #f97316}
+  .row.me{background:#1f2937;color:#fff}
+  .row.me .pt{color:#fca5a5}
+  .row.me.top{background:var(--lime);color:var(--ink)}
+  .row.me.top .pt{color:var(--ink)}
+  .row.me.top .rk{background:var(--ink);color:var(--lime)}
+  #s3 .lbls{bottom:20cqh}
+  #s4{background:var(--lime);display:grid;place-items:center}
+  #s4 .big{color:var(--ink);text-shadow:none;font-size:6.6cqh;text-align:center;padding:0 5%}
+  #s4 .big span{display:block;font-size:.55em;margin-bottom:.4em}
+</style>
+</head>
+<body>
+<div id="page">
+  <div id="stage">
+    <div id="prog"></div>
+
+    <div class="scene" id="s1">
+      <div class="bg dim" style="background-image:url(img/broll/p04.jpg)"></div>
+      <div class="shade"></div>
+      <div class="col">
+        <div class="chip red pp" id="c1">FLASH INFO</div>
+        <div class="big pp" id="h1">Ton beau-frère<br>est <em>2ᵉ</em> du<br>classement<br>de la forêt.</div>
+      </div>
+    </div>
+
+    <div class="scene" id="s2"><div class="big pp" id="h2">Toi, tu savais même pas<br>qu'il y en avait <em>un</em>.</div></div>
+
+    <div class="scene" id="s3">
+      <div class="bg" style="background-image:url(img/grades-zoom.png)"></div>
+      <div class="col"><div class="chip lime pp" id="c3">CLASSEMENT · SEMAINE</div></div>
+      <div class="board">
+        <div class="row pp" id="b1" style="--i:0"><span class="rk">1</span><span class="nm">Gérard_rando</span><span class="pt">102 pts</span></div>
+        <div class="row bf pp" id="b2" style="--i:1"><span class="rk">2</span><span class="nm">Ton beau-frère</span><span class="pt">96 pts</span></div>
+        <div class="row pp" id="b3" style="--i:2"><span class="rk">3</span><span class="nm">Léa.trail</span><span class="pt">81 pts</span></div>
+        <div class="row pp" id="b4" style="--i:3"><span class="rk">4</span><span class="nm">Marc_VTT</span><span class="pt">64 pts</span></div>
+        <div class="row me pp" id="b5" style="--i:4"><span class="rk" id="mrk">—</span><span class="nm">Toi</span><span class="pt" id="mpt">0 pt</span></div>
+      </div>
+      <div class="lbls">
+        <div class="lbl pp" id="k1" style="--r:-1.5deg">+2 pts · un chemin noté</div>
+        <div class="lbl w pp" id="k2" style="--r:1.5deg">+1 pt · un obstacle signalé</div>
+      </div>
+    </div>
+
+    <div class="scene" id="s4"><div class="big pp" id="h4"><span>Et en bonus :</span>200 chemins notés<br>=<br>1 mois de Pro<br>offert.</div></div>
+
+    <div id="flash"></div>
+    <canvas id="confetti"></canvas>
+
+    <div id="cta">
+      <div class="logo">B<b>W</b>R</div>
+      <div class="tag">Marche. Note.<br>Passe devant.</div>
+      <div class="btn">Essaie gratuitement →</div>
+      <div class="url">bwrmaps.com</div>
+    </div>
+
+    <div id="gate">
+      <div class="logo">B<b>W</b>R</div>
+      <button id="playBtn">▶ Lancer le reel</button>
+      <p>Musique incluse — monte le volume.</p>
+    </div>
+  </div>
+  <div id="controls"><button id="replay">↻ Rejouer</button><button id="fs">⛶ Plein écran</button></div>
+</div>
+<script src="js/reel-kit.js"></script>
+<script src="js/reel-simple.js"></script>
+<script src="js/reel-classement.js"></script>
+<script src="../js/track.js"></script>
+</body>
+</html>
