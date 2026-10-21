@@ -57,51 +57,112 @@ function _snappedBbox(b) {
 // In-session memo so re-entering edit mode (or panning back) is instant, no network.
 const _osmBboxCache = new Map();
 
+// The whole forest's OSM path network ships pre-baked as data/forest-paths.json
+// (same bundle the route planner and the admin map use). Inside the forest we
+// filter it in memory instead of calling /api/osm — whose cold misses are
+// throttled by Overpass from Cloudflare's IPs (~24 s then 502), which left the
+// grey dotted "to grade" lines missing. Cache-first via the service worker.
+let _forestBundle = null;
+let _forestBundlePromise = null;
+function loadForestBundle() {
+  if (_forestBundle) return Promise.resolve(_forestBundle);
+  if (_forestBundlePromise) return _forestBundlePromise;
+  _forestBundlePromise = (async () => {
+    try {
+      const res = await fetch('data/forest-paths.json');
+      if (!res.ok) throw new Error(`forest-paths ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error('forest-paths malformed');
+      _forestBundle = data;
+      return data;
+    } catch (e) {
+      _forestBundlePromise = null; // allow a later retry
+      console.warn('loadForestBundle:', e.message);
+      return null;
+    }
+  })();
+  return _forestBundlePromise;
+}
+
+function _boundsIntersectForest(b) {
+  const f = typeof FOREST_BOUNDS !== 'undefined' ? FOREST_BOUNDS : null;
+  if (!f) return false;
+  return b.getSouth() <= f.maxLat && b.getNorth() >= f.minLat &&
+         b.getWest()  <= f.maxLng && b.getEast()  >= f.minLng;
+}
+
+// Overpass JSON → [{ coordinates, name }] (the bundle's shape, plus the OSM name).
+function _overpassToCoordPaths(data) {
+  const nodes = {};
+  data.elements.forEach(el => {
+    if (el.type === 'node') nodes[el.id] = [el.lat, el.lon];
+  });
+  const out = [];
+  data.elements.forEach(el => {
+    if (el.type !== 'way') return;
+    const coordinates = el.nodes.map(id => nodes[id]).filter(Boolean);
+    if (coordinates.length >= 2) out.push({ coordinates, name: el.tags?.name || el.tags?.ref });
+  });
+  return out;
+}
+
+function _showOsmEditCount() {
+  const count = _osmEditLayers.length / 2; // hit + visible line per path
+  showEditModeBar(count === 0
+    ? 'Aucun chemin OSM trouvé ici — zoomez sur la forêt.'
+    : `${count} chemins disponibles — cliquez sur un chemin en pointillés`);
+}
+
 async function loadOsmEditPaths() {
   if (map.getZoom() < 12) {
     showToast('Zoomez plus près de la forêt (zoom minimum : 12).');
     exitPathEditMode();
     return;
   }
-  const bbox = _snappedBbox(map.getBounds());
+  const b = map.getBounds();
+
+  // Fast path: the pre-baked forest bundle — instant, no network, works offline.
+  if (_boundsIntersectForest(b)) {
+    if (!_forestBundle) showEditModeBar('Chargement des chemins…');
+    const bundle = await loadForestBundle();
+    if (bundle) {
+      const minLat = b.getSouth(), maxLat = b.getNorth(), minLng = b.getWest(), maxLng = b.getEast();
+      renderOsmEditPaths(bundle.filter(p => p.coordinates.some(([la, lo]) =>
+        la >= minLat && la <= maxLat && lo >= minLng && lo <= maxLng)));
+      _showOsmEditCount();
+      return;
+    }
+    // bundle unavailable → fall through to the live fetch below
+  }
+
+  const bbox = _snappedBbox(b);
   // Serve instantly from the in-session cache if we already have this grid cell.
   const memo = _osmBboxCache.get(bbox);
   if (memo) {
     renderOsmEditPaths(memo);
-    const count = _osmEditLayers.length / 2;
-    showEditModeBar(count === 0
-      ? 'Aucun chemin OSM trouvé ici — zoomez sur la forêt.'
-      : `${count} chemins disponibles — cliquez sur un chemin en pointillés`);
+    _showOsmEditCount();
     return;
   }
   showEditModeBar('Chargement des chemins…');
   try {
     const res  = await fetch(`${API_URL}/api/osm?bbox=${bbox}`);
     if (!res.ok) throw new Error();
-    const data = await res.json();
-    _osmBboxCache.set(bbox, data);
-    renderOsmEditPaths(data);
-    const count = _osmEditLayers.length / 2; // hit + visible line per path
-    showEditModeBar(count === 0
-      ? 'Aucun chemin OSM trouvé ici — zoomez sur la forêt.'
-      : `${count} chemins disponibles — cliquez sur un chemin en pointillés`);
+    const paths = _overpassToCoordPaths(await res.json());
+    _osmBboxCache.set(bbox, paths);
+    renderOsmEditPaths(paths);
+    _showOsmEditCount();
   } catch {
     showToast('Chemins OSM indisponibles — vous pouvez quand même modifier les chemins existants.');
     showEditModeBar('Cliquez sur un chemin coloré pour changer sa difficulté');
   }
 }
 
-function renderOsmEditPaths(data) {
+function renderOsmEditPaths(paths) {
   clearOsmEditLayers();
-  const nodes = {};
-  data.elements.forEach(el => {
-    if (el.type === 'node') nodes[el.id] = [el.lat, el.lon];
-  });
-  data.elements.forEach(el => {
-    if (el.type !== 'way') return;
-    const coords = el.nodes.map(id => nodes[id]).filter(Boolean);
-    if (coords.length < 2) return;
-    const name = el.tags?.name || el.tags?.ref || 'Chemin sans nom';
+  paths.forEach(p => {
+    const coords = p.coordinates;
+    if (!coords || coords.length < 2) return;
+    const name = p.name || 'Chemin sans nom';
     const line = L.polyline(coords, { color: '#475569', weight: 3, opacity: 0.65, dashArray: '6, 6' });
     // Invisible wide hit area so the thin dashed line is easy to tap/click.
     const hit = L.polyline(coords, { color: '#000', weight: 22, opacity: 0, interactive: true });
@@ -383,7 +444,8 @@ async function submitReport(path, type, note, photo = null, latlng = null) {
       queueMapReport(payload);
       showToast('Hors-ligne — signalement enregistré, envoi à la reconnexion.');
     } else {
-      showToast('Erreur lors du signalement.');
+      const data = await res.json().catch(() => ({}));
+      showToast(data.error || 'Erreur lors du signalement.');
     }
   } catch {
     queueMapReport(payload);
