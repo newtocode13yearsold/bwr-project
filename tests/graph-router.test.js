@@ -4,7 +4,8 @@ const assert = require('node:assert/strict');
 const {
   haversineM, nodeKey, buildGraph, dijkstra,
   rebuildPath, nearestNode, graphToResult,
-  graphAtob, graphLoop, trimSpurs,
+  graphAtob, graphAtobHybrid, graphLoop, trimSpurs,
+  isClosedFor, excludeClosedPaths,
 } = require('../public/js/graph-router.js');
 
 describe('trimSpurs', () => {
@@ -456,5 +457,128 @@ describe('graphLoop daily seed', () => {
       assert.deepEqual(r.coords[0], r.coords[r.coords.length - 1], `loop ${seed} does not close`);
       assert.ok(r.meters > 0 && r.seconds > 0);
     }
+  });
+});
+
+// ─── Closed paths (impraticable / vélo interdit) ──────────────────────────────
+// Layout: START (49.400, 2.900) → END (49.400, 2.910) is a straight ~724 m line.
+// The open alternative is a ~1.8 km detour north and back. Whenever the direct line
+// is closed, the route must take the detour.
+
+describe('closed paths', () => {
+  const START = [49.400, 2.900];
+  const END   = [49.400, 2.910];
+  const direct = (extra = {}) => ({ coordinates: [START, END], ...extra });
+  const detour = { status: 'easy', coordinates: [START, [49.405, 2.900], [49.405, 2.910], END] };
+  // True if the route has a point in the middle stretch of the direct line.
+  const usesDirect = (r) => r.coords.some(([la, lo]) => Math.abs(la - 49.400) < 0.0002 && lo > 2.9015 && lo < 2.9085)
+    || r.coords.some((c, i) => i > 0 && c[0] === 49.400 && r.coords[i - 1][0] === 49.400
+      && Math.abs(c[1] - r.coords[i - 1][1]) > 0.005);
+  // Run the A→B hybrid router after applying closures, like routes-engine does.
+  const route = (admin, osm, mode = 'foot') => {
+    const x = excludeClosedPaths(admin, osm, mode);
+    return graphAtobHybrid(...START, ...END, x.admin, x.osm, mode);
+  };
+
+  test('isClosedFor: impraticable closes for everyone, vélo interdit only for bikes', () => {
+    assert.equal(isClosedFor({ status: 'not_passable' }, 'foot'), true);
+    assert.equal(isClosedFor({ status: 'not_passable' }, 'bike'), true);
+    assert.equal(isClosedFor({ status: 'no_bike' }, 'foot'), false);
+    assert.equal(isClosedFor({ status: 'no_bike' }, 'bike'), true);
+    assert.equal(isClosedFor({ _noBike: true }, 'foot'), false);
+    assert.equal(isClosedFor({ _noBike: true }, 'bike'), true);
+    assert.equal(isClosedFor({ status: 'hard' }, 'bike'), false);
+  });
+
+  test('excludeClosedPaths: closed admin paths move to the osm list, flagged', () => {
+    const closed = direct({ status: 'not_passable' });
+    const x = excludeClosedPaths([closed, detour], [{ coordinates: [START, END] }], 'foot');
+    assert.deepEqual(x.admin, [detour]);
+    assert.equal(x.osm.length, 2);
+    assert.equal(x.osm[0]._blocked, true);
+    assert.equal(x.osm[0]._shadow, true);
+    assert.equal(x.osm[1]._shadowable, true);
+  });
+
+  test('an impraticable admin path is never routed over', () => {
+    const open = route([direct({ status: 'easy' }), detour], []);
+    assert.ok(usesDirect(open), 'control: the open direct line should be used');
+    const r = route([direct({ status: 'not_passable' }), detour], []);
+    assert.ok(!usesDirect(r), 'route went over the impassable path');
+    assert.ok(r.meters > 1500);
+  });
+
+  test('the OSM copy lying under an impraticable admin path is cut too', () => {
+    // OSM trace of the same trail, ~4 m off and with its own vertices.
+    const osmCopy = { coordinates: [START, [49.40004, 2.902], [49.40004, 2.904], [49.40004, 2.906], [49.40004, 2.908], END] };
+    const control = route([direct({ status: 'easy' }), detour], [osmCopy]);
+    assert.ok(control.meters < 1000, 'control: the open line should be used');
+    const r = route([direct({ status: 'not_passable' }), detour], [osmCopy]);
+    assert.ok(r.meters > 1500, `route used the OSM copy of the closed trail (${Math.round(r.meters)} m)`);
+  });
+
+  test('gap-bridging links never hop a short closed section (broken bridge)', () => {
+    // Two OSM ways end 43 m apart either side of a closed bridge — close enough for
+    // the 80 m endpoint join. The bridge itself is closed (admin + OSM copy).
+    const W = [49.400, 2.8997], E = [49.400, 2.9003];
+    const a = [49.400, 2.890], b = [49.400, 2.910];
+    const osm = [
+      { coordinates: [a, W] }, { coordinates: [E, b] }, { coordinates: [W, E] },
+      { coordinates: [a, [49.405, 2.890], [49.405, 2.910], b] },
+    ];
+    const control = excludeClosedPaths([], osm, 'foot');
+    assert.ok(graphAtobHybrid(...a, ...b, control.admin, control.osm, 'foot').meters < 1600);
+    const x = excludeClosedPaths([{ status: 'not_passable', coordinates: [W, E] }], osm, 'foot');
+    const r = graphAtobHybrid(...a, ...b, x.admin, x.osm, 'foot');
+    assert.ok(r.meters > 2500, `crossed the closed bridge (${Math.round(r.meters)} m)`);
+  });
+
+  test('crossing a closed trail is still allowed', () => {
+    // N–S trail crossing a closed E–W trail, with vertices 5 m either side of it.
+    const closed = { status: 'not_passable', coordinates: [[49.400, 2.895], [49.400, 2.905]] };
+    const ns = { coordinates: [[49.395, 2.900], [49.39995, 2.900], [49.400, 2.900], [49.40005, 2.900], [49.405, 2.900]] };
+    const x = excludeClosedPaths([closed], [ns], 'foot');
+    const r = graphAtobHybrid(49.395, 2.900, 49.405, 2.900, x.admin, x.osm, 'foot');
+    assert.ok(r.meters < 1200, `crossing was blocked (${Math.round(r.meters)} m)`);
+  });
+
+  test('no route at all rather than one over a closed path', () => {
+    const stubs = [
+      { coordinates: [START, [49.401, 2.900]] },
+      { coordinates: [END, [49.401, 2.910]] },
+    ];
+    const x = excludeClosedPaths([direct({ status: 'not_passable' })], stubs, 'foot');
+    assert.throws(() => graphAtob(...START, ...END, [...x.admin, ...x.osm], 'foot'), /Aucun chemin/);
+  });
+
+  test('vélo interdit (admin) is used on foot but skipped by bike', () => {
+    const admin = [direct({ status: 'no_bike' }), detour];
+    assert.ok(usesDirect(route(admin, [], 'foot')), 'walkers may use a no-bike path');
+    assert.ok(!usesDirect(route(admin, [], 'bike')), 'bike route used a vélo-interdit path');
+  });
+
+  test('OSM bicycle=no is used on foot but skipped by bike', () => {
+    const osm = [{ coordinates: [START, END], _noBike: true }, { coordinates: detour.coordinates }];
+    assert.ok(usesDirect(route([], osm, 'foot')));
+    assert.ok(!usesDirect(route([], osm, 'bike')), 'bike route used a bicycle=no way');
+  });
+
+  test('loops avoid closed paths too', () => {
+    // Two stacked blocks whose bottom side is closed: the loop must not use it.
+    const paths = [
+      { status: 'not_passable', coordinates: [START, END] },
+      { status: 'easy', coordinates: [END, [49.405, 2.910]] },
+      { status: 'easy', coordinates: [[49.405, 2.910], [49.405, 2.900]] },
+      { status: 'easy', coordinates: [[49.405, 2.900], START] },
+      { status: 'easy', coordinates: [[49.405, 2.900], [49.410, 2.900], [49.410, 2.910], [49.405, 2.910]] },
+    ];
+    const x = excludeClosedPaths(paths, [], 'foot');
+    const r = graphLoop(49.405, 2.900, 2.5, [...x.admin, ...x.osm], 'foot');
+    assert.ok(!usesDirect(r), 'loop used the closed side');
+  });
+
+  test('buildGraph adds no node for a closed path', () => {
+    const { nodes } = buildGraph([{ coordinates: [START, END], _blocked: true }, { coordinates: [[49.41, 2.9], [49.411, 2.9]] }]);
+    assert.ok(!nodes.has(nodeKey(...START)) && !nodes.has(nodeKey(...END)));
   });
 });

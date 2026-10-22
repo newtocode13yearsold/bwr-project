@@ -6,7 +6,7 @@
 const { test, describe } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { bboxWithinForest, filterPathsToBbox } = require('../public/js/routes-engine.js');
+const { bboxWithinForest, filterPathsToBbox, osmDataToCoordPaths } = require('../public/js/routes-engine.js');
 
 // Mirrors FOREST_BOUNDS in public/js/config.js (not loaded in Node, so passed explicitly).
 const BOUNDS = { minLat: 49.28, minLng: 2.74, maxLat: 49.50, maxLng: 3.05 };
@@ -59,5 +59,22 @@ describe('filterPathsToBbox', () => {
 
   test('empty when nothing intersects', () => {
     assert.equal(filterPathsToBbox(paths, 49.00, 2.00, 49.10, 2.10).length, 0);
+  });
+});
+
+describe('osmDataToCoordPaths', () => {
+  const data = {
+    elements: [
+      { type: 'node', id: 1, lat: 49.40, lon: 2.90 },
+      { type: 'node', id: 2, lat: 49.41, lon: 2.90 },
+      { type: 'way', id: 10, nodes: [1, 2], tags: { highway: 'footway', bicycle: 'no' } },
+      { type: 'way', id: 11, nodes: [1, 2], tags: { highway: 'cycleway', bicycle: 'designated' } },
+    ],
+  };
+  test('flags bicycle=no ways so bike routes skip them', () => {
+    const [footway, cycleway] = osmDataToCoordPaths(data);
+    assert.equal(footway._noBike, true);
+    assert.equal(cycleway._noBike, undefined);
+    assert.equal(footway._highway, 'footway');
   });
 });

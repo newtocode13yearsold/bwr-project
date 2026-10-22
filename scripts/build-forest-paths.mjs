@@ -14,7 +14,7 @@
 // script if the OSM forest paths change enough to matter.
 //
 // The output shape matches osmDataToCoordPaths() in public/js/routes-engine.js exactly:
-//   [ { coordinates: [[lat,lon], …], _highway?: string, _surface?: string }, … ]
+//   [ { coordinates: [[lat,lon], …], _highway?: string, _surface?: string, _noBike?: true }, … ]
 // and the query/highway filter mirrors the worker's /api/osm handler
 // (worker/handlers/content.js).
 
@@ -77,6 +77,7 @@ function toCoordPaths(data) {
     const p = { coordinates };
     if (el.tags?.highway) p._highway = el.tags.highway;
     if (el.tags?.surface) p._surface = el.tags.surface;
+    if (el.tags?.bicycle === 'no') p._noBike = true; // skipped when cycling
     out.push(p);
   }
   return out;

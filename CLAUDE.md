@@ -149,6 +149,7 @@ The routes.html page uses three routing engines in order of preference:
    - Connects path endpoints within 80m to form network
    - Uses Dijkstra for A→B; removes outbound edges for loop return (guarantees different route back)
    - Falls back if < 4 nodes or target distance unmatchable
+   - **Closed paths are never routed over:** `applyClosures` (routes-engine.js) → `excludeClosedPaths` / `isClosedFor` (graph-router.js) drop `not_passable` ("Impraticable") paths for everyone, and `no_bike` ("Vélo interdit") + OSM `bicycle=no` (`_noBike`, kept by `osmDataToCoordPaths` and the forest-paths build script) when `transportMode === 'bike'`. Closed paths stay in the graph input flagged `_blocked`: `buildGraph` adds no edge for them, cuts the segments of the OSM copy lying along a closed admin path (`_shadow`/`_shadowable`), and vetoes the 80 m endpoint joins / 35 m stitches that would run along one (so a short closed bridge can't be hopped). Crossing a closed trail stays allowed (parallel test, `BLOCK_PARALLEL_DEG`). Every saved path is checked for closure, even ones hidden by the path-type filter. ORS/OSRM fallbacks know nothing of admin grades.
 
 2. OpenRouteService (ORS): Premium API requiring ORS_KEY Cloudflare environment variable
    - Supports round_trip mode (length, points, seed parameters)
@@ -281,8 +282,8 @@ Automated test suite: **650 tests, ~7 s** (`npm test`). Test files:
 
 | File | What it covers | Style |
 |------|---------------|-------|
-| `tests/graph-router.test.js` | Pure graph-routing functions (haversine, buildGraph, dijkstra, graphAtob, graphLoop) | CJS, Node test runner |
-| `tests/routes-engine.test.js` | Forest-bundle fast-path helpers — `bboxWithinForest`, `filterPathsToBbox` | CJS, Node test runner |
+| `tests/graph-router.test.js` | Pure graph-routing functions (haversine, buildGraph, dijkstra, graphAtob, graphLoop) + closed-path exclusion (impraticable, vélo interdit, OSM bicycle=no, OSM-copy cut, no hopping a closed bridge, crossings still allowed) | CJS, Node test runner |
+| `tests/routes-engine.test.js` | Forest-bundle fast-path helpers — `bboxWithinForest`, `filterPathsToBbox`; `osmDataToCoordPaths` bicycle=no flag | CJS, Node test runner |
 | `tests/elevation.test.js` | Grade-adjusted duration — Tobler/bike slope factors, flat-profile == baseline, uphill slower / gentle-descent faster, floors & fallbacks | CJS, Node test runner |
 | `tests/gps-filter.test.js` | GPS distance Kalman filter — accuracy gate, stationary jitter rejection, real-walk accuracy vs naive sum, teleport-spike rejection, reset | CJS, Node test runner |
 | `tests/features.test.js` | Plan-gating matrix — `can()`, `limitOf()`, `requiredTier()`, weekly quota helpers | CJS, browser shim for `window`/`localStorage` |

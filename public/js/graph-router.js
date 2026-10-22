@@ -60,7 +60,114 @@ function nodeKey(lat, lon) {
   return `${lat.toFixed(5)},${lon.toFixed(5)}`;
 }
 
-// paths may carry a _weight multiplier (e.g. 3 for OSM gap-fill edges)
+// ── Closed paths (impraticable / vélo interdit) ──────────────────────────────
+// A closed path can't simply be dropped: most admin paths sit on top of an OSM copy
+// of the same trail, and buildGraph's gap-bridging links (80 m endpoint joins, 35 m
+// stitches) would happily hop over a short closed section such as a broken bridge.
+// So closed paths stay in the list flagged `_blocked`: they add no edge, and their
+// geometry vetoes any segment or link that runs ALONG them (both ends within
+// BLOCK_TOL_M and roughly parallel). Crossing a closed trail stays allowed.
+const BLOCK_TOL_M = 20;        // how close counts as "on" the closed trail
+const BLOCK_PARALLEL_DEG = 25; // max angle between a link and the trail to count as "along"
+const BLOCK_END_M = 2;         // slack past the closed trail's two ends
+const BCELL = 0.0005;          // ~55 × 36 m grid cells for the closed-segment index
+
+// Spatial index of the closed paths' segments (null when there are none).
+function makeBlockIndex(lines) {
+  const segs = [], grid = new Map();
+  for (const c of lines) {
+    if (!Array.isArray(c) || c.length < 2) continue;
+    for (let i = 0; i < c.length - 1; i++) {
+      const [la1, lo1] = c[i], [la2, lo2] = c[i + 1];
+      if (haversineM(la1, lo1, la2, lo2) < 0.5) continue;
+      const seg = { la1, lo1, la2, lo2, brg: bearingDeg(la1, lo1, la2, lo2), first: i === 0, last: i === c.length - 2 };
+      segs.push(seg);
+      // Register the segment in every cell it passes through (sampled at BCELL/4).
+      const steps = Math.max(1, Math.ceil(Math.max(Math.abs(la2 - la1), Math.abs(lo2 - lo1)) / (BCELL / 4)));
+      const cells = new Set();
+      for (let s = 0; s <= steps; s++) {
+        cells.add(`${Math.floor((la1 + (la2 - la1) * s / steps) / BCELL)},${Math.floor((lo1 + (lo2 - lo1) * s / steps) / BCELL)}`);
+      }
+      for (const ck of cells) { if (!grid.has(ck)) grid.set(ck, []); grid.get(ck).push(seg); }
+    }
+  }
+  return segs.length ? { grid } : null;
+}
+
+// Metres from a point to a closed segment. A point beyond the closed trail's very
+// first/last vertex (by more than BLOCK_END_M) doesn't count as on it, so the paths
+// continuing past a closed section's ends are left alone.
+function distToBlockedSeg(seg, lat, lon) {
+  const kx = 111320 * Math.cos(lat * Math.PI / 180), ky = 110540;
+  const ax = (seg.lo1 - lon) * kx, ay = (seg.la1 - lat) * ky;
+  const dx = (seg.lo2 - seg.lo1) * kx, dy = (seg.la2 - seg.la1) * ky;
+  const L2 = dx * dx + dy * dy, L = Math.sqrt(L2);
+  let t = L2 ? -(ax * dx + ay * dy) / L2 : 0;
+  if (t < 0) { if (seg.first && -t * L > BLOCK_END_M) return Infinity; t = 0; }
+  if (t > 1) { if (seg.last && (t - 1) * L > BLOCK_END_M) return Infinity; t = 1; }
+  return Math.hypot(ax + t * dx, ay + t * dy);
+}
+
+// Closed segments the point lies on (within BLOCK_TOL_M).
+function blockedSegsAt(index, lat, lon) {
+  const out = [], seen = new Set();
+  const cr = Math.floor(lat / BCELL), cc = Math.floor(lon / BCELL);
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      for (const seg of index.grid.get(`${cr + dr},${cc + dc}`) || []) {
+        if (seen.has(seg)) continue;
+        seen.add(seg);
+        if (distToBlockedSeg(seg, lat, lon) <= BLOCK_TOL_M) out.push(seg);
+      }
+    }
+  }
+  return out;
+}
+
+// True when the stretch p1→p2 runs along a closed path (both ends on it, parallel).
+function runsAlongBlocked(index, lat1, lon1, lat2, lon2) {
+  if (!index) return false;
+  if (haversineM(lat1, lon1, lat2, lon2) < 1) return false; // too short to have a direction
+  const sa = blockedSegsAt(index, lat1, lon1);
+  if (!sa.length) return false;
+  const sb = blockedSegsAt(index, lat2, lon2);
+  if (!sb.length) return false;
+  const brg = bearingDeg(lat1, lon1, lat2, lon2);
+  return sa.concat(sb).some(s => {
+    const d = bearingDelta(brg, s.brg);
+    return Math.min(d, 180 - d) <= BLOCK_PARALLEL_DEG; // undirected angle
+  });
+}
+
+// Is this path closed for the given travel mode? "Impraticable" closes it for
+// everyone; "Vélo interdit" (admin grade) or OSM bicycle=no closes it to bikes.
+function isClosedFor(p, mode) {
+  if (p.status === 'not_passable') return true;
+  return mode === 'bike' && (p.status === 'no_bike' || p._noBike === true);
+}
+
+// Split the router's input by closure. Returns { admin, osm }: `admin` keeps only open
+// admin paths; `osm` holds the open OSM paths PLUS every closed path flagged
+// `_blocked`, so any graph built from the OSM list (hybrid or OSM-only) knows about
+// the closures. Closed ADMIN paths also get `_shadow` → the OSM copy lying under them
+// is cut too. (Closed OSM paths don't shadow: an OSM footway with bicycle=no often runs
+// right beside a legitimate cycleway.)
+function excludeClosedPaths(adminPaths, osmPaths, mode) {
+  const admin = [], closedAdmin = [];
+  for (const p of adminPaths) {
+    if (isClosedFor(p, mode)) closedAdmin.push({ ...p, _blocked: true, _shadow: true });
+    else admin.push(p);
+  }
+  const osm = osmPaths.map(p => {
+    if (isClosedFor(p, mode)) return { ...p, _blocked: true };
+    return closedAdmin.length ? { ...p, _shadowable: true } : p;
+  });
+  return { admin, osm: closedAdmin.concat(osm) };
+}
+
+// paths may carry a _weight multiplier (e.g. 3 for OSM gap-fill edges).
+// `_blocked` paths add no edge but veto links along them; `_shadowable` paths lose
+// the segments lying along a `_blocked` + `_shadow` path (see excludeClosedPaths).
 function buildGraph(paths) {
   const nodes = new Map();
   const adj   = new Map();
@@ -75,13 +182,22 @@ function buildGraph(paths) {
     adj.get(k2).push({ to: k1, d });
   }
 
-  paths.forEach(path => {
+  const closed = paths.filter(p => p._blocked);
+  const block  = makeBlockIndex(closed.map(p => p.coordinates));
+  const shadow = makeBlockIndex(closed.filter(p => p._shadow).map(p => p.coordinates));
+  const open   = closed.length ? paths.filter(p => !p._blocked) : paths;
+
+  open.forEach(path => {
     const c = path.coordinates;
     const w = path._weight || 1;
-    const keys = c.map(([lat, lon]) => ensure(lat, lon));
-    for (let i = 0; i < keys.length - 1; i++) {
+    const sh = path._shadowable ? shadow : null;
+    // Nodes are only created for segments actually added, so a cut stretch leaves no
+    // orphan nodes for the stitcher below to re-join.
+    for (let i = 0; i < c.length - 1; i++) {
+      if (sh && runsAlongBlocked(sh, c[i][0], c[i][1], c[i + 1][0], c[i + 1][1])) continue;
+      const k1 = ensure(c[i][0], c[i][1]), k2 = ensure(c[i + 1][0], c[i + 1][1]);
       const d = haversineM(c[i][0], c[i][1], c[i + 1][0], c[i + 1][1]) * w;
-      if (!adj.get(keys[i]).some(e => e.to === keys[i + 1])) link(keys[i], keys[i + 1], d);
+      if (!adj.get(k1).some(e => e.to === k2)) link(k1, k2, d);
     }
   });
 
@@ -90,7 +206,7 @@ function buildGraph(paths) {
   const CELL = 0.001;
   const endpoints = [];
   const grid = new Map();
-  paths.forEach(p => {
+  open.forEach(p => {
     const c = p.coordinates;
     endpoints.push([c[0][0], c[0][1]]);
     endpoints.push([c[c.length - 1][0], c[c.length - 1][1]]);
@@ -112,6 +228,7 @@ function buildGraph(paths) {
           const d = haversineM(...endpoints[i], ...endpoints[j]);
           if (d > 0 && d < 80) {
             const ka = nodeKey(...endpoints[i]), kb = nodeKey(...endpoints[j]);
+            if (runsAlongBlocked(block, ...endpoints[i], ...endpoints[j])) continue; // don't hop a closed stretch
             if (adj.has(ka) && adj.has(kb) && !adj.get(ka).some(e => e.to === kb)) link(ka, kb, d);
           }
         }
@@ -127,6 +244,8 @@ function buildGraph(paths) {
   const STITCH_M = 35;
   const SCELL = 0.0004; // ~44 m cells → ±1 neighbour covers all 35 m pairs
   const allNodes = [...nodes.values()];
+  // Nodes sitting on a closed path — only pairs of these can need the veto check.
+  const onClosed = block ? new Set(allNodes.filter(n => blockedSegsAt(block, n.lat, n.lon).length).map(n => n.k)) : null;
   const sgrid = new Map();
   allNodes.forEach(n => {
     const ck = `${Math.floor(n.lat / SCELL)},${Math.floor(n.lon / SCELL)}`;
@@ -142,7 +261,10 @@ function buildGraph(paths) {
         for (const m of bucket) {
           if (m.k <= n.k) continue; // visit each unordered pair once
           const d = haversineM(n.lat, n.lon, m.lat, m.lon);
-          if (d > 0 && d < STITCH_M && !adj.get(n.k).some(e => e.to === m.k)) link(n.k, m.k, d);
+          if (!(d > 0 && d < STITCH_M) || adj.get(n.k).some(e => e.to === m.k)) continue;
+          if (onClosed && onClosed.has(n.k) && onClosed.has(m.k)
+              && runsAlongBlocked(block, n.lat, n.lon, m.lat, m.lon)) continue;
+          link(n.k, m.k, d);
         }
       }
     }
@@ -474,6 +596,7 @@ function graphLoopHybrid(sLat, sLng, targetKm, adminPaths, osmPaths, pathTyp = '
 if (typeof module !== 'undefined') {
   module.exports = {
     haversineM, nodeKey, buildGraph, dijkstra, dijkstraExclude,
+    isClosedFor, excludeClosedPaths, runsAlongBlocked, makeBlockIndex,
     rebuildPath, nearestNode, graphToResult,
     snapToJunction, pruneDeadEnds, trimSpurs, graphAtob, graphAtobHybrid, graphLoop, graphLoopHybrid,
   };

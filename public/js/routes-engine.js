@@ -14,6 +14,19 @@ function filterPaths(paths) {
   return paths; // champs / mix: all paths
 }
 
+// Apply path closures for the current travel mode: "Impraticable" paths are never
+// routed over, and "Vélo interdit" / OSM bicycle=no ones are skipped when riding.
+// Closure is checked on EVERY saved path — even one hidden by the path-type filter —
+// because its OSM copy must still be cut. The closed paths travel inside the returned
+// `osm` list (see excludeClosedPaths in graph-router.js).
+function applyClosures(admin, osm) {
+  const closed = (savedPaths || []).filter(p => isClosedFor(p, transportMode));
+  return {
+    admin: admin.filter(p => !isClosedFor(p, transportMode)),
+    osm: excludeClosedPaths(closed, osm, transportMode).osm,
+  };
+}
+
 // ── Fetch with timeout ────────────────────────────────────────────────────────
 function fetchWithTimeout(url, opts = {}, ms = 10000) {
   const ctrl = new AbortController();
@@ -96,11 +109,10 @@ function osmDataToCoordPaths(data) {
   data.elements.forEach(el => {
     if (el.type !== 'way') return;
     const coordinates = el.nodes.map(id => nodeMap[id]).filter(Boolean);
-    if (coordinates.length >= 2) result.push({
-      coordinates,
-      _highway: el.tags?.highway,
-      _surface: el.tags?.surface,
-    });
+    if (coordinates.length < 2) return;
+    const p = { coordinates, _highway: el.tags?.highway, _surface: el.tags?.surface };
+    if (el.tags?.bicycle === 'no') p._noBike = true; // skipped when cycling (isClosedFor)
+    result.push(p);
   });
   return result;
 }
@@ -145,7 +157,7 @@ const DIFF_PENALTY = 2.5;
 function pathDifficultyRank(p) {
   // Admin-graded path → trust its status directly.
   if (p.status && p.status in DIFF_RANK) return DIFF_RANK[p.status];
-  if (p.status === 'not_passable') return 2; // impassable → treat as hardest terrain
+  // (Impassable paths never get here as a route option — applyClosures removes them.)
   // OSM path → infer roughness from surface / highway tags.
   const surface = p._surface || '';
   const highway = p._highway || '';
@@ -339,7 +351,8 @@ async function routeAtob(sLat, sLng, eLat, eLng) {
         Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
       );
       if (osmPaths.length) {
-        const r = graphAtob(sLat, sLng, eLat, eLng, applyOsmSurfaceWeights(osmPaths), transportMode);
+        const { osm } = applyClosures([], applyOsmSurfaceWeights(osmPaths));
+        const r = graphAtob(sLat, sLng, eLat, eLng, osm, transportMode);
         console.info(`routing: OSM graph (${osmPaths.length} chemins, ${(r.meters/1000).toFixed(1)} km)`);
         return r;
       }
@@ -363,9 +376,12 @@ async function routeAtob(sLat, sLng, eLat, eLng) {
     Math.min(sLat, eLat) - pad, Math.min(sLng, eLng) - pad,
     Math.max(sLat, eLat) + pad, Math.max(sLng, eLng) + pad,
   );
-  // Surface preference first, then bias toward paths matching the chosen difficulty.
-  const weightedOsmPaths = applyDifficultyWeights(applyOsmSurfaceWeights(osmPaths));
-  const admin = applyDifficultyWeights(savedPaths.length ? filterPaths(savedPaths) : []);
+  // Surface preference first, then bias toward paths matching the chosen difficulty,
+  // then drop closed paths.
+  const { admin, osm: weightedOsmPaths } = applyClosures(
+    applyDifficultyWeights(savedPaths.length ? filterPaths(savedPaths) : []),
+    applyDifficultyWeights(applyOsmSurfaceWeights(osmPaths)),
+  );
 
   // 1. Combined admin + OSM graph (admin mildly preferred). Also compute the OSM-only
   //    route and keep whichever is shorter — guards against any residual admin detour.
@@ -412,14 +428,16 @@ async function routeLoop(sLat, sLng, targetKm) {
   //    OSM (unnoted) paths fill gaps, so the loop continues past the edge of the
   //    curated network instead of stopping where noted paths run out.
   try {
-    const admin = applyDifficultyWeights(filterPaths(savedPaths));
     // bbox roughly covers the loop's reach around the start point (radius ≈ half the target)
     const radiusKm = Math.max(targetKm / 2, 1);
     const padLat = radiusKm / 111;
     const padLng = radiusKm / (111 * Math.cos(sLat * Math.PI / 180));
-    const osmPaths = applyDifficultyWeights(applyOsmSurfaceWeights(
-      await fetchOsmPathsForBbox(sLat - padLat, sLng - padLng, sLat + padLat, sLng + padLng),
-    ));
+    const { admin, osm: osmPaths } = applyClosures(
+      applyDifficultyWeights(filterPaths(savedPaths)),
+      applyDifficultyWeights(applyOsmSurfaceWeights(
+        await fetchOsmPathsForBbox(sLat - padLat, sLng - padLng, sLat + padLat, sLng + padLng),
+      )),
+    );
     if (admin.length || osmPaths.length) {
       // seed rotates the turnaround direction each day → a fresh loop daily
       return graphLoopHybrid(sLat, sLng, targetKm, admin, osmPaths, transportMode, seed);
@@ -459,9 +477,12 @@ async function routeCustom(waypoints) {
     Math.max(...lats) + pad, Math.max(...lngs) + pad,
   );
 
-  // 2. Same weighting the forest A→B engine uses: surface preference, then difficulty bias.
-  const weightedOsm = applyDifficultyWeights(applyOsmSurfaceWeights(osmPaths));
-  const admin = applyDifficultyWeights(savedPaths.length ? filterPaths(savedPaths) : []);
+  // 2. Same weighting the forest A→B engine uses: surface preference, difficulty bias,
+  //    then drop closed paths.
+  const { admin, osm: weightedOsm } = applyClosures(
+    applyDifficultyWeights(savedPaths.length ? filterPaths(savedPaths) : []),
+    applyDifficultyWeights(applyOsmSurfaceWeights(osmPaths)),
+  );
 
   // 3. One stitched graph for every leg (admin primary, OSM weighted gap-fill).
   const combined = [...admin, ...tagOsmGapFill(weightedOsm)];
@@ -506,5 +527,5 @@ async function routeCustom(waypoints) {
 // in the browser (no `module`), so this is a no-op there — routes-engine.js stays a
 // classic script that reads the shared `let` state declared in routes.js.
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { bboxWithinForest, filterPathsToBbox };
+  module.exports = { bboxWithinForest, filterPathsToBbox, osmDataToCoordPaths };
 }
