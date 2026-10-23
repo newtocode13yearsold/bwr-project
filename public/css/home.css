@@ -406,6 +406,17 @@ body {
   /* 4 identical copies of the list: sliding by -50% (= 2 copies) loops
      seamlessly and still fills a 2560px-wide screen with no gap. */
   animation: marquee 80s linear infinite;
+  /* Own GPU layer, rasterised once: without it phones re-paint the 6 000px
+     strip every frame and the italic text shimmers ("frétille"). */
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+/* Phones only need 2 copies (one copy is far wider than the screen): half the
+   layer to keep on the GPU, and half the duration so the speed stays the same. */
+@media (max-width: 900px) {
+  .marquee-track span:nth-child(n+15) { display: none; }
+  .marquee-track { animation-duration: 40s; }
 }
 .marquee-track span {
   font-family: var(--font-display);
@@ -424,10 +435,13 @@ body {
   background: var(--lime-500);
   margin: 0 30px;
 }
-@keyframes marquee { to { transform: translateX(-50%); } }
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-chip, .stat-live-dot, .hero-content, .hero-visual { animation: none; }
+  .hero-chip, .stat-live-dot, .hero-content, .hero-visual, .marquee-track { animation: none; }
   .hero-squiggle path { animation: none; stroke-dashoffset: 0; }
 }
 
