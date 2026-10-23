@@ -964,6 +964,24 @@
 }
 .activation-form textarea { resize: vertical; min-height: 70px; }
 
+.af-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  line-height: 1.5;
+  cursor: pointer;
+}
+.af-consent input {
+  margin-top: 3px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--forest-600);
+}
+.af-consent a { color: var(--forest-700); }
+
 .af-disclaimer {
   font-size: var(--fs-xs);
   color: var(--text-muted);
@@ -992,6 +1010,25 @@
   margin: 8px 0 0;
   min-height: 18px;
 }
+
+/* Bank details shown after the activation form (pay by transfer) */
+.activation-form[hidden], .af-bank[hidden] { display: none; }
+.af-bank-lead { font-weight: 600; margin: 0 0 10px; color: var(--text); }
+.af-bank-list { margin: 0 0 12px; display: grid; gap: 8px; }
+.af-bank-list > div {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 12px;
+  padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-0);
+}
+.af-bank-list dt { font-size: var(--fs-xs); color: var(--text-muted); }
+.af-bank-list dd { margin: 0; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; min-width: 0; }
+.af-bank-list code { font-family: ui-monospace, monospace; font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.af-bank-ref { border-color: var(--forest-500) !important; }
+.af-bank-ref code { font-size: var(--fs-base); color: var(--text); font-weight: 700; letter-spacing: 0.04em; }
+.af-copy {
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  border-radius: 999px; padding: 3px 10px; font-size: var(--fs-xs); cursor: pointer; font-family: inherit; flex-shrink: 0;
+}
+.af-copy:hover { border-color: var(--forest-500); }
 
 
 /* ── AI Revenue Forecast section ─────────────────────────────────────────── */

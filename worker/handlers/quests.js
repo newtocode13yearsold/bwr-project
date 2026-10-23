@@ -40,7 +40,7 @@ const RANK = { free: 0, pro: 1 };
  * an equal-or-better plan). If a temporary plan of the same-or-higher tier is
  * already running, the reward STACKS on top of its expiry so days aren't lost.
  */
-function grantPlanReward(user, plan, days) {
+export function grantPlanReward(user, plan, days) {
   if (user.role === 'admin') return null;
   const now = Date.now();
   const curPlan = normalisePlan(user.plan);

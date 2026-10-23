@@ -64,6 +64,13 @@ let _activationTrigger = null;
 let _activationTrapRelease = null;
 
 function openActivation(plan, triggerEl) {
+  // Paying is tied to an account (the transfer reference activates *that* account),
+  // so visitors sign in first and come back here.
+  if (typeof getToken !== 'function' || !getToken()) {
+    try { sessionStorage.setItem('bwr_redirect', 'plans'); } catch {}
+    location.href = 'login';
+    return;
+  }
   // Pro is the only paid plan, so the modal always activates Pro.
   activationIcon.innerHTML    = '<i class="ic" data-ic="star"></i>';
   activationTitle.textContent = 'Activation du plan Pro';
@@ -73,12 +80,14 @@ function openActivation(plan, triggerEl) {
   document.body.style.overflow = 'hidden';
   _activationTrigger = triggerEl || null;
   _activationTrapRelease = trapFocus(activationModal);
-  setTimeout(() => document.getElementById('afName').focus(), 80);
+  setTimeout(() => afPeriod.focus(), 80);
 }
 function closeActivation() {
   activationModal.classList.add('hidden');
   document.body.style.overflow = '';
   afStatus.textContent = '';
+  document.getElementById('activationForm').hidden = false;
+  document.getElementById('afBank').hidden = true;
   if (_activationTrapRelease) { _activationTrapRelease(); _activationTrapRelease = null; }
   if (_activationTrigger) { _activationTrigger.focus(); _activationTrigger = null; }
 }
@@ -89,55 +98,54 @@ document.getElementById('activationClose').addEventListener('click', closeActiva
 activationModal.addEventListener('click', e => { if (e.target === activationModal) closeActivation(); });
 activationModal.addEventListener('keydown', e => { if (e.key === 'Escape') closeActivation(); });
 
-/* ── Activation form submit ─────────────────────────────────────────── */
+/* ── Activation form submit → show bank details ─────────────────────── */
+// The server creates (or re-uses) this member's pending transfer request and
+// returns the RIB + a unique reference; the admin marks it paid in the admin panel.
 document.getElementById('activationForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const name    = document.getElementById('afName').value.trim();
-  const email   = document.getElementById('afEmail').value.trim();
-  const plan    = afPlan.value;
-  const period  = afPeriod.value;
-  const message = document.getElementById('afMessage').value.trim();
-  const btn     = document.getElementById('afSubmit');
+  const btn = document.getElementById('afSubmit');
 
-  if (!name || !email) {
-    afStatus.textContent = 'Nom et email sont obligatoires.';
+  if (!document.getElementById('afTerms').checked) {
+    afStatus.textContent = 'Merci d\'accepter les conditions générales de vente.';
     afStatus.style.color = 'var(--danger)';
     return;
   }
 
-  btn.textContent = 'Envoi…';
+  btn.textContent = 'Chargement…';
   btn.disabled = true;
-
-  const planLabel   = 'Pro (2,99 €/mois)';
-  const periodLabel = period === 'annual' ? 'annuel (-25 %)' : 'mensuel';
-  const formatted = `=== Demande d'activation BWR ===
-Plan : ${planLabel}
-Période : ${periodLabel}
-
-Nom : ${name}
-Email : ${email}
-
-Message : ${message || '(aucun)'}
-`;
-
   try {
-    const res = await fetch(`${API_URL}/api/contact`, {
+    const res = await fetch(`${API_URL}/api/payments/request`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, message: formatted, subject: '[ACTIVATION PRO]' }),
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ period: afPeriod.value }),
     });
-    if (!res.ok) throw new Error();
-    document.getElementById('activationForm').reset();
-    afStatus.innerHTML = '<strong>✓ Demande envoyée !</strong> Vous recevrez les instructions par email sous 24h.';
-    afStatus.style.color = 'var(--forest-700)';
-    setTimeout(closeActivation, 3500);
-  } catch {
-    afStatus.textContent = `Erreur d'envoi. Écrivez-moi directement à ${CONTACT_EMAIL}`;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Erreur');
+    document.getElementById('afAmount').textContent = data.amount;
+    document.getElementById('afHolder').textContent = data.holder || '';
+    document.getElementById('afIban').textContent   = data.iban;
+    document.getElementById('afBic').textContent    = data.bic || '';
+    document.getElementById('afBicRow').hidden      = !data.bic;
+    document.getElementById('afRef').textContent    = data.ref;
+    afStatus.textContent = '';
+    document.getElementById('activationForm').hidden = true;
+    document.getElementById('afBank').hidden = false;
+  } catch (err) {
+    afStatus.textContent = `${err.message}. Écrivez-moi à ${CONTACT_EMAIL}`;
     afStatus.style.color = 'var(--danger)';
   } finally {
-    btn.textContent = 'Envoyer la demande';
+    btn.textContent = 'Afficher le RIB';
     btn.disabled = false;
   }
+});
+
+document.querySelectorAll('.af-copy').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const text = document.getElementById(btn.dataset.copy).textContent;
+    try { await navigator.clipboard.writeText(text); btn.textContent = 'Copié ✓'; }
+    catch { btn.textContent = 'Sélectionnez le texte'; }
+    setTimeout(() => { btn.textContent = 'Copier'; }, 2000);
+  });
 });
 
 /* ── Free 7-day Pro trial CTA ─────────────────────────────────────── */

@@ -79,6 +79,7 @@ let graderHighlight = null;
 // Populate the always-visible dashboard sections (admin-panel.html).
 async function initDashboard() {
   await loadMessages();
+  await loadPayments();
   await loadRatings();
   await loadErrors();
   if (typeof loadContentStats === 'function') await loadContentStats();
@@ -1385,6 +1386,55 @@ async function loadMessages() {
         await loadMessages();
       });
     });
+  } catch {
+    list.innerHTML = '<p style="color:red">Erreur réseau</p>';
+  }
+}
+
+// ── Bank-transfer payments (Virements Pro) ─────────────────────────────────
+// Pending requests first; "Payé" activates Pro for the paid period. See
+// worker/handlers/payments.js.
+async function loadPayments() {
+  const list = document.getElementById('payList');
+  const sum  = document.getElementById('paySummary');
+  if (!list) return;
+  try {
+    const res = await fetch(`${API_URL}/api/payments`, { headers: authHeader() });
+    const data = await res.json();
+    if (!res.ok) { list.innerHTML = `<p style="color:red">${escapeHtml(data.error || 'Erreur')}</p>`; return; }
+    const all = data.payments || [];
+    const pending = all.filter(p => p.status === 'pending');
+    const done = all.filter(p => p.status === 'paid').slice(0, 10);
+    if (sum) sum.textContent = pending.length ? `— ${pending.length} en attente` : '';
+    if (!pending.length && !done.length) { list.innerHTML = '<p style="color:#6b7280;font-size:0.88rem">Aucune demande de virement.</p>'; return; }
+    const period = p => p.period === 'annual' ? 'annuel' : 'mensuel';
+    const row = (p, actions) => `<div style="padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:700;font-family:ui-monospace,monospace">${escapeHtml(p.ref)} · ${escapeHtml(p.amount)}</div>
+          <div style="font-size:0.82rem;color:#6b7280">${escapeHtml(p.name)} &lt;${escapeHtml(p.email)}&gt; · Pro ${period(p)} · ${new Date(p.createdAt).toLocaleDateString('fr-FR')}</div>
+        </div>
+        ${actions}
+      </div>`;
+    list.innerHTML =
+      pending.map(p => row(p, `<div style="display:flex;gap:6px">
+          <button class="btn-primary pay-paid-btn" data-ref="${escapeHtml(p.ref)}" style="width:auto;padding:4px 12px;font-size:0.8rem">Payé</button>
+          <button class="btn-secondary pay-cancel-btn" data-ref="${escapeHtml(p.ref)}" style="width:auto;padding:4px 10px;font-size:0.8rem">Annuler</button>
+        </div>`)).join('') +
+      (done.length ? `<p style="margin:6px 0 0;font-size:0.8rem;color:#6b7280">Derniers paiements reçus</p>` +
+        done.map(p => row(p, `<span style="font-size:0.8rem;color:#16a34a">Payé le ${new Date(p.paidAt).toLocaleDateString('fr-FR')}</span>`)).join('') : '');
+    list.querySelectorAll('.pay-paid-btn').forEach(btn => btn.addEventListener('click', async () => {
+      if (!confirm(`Confirmer que le virement ${btn.dataset.ref} est bien arrivé sur le compte ?`)) return;
+      btn.textContent = '…'; btn.disabled = true;
+      const r = await fetch(`${API_URL}/api/payments/${encodeURIComponent(btn.dataset.ref)}/paid`, { method: 'POST', headers: authHeader() });
+      if (!r.ok) alert((await r.json().catch(() => ({}))).error || 'Erreur');
+      await loadPayments();
+    }));
+    list.querySelectorAll('.pay-cancel-btn').forEach(btn => btn.addEventListener('click', async () => {
+      if (!confirm(`Annuler la demande ${btn.dataset.ref} ?`)) return;
+      btn.textContent = '…'; btn.disabled = true;
+      await fetch(`${API_URL}/api/payments/${encodeURIComponent(btn.dataset.ref)}`, { method: 'DELETE', headers: authHeader() });
+      await loadPayments();
+    }));
   } catch {
     list.innerHTML = '<p style="color:red">Erreur réseau</p>';
   }

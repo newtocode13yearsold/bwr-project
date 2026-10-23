@@ -988,6 +988,9 @@ export async function handleAuth(request, env, {
       ...walkedKeys.map(k => env.BWR_KV.delete(k.name)),
       ...pushKeys.map(k => env.BWR_KV.delete(k.name)),
       ...inboxReadKeys.map(k => env.BWR_KV.delete(k.name)),
+      // Open transfer request index. The payreq: records themselves are kept:
+      // payments are accounting records French law requires us to retain.
+      env.BWR_KV.delete(`payreqopen:${user.id}`),
       ...pathReviewKeys.map(k => env.BWR_KV.delete(k.name)),
       ...ownPois.map(p => env.BWR_KV.delete(`poi:${p.id}`)),
       ...ownReports.map(r => putReport(env, { ...r, userId: null })),

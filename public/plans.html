@@ -382,7 +382,7 @@
       <div class="faq-list">
         <details class="faq-item">
           <summary>Comment se déroule le paiement ?</summary>
-          <p>Pour l'instant, l'activation se fait manuellement. Vous remplissez le formulaire de demande, je vous envoie les coordonnées bancaires, et votre plan est activé sous 24h ouvrées. Un système de paiement par carte arrive très bientôt.</p>
+          <p>Par virement bancaire. Connecté à votre compte, cliquez sur « Passer à Pro » : le site vous affiche aussitôt le RIB et une référence personnelle à mettre dans le libellé du virement. Votre plan est activé sous 24h ouvrées après réception. Il n'y a pas de prélèvement automatique : pour prolonger, revenez simplement faire un nouveau virement avant la fin de votre période.</p>
         </details>
         <details class="faq-item">
           <summary>Puis-je annuler à tout moment ?</summary>
@@ -614,43 +614,39 @@
       <div class="modal-icon" id="activationIcon"><i class="ic ic-silver" data-ic="medal"></i></div>
       <h3 id="activationTitle" class="display">Activation du plan Pro</h3>
       <p class="modal-lead">
-        Le paiement automatique arrive bientôt. En attendant, remplissez ce formulaire — nous vous envoyons les coordonnées bancaires et activons votre plan sous 24h.
+        Paiement par virement bancaire : choisissez la période, et on vous affiche tout de suite le RIB et votre référence. Votre plan est activé dès réception du virement.
       </p>
 
       <form id="activationForm" class="activation-form" novalidate>
-        <div class="af-row">
-          <label>
-            <span class="af-label">Nom complet</span>
-            <input type="text" id="afName" required placeholder="Jean Dupont" />
-          </label>
-          <label>
-            <span class="af-label">Email</span>
-            <input type="email" id="afEmail" required placeholder="jean@email.com" />
-          </label>
-        </div>
-        <label>
-          <span class="af-label">Plan choisi</span>
-          <select id="afPlan" required>
-            <option value="pro">Pro · 2,99&nbsp;€/mois</option>
-          </select>
-        </label>
+        <input type="hidden" id="afPlan" value="pro" />
         <label id="afPeriodRow">
-          <span class="af-label">Période (optionnel)</span>
+          <span class="af-label">Période</span>
           <select id="afPeriod">
-            <option value="monthly">Mensuel</option>
-            <option value="annual">Annuel (-25 %)</option>
+            <option value="monthly">Mensuel · 2,99&nbsp;€</option>
+            <option value="annual">Annuel · 26,91&nbsp;€ (-25 %)</option>
           </select>
         </label>
-        <label>
-          <span class="af-label">Message (optionnel)</span>
-          <textarea id="afMessage" rows="3" placeholder="Une question ? Un mode de paiement préféré ?"></textarea>
+        <label class="af-consent">
+          <input type="checkbox" id="afTerms" />
+          <span>J'ai lu et j'accepte les <a href="/legal#cgu" target="_blank" rel="noopener">conditions générales de vente</a>. Je demande que mon plan soit activé dès réception du paiement : si je me rétracte dans les 14&nbsp;jours, seuls les jours déjà utilisés me seront facturés.</span>
         </label>
-        <p class="af-disclaimer">
-          <i class="ic" data-ic="lock"></i> Vos données ne sont jamais partagées. Email utilisé uniquement pour l'activation et le suivi du plan.
-        </p>
-        <button type="submit" class="af-submit" id="afSubmit">Envoyer la demande</button>
+        <button type="submit" class="af-submit" id="afSubmit">Afficher le RIB</button>
         <p class="af-status" id="afStatus"></p>
       </form>
+
+      <div id="afBank" class="af-bank" hidden>
+        <p class="af-bank-lead">Faites un virement avec ces informations :</p>
+        <dl class="af-bank-list">
+          <div><dt>Montant</dt><dd id="afAmount"></dd></div>
+          <div><dt>Bénéficiaire</dt><dd id="afHolder"></dd></div>
+          <div><dt>IBAN</dt><dd><code id="afIban"></code> <button type="button" class="af-copy" data-copy="afIban">Copier</button></dd></div>
+          <div id="afBicRow"><dt>BIC</dt><dd><code id="afBic"></code></dd></div>
+          <div class="af-bank-ref"><dt>Référence à indiquer</dt><dd><code id="afRef"></code> <button type="button" class="af-copy" data-copy="afRef">Copier</button></dd></div>
+        </dl>
+        <p class="af-disclaimer">
+          <i class="ic" data-ic="info"></i> Mettez bien la référence dans le libellé du virement : c'est elle qui nous dit quel compte activer. Votre plan Pro est activé sous 24&nbsp;h ouvrées après réception, et vous recevez un message dans votre boîte BWR.
+        </p>
+      </div>
     </div>
   </div>
 
