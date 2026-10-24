@@ -551,3 +551,10 @@
 [data-theme="dark"] [style*="color: var(--forest-600"],
 [data-theme="dark"] [style*="color:var(--forest-700"],
 [data-theme="dark"] [style*="color: var(--forest-700"] { color: var(--lime-400) !important; }
+
+/* Link-result pages (reset / verify / verify-email, css/login.css): the title
+   and links use dark forest greens that vanish on the dark card. */
+[data-theme="dark"] .auth-title { color: var(--text-strong); }
+[data-theme="dark"] .auth-status-link { color: var(--lime-400); }
+[data-theme="dark"] .auth-status-msg.error { color: #f87171; }
+[data-theme="dark"] .auth-status-icon.error { background: rgba(248, 113, 113, 0.14); color: #f87171; }

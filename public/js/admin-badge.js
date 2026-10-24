@@ -9,9 +9,10 @@
    ────────────────────────────────────────────────────────────────────────── */
 (function () {
   try {
-    // config.js sets API_URL to '' (same-origin) in dev/preview and to the
-    // canonical host in prod; only fall back when it's genuinely undefined.
-    var API = (typeof API_URL !== 'undefined') ? API_URL : 'https://bwrmaps.com';
+    // config.js sets API_URL ('' = same-origin in dev/preview). Pages without
+    // config.js (blog, legal, changelog…) are served by the same Worker, so
+    // same-origin is right there too — never fall back to the prod host.
+    var API = (typeof API_URL !== 'undefined') ? API_URL : '';
 
     var user = null, token = null;
     try { user = JSON.parse(localStorage.getItem('bwr_user') || 'null'); } catch (_) {}
