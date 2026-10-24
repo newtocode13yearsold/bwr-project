@@ -636,6 +636,12 @@
   body:not(.map-body) .map-select-path-btn {
     height: 44px;
   }
+  /* style.css shrinks #map by 56px to clear the fixed bottom nav, but the admin
+     map has no bottom nav — that left a dead strip under the map, with the
+     "Suivi GPS" button hanging over it. */
+  body:not(:has(.bottom-nav)) #map {
+    margin-bottom: 0;
+  }
 
   /* The admin header carries six icon buttons plus the avatar. At a 44px tap
      target those cannot share a 375px row with the logo, so the bar grows to

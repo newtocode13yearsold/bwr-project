@@ -9,7 +9,9 @@
   left: 50%;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 74px);
   transform: translateX(-50%) translateY(20px);
-  z-index: 1200;
+  /* Above the map controls (1000), below the ☰ nav drawer + overlay (1100/1101)
+     so it never sits on top of an open menu. */
+  z-index: 1050;
   width: min(520px, calc(100vw - 24px));
   display: flex;
   align-items: center;
