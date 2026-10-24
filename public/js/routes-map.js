@@ -18,7 +18,7 @@ const TILE_LAYERS = {
     { attribution: '&copy; IGN — Plan IGN v2', maxNativeZoom: 15, maxZoom: 17 }
   ),
   osm: () => L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© OpenStreetMap', maxNativeZoom: 19, maxZoom: 19, detectRetina: true }
+    { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxNativeZoom: 19, maxZoom: 19, detectRetina: true }
   ),
   satellite: () => L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
@@ -26,7 +26,7 @@ const TILE_LAYERS = {
   ),
   topo: () => L.tileLayer(
     '/tiles/topo/{z}/{x}/{y}.png',
-    { attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Style: &copy; OpenTopoMap', maxNativeZoom: 15, maxZoom: 17 }
+    { attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | Style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>', maxNativeZoom: 15, maxZoom: 17 }
   ),
 };
 let currentTile = null;

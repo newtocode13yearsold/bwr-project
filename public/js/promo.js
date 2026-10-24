@@ -36,10 +36,12 @@ const map = L.map('map',{zoomControl:false,attributionControl:true,
   dragging:false,scrollWheelZoom:false,doubleClickZoom:false,touchZoom:false})
   .setView([49.37,2.90],12);
 
-// Forest-toned basemap (Carto Voyager = clean & green-friendly)
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
-  maxZoom:19, subdomains:'abcd',
-  attribution:'© OpenStreetMap · © CARTO'
+// IGN Plan v2 basemap: open licence (Etalab), commercial reuse allowed with credit
+L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0'+
+  '&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png'+
+  '&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',{
+  maxZoom:19,
+  attribution:'&copy; <a href="https://www.ign.fr/">IGN</a> — Plan IGN v2'
 }).addTo(map);
 
 // ── helpers ────────────────────────────────────────────────

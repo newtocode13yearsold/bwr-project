@@ -46,7 +46,7 @@ const TILE_LAYERS = {
     { attribution: '&copy; <a href="https://www.ign.fr/">IGN</a> — Plan IGN v2', maxNativeZoom: 15, maxZoom: 17, updateWhenIdle: false, keepBuffer: 4 }
   ),
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxNativeZoom: 19, maxZoom: 19, detectRetina: true, updateWhenIdle: false, keepBuffer: 4 }
+    { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxNativeZoom: 19, maxZoom: 19, detectRetina: true, updateWhenIdle: false, keepBuffer: 4 }
   ),
   satellite: L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
