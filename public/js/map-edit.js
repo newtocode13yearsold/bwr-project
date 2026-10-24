@@ -466,6 +466,7 @@ function placeReportMarker(report, coords) {
   // pin inside one layer that the clusterer can clear and re-group on zoom.
   return L.marker(mid, {
     icon: L.divIcon({ className: 'report-marker', html: `<div class="report-dot">${icon}</div>`, iconAnchor: [16, 16], iconSize: [32, 32] }),
+    title: label, // accessible name for screen readers (the pin is icon-only)
   }).bindPopup(`
     <div class="popup">
       <strong>${icon} ${label}</strong>

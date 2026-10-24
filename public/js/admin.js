@@ -961,6 +961,7 @@ function renderReportMarkers() {
     const label = REPORT_LABELS_ADMIN[r.type] || r.type;
     const marker = L.marker(mid, {
       icon: L.divIcon({ className: 'report-marker', html: `<div class="report-dot">${icon}</div>`, iconAnchor: [16, 16], iconSize: [32, 32] }),
+      title: label, // accessible name for screen readers (the pin is icon-only)
     });
     marker.bindPopup(`
       <div class="color-popup">
@@ -968,7 +969,7 @@ function renderReportMarkers() {
         <div style="font-size:0.8rem;color:#6b7280;margin-bottom:8px">sur : ${path.name || 'Chemin sans nom'}</div>
         ${r.note ? `<p class="popup-notes" style="margin-bottom:8px">${r.note}</p>` : ''}
         ${(r.hasPhoto || r.photo) ? `<img src="${r.hasPhoto ? `${API_URL}/api/photos/${r.id}` : r.photo}" class="report-popup-photo" alt="photo" style="margin-bottom:8px">` : ''}
-        <small style="color:#9ca3af">${new Date(r.date).toLocaleDateString('fr-FR')}</small>
+        <small style="color:#6b7280">${new Date(r.date).toLocaleDateString('fr-FR')}</small>
         <button class="btn-primary" id="resolve-${r.id}" style="width:100%;margin-top:10px;padding:8px">✓ Marquer comme résolu</button>
       </div>
     `, { autoClose: false, closeOnClick: false });
@@ -1519,7 +1520,7 @@ async function loadErrors() {
             <div style="font-size:0.78rem;color:#6b7280;margin-top:3px;word-break:break-word">
               ${kindLabel} · <code>${where}</code> · ${escapeHtml(e.page || '')}${e.device ? ' · ' + escapeHtml(e.device) : ''}
             </div>
-            <div style="font-size:0.72rem;color:#9ca3af;margin-top:2px">
+            <div style="font-size:0.72rem;color:#6b7280;margin-top:2px">
               ${e.count}× · dernière ${fmt(e.lastSeen)}${e.count > 1 ? ` · première ${fmt(e.firstSeen)}` : ''}
             </div>
           </div>
@@ -1742,8 +1743,8 @@ function drawActivityChart() {
   el.innerHTML = `
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${tabBtns}</div>
     <div style="display:flex;gap:16px;align-items:center;margin-bottom:6px;font-size:0.78rem;font-weight:600">
-      <span style="display:flex;align-items:center;gap:5px;color:#374151"><span style="width:14px;height:3px;background:#ef4444;border-radius:2px;display:inline-block"></span>Visiteurs sans compte <span style="color:#9ca3af">(${totalVisitors})</span></span>
-      <span style="display:flex;align-items:center;gap:5px;color:#374151"><span style="width:14px;height:3px;background:#2563eb;border-radius:2px;display:inline-block"></span>Reconnexions <span style="color:#9ca3af">(${totalLogins})</span></span>
+      <span style="display:flex;align-items:center;gap:5px;color:#374151"><span style="width:14px;height:3px;background:#ef4444;border-radius:2px;display:inline-block"></span>Visiteurs sans compte <span style="color:#6b7280">(${totalVisitors})</span></span>
+      <span style="display:flex;align-items:center;gap:5px;color:#374151"><span style="width:14px;height:3px;background:#2563eb;border-radius:2px;display:inline-block"></span>Reconnexions <span style="color:#6b7280">(${totalLogins})</span></span>
     </div>
     <svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:100%;background:#fff;border:1px solid #e5e7eb;border-radius:10px" preserveAspectRatio="xMidYMid meet">
       ${grid}${xlabels}
@@ -1801,7 +1802,7 @@ function drawGrowthChart() {
 
   el.innerHTML = `
     <div style="display:flex;gap:16px;align-items:center;margin-bottom:6px;font-size:0.78rem;font-weight:600">
-      <span style="display:flex;align-items:center;gap:5px;color:#374151"><span style="width:14px;height:3px;background:#16a34a;border-radius:2px;display:inline-block"></span>Croissance cumulée — visiteurs + nouveaux comptes <span style="color:#9ca3af">(${total.toLocaleString('fr-FR')})</span></span>
+      <span style="display:flex;align-items:center;gap:5px;color:#374151"><span style="width:14px;height:3px;background:#16a34a;border-radius:2px;display:inline-block"></span>Croissance cumulée — visiteurs + nouveaux comptes <span style="color:#6b7280">(${total.toLocaleString('fr-FR')})</span></span>
     </div>
     <svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:100%;background:#fff;border:1px solid #e5e7eb;border-radius:10px" preserveAspectRatio="xMidYMid meet">
       ${grid}${xlabels}
@@ -1857,7 +1858,7 @@ async function loadVisits() {
        </div>` +
       `<div style="width:100%;margin-top:6px">
          <button id="btnExcludeIp" style="width:100%;padding:7px 10px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;color:#3730a3"><i class="ic" data-ic="eye-off"></i> Exclure mon réseau</button>
-         <div style="font-size:0.65rem;color:#9ca3af;margin-top:3px;line-height:1.3">N'utilisez ceci que depuis votre connexion maison — pas en 4G ni VPN (ça masquerait de vrais visiteurs).</div>
+         <div style="font-size:0.65rem;color:#6b7280;margin-top:3px;line-height:1.3">N'utilisez ceci que depuis votre connexion maison — pas en 4G ni VPN (ça masquerait de vrais visiteurs).</div>
          <div id="excludeIpMsg" style="font-size:0.7rem;margin-top:3px"></div>
        </div>`;
     // CSP blocks inline onclick, so wire the buttons after they're in the DOM.
@@ -1929,7 +1930,7 @@ async function loadVisits() {
         </div>` : '';
 
       const caret = hasPages
-        ? `<span id="vcar-${i}" style="flex-shrink:0;color:#9ca3af;font-size:0.9rem;transition:transform .15s">▸</span>`
+        ? `<span id="vcar-${i}" style="flex-shrink:0;color:#6b7280;font-size:0.9rem;transition:transform .15s">▸</span>`
         : '';
       const cursor = hasPages ? 'cursor:pointer' : '';
 
@@ -1942,7 +1943,7 @@ async function loadVisits() {
             <div style="font-size:0.75rem;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(v.device || 'Appareil inconnu')} · ${visitsTxt}${totalTxt} · <i class="ic" data-ic="clock"></i> ${formatTime(v.lastSeen)}</div>
           </div>
           ${caret}
-          <button type="button" data-del-visitor="${escapeHtml(v.vid || '')}" title="C'est moi — retirer de la liste" style="flex-shrink:0;background:none;border:none;cursor:pointer;font-size:0.9rem;padding:2px 4px;line-height:1;color:#9ca3af"><i class="ic" data-ic="trash"></i></button>
+          <button type="button" data-del-visitor="${escapeHtml(v.vid || '')}" title="C'est moi — retirer de la liste" style="flex-shrink:0;background:none;border:none;cursor:pointer;font-size:0.9rem;padding:2px 4px;line-height:1;color:#6b7280"><i class="ic" data-ic="trash"></i></button>
         </div>
         ${detailHtml}
       </div>`;
@@ -2107,7 +2108,7 @@ async function loadDebug() {
       html += `</div>`;
     }
 
-    html += `<div style="margin-top:10px;font-size:0.72rem;color:#9ca3af">Généré le ${data.timestamp} · worker v${data.workerVersion}</div>`;
+    html += `<div style="margin-top:10px;font-size:0.72rem;color:#6b7280">Généré le ${data.timestamp} · worker v${data.workerVersion}</div>`;
     html += `<button id="btnBackToVisits" style="margin-top:8px;width:100%;padding:6px;background:#e0e7ff;border:1px solid #c7d2fe;border-radius:7px;font-size:0.8rem;cursor:pointer">← Retour à l'activité</button>`;
 
     itemsEl.innerHTML = html;
@@ -2145,7 +2146,7 @@ async function loadMembers() {
         : '';
       const uName = escapeHtml(u.name);
       const uPlan = escapeHtml(BWR.TIER_LABEL[BWR.normalisePlan(u.plan)] || 'Gratuit');
-      const uHandle = u.username ? `<span style="font-size:0.75rem;color:#9ca3af">@${escapeHtml(u.username)}</span>` : '';
+      const uHandle = u.username ? `<span style="font-size:0.75rem;color:#6b7280">@${escapeHtml(u.username)}</span>` : '';
       // Contribution chips (built in admin-dashboard-extra.js) — empty on the map page.
       const statsLine = typeof memberStatsChips === 'function' ? memberStatsChips(u.stats) : '';
       // The `member-row` / `member-actions` classes are what css/mobile.css uses
@@ -2248,7 +2249,7 @@ async function showUserGrades(userId, name) {
       const when = p.gradedAt ? new Date(p.gradedAt).toLocaleDateString('fr-FR') : '';
       const stale = p.isCurrentGrader
         ? ''
-        : `<span style="font-size:0.72rem;color:#9ca3af" title="Un autre membre a noté ce chemin depuis">· re-noté depuis</span>`;
+        : `<span style="font-size:0.72rem;color:#6b7280" title="Un autre membre a noté ce chemin depuis">· re-noté depuis</span>`;
       // Clicking a path opens the admin map, framed on that path with the whole
       // set spotlighted.
       return `<a href="admin?grader=${uid}&focus=${encodeURIComponent(p.id)}" title="Voir sur la carte" style="text-decoration:none;color:inherit;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:6px">

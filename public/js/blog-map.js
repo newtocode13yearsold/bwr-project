@@ -91,9 +91,10 @@
       popupAnchor: [0, -26],
     });
 
-    var marker = L.marker([s.lat, s.lng], { icon: icon }).addTo(map);
-
     var title = s.title ? String(s.title) : '';
+    // `title` doubles as the pin's accessible name (it's icon-only).
+    var marker = L.marker([s.lat, s.lng], { icon: icon, title: title }).addTo(map);
+
     var note = s.note ? String(s.note) : '';
     var link = s.link ? String(s.link) : '';
     var html = '';
