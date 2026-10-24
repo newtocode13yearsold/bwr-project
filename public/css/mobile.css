@@ -363,6 +363,15 @@
     min-height: 44px;
     padding: 12px 5px;
   }
+  /* …but not the ones mid-sentence in a paragraph: a 44px inline-block there
+     opens a tall gap in the line. In-sentence links are exempt from the WCAG
+     target size, so they keep the inline padding from above. */
+  .lg-block p a,
+  .lg-section p a {
+    display: inline;
+    min-height: 0;
+    padding: 6px 0;
+  }
 
   /* …and the ones that stand alone — in a table cell, a status panel, the
      table of contents — get a full square target. */
